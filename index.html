@@ -265,6 +265,8 @@
     <nav>
         <div class="logo">G<span>↑</span>ime</div>
         <ul class="nav-links" id="navLinks">
+            <!-- Client Portal जाने का बटन -->
+<a href="login.html" style="background: #00ff88; color: #000; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px; margin-left: 15px;">Client Login</a>
             <li><a href="portfolio.html">Our Work</a></li>
             <li><a href="#services">Growth Engines</a></li>
             <li><a href="#about">About</a></li>
@@ -436,33 +438,8 @@
             </details>
         </div>
     </section>
-
-    <!-- Contact Section with Web3Forms -->
-    <section id="contact" class="section" style="background: var(--card-bg);">
-        <h2 class="section-title fade-in">Ready to <span class="gradient-text">Upgrade?</span></h2>
-        <div class="contact-box fade-in">
-            <form action="https://api.web3forms.com/submit" method="POST">
-                
-                <!-- Web3Forms Access Key -->
-                <input type="hidden" name="access_key" value="9680bea5-d164-41df-b501-7bf5ad02aa42">
-                
-                <div class="form-group"><label>Your Full Name</label><input type="text" name="fullName" placeholder="Your full name" required></div>
-                <div class="form-group"><label>Business Name <span>*</span></label><input type="text" name="businessName" placeholder="Your business" required></div>
-                <div class="form-group"><label>Email Address <span>*</span></label><input type="email" name="email" placeholder="name@company.com" required></div>
-                <div class="form-group"><label>Phone Number <span>*</span></label><input type="tel" name="phone" placeholder="+91 98250 00000" required></div>
-                
-                <div class="form-group"><label>City</label><input type="text" name="city" placeholder="e.g. Surat"></div>
-                <div class="form-group"><label>State / Province</label><input type="text" name="state" placeholder="e.g. Gujarat"></div>
-                <div class="form-group"><label>Country</label><input type="text" name="country" placeholder="e.g. India"></div>
-                
-                <div class="form-group"><label>Project Details <span>*</span></label><textarea name="message" rows="4" placeholder="Tell us about your project requirements..." required></textarea></div>
-                
-                <button type="submit" class="btn-primary" style="width: 100%; border-radius: 8px;">Submit Details</button>
-            </form>
-        </div>
-    </section>
-
-    <footer>
+    
+ <footer>
         <div class="footer-policies">
             <a href="javascript:void(0)" onclick="openModal('privacyModal')">Privacy Policy</a> | 
             <a href="javascript:void(0)" onclick="openModal('termsModal')">Terms & Conditions</a> | 
