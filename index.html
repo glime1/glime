@@ -183,57 +183,63 @@
 
         .hamburger { display: none; cursor: pointer; font-size: 28px; color: var(--text-main); }
         
-        /* 📱 UPDATED MOBILE RESPONSIVE CSS (Fine-tuned for perfect spacing & size) 📱 */
+        /* 📱 UPDATED MOBILE RESPONSIVE CSS (Strictly killing extra space!) 📱 */
         @media (max-width: 768px) {
+            /* 1. KILLED THE HUGE HERO HEIGHT GAP */
+            #hero { height: auto; padding-top: 130px; padding-bottom: 30px; }
+
             h1 { font-size: 1.8rem; margin-bottom: 10px; }
-            .hero-sub { font-size: 0.85rem; line-height: 1.5; margin-bottom: 15px; }
-            .hero-niche { font-size: 0.8rem; margin-bottom: 20px; }
-            .pain-point { font-size: 0.85rem; padding: 8px 15px; margin-bottom: 25px; }
+            .hero-sub { font-size: 0.85rem; line-height: 1.5; margin-bottom: 10px; }
+            .hero-niche { font-size: 0.8rem; margin-bottom: 15px; }
+            .pain-point { font-size: 0.85rem; padding: 8px 15px; margin-bottom: 20px; }
             
             .top-banner { font-size: 0.75rem; padding: 8px; }
             
-            /* Reduced Section Gaps */
-            .section { padding: 50px 5%; }
-            .section-title { font-size: 1.6rem; margin-bottom: 35px; }
+            /* 2. REDUCED SECTION GAPS EXTREMELY */
+            .section { padding: 30px 5%; }
+            .section-title { font-size: 1.5rem; margin-bottom: 20px; }
             
             /* Bringing cards and features closer */
-            .grid-3 { gap: 20px; }
-            .card { padding: 25px 20px; }
-            .card h3 { font-size: 1.25rem; }
-            .package-features li { font-size: 0.85rem; margin-bottom: 8px; }
+            .grid-3 { gap: 15px; }
+            .card { padding: 20px 15px; }
+            .card h3 { font-size: 1.25rem; margin-bottom: 10px; }
+            .package-features { margin-bottom: 10px; }
+            .package-features li { font-size: 0.85rem; margin-bottom: 5px; }
             .price { font-size: 1.5rem; }
             .old-price { font-size: 1rem; }
-            .bonus-tag { font-size: 0.8rem; padding: 5px 10px; }
-            .click-to-order { font-size: 0.85rem; margin-top: 15px; }
+            .bonus-tag { font-size: 0.8rem; padding: 5px 10px; margin-top: 5px; }
+            .click-to-order { font-size: 0.85rem; margin-top: 10px; }
 
             /* Calculator Mobile adjustments */
-            .calculator-card { padding: 25px 15px; margin-bottom: 40px; }
-            .calc-label { font-size: 0.9rem; }
-            .calc-result { font-size: 1.4rem; margin: 15px 0; }
-            #trafficValue { font-size: 1.1rem !important; }
+            .calculator-card { padding: 20px 15px; margin-bottom: 20px; }
+            .calc-label { font-size: 0.9rem; margin-bottom: 5px; }
+            .calc-result { font-size: 1.4rem; margin: 10px 0; }
+            #trafficValue { font-size: 1.1rem !important; margin-bottom: 10px; }
 
             /* Custom Builder Mobile adjustments */
-            .builder-box { padding: 25px 15px; margin-top: 30px; }
-            .builder-box h3 { font-size: 1.3rem !important; margin-bottom: 15px; }
-            .feature-item { font-size: 0.8rem; padding: 10px 15px; }
-            .builder-total { font-size: 1.4rem; margin: 15px 0; }
+            .builder-box { padding: 20px 15px; margin-top: 20px; }
+            .builder-box h3 { font-size: 1.3rem !important; margin-bottom: 10px; }
+            .feature-grid { margin: 15px 0; gap: 10px; }
+            .feature-item { font-size: 0.8rem; padding: 8px 12px; }
+            .builder-total { font-size: 1.3rem; margin: 10px 0; }
 
             /* About Section */
-            .about-container { flex-direction: column; text-align: center; padding: 25px 15px; gap: 25px; }
+            .about-container { flex-direction: column; text-align: center; padding: 20px 15px; gap: 15px; }
             .about-text h3 { font-size: 1.4rem; margin-bottom: 10px; }
-            .about-text p { font-size: 0.9rem; line-height: 1.6; margin-bottom: 15px; }
+            .about-text p { font-size: 0.9rem; line-height: 1.5; margin-bottom: 10px; }
 
             /* FAQ & Forms */
-            summary { padding: 15px; font-size: 0.95rem; }
-            .faq-content { padding: 0 15px 15px 15px; font-size: 0.85rem; }
+            summary { padding: 12px; font-size: 0.95rem; }
+            .faq-content { padding: 0 12px 12px 12px; font-size: 0.85rem; }
             .contact-box { padding: 0 5px; }
-            .form-group label { font-size: 0.8rem; }
-            input, textarea { padding: 12px; font-size: 0.9rem; }
+            .form-group { margin-bottom: 15px; }
+            .form-group label { font-size: 0.8rem; margin-bottom: 5px; }
+            input, textarea { padding: 10px; font-size: 0.9rem; }
 
             /* Navigation & Icons */
-            nav { top: 30px; padding: 15px 5%; }
+            nav { top: 30px; padding: 12px 5%; }
             .logo { font-size: 20px; }
-            .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; width: 100%; background: var(--card-bg); padding: 20px; text-align: center; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+            .nav-links { display: none; flex-direction: column; position: absolute; top: 55px; left: 0; width: 100%; background: var(--card-bg); padding: 15px; text-align: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
             .nav-links.active { display: flex; }
             .nav-links a { font-size: 0.95rem; }
             .hamburger { display: block; font-size: 24px; }
