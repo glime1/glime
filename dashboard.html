@@ -10,24 +10,22 @@
     <style>
         :root { --bg-dark: #0a0f16; --card-bg: #111827; --neon-green: #00ff88; --cyan-blue: #00f0ff; --text-main: #ffffff; --text-muted: #9ca3af; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); padding: 40px 20px; }
+        body { background-color: var(--bg-dark); color: var(--text-main); padding: 20px 15px; }
         
-        .dashboard-container { max-width: 800px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 30px; }
-        .header h1 { font-size: 1.8rem; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .dashboard-container { max-width: 500px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; }
+        .header h1 { font-size: 1.4rem; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .logout-btn { background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.3s; }
-        .logout-btn:hover { background: #ff4757; color: white; }
+        .logout-btn { background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
 
-        .card { background: var(--card-bg); padding: 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .card h3 { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-        .card p { font-size: 1.2rem; font-weight: 600; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
+        .card h3 { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .card p { font-size: 0.95rem; font-weight: 600; word-break: break-all; }
         
-        .invoice-btn { display: inline-block; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700; margin-top: 10px; transition: 0.3s; }
-        .invoice-btn:hover { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); transform: translateY(-2px); }
+        .invoice-btn { display: block; width: 100%; text-align: center; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.95rem; }
         
-        #loading { text-align: center; color: var(--cyan-blue); font-size: 1.2rem; margin-top: 50px; }
-        #dashboard-content { display: none; } /* लोडिंग के समय छुपा रहेगा */
+        #loading { text-align: center; color: var(--cyan-blue); margin-top: 50px; }
+        #dashboard-content { display: none; }
     </style>
 </head>
 <body>
@@ -38,12 +36,12 @@
             <button class="logout-btn" onclick="logout()">Log Out</button>
         </div>
 
-        <div id="loading">डेटा लोड हो रहा है...</div>
+        <div id="loading">Loading...</div>
 
         <div id="dashboard-content">
             <div class="card">
                 <h3>Welcome</h3>
-                <p id="userEmail">client@email.com</p>
+                <p id="userEmail">...</p>
             </div>
 
             <div class="card">
@@ -57,67 +55,46 @@
             </div>
 
             <div class="card" id="invoiceCard">
-                <h3>Invoice / Bill</h3>
                 <a href="#" id="invoiceLink" class="invoice-btn" target="_blank">View Zoho Invoice</a>
             </div>
         </div>
     </div>
 
     <script>
-        // आपका Supabase कनेक्शन
         var SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
         var SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
         var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // पेज लोड होते ही यह फंक्शन चलेगा
         async function fetchDashboardData() {
-            // 1. चेक करें कि यूजर लॉगिन है या नहीं
-            var { data: authData, error: authError } = await supabase.auth.getUser();
-            
-            if (authError || !authData.user) {
-                // अगर लॉगिन नहीं है, तो वापस login.html पर भेज दें
-                window.location.href = 'login.html';
-                return;
-            }
+            var { data: authData } = await supabase.auth.getUser();
+            if (!authData.user) { window.location.href = 'login.html'; return; }
 
             var userEmail = authData.user.email;
             document.getElementById('userEmail').textContent = userEmail;
 
-            // 2. Supabase टेबल से इस यूजर का डेटा निकालें
-            var { data: clientData, error: dbError } = await supabase
+            var { data: clientData } = await supabase
                 .from('client_data')
                 .select('*')
                 .eq('email', userEmail)
                 .single();
 
-            // 3. डेटा को HTML में सेट करें
             if (clientData) {
                 document.getElementById('projectName').textContent = clientData.project_name || 'N/A';
                 document.getElementById('paymentStatus').textContent = clientData.payment_status || 'N/A';
-                
                 if (clientData.invoice_link) {
                     document.getElementById('invoiceLink').href = clientData.invoice_link;
                 } else {
-                    document.getElementById('invoiceCard').style.display = 'none'; // लिंक नहीं है तो बटन छुपा दें
+                    document.getElementById('invoiceCard').style.display = 'none';
                 }
             } else {
-                document.getElementById('projectName').textContent = 'डेटा नहीं मिला। कृपया एडमिन से संपर्क करें।';
-                document.getElementById('paymentStatus').textContent = '-';
+                document.getElementById('projectName').textContent = 'Data not found.';
                 document.getElementById('invoiceCard').style.display = 'none';
             }
-
-            // 4. लोडिंग स्क्रीन हटाएं और असली डैशबोर्ड दिखाएं
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dashboard-content').style.display = 'block';
         }
 
-        // लॉगआउट फंक्शन
-        async function logout() {
-            await supabase.auth.signOut();
-            window.location.href = 'login.html';
-        }
-
-        // कोड शुरू करें
+        async function logout() { await supabase.auth.signOut(); window.location.href = 'login.html'; }
         fetchDashboardData();
     </script>
 </body>
