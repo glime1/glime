@@ -579,6 +579,13 @@
         // Navbar Mobile Menu
         function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
         if(window.innerWidth > 768) { document.getElementById('navBtn').style.display = 'block'; }
+        
+        // Mobile Menu Auto-Close Bug Fix
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('navLinks').classList.remove('active');
+            });
+        });
     </script>
 </body>
 </html>
