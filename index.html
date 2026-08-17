@@ -183,27 +183,64 @@
 
         .hamburger { display: none; cursor: pointer; font-size: 28px; color: var(--text-main); }
         
-        /* UPDATED MOBILE RESPONSIVE CSS */
+        /* 📱 UPDATED MOBILE RESPONSIVE CSS (Fine-tuned for perfect spacing & size) 📱 */
         @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            .section-title { font-size: 1.8rem; margin-bottom: 40px; }
-            .hero-sub { font-size: 0.95rem; }
-            .hero-niche { font-size: 0.85rem; }
-            .about-text h3 { font-size: 1.5rem; }
-            .card h3 { font-size: 1.3rem; }
-            .price { font-size: 1.6rem; }
-            .builder-box h3 { font-size: 1.4rem !important; }
-            .builder-total { font-size: 1.5rem; }
-            .section { padding: 60px 5%; }
-            nav { top: 35px; }
-            .nav-links { display: none; flex-direction: column; position: absolute; top: 70px; left: 0; width: 100%; background: var(--card-bg); padding: 30px; text-align: center; gap: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+            h1 { font-size: 1.8rem; margin-bottom: 10px; }
+            .hero-sub { font-size: 0.85rem; line-height: 1.5; margin-bottom: 15px; }
+            .hero-niche { font-size: 0.8rem; margin-bottom: 20px; }
+            .pain-point { font-size: 0.85rem; padding: 8px 15px; margin-bottom: 25px; }
+            
+            .top-banner { font-size: 0.75rem; padding: 8px; }
+            
+            /* Reduced Section Gaps */
+            .section { padding: 50px 5%; }
+            .section-title { font-size: 1.6rem; margin-bottom: 35px; }
+            
+            /* Bringing cards and features closer */
+            .grid-3 { gap: 20px; }
+            .card { padding: 25px 20px; }
+            .card h3 { font-size: 1.25rem; }
+            .package-features li { font-size: 0.85rem; margin-bottom: 8px; }
+            .price { font-size: 1.5rem; }
+            .old-price { font-size: 1rem; }
+            .bonus-tag { font-size: 0.8rem; padding: 5px 10px; }
+            .click-to-order { font-size: 0.85rem; margin-top: 15px; }
+
+            /* Calculator Mobile adjustments */
+            .calculator-card { padding: 25px 15px; margin-bottom: 40px; }
+            .calc-label { font-size: 0.9rem; }
+            .calc-result { font-size: 1.4rem; margin: 15px 0; }
+            #trafficValue { font-size: 1.1rem !important; }
+
+            /* Custom Builder Mobile adjustments */
+            .builder-box { padding: 25px 15px; margin-top: 30px; }
+            .builder-box h3 { font-size: 1.3rem !important; margin-bottom: 15px; }
+            .feature-item { font-size: 0.8rem; padding: 10px 15px; }
+            .builder-total { font-size: 1.4rem; margin: 15px 0; }
+
+            /* About Section */
+            .about-container { flex-direction: column; text-align: center; padding: 25px 15px; gap: 25px; }
+            .about-text h3 { font-size: 1.4rem; margin-bottom: 10px; }
+            .about-text p { font-size: 0.9rem; line-height: 1.6; margin-bottom: 15px; }
+
+            /* FAQ & Forms */
+            summary { padding: 15px; font-size: 0.95rem; }
+            .faq-content { padding: 0 15px 15px 15px; font-size: 0.85rem; }
+            .contact-box { padding: 0 5px; }
+            .form-group label { font-size: 0.8rem; }
+            input, textarea { padding: 12px; font-size: 0.9rem; }
+
+            /* Navigation & Icons */
+            nav { top: 30px; padding: 15px 5%; }
+            .logo { font-size: 20px; }
+            .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; width: 100%; background: var(--card-bg); padding: 20px; text-align: center; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
             .nav-links.active { display: flex; }
-            .hamburger { display: block; }
+            .nav-links a { font-size: 0.95rem; }
+            .hamburger { display: block; font-size: 24px; }
             .floating-icon { display: none; }
-            .about-container { flex-direction: column; text-align: center; padding: 30px 20px; }
-            .whatsapp-float { bottom: 20px; right: 20px; width: 50px; height: 50px; }
-            .whatsapp-float svg { width: 28px; height: 28px; }
-            .calc-result { font-size: 1.5rem; }
+            
+            .whatsapp-float { bottom: 20px; right: 20px; width: 45px; height: 45px; font-size: 24px; }
+            .whatsapp-float svg { width: 24px; height: 24px; }
         }
 
         .fade-in { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
