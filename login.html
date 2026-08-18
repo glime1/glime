@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Portal Login | Glime Web Agency</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -50,13 +51,12 @@
     <script>
         var SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
         var SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-        
         var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         document.getElementById('loginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             
-            var email = document.getElementById('email').value;
+            var email = document.getElementById('email').value.trim();
             var password = document.getElementById('password').value;
             var errorMsg = document.getElementById('error-message');
             var loginBtn = document.getElementById('loginBtn');
@@ -65,6 +65,7 @@
             errorMsg.style.display = 'none';
 
             try {
+                // Supabase में लॉगिन चेक करें
                 var { data, error } = await supabase.auth.signInWithPassword({
                     email: email,
                     password: password,
@@ -75,7 +76,11 @@
                     errorMsg.style.display = 'block';
                     loginBtn.textContent = 'Log In to Portal';
                 } else {
+                    // ★ मास्टर स्टेप: ईमेल को ब्राउज़र में सेव करना ★
+                    localStorage.setItem('glime_client_email', email);
+                    
                     loginBtn.textContent = 'Success! Redirecting...';
+                    // डैशबोर्ड पर भेजना
                     window.location.href = 'dashboard.html'; 
                 }
             } catch (err) {
