@@ -3,99 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Dashboard | Glime Web Agency</title>
+    <title>Dashboard | Glime Web Agency</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root { --bg-dark: #0a0f16; --card-bg: #111827; --neon-green: #00ff88; --cyan-blue: #00f0ff; --text-main: #ffffff; --text-muted: #9ca3af; }
+        :root { --bg-dark: #05080c; --card-bg: #111827; --neon-green: #00ff88; --cyan-blue: #00f0ff; --text-main: #ffffff; --text-muted: #9ca3af; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); padding: 20px 15px; }
-        
-        .dashboard-container { max-width: 500px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; }
-        .header h1 { font-size: 1.4rem; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .logout-btn { background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
-        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
-        .card h3 { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-        .card p { font-size: 0.95rem; font-weight: 600; word-break: break-all; }
+        .sidebar { width: 260px; background: rgba(17, 24, 39, 0.8); border-right: 1px solid rgba(255,255,255,0.05); padding: 30px 20px; display: flex; flex-direction: column; }
+        .logo { font-size: 24px; font-weight: 700; color: white; margin-bottom: 40px; text-align: center; letter-spacing: 1px; }
+        .logo span { color: var(--neon-green); }
+        .nav-item { padding: 15px 20px; color: var(--text-muted); text-decoration: none; border-radius: 10px; margin-bottom: 10px; transition: 0.3s; font-weight: 600; display: block; }
+        .nav-item:hover, .nav-item.active { background: rgba(0, 255, 136, 0.1); color: var(--neon-green); border-left: 4px solid var(--neon-green); }
+        .logout-btn { margin-top: auto; background: rgba(255, 71, 87, 0.1); color: #ff4757; text-align: center; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: bold; border: 1px solid rgba(255, 71, 87, 0.3); transition: 0.3s; cursor: pointer; }
+        .logout-btn:hover { background: #ff4757; color: white; }
+
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .header h1 { font-size: 1.8rem; color: white; }
+        .header p { color: var(--text-muted); font-size: 0.95rem; }
+        .client-badge { background: rgba(0, 240, 255, 0.1); color: var(--cyan-blue); padding: 8px 15px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; border: 1px solid rgba(0, 240, 255, 0.3); }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        .card { background: var(--card-bg); padding: 30px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card-title { font-size: 1.2rem; color: var(--cyan-blue); margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
         
-        .invoice-btn { display: block; width: 100%; text-align: center; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.95rem; }
+        .status-box { background: rgba(255,255,255,0.02); padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid var(--text-muted); transition: 0.3s; }
+        .status-box h4 { color: white; margin-bottom: 5px; }
+        .status-box p { color: var(--text-muted); font-size: 0.9rem; }
+
+        .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .pay-box { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center; transition: 0.3s; }
+        .pay-box:hover { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(0,255,136,0.1); }
+        .pay-box h4 { color: white; margin-bottom: 10px; font-size: 1.1rem; }
+        .upi-id { background: rgba(0, 255, 136, 0.1); color: var(--neon-green); padding: 8px 15px; border-radius: 8px; font-weight: 600; display: inline-block; margin-bottom: 15px; border: 1px solid rgba(0, 255, 136, 0.3); font-size: 0.95rem; }
+        .qr-placeholder { width: 130px; height: 130px; background: transparent; margin: 0 auto; border-radius: 10px; display: flex; justify-content: center; align-items: center; border: 3px solid var(--neon-green); padding: 5px; }
+        .qr-placeholder img { width: 100%; height: 100%; object-fit: contain; border-radius: 5px; background: white; }
         
-        #loading { text-align: center; color: var(--cyan-blue); margin-top: 50px; }
-        #dashboard-content { display: none; }
+        .intl-box { border-color: rgba(0, 240, 255, 0.3); background: rgba(0, 240, 255, 0.02); }
+        .intl-box:hover { border-color: var(--cyan-blue); box-shadow: 0 0 15px rgba(0,240,255,0.1); }
+        .btn-pay { background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; width: 100%; margin-top: 15px; border: none; cursor: pointer; transition: 0.3s; }
+        .btn-pay:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 240, 255, 0.4); }
+        
+        .invoice-btn { background: rgba(255, 255, 255, 0.1); color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; margin-left: 10px; border: 1px solid rgba(255,255,255,0.2); display: none; }
+        .invoice-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; height: auto; overflow-y: visible; }
+            .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; padding: 20px; gap: 10px; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+            .logo { width: 100%; margin-bottom: 10px; }
+            .nav-item { margin-bottom: 0; padding: 10px 12px; font-size: 0.9rem; flex: 1 1 45%; text-align: center; }
+            .logout-btn { margin-top: 10px; width: 100%; flex: 1 1 100%; }
+            .main-content { padding: 20px; overflow-y: visible; }
+            .header { flex-direction: column; text-align: left; align-items: flex-start; gap: 15px; }
+            .grid-2 { grid-template-columns: 1fr; gap: 20px; }
+            .payment-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="dashboard-container">
+    <div class="sidebar">
+        <div class="logo">G<span>↑</span>ime Portal</div>
+        <a href="#" class="nav-item active">📊 Dashboard</a>
+        <a href="#" class="nav-item">💼 My Project</a>
+        <a href="#" class="nav-item">💸 Billing</a>
+        <button onclick="handleLogout()" class="logout-btn">Secure Logout</button>
+    </div>
+
+    <div class="main-content">
         <div class="header">
-            <h1>Client Portal</h1>
-            <button class="logout-btn" onclick="logout()">Log Out</button>
+            <div>
+                <h1>Welcome Back, <span id="clientName">...</span> 👋</h1>
+                <p>Manage your custom growth engine and billing here.</p>
+            </div>
+            <div class="client-badge">Live Updates Active 🚀</div>
         </div>
 
-        <div id="loading">Loading...</div>
-
-        <div id="dashboard-content">
+        <div class="grid-2">
+            <!-- Project Card -->
             <div class="card">
-                <h3>Welcome</h3>
-                <p id="userEmail">...</p>
+                <h3 class="card-title">Project: <span id="dynamicProjectName" style="color: white;">Loading...</span></h3>
+                
+                <!-- Dynamic Steps -->
+                <div class="status-box" id="box_step1">
+                    <h4>Step 1: UI/UX Wireframing</h4>
+                    <p>Status: <span id="dynamicStep1">Fetching...</span></p>
+                </div>
+                
+                <div class="status-box" id="box_step2">
+                    <h4>Step 2: Custom VS Code Development</h4>
+                    <p>Status: <span id="dynamicStep2">Fetching...</span></p>
+                </div>
+
+                <div class="status-box" id="box_step3">
+                    <h4>Step 3: Database & Testing</h4>
+                    <p>Status: <span id="dynamicStep3">Fetching...</span></p>
+                </div>
             </div>
 
+            <!-- Payment Card -->
             <div class="card">
-                <h3>Project Name</h3>
-                <p id="projectName">Loading...</p>
-            </div>
-
-            <div class="card">
-                <h3>Payment Status</h3>
-                <p id="paymentStatus">Loading...</p>
-            </div>
-
-            <div class="card" id="invoiceCard">
-                <a href="#" id="invoiceLink" class="invoice-btn" target="_blank">View Zoho Invoice</a>
+                <h3 class="card-title">Billing & Payments 💸</h3>
+                
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                    Payment Status: <strong id="dynamicPaymentStatus" style="color: white; font-size: 1.1rem; text-transform: uppercase;">Fetching...</strong>
+                    <a href="#" id="dynamicInvoiceBtn" class="invoice-btn" target="_blank">📄 View Invoice</a>
+                </p>
+                
+                <div class="payment-grid">
+                    <div class="pay-box">
+                        <h4>🇮🇳 Indian Clients</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">0% Fee via UPI</p>
+                        <div class="upi-id">Glime@ptaxis</div> 
+                        <div class="qr-placeholder">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=Glime@ptaxis&pn=GlimeWeb" alt="Scan to Pay">
+                        </div>
+                    </div>
+                    <div class="pay-box intl-box">
+                        <h4>🌍 Global Clients</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Pay via Credit Card / PayPal</p>
+                        <div style="font-size: 2.5rem; margin: 15px 0;">💳</div>
+                        <button class="btn-pay" onclick="window.open('https://paypal.me/VishalGouttam273', '_blank')">Pay Securely ($)</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        var SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
-        var SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-        var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        async function fetchDashboardData() {
-            var { data: authData } = await supabase.auth.getUser();
-            if (!authData.user) { window.location.href = 'login.html'; return; }
-
-            var userEmail = authData.user.email;
-            document.getElementById('userEmail').textContent = userEmail;
-
-            var { data: clientData } = await supabase
-                .from('client_data')
-                .select('*')
-                .eq('email', userEmail)
-                .single();
-
-            if (clientData) {
-                document.getElementById('projectName').textContent = clientData.project_name || 'N/A';
-                document.getElementById('paymentStatus').textContent = clientData.payment_status || 'N/A';
-                if (clientData.invoice_link) {
-                    document.getElementById('invoiceLink').href = clientData.invoice_link;
-                } else {
-                    document.getElementById('invoiceCard').style.display = 'none';
-                }
-            } else {
-                document.getElementById('projectName').textContent = 'Data not found.';
-                document.getElementById('invoiceCard').style.display = 'none';
-            }
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('dashboard-content').style.display = 'block';
+        const loggedInEmail = localStorage.getItem('glime_client_email'); 
+        
+        if (!loggedInEmail) {
+            window.location.href = "login.html";
+        } else {
+            let namePart = loggedInEmail.split('@')[0];
+            document.getElementById('clientName').innerText = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+            initDashboard();
         }
 
-        async function logout() { await supabase.auth.signOut(); window.location.href = 'login.html'; }
-        fetchDashboardData();
+        function handleLogout() {
+            localStorage.removeItem('glime_client_email');
+            window.location.href = "login.html";
+        }
+
+        // स्टेटस के रंग बदलने का फंक्शन
+        function setStepColor(stepId, boxId, statusText) {
+            let textSpan = document.getElementById(stepId);
+            let box = document.getElementById(boxId);
+            
+            textSpan.innerText = statusText;
+            let lowerStatus = statusText.toLowerCase();
+
+            if(lowerStatus.includes('completed')) {
+                textSpan.style.color = 'var(--neon-green)';
+                box.style.borderLeftColor = 'var(--neon-green)';
+            } else if (lowerStatus.includes('progress')) {
+                textSpan.style.color = 'var(--cyan-blue)';
+                box.style.borderLeftColor = 'var(--cyan-blue)';
+            } else {
+                textSpan.style.color = '#ff4757';
+                box.style.borderLeftColor = '#ff4757';
+            }
+        }
+
+        async function initDashboard() {
+            const supabaseUrl = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+            const supabaseKey = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+            try {
+                const { data, error } = await supabase
+                    .from('client_data') 
+                    .select('*')
+                    .eq('email', loggedInEmail); 
+
+                if (error || !data || data.length === 0) return;
+
+                let clientData = data[0]; 
+
+                // प्रोजेक्ट और पेमेंट अपडेट
+                document.getElementById('dynamicProjectName').innerText = clientData.project_name || "Unknown Project";
+                
+                let pStatus = clientData.payment_status || "Pending";
+                let statusElement = document.getElementById('dynamicPaymentStatus');
+                statusElement.innerText = pStatus;
+                statusElement.style.color = (pStatus.toLowerCase() === 'paid') ? 'var(--neon-green)' : '#ff4757';
+
+                let invLink = clientData.invoice_link;
+                if (invLink) {
+                    let invoiceBtn = document.getElementById('dynamicInvoiceBtn');
+                    invoiceBtn.href = invLink;
+                    invoiceBtn.style.display = "inline-block"; 
+                }
+
+                // 🚀 नए Dynamic Steps अपडेट
+                setStepColor('dynamicStep1', 'box_step1', clientData.step1_status || "Pending");
+                setStepColor('dynamicStep2', 'box_step2', clientData.step2_status || "Pending");
+                setStepColor('dynamicStep3', 'box_step3', clientData.step3_status || "Pending");
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
     </script>
 </body>
 </html>
