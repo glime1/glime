@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Portal Login | Glime Web Agency</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="glime-logo.jpg">
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,22 +15,41 @@
     <style>
         :root { --bg-dark: #0a0f16; --card-bg: #111827; --neon-green: #00ff88; --cyan-blue: #00f0ff; --text-main: #ffffff; --text-muted: #9ca3af; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .login-box { background: var(--card-bg); padding: 40px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); width: 100%; max-width: 400px; text-align: center; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; height: 100vh; position: relative; }
+        
+        .login-box { background: var(--card-bg); padding: 40px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); width: 100%; max-width: 400px; text-align: center; z-index: 10; }
         .login-box h2 { font-size: 2rem; margin-bottom: 10px; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .login-box p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px; }
+        
         .form-group { margin-bottom: 20px; text-align: left; }
         .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
-        input { width: 100%; padding: 12px 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 1rem; outline: none; }
+        input { width: 100%; padding: 12px 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
         input:focus { border-color: var(--cyan-blue); background: rgba(255,255,255,0.05); }
+        
         .btn-primary { width: 100%; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 1.05rem; cursor: pointer; border: none; margin-top: 10px; transition: 0.3s; }
         .btn-primary:hover { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); transform: translateY(-2px); }
+        
         #error-message { color: #ff4757; font-size: 0.85rem; margin-top: 15px; display: none; }
-        .back-link { display: block; margin-top: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; }
-        .back-link:hover { color: var(--text-main); }
+        .back-link { display: block; margin-top: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; transition: 0.3s; }
+        .back-link:hover { color: var(--neon-green); }
+
+        /* Floating WhatsApp Icon */
+        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index: 2000; display: flex; justify-content: center; align-items: center; width: 60px; height: 60px; text-decoration: none; animation: pulse 2s infinite; cursor: pointer; }
+        .whatsapp-float svg { width: 35px; height: 35px; fill: white; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
+        
+        @media (max-width: 768px) {
+            .whatsapp-float { bottom: 20px; right: 20px; width: 45px; height: 45px; }
+            .whatsapp-float svg { width: 24px; height: 24px; }
+        }
     </style>
 </head>
 <body>
+
+    <!-- Floating Chat Icon (ONLY button that links to WhatsApp) -->
+    <a href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20need%20help%20logging%20into%20my%20Client%20Portal." target="_blank" class="whatsapp-float">
+        <svg viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/></svg>
+    </a>
 
     <div class="login-box">
         <h2>Client Portal</h2>
