@@ -29,6 +29,9 @@
     }
     </script>
     
+    <!-- Supabase for Database Connection -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         /* CSS Variables */
@@ -56,7 +59,7 @@
         .nav-links { display: flex; gap: 50px; list-style: none; }
         .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 400; transition: 0.3s; font-size: 1.05rem; }
         .nav-links a:hover, .nav-links a.active { color: var(--cyan-blue); font-weight: 600; }
-        .btn-primary { background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; transition: 0.3s; box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); border: none; cursor: pointer; display: inline-block; text-align: center; }
+        .btn-primary { background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; transition: 0.3s; box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); border: none; cursor: pointer; display: inline-block; text-align: center; font-family: 'Poppins', sans-serif; }
         .btn-primary:hover { box-shadow: 0 0 25px rgba(0, 240, 255, 0.6); transform: translateY(-2px); }
 
         /* Page Header */
@@ -95,9 +98,22 @@
         .analytics-box p { color: var(--text-muted); font-size: 1rem; line-height: 1.7; }
         .analytics-icon { font-size: 3rem; margin-bottom: 15px; display: inline-block; }
 
+        /* Forms & Modals CSS (Newly added for Portfolio) */
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .form-group label span { color: #ff4757; }
+        input, textarea { width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 1rem; }
+        input:focus, textarea:focus { outline: none; border-color: var(--cyan-blue); background: rgba(255,255,255,0.08); }
+
+        .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); overflow: auto; }
+        .modal-content { background-color: var(--card-bg); margin: 10% auto; padding: 40px; border: 1px solid var(--neon-green); border-radius: 15px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 0 30px rgba(0, 255, 136, 0.2); text-align: left; }
+        .close-btn { color: var(--text-muted); position: absolute; top: 15px; right: 25px; font-size: 30px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .close-btn:hover { color: var(--neon-green); }
+
         footer { text-align: center; padding: 40px 20px; background: #05080c; color: var(--text-muted); font-size: 0.95rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 50px; }
         footer span { color: var(--cyan-blue); font-weight: 600; }
 
+        /* Floating WhatsApp Icon */
         .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index: 2000; display: flex; justify-content: center; align-items: center; width: 60px; height: 60px; text-decoration: none; animation: pulse 2s infinite; cursor: pointer; }
         .whatsapp-float svg { width: 35px; height: 35px; fill: white; }
         @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
@@ -137,7 +153,7 @@
 </head>
 <body>
 
-    <!-- Floating Chat Icon -->
+    <!-- Floating Chat Icon (ONLY button that links to WhatsApp) -->
     <a href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20am%20interested%20in%20your%20services." target="_blank" class="whatsapp-float">
         <svg viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/></svg>
     </a>
@@ -153,7 +169,8 @@
             <li><a href="index.html#about">About</a></li>
             <li><a href="contact.html">Contact</a></li>
         </ul>
-        <a href="contact.html" class="btn-primary" style="display: none;" id="navBtn">Start Your Project</a>
+        <!-- Changed to Button opening Modal -->
+        <button class="btn-primary" style="display: none;" id="navBtn" onclick="window.location.href='contact.html'">Start Your Project</button>
         <div class="hamburger" onclick="toggleMenu()">☰</div>
     </nav>
 
@@ -226,16 +243,67 @@
             <h3>Backed by <span class="gradient-text">1 Year of Data Analytics</span></h3>
             <p>At Glime, we don't just build websites that look pretty. With a deep background of <strong>1 year in dedicated Boutique Data Analytics</strong>, we understand your audience's behavior. We strategically place buttons, optimize loading speeds, and design user flows specifically proven to maximize your sales and conversions.</p>
             <br>
-            <a href="index.html#contact" class="btn-primary" style="font-size: 0.9rem; padding: 10px 25px;">Build Your Growth Engine</a>
+            <!-- Changed to Button opening Modal -->
+            <button class="btn-primary" style="font-size: 0.9rem; padding: 10px 25px; border: none; cursor: pointer;" onclick="window.location.href='contact.html'">Build Your Growth Engine</button>
         </div>
 
     </section>
 
     <footer>
+        <p style="margin-bottom: 8px;">✉️ Connect@glime.online</p>
         <p>Designed & Developed with 💻 by <span>Vishal Gouttam & Team</span> | <span>Glime Web Agency</span> © 2026</p>
     </footer>
 
-    <script>
+    <!-- Order Modal (Connected directly to Database, NO WhatsApp) -->
+    <div id="orderModal" class="modal">
+        <!-- Step 1: Details -->
+        <div class="modal-content" id="modalStep1">
+            <span class="close-btn" onclick="closeModal('orderModal')">&times;</span>
+            <h2 style="color: var(--cyan-blue); margin-bottom: 10px;">Almost there! 🚀</h2>
+            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.95rem;">Please provide basic details to proceed with your order.</p>
+            
+            <div class="form-group"><label>Your Name <span>*</span></label><input type="text" id="orderName" placeholder="John Doe"></div>
+            <div class="form-group"><label>Business/Creator Name <span>*</span></label><input type="text" id="orderBusiness" placeholder="Your Brand Name"></div>
+            <div class="form-group"><label>Email Address <span>*</span></label><input type="email" id="orderEmail" placeholder="name@company.com"></div>
+            
+            <button onclick="goToPaymentStep()" class="btn-primary" style="width: 100%; border-radius: 8px; margin-top: 10px; border: none;">Proceed to Payment</button>
+        </div>
+
+        <!-- Step 2: Payment (0% Commission Flow) -->
+        <div class="modal-content" id="modalStep2" style="display: none;">
+            <span class="close-btn" onclick="closeModal('orderModal')">&times;</span>
+            <h2 style="color: var(--cyan-blue); margin-bottom: 10px;">Complete Payment 💳</h2>
+            <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">0% Commission Flow: Pay directly via secure gateway.</p>
+            
+            <!-- UPI QR (Shows for India) -->
+            <div id="payIndia" style="display:none; text-align:center; margin-bottom:20px;">
+                <div style="background: white; padding: 10px; border-radius: 10px; display: inline-block;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=connect@glime.online&pn=Glime" alt="UPI QR" style="width:150px; height:150px;">
+                </div>
+                <p style="margin-top: 10px; font-weight: bold; color: var(--neon-green);">Scan to Pay with UPI</p>
+            </div>
+            
+            <!-- PayPal Button (Shows for Global) -->
+            <div id="payGlobal" style="display:none; text-align:center; margin-bottom:20px;">
+                <a href="https://paypal.me/glime" target="_blank" class="btn-primary" style="background: #0070ba; color: white; border-radius: 30px; padding: 10px 30px; display: inline-block; box-shadow: none;">Pay with PayPal</a>
+            </div>
+
+            <div class="form-group">
+                <label>Enter UTR / Transaction ID <span>*</span></label>
+                <input type="text" id="orderUTR" placeholder="e.g. 123456789012">
+            </div>
+
+            <button onclick="processFinalOrder()" class="btn-primary" id="submitFinalOrderBtn" style="width: 100%; border-radius: 8px; margin-top: 10px; border: none;">Submit for Verification</button>
+            <button onclick="goBackToStep1()" style="background: transparent; border: none; color: var(--text-muted); width: 100%; margin-top: 15px; cursor: pointer; text-decoration: underline;">Back</button>
+        </div>
+    </div>
+
+   <script>
+        // Supabase DB Configuration
+        var SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+        var SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+        var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         // Scroll Animation
         const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); }}); }, { threshold: 0.1 });
         document.querySelectorAll('.fade-in').forEach((el) => { observer.observe(el); });
@@ -255,6 +323,88 @@
         function pauseSlider(index) { clearInterval(intervals[index]); }
         function resumeSlider(index) { startSlider(index); }
         tracks.forEach((_, i) => startSlider(i));
+
+        // Form/Modal Logic
+        let currentOrderDetails = {};
+
+        function resetModal() {
+            document.getElementById('modalStep1').style.display = 'block';
+            document.getElementById('modalStep2').style.display = 'none';
+        }
+
+        function openGeneralInquiryModal() { 
+            currentOrderDetails = { package: 'Custom Project / General Inquiry', type: 'general' }; 
+            resetModal();
+            document.getElementById('orderModal').style.display = "block"; 
+        }
+
+        function goToPaymentStep() {
+            let name = document.getElementById('orderName').value.trim();
+            let business = document.getElementById('orderBusiness').value.trim();
+            let email = document.getElementById('orderEmail').value.trim();
+            if (!name || !business || !email) { alert("Please enter Name, Business Name, and Email to proceed."); return; }
+            
+            document.getElementById('modalStep1').style.display = 'none';
+            document.getElementById('modalStep2').style.display = 'block';
+
+            // Check timezone for payment method display
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const isIndia = (tz === 'Asia/Calcutta' || tz === 'Asia/Kolkata');
+            document.getElementById('payIndia').style.display = isIndia ? 'block' : 'none';
+            document.getElementById('payGlobal').style.display = isIndia ? 'none' : 'block';
+        }
+
+        function goBackToStep1() {
+            document.getElementById('modalStep2').style.display = 'none';
+            document.getElementById('modalStep1').style.display = 'block';
+        }
+
+        async function processFinalOrder() {
+            let utr = document.getElementById('orderUTR').value.trim();
+            if(!utr) { alert("Please enter your UTR / Transaction ID."); return; }
+
+            let name = document.getElementById('orderName').value.trim();
+            let business = document.getElementById('orderBusiness').value.trim();
+            let email = document.getElementById('orderEmail').value.trim();
+            let btn = document.getElementById('submitFinalOrderBtn');
+            
+            btn.innerText = "Submitting to Database...";
+            btn.disabled = true;
+
+            try {
+                // Insert into Supabase exactly as Admin Panel reads it
+                const { data, error } = await supabase.from('client_data').insert([
+                    {
+                        email: email,
+                        project_name: currentOrderDetails.package + " (" + business + ")",
+                        payment_status: "Verification Pending (UTR: " + utr + ")"
+                    }
+                ]);
+
+                if (error) throw error;
+
+                alert("✅ Payment details successfully sent to our Admin Panel!\n\nOnce our team verifies your UTR, you will receive an automatic email with your Client Portal ID and Password.");
+                
+                closeModal('orderModal');
+                
+                // Clear fields
+                document.getElementById('orderName').value = '';
+                document.getElementById('orderBusiness').value = '';
+                document.getElementById('orderEmail').value = '';
+                document.getElementById('orderUTR').value = '';
+                goBackToStep1();
+
+            } catch (err) {
+                alert("❌ Database Error: " + err.message);
+            } finally {
+                btn.innerText = "Submit for Verification";
+                btn.disabled = false;
+            }
+        }
+
+        function openModal(modalId) { document.getElementById(modalId).style.display = "block"; }
+        function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
+        window.onclick = function(event) { if (event.target.classList.contains('modal')) { event.target.style.display = "none"; } }
 
         // Navbar Mobile Menu
         function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
