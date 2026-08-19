@@ -4,13 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Glime Web Agency</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="glime-logo.jpg">
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root { --bg-dark: #05080c; --card-bg: #111827; --neon-green: #00ff88; --cyan-blue: #00f0ff; --text-main: #ffffff; --text-muted: #9ca3af; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; position: relative; }
 
         .sidebar { width: 260px; background: rgba(17, 24, 39, 0.8); border-right: 1px solid rgba(255,255,255,0.05); padding: 30px 20px; display: flex; flex-direction: column; }
         .logo { font-size: 24px; font-weight: 700; color: white; margin-bottom: 40px; text-align: center; letter-spacing: 1px; }
@@ -32,7 +36,7 @@
         
         .status-box { background: rgba(255,255,255,0.02); padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid var(--text-muted); transition: 0.3s; }
         .status-box h4 { color: white; margin-bottom: 5px; }
-        .status-box p { color: var(--text-muted); font-size: 0.9rem; }
+        .status-box p { color: var(--text-muted); font-size: 0.9rem; font-weight: 600; }
 
         .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .pay-box { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center; transition: 0.3s; }
@@ -50,6 +54,11 @@
         .invoice-btn { background: rgba(255, 255, 255, 0.1); color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; margin-left: 10px; border: 1px solid rgba(255,255,255,0.2); display: none; }
         .invoice-btn:hover { background: rgba(255, 255, 255, 0.2); }
 
+        /* Floating WhatsApp Icon */
+        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index: 2000; display: flex; justify-content: center; align-items: center; width: 60px; height: 60px; text-decoration: none; animation: pulse 2s infinite; cursor: pointer; }
+        .whatsapp-float svg { width: 35px; height: 35px; fill: white; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
+
         @media (max-width: 900px) {
             body { flex-direction: column; height: auto; overflow-y: visible; }
             .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; padding: 20px; gap: 10px; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -60,10 +69,18 @@
             .header { flex-direction: column; text-align: left; align-items: flex-start; gap: 15px; }
             .grid-2 { grid-template-columns: 1fr; gap: 20px; }
             .payment-grid { grid-template-columns: 1fr; }
+            
+            .whatsapp-float { bottom: 20px; right: 20px; width: 45px; height: 45px; }
+            .whatsapp-float svg { width: 24px; height: 24px; }
         }
     </style>
 </head>
 <body>
+
+    <!-- Floating Chat Icon (ONLY button that links to WhatsApp) -->
+    <a href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20need%20help%20with%20my%20dashboard/project." target="_blank" class="whatsapp-float">
+        <svg viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/></svg>
+    </a>
 
     <div class="sidebar">
         <div class="logo">G<span>↑</span>ime Portal</div>
@@ -113,20 +130,21 @@
                     <a href="#" id="dynamicInvoiceBtn" class="invoice-btn" target="_blank">📄 View Invoice</a>
                 </p>
                 
-                <div class="payment-grid">
+                <!-- Keeps the fallback payment methods visible in case they need to pay the remaining balance -->
+                <div class="payment-grid" id="paymentMethodsBox">
                     <div class="pay-box">
                         <h4>🇮🇳 Indian Clients</h4>
                         <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">0% Fee via UPI</p>
-                        <div class="upi-id">Glime@ptaxis</div> 
+                        <div class="upi-id">connect@glime.online</div> 
                         <div class="qr-placeholder">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=Glime@ptaxis&pn=GlimeWeb" alt="Scan to Pay">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=connect@glime.online&pn=Glime" alt="Scan to Pay">
                         </div>
                     </div>
                     <div class="pay-box intl-box">
                         <h4>🌍 Global Clients</h4>
                         <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Pay via Credit Card / PayPal</p>
                         <div style="font-size: 2.5rem; margin: 15px 0;">💳</div>
-                        <button class="btn-pay" onclick="window.open('https://paypal.me/VishalGouttam273', '_blank')">Pay Securely ($)</button>
+                        <button class="btn-pay" onclick="window.open('https://paypal.me/glime', '_blank')">Pay Securely ($)</button>
                     </div>
                 </div>
             </div>
@@ -157,7 +175,7 @@
             textSpan.innerText = statusText;
             let lowerStatus = statusText.toLowerCase();
 
-            if(lowerStatus.includes('completed')) {
+            if(lowerStatus.includes('completed') || lowerStatus.includes('paid')) {
                 textSpan.style.color = 'var(--neon-green)';
                 box.style.borderLeftColor = 'var(--neon-green)';
             } else if (lowerStatus.includes('progress')) {
@@ -185,12 +203,24 @@
                 let clientData = data[0]; 
 
                 // प्रोजेक्ट और पेमेंट अपडेट
-                document.getElementById('dynamicProjectName').innerText = clientData.project_name || "Unknown Project";
+                document.getElementById('dynamicProjectName').innerText = clientData.project_name || "Custom Growth Engine";
                 
                 let pStatus = clientData.payment_status || "Pending";
                 let statusElement = document.getElementById('dynamicPaymentStatus');
                 statusElement.innerText = pStatus;
-                statusElement.style.color = (pStatus.toLowerCase() === 'paid') ? 'var(--neon-green)' : '#ff4757';
+                
+                // Color formatting for payment status
+                if (pStatus.toLowerCase().includes('paid') || pStatus.toLowerCase().includes('approve')) {
+                    statusElement.style.color = 'var(--neon-green)';
+                    // Optionally hide the payment boxes if fully paid
+                    if(pStatus.toLowerCase() === 'paid') {
+                        document.getElementById('paymentMethodsBox').style.display = 'none';
+                    }
+                } else if (pStatus.toLowerCase().includes('pending')) {
+                    statusElement.style.color = '#ff4757';
+                } else {
+                    statusElement.style.color = 'var(--cyan-blue)';
+                }
 
                 let invLink = clientData.invoice_link;
                 if (invLink) {
