@@ -9,6 +9,9 @@
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="glime-logo.jpg">
     
+    <!-- Supabase for Database & Magic Link Authentication -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         /* CSS Variables */
@@ -33,7 +36,7 @@
         .nav-links { display: flex; gap: 50px; list-style: none; }
         .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 400; transition: 0.3s; font-size: 1.05rem; }
         .nav-links a:hover, .nav-links a.active { color: var(--cyan-blue); font-weight: 600; }
-        .btn-primary { background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; transition: 0.3s; box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); border: none; cursor: pointer; display: inline-block; text-align: center; }
+        .btn-primary { background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; transition: 0.3s; box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); border: none; cursor: pointer; display: inline-block; text-align: center; font-family: 'Poppins', sans-serif; }
         .btn-primary:hover { box-shadow: 0 0 25px rgba(0, 240, 255, 0.6); transform: translateY(-2px); }
 
         /* Page Header */
@@ -52,6 +55,17 @@
         
         footer { text-align: center; padding: 40px 20px; background: #05080c; color: var(--text-muted); font-size: 0.95rem; border-top: 1px solid rgba(255,255,255,0.05); width: 100%; }
         footer span { color: var(--cyan-blue); font-weight: 600; }
+
+        /* Floating WhatsApp Icon */
+        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index: 2000; display: flex; justify-content: center; align-items: center; width: 60px; height: 60px; text-decoration: none; animation: pulse 2s infinite; cursor: pointer; }
+        .whatsapp-float svg { width: 35px; height: 35px; fill: white; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
+
+        /* Modals & Popups */
+        .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); overflow: auto; }
+        .modal-content { background-color: var(--card-bg); margin: 10% auto; padding: 40px; border: 1px solid var(--neon-green); border-radius: 15px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 0 30px rgba(0, 255, 136, 0.2); text-align: left; }
+        .close-btn { color: var(--text-muted); position: absolute; top: 15px; right: 25px; font-size: 30px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .close-btn:hover { color: var(--neon-green); }
 
         .hamburger { display: none; cursor: pointer; font-size: 28px; color: var(--text-main); }
         
@@ -73,6 +87,9 @@
             .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; width: 100%; background: var(--card-bg); padding: 15px; text-align: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
             .nav-links.active { display: flex; }
             .hamburger { display: block; }
+
+            .whatsapp-float { bottom: 20px; right: 20px; width: 45px; height: 45px; }
+            .whatsapp-float svg { width: 24px; height: 24px; }
         }
 
         .fade-in { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
@@ -80,6 +97,11 @@
     </style>
 </head>
 <body>
+
+    <!-- Floating Chat Icon (ONLY button that links to WhatsApp) -->
+    <a href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20am%20interested%20in%20your%20services." target="_blank" class="whatsapp-float">
+        <svg viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/></svg>
+    </a>
 
     <nav>
         <div class="logo"><a href="index.html">G<span>↑</span>ime</a></div>
@@ -90,7 +112,7 @@
             <li><a href="index.html#about">About</a></li>
             <li><a href="contact.html" class="active">Contact</a></li>
         </ul>
-        <a href="contact.html" class="btn-primary" style="display: none;" id="navBtn">Start Your Project</a>
+        <button class="btn-primary" style="display: none;" id="navBtn" onclick="openGeneralInquiryModal()">Start Your Project</button>
         <div class="hamburger" onclick="toggleMenu()">☰</div>
     </nav>
 
@@ -103,11 +125,7 @@
     <!-- Contact Form Section -->
     <section class="section fade-in">
         <div class="contact-box">
-            <form action="https://api.web3forms.com/submit" method="POST">
-                
-                <!-- Web3Forms Access Key -->
-                <input type="hidden" name="access_key" value="9680bea5-d164-41df-b501-7bf5ad02aa42">
-                
+            <form id="mainContactForm">
                 <div class="form-group"><label>Your Full Name</label><input type="text" name="fullName" placeholder="Your full name" required></div>
                 <div class="form-group"><label>Business Name <span>*</span></label><input type="text" name="businessName" placeholder="Your business" required></div>
                 <div class="form-group"><label>Email Address <span>*</span></label><input type="email" name="email" placeholder="name@company.com" required></div>
@@ -119,16 +137,62 @@
                 
                 <div class="form-group"><label>Project Details <span>*</span></label><textarea name="message" rows="4" placeholder="Tell us about your project requirements..." required></textarea></div>
                 
-                <button type="submit" class="btn-primary" style="width: 100%; border-radius: 8px; font-size: 1.1rem; padding: 15px;">Submit Details</button>
+                <button type="button" onclick="processPageForm()" class="btn-primary" style="width: 100%; border-radius: 8px; font-size: 1.1rem; padding: 15px; border: none;" id="sendMagicLinkBtn">Send Verification Link</button>
             </form>
         </div>
     </section>
 
     <footer>
+        <p style="margin-bottom: 8px;">✉️ Connect@glime.online</p>
         <p>Designed & Developed by <span>Vishal Gouttam & Team</span> | <span>Glime </span> © 2026</p>
     </footer>
 
+    <!-- Order Modal with Payment Step -->
+    <div id="orderModal" class="modal">
+        
+        <!-- Step 1: Waiting / Success Message after Magic Link sent -->
+        <div class="modal-content" id="modalWaitStep" style="text-align: center;">
+            <span class="close-btn" onclick="closeModal('orderModal')">&times;</span>
+            <div style="font-size: 3rem; margin-bottom: 15px;">📩</div>
+            <h2 style="color: var(--cyan-blue); margin-bottom: 10px;">Check Your Email!</h2>
+            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.95rem;">We've sent a secure verification link to your email from <strong>Glime Web Agency</strong>. Click that link, and this page will automatically unlock your payment screen!</p>
+            <p style="color: var(--neon-green); font-size: 0.85rem;" id="sentEmailDisplay"></p>
+        </div>
+
+        <!-- Step 2: Payment (0% Commission Flow) -->
+        <div class="modal-content" id="modalPaymentStep" style="display: none;">
+            <span class="close-btn" onclick="closeModal('orderModal')">&times;</span>
+            <h2 style="color: var(--cyan-blue); margin-bottom: 10px;">Email Verified! Complete Payment 💳</h2>
+            <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">0% Commission Flow: Pay directly via secure gateway.</p>
+            
+            <!-- UPI QR (Shows for India) -->
+            <div id="payIndia" style="display:none; text-align:center; margin-bottom:20px;">
+                <div style="background: white; padding: 10px; border-radius: 10px; display: inline-block;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=connect@glime.online&pn=Glime" alt="UPI QR" style="width:150px; height:150px;">
+                </div>
+                <p style="margin-top: 10px; font-weight: bold; color: var(--neon-green);">Scan to Pay with UPI</p>
+            </div>
+            
+            <!-- PayPal Button (Shows for Global) -->
+            <div id="payGlobal" style="display:none; text-align:center; margin-bottom:20px;">
+                <a href="https://paypal.me/glime" target="_blank" class="btn-primary" style="background: #0070ba; color: white; border-radius: 30px; padding: 10px 30px; display: inline-block; box-shadow: none;">Pay with PayPal</a>
+            </div>
+
+            <div class="form-group">
+                <label>Enter UTR / Transaction ID <span>*</span></label>
+                <input type="text" id="orderUTR" placeholder="e.g. 123456789012">
+            </div>
+
+            <button onclick="processFinalOrder()" class="btn-primary" id="submitFinalOrderBtn" style="width: 100%; border-radius: 8px; margin-top: 10px; border: none;">Submit for Verification</button>
+        </div>
+    </div>
+
     <script>
+        // Supabase DB & Auth Configuration
+        var SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+        var SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+        var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         // Scroll Animation
         const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); }}); }, { threshold: 0.1 });
         document.querySelectorAll('.fade-in').forEach((el) => { observer.observe(el); });
@@ -136,13 +200,136 @@
         // Navbar Mobile Menu
         function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
         if(window.innerWidth > 768) { document.getElementById('navBtn').style.display = 'block'; }
-
-        // Mobile Menu Auto-Close Bug Fix
         document.querySelectorAll('.nav-links a').forEach(link => {
-            link.addEventListener('click', () => {
-                document.getElementById('navLinks').classList.remove('active');
-            });
+            link.addEventListener('click', () => { document.getElementById('navLinks').classList.remove('active'); });
         });
+
+        let currentOrderDetails = {};
+
+        function openGeneralInquiryModal() { 
+            alert("Please fill out the contact form below to verify your email and start your project.");
+        }
+
+        // FIXED: Only opens modal if magic link (access_token) is present in the URL hash
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hash = window.location.hash;
+            if (hash && hash.includes('access_token')) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    // User successfully verified via Magic Link! Open Payment Screen directly.
+                    document.getElementById('modalWaitStep').style.display = 'none';
+                    document.getElementById('modalPaymentStep').style.display = 'block';
+
+                    // Check timezone for payment method display
+                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    const isIndia = (tz === 'Asia/Calcutta' || tz === 'Asia/Kolkata');
+                    document.getElementById('payIndia').style.display = isIndia ? 'block' : 'none';
+                    document.getElementById('payGlobal').style.display = isIndia ? 'none' : 'block';
+
+                    document.getElementById('orderModal').style.display = 'block';
+                }
+            }
+        });
+
+        // Step 1: Send Verification Link via Supabase (Pointing to Live Link)
+        async function processPageForm() {
+            let name = document.querySelector('input[name="fullName"]').value.trim();
+            let business = document.querySelector('input[name="businessName"]').value.trim();
+            let email = document.querySelector('input[name="email"]').value.trim();
+            let phone = document.querySelector('input[name="phone"]').value.trim();
+            let details = document.querySelector('textarea[name="message"]').value.trim();
+
+            if (!name || !business || !email || !phone || !details) {
+                alert("⚠️ Please fill all required fields (*).");
+                return;
+            }
+
+            let phoneDigits = phone.replace(/\D/g, ''); 
+            if (phoneDigits.length < 10) {
+                alert("❌ Please enter a valid 10-digit Phone Number.");
+                return;
+            }
+
+            currentOrderDetails = { 
+                name: name,
+                business: business,
+                email: email,
+                package: 'Contact Form Inquiry: ' + details.substring(0, 30) + '...', 
+                type: 'custom' 
+            };
+
+            let btn = document.getElementById('sendMagicLinkBtn');
+            btn.innerText = "Sending Verification Link...";
+            btn.disabled = true;
+
+            try {
+                // Supabase Auth Dispatch with Real Live Redirect URL
+                const { data, error } = await supabase.auth.signInWithOtp({ 
+                    email: email,
+                    options: { 
+                        emailRedirectTo: 'https://glime.online/contact.html' 
+                    }
+                });
+
+                if (error) throw error;
+
+                document.getElementById('sentEmailDisplay').innerText = "Sent to: " + email;
+                document.getElementById('modalWaitStep').style.display = 'block';
+                document.getElementById('modalPaymentStep').style.display = 'none';
+                document.getElementById('orderModal').style.display = 'block';
+
+            } catch (err) {
+                alert("❌ Error: " + err.message);
+            } finally {
+                btn.innerText = "Send Verification Link";
+                btn.disabled = false;
+            }
+        }
+
+        // Step 2: Final UTR Submission to Database
+        async function processFinalOrder() {
+            let utr = document.getElementById('orderUTR').value.trim();
+            
+            if(utr.length < 12) { 
+                alert("❌ Invalid UTR: A valid UTR / Transaction ID must be at least 12 digits/characters long."); 
+                return; 
+            }
+
+            let btn = document.getElementById('submitFinalOrderBtn');
+            btn.innerText = "Submitting to Database...";
+            btn.disabled = true;
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                let userEmail = session ? session.user.email : currentOrderDetails.email;
+
+                const { data, error } = await supabase.from('client_data').insert([
+                    {
+                        email: userEmail,
+                        project_name: currentOrderDetails.package + " (" + currentOrderDetails.business + ")",
+                        payment_status: "Verification Pending (UTR: " + utr + ")"
+                    }
+                ]);
+
+                if (error) throw error;
+
+                alert("✅ Verified & Payment details successfully sent to our Admin Panel!\n\nOnce our team verifies your UTR, you will receive an automatic email with your Client Portal ID and Password.");
+                
+                closeModal('orderModal');
+                document.getElementById('orderUTR').value = '';
+                document.getElementById('mainContactForm').reset();
+
+            } catch (err) {
+                alert("❌ Database Error: " + err.message);
+            } finally {
+                btn.innerText = "Submit for Verification";
+                btn.disabled = false;
+            }
+        }
+
+        function openModal(modalId) { document.getElementById(modalId).style.display = "block"; }
+        function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
+        window.onclick = function(event) { if (event.target.classList.contains('modal')) { event.target.style.display = "none"; } }
     </script>
 </body>
 </html>
