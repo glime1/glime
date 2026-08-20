@@ -513,7 +513,7 @@
         </div>
     </div>
 
-   <script>
+    <script>
         // Supabase DB Configuration
         var SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
         var SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
@@ -662,6 +662,28 @@
         document.querySelectorAll('.nav-links a').forEach(link => {
             link.addEventListener('click', () => { document.getElementById('navLinks').classList.remove('active'); });
         });
+
+        // --- नया कोड: बाहर क्लिक करने या स्क्रॉल करने पर मेन्यू बंद करने के लिए ---
+        document.addEventListener('click', function(event) {
+            var navLinks = document.getElementById('navLinks');
+            var menuIcon = document.querySelector('.menu-icon'); // यह मानते हुए कि आपके ☰ बटन में 'menu-icon' क्लास है, अगर कोई और आईडी है तो उसे यहाँ बदल लें
+            
+            // अगर मेन्यू खुला है, और क्लिक मेन्यू या आइकन के बाहर हुआ है
+            if (navLinks.classList.contains('active') && !navLinks.contains(event.target) && (!menuIcon || !menuIcon.contains(event.target))) {
+                navLinks.classList.remove('active');
+            }
+        });
+
+        window.addEventListener('scroll', function() {
+            var navLinks = document.getElementById('navLinks');
+            if (navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+            }
+        });
+        // --------------------------------------------------------------------------
+
     </script>
+
+
 </body>
 </html>
