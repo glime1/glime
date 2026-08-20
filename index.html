@@ -682,6 +682,31 @@
         });
         // --------------------------------------------------------------------------
 
+        // --- नया और स्मार्ट कोड: बाहर क्लिक करने पर मेन्यू बंद करने के लिए ---
+        document.addEventListener('click', function(event) {
+            var navLinks = document.getElementById('navLinks');
+            if (!navLinks) return; // अगर मेन्यू नहीं है तो एरर मत दो
+            
+            // चेक करो कि क्लिक मेन्यू के अंदर हुआ है या नहीं
+            var isClickInsideNav = navLinks.contains(event.target);
+            
+            // चेक करो कि क्लिक उस बटन पर हुआ है क्या, जिससे मेन्यू खुलता है
+            var isClickOnToggleBtn = event.target.closest('[onclick*="toggleMenu"]');
+
+            // अगर मेन्यू खुला है, और क्लिक मेन्यू व बटन दोनों के बाहर हुआ है, तो बंद कर दो
+            if (navLinks.classList.contains('active') && !isClickInsideNav && !isClickOnToggleBtn) {
+                navLinks.classList.remove('active');
+            }
+        });
+
+        window.addEventListener('scroll', function() {
+            var navLinks = document.getElementById('navLinks');
+            if (navLinks && navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+            }
+        });
+        // --------------------------------------------------------------------------
+
     </script>
 
 
