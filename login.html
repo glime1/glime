@@ -1,117 +1,1673 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Portal Login | Glime Web Agency</title>
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/jpeg" href="glime-logo.jpg">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        :root { --bg-dark: #0a0f16; --card-bg: #111827; --neon-green: #00ff88; --cyan-blue: #00f0ff; --text-main: #ffffff; --text-muted: #9ca3af; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; height: 100vh; position: relative; }
-        
-        .login-box { background: var(--card-bg); padding: 40px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); width: 100%; max-width: 400px; text-align: center; z-index: 10; }
-        .login-box h2 { font-size: 2rem; margin-bottom: 10px; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .login-box p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px; }
-        
-        .form-group { margin-bottom: 20px; text-align: left; }
-        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
-        input { width: 100%; padding: 12px 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--cyan-blue); background: rgba(255,255,255,0.05); }
-        
-        .btn-primary { width: 100%; background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 1.05rem; cursor: pointer; border: none; margin-top: 10px; transition: 0.3s; }
-        .btn-primary:hover { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); transform: translateY(-2px); }
-        
-        #error-message { color: #ff4757; font-size: 0.85rem; margin-top: 15px; display: none; }
-        .back-link { display: block; margin-top: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; transition: 0.3s; }
-        .back-link:hover { color: var(--neon-green); }
+<title>Client Portal Login | Glime AI Automation</title>
 
-        /* Floating WhatsApp Icon */
-        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index: 2000; display: flex; justify-content: center; align-items: center; width: 60px; height: 60px; text-decoration: none; animation: pulse 2s infinite; cursor: pointer; }
-        .whatsapp-float svg { width: 35px; height: 35px; fill: white; }
-        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
-        
-        @media (max-width: 768px) {
-            .whatsapp-float { bottom: 20px; right: 20px; width: 45px; height: 45px; }
-            .whatsapp-float svg { width: 24px; height: 24px; }
-        }
-    </style>
+<meta name="description"
+      content="Secure Glime AI Automation client portal login.">
+
+<link rel="canonical"
+      href="https://glime.online/login.html">
+
+<link rel="icon"
+      type="image/jpeg"
+      href="glime-logo.jpg">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg-dark:#0a0f16;
+  --card-bg:#111827;
+  --neon-green:#00ff88;
+  --cyan-blue:#00f0ff;
+  --text-main:#fff;
+  --text-muted:#9ca3af;
+  --danger:#ff4757;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Poppins,sans-serif;
+}
+
+body{
+  background:var(--bg-dark);
+  color:var(--text-main);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  position:relative;
+  overflow-x:hidden;
+  padding:20px;
+}
+
+body:before{
+  content:"";
+  position:fixed;
+  width:500px;
+  height:500px;
+  background:rgba(0,240,255,.05);
+  border-radius:50%;
+  filter:blur(100px);
+  top:10%;
+  left:50%;
+  transform:translateX(-50%);
+  pointer-events:none;
+}
+
+.login-box{
+  background:var(--card-bg);
+  padding:40px;
+  border-radius:20px;
+  box-shadow:
+    0 15px 40px rgba(0,0,0,.4),
+    0 0 40px rgba(0,240,255,.03);
+  border:1px solid rgba(255,255,255,.05);
+  width:100%;
+  max-width:430px;
+  text-align:center;
+  z-index:10;
+}
+
+.login-box h2{
+  font-size:2rem;
+  margin-bottom:10px;
+  background:
+    linear-gradient(
+      90deg,
+      var(--neon-green),
+      var(--cyan-blue)
+    );
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.login-box>p{
+  color:var(--text-muted);
+  font-size:.9rem;
+  margin-bottom:30px;
+}
+
+.logo-mark{
+  width:72px;
+  height:72px;
+  margin:0 auto 18px;
+  display:block;
+}
+
+.form-group{
+  margin-bottom:20px;
+  text-align:left;
+}
+
+.form-group label{
+  display:block;
+  margin-bottom:8px;
+  color:var(--text-muted);
+  font-size:.85rem;
+  font-weight:600;
+}
+
+input{
+  width:100%;
+  padding:12px 15px;
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;
+  color:#fff;
+  font-size:1rem;
+  outline:none;
+  transition:.3s;
+}
+
+input::placeholder{
+  color:#6b7280;
+}
+
+input:focus{
+  border-color:var(--cyan-blue);
+  background:rgba(255,255,255,.05);
+  box-shadow:0 0 15px rgba(0,240,255,.08);
+}
+
+.btn-primary{
+  width:100%;
+  background:
+    linear-gradient(
+      90deg,
+      var(--neon-green),
+      var(--cyan-blue)
+    );
+  color:#000;
+  padding:12px;
+  border-radius:8px;
+  font-weight:700;
+  font-size:1.05rem;
+  cursor:pointer;
+  border:none;
+  margin-top:10px;
+  transition:.3s;
+}
+
+.btn-primary:hover{
+  box-shadow:0 0 15px rgba(0,240,255,.4);
+  transform:translateY(-2px);
+}
+
+.btn-primary:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+
+.secondary-link{
+  display:block;
+  margin-top:16px;
+  color:var(--cyan-blue);
+  text-decoration:none;
+  font-size:.88rem;
+  cursor:pointer;
+}
+
+.secondary-link:hover{
+  color:var(--neon-green);
+}
+
+.back-link{
+  display:block;
+  margin-top:20px;
+  color:var(--text-muted);
+  text-decoration:none;
+  font-size:.85rem;
+}
+
+.back-link:hover{
+  color:var(--neon-green);
+}
+
+#error-message{
+  color:var(--danger);
+  font-size:.85rem;
+  margin-top:15px;
+  display:none;
+  line-height:1.5;
+}
+
+#success-message{
+  color:var(--neon-green);
+  font-size:.85rem;
+  margin-top:15px;
+  display:none;
+  line-height:1.5;
+}
+
+.hidden{
+  display:none!important;
+}
+
+.whatsapp-float{
+  position:fixed;
+  bottom:30px;
+  right:30px;
+  background:#25d366;
+  color:#fff;
+  border-radius:50%;
+  box-shadow:2px 2px 10px rgba(0,0,0,.3);
+  z-index:2000;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:60px;
+  height:60px;
+  text-decoration:none;
+}
+
+.whatsapp-float svg{
+  width:35px;
+  height:35px;
+  fill:#fff;
+}
+
+@media(max-width:768px){
+
+  .login-box{
+    padding:30px 22px;
+  }
+
+  .login-box h2{
+    font-size:1.7rem;
+  }
+
+  .whatsapp-float{
+    bottom:20px;
+    right:20px;
+    width:55px;
+    height:55px;
+  }
+
+  .whatsapp-float svg{
+    width:30px;
+    height:30px;
+  }
+}
+</style>
 </head>
+
 <body>
 
-    <!-- Floating Chat Icon (ONLY button that links to WhatsApp) -->
-    <a href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20need%20help%20logging%20into%20my%20Client%20Portal." target="_blank" class="whatsapp-float">
-        <svg viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/></svg>
-    </a>
+<!-- WhatsApp -->
+<a
+  href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20need%20help%20with%20my%20Client%20Portal."
+  target="_blank"
+  rel="noopener noreferrer"
+  class="whatsapp-float"
+  aria-label="Contact Glime on WhatsApp"
+>
 
-    <div class="login-box">
-        <h2>Client Portal</h2>
-        <p>Log in to view your project status.</p>
+<svg viewBox="0 0 24 24">
+<path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/>
+</svg>
 
-        <form id="loginForm">
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" id="email" placeholder="client@company.com" required>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="password" placeholder="••••••••" required>
-            </div>
-            <button type="submit" class="btn-primary" id="loginBtn">Log In to Portal</button>
-            <p id="error-message">Invalid email or password.</p>
-        </form>
-        
-        <a href="index.html" class="back-link">← Back to Website</a>
-    </div>
+</a>
 
-    <script>
-        var SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
-        var SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-        var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        document.getElementById('loginForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            
-            var email = document.getElementById('email').value.trim();
-            var password = document.getElementById('password').value;
-            var errorMsg = document.getElementById('error-message');
-            var loginBtn = document.getElementById('loginBtn');
-            
-            loginBtn.textContent = 'Verifying...';
-            errorMsg.style.display = 'none';
+<div class="login-box">
 
-            try {
-                // Supabase में लॉगिन चेक करें
-                var { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password,
-                });
+<!-- Logo -->
+<svg
+  class="logo-mark"
+  viewBox="0 0 100 100"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
 
-                if (error) {
-                    errorMsg.textContent = error.message;
-                    errorMsg.style.display = 'block';
-                    loginBtn.textContent = 'Log In to Portal';
-                } else {
-                    // ★ मास्टर स्टेप: ईमेल को ब्राउज़र में सेव करना ★
-                    localStorage.setItem('glime_client_email', email);
-                    
-                    loginBtn.textContent = 'Success! Redirecting...';
-                    // डैशबोर्ड पर भेजना
-                    window.location.href = 'dashboard.html'; 
-                }
-            } catch (err) {
-                errorMsg.textContent = "Something went wrong. Please try again.";
-                errorMsg.style.display = 'block';
-                loginBtn.textContent = 'Log In to Portal';
+<path
+  d="M12 27L30 40L20 63L38 75"
+  stroke="url(#wing1)"
+  stroke-width="2"
+  opacity=".8"
+/>
+
+<path
+  d="M88 27L70 40L80 63L62 75"
+  stroke="url(#wing2)"
+  stroke-width="2"
+  opacity=".8"
+/>
+
+<circle cx="12" cy="27" r="3" fill="#EC4899"/>
+<circle cx="30" cy="40" r="3" fill="#A855F7"/>
+<circle cx="20" cy="63" r="3" fill="#00F0FF"/>
+<circle cx="38" cy="75" r="3" fill="#00FF88"/>
+<circle cx="88" cy="27" r="3" fill="#00F0FF"/>
+<circle cx="70" cy="40" r="3" fill="#3B82F6"/>
+<circle cx="80" cy="63" r="3" fill="#00F0FF"/>
+<circle cx="62" cy="75" r="3" fill="#00FF88"/>
+
+<path
+  d="M45 45C35 25 14 17 8 25C4 31 15 46 29 50C17 53 9 62 14 70C20 79 39 69 48 56"
+  fill="url(#wing1)"
+  opacity=".92"
+/>
+
+<path
+  d="M55 45C65 25 86 17 92 25C96 31 85 46 71 50C83 53 91 62 86 70C80 79 61 69 52 56"
+  fill="url(#wing2)"
+  opacity=".92"
+/>
+
+<path
+  d="M47 39L53 39L58 51L53 77L47 77L42 51L47 39Z"
+  fill="url(#centerGrad)"
+/>
+
+<circle cx="50" cy="14" r="3" fill="#fff"/>
+<circle cx="50" cy="88" r="3" fill="#00FF88"/>
+
+<defs>
+
+<linearGradient
+  id="wing1"
+  x1="8"
+  y1="20"
+  x2="45"
+  y2="85"
+  gradientUnits="userSpaceOnUse"
+>
+<stop stop-color="#ec4899"/>
+<stop offset=".5" stop-color="#3b82f6"/>
+<stop offset="1" stop-color="#06b6d4"/>
+</linearGradient>
+
+<linearGradient
+  id="wing2"
+  x1="18"
+  y1="35"
+  x2="52"
+  y2="72"
+  gradientUnits="userSpaceOnUse"
+>
+<stop stop-color="#a855f7"/>
+<stop offset="1" stop-color="#00f0ff"/>
+</linearGradient>
+
+<linearGradient
+  id="centerGrad"
+  x1="48"
+  y1="35"
+  x2="82"
+  y2="75"
+  gradientUnits="userSpaceOnUse"
+>
+<stop stop-color="#00f0ff"/>
+<stop offset=".5" stop-color="#a855f7"/>
+<stop offset="1" stop-color="#f97316"/>
+</linearGradient>
+
+</defs>
+
+</svg>
+
+
+<h2 id="title">Client Portal</h2>
+
+<p id="subtitle">
+Log in to view your project status.
+</p>
+
+
+<!-- =================================================
+     NORMAL LOGIN FORM
+================================================= -->
+
+<form id="loginForm">
+
+<div class="form-group">
+
+<label for="email">
+Email Address
+</label>
+
+<input
+  type="email"
+  id="email"
+  placeholder="client@company.com"
+  autocomplete="email"
+  required
+>
+
+</div>
+
+
+<div class="form-group">
+
+<label for="password">
+Password
+</label>
+
+<input
+  type="password"
+  id="password"
+  placeholder="••••••••"
+  autocomplete="current-password"
+  required
+>
+
+</div>
+
+
+<button
+  type="submit"
+  class="btn-primary"
+  id="loginBtn"
+>
+Log In to Portal
+</button>
+
+
+<a
+  href="#"
+  id="forgotPasswordLink"
+  class="secondary-link"
+>
+Forgot Password?
+</a>
+
+</form>
+
+
+<!-- =================================================
+     FORGOT PASSWORD FORM
+================================================= -->
+
+<form
+  id="forgotForm"
+  class="hidden"
+>
+
+<div class="form-group">
+
+<label for="forgotEmail">
+Email Address
+</label>
+
+<input
+  type="email"
+  id="forgotEmail"
+  placeholder="client@company.com"
+  autocomplete="email"
+  required
+>
+
+</div>
+
+
+<button
+  type="submit"
+  class="btn-primary"
+  id="forgotBtn"
+>
+Send Reset Link
+</button>
+
+
+<a
+  href="#"
+  id="backToLoginLink"
+  class="secondary-link"
+>
+← Back to Login
+</a>
+
+</form>
+
+
+<!-- =================================================
+     CREATE / RESET PASSWORD FORM
+================================================= -->
+
+<form
+  id="setupForm"
+  class="hidden"
+>
+
+<div class="form-group">
+
+<label for="newPassword">
+Create New Password
+</label>
+
+<input
+  type="password"
+  id="newPassword"
+  placeholder="Minimum 8 characters"
+  minlength="8"
+  autocomplete="new-password"
+  required
+>
+
+</div>
+
+
+<div class="form-group">
+
+<label for="confirmPassword">
+Confirm New Password
+</label>
+
+<input
+  type="password"
+  id="confirmPassword"
+  placeholder="Re-enter password"
+  minlength="8"
+  autocomplete="new-password"
+  required
+>
+
+</div>
+
+
+<button
+  type="submit"
+  class="btn-primary"
+  id="setupBtn"
+>
+Set Password & Continue
+</button>
+
+</form>
+
+
+<p id="error-message"></p>
+
+<p id="success-message"></p>
+
+
+<a
+  href="index.html"
+  class="back-link"
+>
+← Back to Website
+</a>
+
+</div>
+
+
+<script>
+
+/* ==================================================
+   SUPABASE CONFIG
+================================================== */
+
+const SUPABASE_URL =
+  'https://ufoulgbiqgjriwapuopc.supabase.co';
+
+const SUPABASE_KEY =
+  'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+
+
+/*
+ IMPORTANT:
+ This exact URL is already in your
+ Supabase Redirect URLs.
+*/
+
+const AUTH_REDIRECT_URL =
+  'https://glime.online/login.html';
+
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    }
+  );
+
+
+/* ==================================================
+   ELEMENTS
+================================================== */
+
+const loginForm =
+  document.getElementById('loginForm');
+
+const forgotForm =
+  document.getElementById('forgotForm');
+
+const setupForm =
+  document.getElementById('setupForm');
+
+const emailInput =
+  document.getElementById('email');
+
+const passwordInput =
+  document.getElementById('password');
+
+const forgotEmailInput =
+  document.getElementById('forgotEmail');
+
+const newPasswordInput =
+  document.getElementById('newPassword');
+
+const confirmPasswordInput =
+  document.getElementById('confirmPassword');
+
+const loginBtn =
+  document.getElementById('loginBtn');
+
+const forgotBtn =
+  document.getElementById('forgotBtn');
+
+const setupBtn =
+  document.getElementById('setupBtn');
+
+const forgotPasswordLink =
+  document.getElementById('forgotPasswordLink');
+
+const backToLoginLink =
+  document.getElementById('backToLoginLink');
+
+const errorMsg =
+  document.getElementById('error-message');
+
+const successMsg =
+  document.getElementById('success-message');
+
+const title =
+  document.getElementById('title');
+
+const subtitle =
+  document.getElementById('subtitle');
+
+
+/* ==================================================
+   MESSAGES
+================================================== */
+
+function showError(message){
+
+  errorMsg.textContent =
+    message;
+
+  errorMsg.style.display =
+    'block';
+
+  successMsg.textContent =
+    '';
+
+  successMsg.style.display =
+    'none';
+}
+
+
+function showSuccess(message){
+
+  successMsg.textContent =
+    message;
+
+  successMsg.style.display =
+    'block';
+
+  errorMsg.textContent =
+    '';
+
+  errorMsg.style.display =
+    'none';
+}
+
+
+function clearMessages(){
+
+  errorMsg.textContent =
+    '';
+
+  errorMsg.style.display =
+    'none';
+
+  successMsg.textContent =
+    '';
+
+  successMsg.style.display =
+    'none';
+}
+
+
+/* ==================================================
+   PAGE MODES
+================================================== */
+
+function showLoginMode(){
+
+  loginForm.classList.remove(
+    'hidden'
+  );
+
+  forgotForm.classList.add(
+    'hidden'
+  );
+
+  setupForm.classList.add(
+    'hidden'
+  );
+
+  title.textContent =
+    'Client Portal';
+
+  subtitle.textContent =
+    'Log in to view your project status.';
+
+  emailInput.disabled =
+    false;
+}
+
+
+function showForgotMode(){
+
+  loginForm.classList.add(
+    'hidden'
+  );
+
+  forgotForm.classList.remove(
+    'hidden'
+  );
+
+  setupForm.classList.add(
+    'hidden'
+  );
+
+  title.textContent =
+    'Reset Your Password';
+
+  subtitle.textContent =
+    'Enter your email and we will send you a reset link.';
+
+  forgotEmailInput.value =
+    emailInput.value || '';
+
+  clearMessages();
+}
+
+
+function showSetupMode(email = ''){
+
+  loginForm.classList.add(
+    'hidden'
+  );
+
+  forgotForm.classList.add(
+    'hidden'
+  );
+
+  setupForm.classList.remove(
+    'hidden'
+  );
+
+  title.textContent =
+    'Create New Password';
+
+  subtitle.textContent =
+    email
+      ? `Welcome ${email}. Create a new password to continue.`
+      : 'Create a new password to continue.';
+
+  if(email){
+
+    emailInput.value =
+      email;
+
+    emailInput.disabled =
+      true;
+  }
+
+  clearMessages();
+}
+
+
+/* ==================================================
+   URL HELPERS
+================================================== */
+
+function getQueryParams(){
+
+  return new URLSearchParams(
+    window.location.search
+  );
+}
+
+
+function getHashParams(){
+
+  const hash =
+    window.location.hash || '';
+
+  if(
+    hash.startsWith('#')
+  ){
+    return new URLSearchParams(
+      hash.substring(1)
+    );
+  }
+
+  return new URLSearchParams(
+    hash
+  );
+}
+
+
+function getParam(name){
+
+  const query =
+    getQueryParams();
+
+  const hash =
+    getHashParams();
+
+  return (
+    query.get(name) ||
+    hash.get(name) ||
+    ''
+  );
+}
+
+
+function getFlowType(){
+
+  const type =
+    getParam('type');
+
+  const mode =
+    getParam('mode');
+
+  if(type){
+    return type.toLowerCase();
+  }
+
+  if(mode){
+    return mode.toLowerCase();
+  }
+
+  return '';
+}
+
+
+/* ==================================================
+   CLEAN URL
+================================================== */
+
+function cleanAuthUrl(){
+
+  try{
+
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+
+  }catch(error){
+
+    console.warn(
+      'URL cleanup failed:',
+      error
+    );
+  }
+}
+
+
+/* ==================================================
+   FORGOT PASSWORD
+================================================== */
+
+forgotPasswordLink.addEventListener(
+  'click',
+  function(event){
+
+    event.preventDefault();
+
+    showForgotMode();
+  }
+);
+
+
+backToLoginLink.addEventListener(
+  'click',
+  function(event){
+
+    event.preventDefault();
+
+    showLoginMode();
+
+    clearMessages();
+  }
+);
+
+
+forgotForm.addEventListener(
+  'submit',
+  async function(event){
+
+    event.preventDefault();
+
+    clearMessages();
+
+    const email =
+      forgotEmailInput.value
+        .trim()
+        .toLowerCase();
+
+    if(!email){
+
+      showError(
+        'Please enter your email address.'
+      );
+
+      return;
+    }
+
+    forgotBtn.disabled =
+      true;
+
+    forgotBtn.textContent =
+      'Sending...';
+
+    try{
+
+      /*
+       * THIS IS THE IMPORTANT FIX.
+       *
+       * Supabase sends the reset email and
+       * returns the user to login.html.
+       */
+
+      const {
+        error
+      } =
+        await supabaseClient.auth
+          .resetPasswordForEmail(
+            email,
+            {
+              redirectTo:
+                AUTH_REDIRECT_URL
             }
-        });
-    </script>
+          );
+
+      if(error){
+        throw error;
+      }
+
+
+      showSuccess(
+        'Password reset email sent. Please check your Gmail Inbox and Spam folder.'
+      );
+
+      forgotBtn.textContent =
+        'Reset Email Sent';
+
+
+    }catch(error){
+
+      console.error(
+        'Password reset error:',
+        error
+      );
+
+      showError(
+        error?.message ||
+        'Could not send reset email. Please try again.'
+      );
+
+      forgotBtn.disabled =
+        false;
+
+      forgotBtn.textContent =
+        'Send Reset Link';
+    }
+  }
+);
+
+
+/* ==================================================
+   NORMAL LOGIN
+================================================== */
+
+loginForm.addEventListener(
+  'submit',
+  async function(event){
+
+    event.preventDefault();
+
+    clearMessages();
+
+    const email =
+      emailInput.value
+        .trim()
+        .toLowerCase();
+
+    const password =
+      passwordInput.value;
+
+    if(!email || !password){
+
+      showError(
+        'Please enter your email and password.'
+      );
+
+      return;
+    }
+
+    loginBtn.disabled =
+      true;
+
+    loginBtn.textContent =
+      'Verifying...';
+
+
+    try{
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient.auth
+          .signInWithPassword({
+            email,
+            password
+          });
+
+
+      if(error){
+        throw error;
+      }
+
+
+      if(!data?.user){
+
+        throw new Error(
+          'Login could not be completed.'
+        );
+      }
+
+
+      localStorage.setItem(
+        'glime_client_email',
+        data.user.email || email
+      );
+
+
+      showSuccess(
+        'Login successful. Opening your portal...'
+      );
+
+
+      loginBtn.textContent =
+        'Success! Opening Portal...';
+
+
+      setTimeout(
+        function(){
+
+          window.location.href =
+            'dashboard.html';
+
+        },
+        700
+      );
+
+
+    }catch(error){
+
+      console.error(
+        'Login error:',
+        error
+      );
+
+      const message =
+        String(
+          error?.message || ''
+        ).toLowerCase();
+
+
+      if(
+        message.includes(
+          'email not confirmed'
+        )
+      ){
+
+        showError(
+          'Please verify your email before logging in.'
+        );
+
+      }else if(
+        message.includes(
+          'too many requests'
+        )
+      ){
+
+        showError(
+          'Too many login attempts. Please try again later.'
+        );
+
+      }else{
+
+        showError(
+          'Invalid email or password.'
+        );
+      }
+
+
+      loginBtn.disabled =
+        false;
+
+      loginBtn.textContent =
+        'Log In to Portal';
+    }
+  }
+);
+
+
+/* ==================================================
+   CREATE / RESET PASSWORD
+================================================== */
+
+setupForm.addEventListener(
+  'submit',
+  async function(event){
+
+    event.preventDefault();
+
+    clearMessages();
+
+    const password =
+      newPasswordInput.value;
+
+    const confirmPassword =
+      confirmPasswordInput.value;
+
+
+    if(password.length < 8){
+
+      showError(
+        'Password must be at least 8 characters.'
+      );
+
+      return;
+    }
+
+
+    if(password !== confirmPassword){
+
+      showError(
+        'Passwords do not match.'
+      );
+
+      return;
+    }
+
+
+    setupBtn.disabled =
+      true;
+
+    setupBtn.textContent =
+      'Saving Password...';
+
+
+    try{
+
+      const {
+        data: sessionData,
+        error: sessionError
+      } =
+        await supabaseClient.auth
+          .getSession();
+
+
+      if(sessionError){
+        throw sessionError;
+      }
+
+
+      if(!sessionData?.session){
+
+        throw new Error(
+          'Your reset session is missing or expired.'
+        );
+      }
+
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient.auth
+          .updateUser({
+            password
+          });
+
+
+      if(error){
+        throw error;
+      }
+
+
+      if(!data?.user){
+
+        throw new Error(
+          'Password could not be updated.'
+        );
+      }
+
+
+      const email =
+        data.user.email ||
+        emailInput.value
+          .trim()
+          .toLowerCase();
+
+
+      if(email){
+
+        localStorage.setItem(
+          'glime_client_email',
+          email
+        );
+      }
+
+
+      showSuccess(
+        'Password updated successfully. Opening your Client Portal...'
+      );
+
+
+      setupBtn.textContent =
+        'Success! Opening Portal...';
+
+
+      cleanAuthUrl();
+
+
+      setTimeout(
+        function(){
+
+          window.location.href =
+            'dashboard.html';
+
+        },
+        1000
+      );
+
+
+    }catch(error){
+
+      console.error(
+        'Password update error:',
+        error
+      );
+
+
+      const message =
+        String(
+          error?.message || ''
+        ).toLowerCase();
+
+
+      if(
+        message.includes('expired') ||
+        message.includes('invalid') ||
+        message.includes('session') ||
+        message.includes('token') ||
+        message.includes('jwt')
+      ){
+
+        showError(
+          'This reset link has expired or is invalid. Please request a new reset email.'
+        );
+
+      }else{
+
+        showError(
+          error?.message ||
+          'Could not update password. Please request a new reset email.'
+        );
+      }
+
+
+      setupBtn.disabled =
+        false;
+
+      setupBtn.textContent =
+        'Set Password & Continue';
+    }
+  }
+);
+
+
+/* ==================================================
+   AUTH STATE CHANGE
+================================================== */
+
+supabaseClient.auth.onAuthStateChange(
+  function(event, session){
+
+    console.log(
+      'Supabase Auth Event:',
+      event
+    );
+
+
+    /*
+     * PASSWORD RECOVERY
+     *
+     * This is what we want after clicking
+     * Reset Password in Gmail.
+     */
+
+    if(
+      event ===
+        'PASSWORD_RECOVERY' &&
+      session?.user
+    ){
+
+      console.log(
+        'Recovery session detected.'
+      );
+
+
+      showSetupMode(
+        session.user.email || ''
+      );
+
+
+      return;
+    }
+
+
+    /*
+     * INVITATION
+     */
+
+    if(
+      event ===
+        'SIGNED_IN' &&
+      session?.user
+    ){
+
+      const flow =
+        getFlowType();
+
+
+      if(
+        flow === 'invite'
+      ){
+
+        showSetupMode(
+          session.user.email || ''
+        );
+
+        return;
+      }
+    }
+  }
+);
+
+
+/* ==================================================
+   INITIAL PAGE CHECK
+================================================== */
+
+async function initializePage(){
+
+  clearMessages();
+
+
+  const flow =
+    getFlowType();
+
+
+  console.log(
+    'Auth flow:',
+    flow
+  );
+
+
+  /*
+   * ------------------------------------------------
+   * RECOVERY / INVITE
+   * ------------------------------------------------
+   */
+
+  if(
+    flow === 'recovery' ||
+    flow === 'invite'
+  ){
+
+    /*
+     * Do NOT immediately show normal login.
+     */
+
+    showSetupMode();
+
+
+    /*
+     * Give Supabase time to process the
+     * authentication URL.
+     */
+
+    for(
+      let i = 0;
+      i < 20;
+      i++
+    ){
+
+      try{
+
+        const {
+          data
+        } =
+          await supabaseClient.auth
+            .getSession();
+
+
+        if(
+          data?.session?.user
+        ){
+
+          console.log(
+            'Authenticated recovery/invite session found.'
+          );
+
+
+          showSetupMode(
+            data.session.user.email || ''
+          );
+
+
+          return;
+        }
+
+      }catch(error){
+
+        console.warn(
+          'Session check:',
+          error
+        );
+      }
+
+
+      await new Promise(
+        function(resolve){
+
+          setTimeout(
+            resolve,
+            250
+          );
+
+        }
+      );
+    }
+
+
+    /*
+     * If a PKCE ?code=... exists,
+     * exchange it for a session.
+     */
+
+    const code =
+      getParam('code');
+
+
+    if(code){
+
+      try{
+
+        const {
+          data,
+          error
+        } =
+          await supabaseClient.auth
+            .exchangeCodeForSession(
+              code
+            );
+
+
+        if(error){
+          throw error;
+        }
+
+
+        if(
+          data?.session?.user
+        ){
+
+          showSetupMode(
+            data.session.user.email || ''
+          );
+
+          return;
+        }
+
+      }catch(error){
+
+        console.error(
+          'PKCE code exchange error:',
+          error
+        );
+      }
+    }
+
+
+    /*
+     * If we reached here,
+     * the link did not produce a session.
+     */
+
+    showSetupMode();
+
+
+    showError(
+      flow === 'recovery'
+        ? 'This password-reset link is expired or invalid. Please request a new reset email.'
+        : 'This invitation link is expired or invalid. Please ask the admin to send a new invitation.'
+    );
+
+
+    return;
+  }
+
+
+  /*
+   * ------------------------------------------------
+   * URL ERROR
+   * ------------------------------------------------
+   */
+
+  const urlError =
+    getParam('error');
+
+  const urlErrorCode =
+    getParam('error_code');
+
+  const urlErrorDescription =
+    getParam('error_description');
+
+
+  if(urlError){
+
+    showError(
+      decodeURIComponent(
+        urlErrorDescription ||
+        urlErrorCode ||
+        urlError
+      ).replace(
+        /\+/g,
+        ' '
+      )
+    );
+
+    showLoginMode();
+
+    return;
+  }
+
+
+  /*
+   * ------------------------------------------------
+   * NORMAL LOGIN
+   * ------------------------------------------------
+   */
+
+  try{
+
+    const {
+      data
+    } =
+      await supabaseClient.auth
+        .getSession();
+
+
+    if(
+      data?.session?.user
+    ){
+
+      localStorage.setItem(
+        'glime_client_email',
+        data.session.user.email || ''
+      );
+
+
+      window.location.href =
+        'dashboard.html';
+
+
+      return;
+    }
+
+  }catch(error){
+
+    console.error(
+      'Normal session check:',
+      error
+    );
+  }
+
+
+  showLoginMode();
+}
+
+
+/* ==================================================
+   INPUT EVENTS
+================================================== */
+
+emailInput.addEventListener(
+  'input',
+  clearMessages
+);
+
+passwordInput.addEventListener(
+  'input',
+  clearMessages
+);
+
+forgotEmailInput.addEventListener(
+  'input',
+  clearMessages
+);
+
+newPasswordInput.addEventListener(
+  'input',
+  clearMessages
+);
+
+confirmPasswordInput.addEventListener(
+  'input',
+  clearMessages
+);
+
+
+/* ==================================================
+   START
+================================================== */
+
+initializePage();
+
+</script>
+
 </body>
 </html>
