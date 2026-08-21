@@ -3,34 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glime | AI Automation & Custom Growth Systems</title>
-    <meta name="description" content="Glime is a top 1% global AI automation and custom web development ecosystem founded by Vishal Gouttam. We build unhackable growth systems, AI funnels, and high-performance apps from scratch.">
-    
+
+    <title>Glime AI Automation | AI Automation & Custom Growth Systems</title>
+
+    <meta name="description" content="Glime AI Automation builds custom AI automation, high-converting growth systems, custom software and automated workflows for modern businesses and creators.">
+
+    <link rel="canonical" href="https://glime.online/">
+
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="glime-logo.jpg">
-    
-    <!-- Google & AI Secret Schema Markup -->
+
+    <!-- Organization / SEO / AI-readable structured data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "name": "Glime",
+      "name": "Glime AI Automation",
       "url": "https://glime.online",
-      "description": "Glime specializes in AI automation, custom software, and digital growth ecosystems. Hand-coded from scratch using VS Code for extreme speed and security.",
+      "description": "AI automation, custom software and digital growth systems.",
       "founder": {
         "@type": "Person",
         "name": "Vishal Gouttam",
-        "jobTitle": "Founder & AI Tech Visionary"
-      }
+        "jobTitle": "Founder"
+      },
+      "email": "connect@glime.online",
+      "telephone": "+918504926242",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Sawai Madhopur",
+        "addressCountry": "IN"
+      },
+      "areaServed": [
+        "India",
+        "Worldwide"
+      ],
+      "identifier": {
+        "@type": "PropertyValue",
+        "propertyID": "Udyam Registration Number",
+        "value": "UDYAM-RJ-29-0042695"
+      },
+      "sameAs": [
+        "https://www.linkedin.com/in/vishal-gouttam-b7834742a",
+        "https://x.com/glime_web"
+      ]
     }
     </script>
-    
-    <!-- Supabase for Database Connection -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <style>
-        /* CSS Variables */
+
         :root {
             --bg-dark: #0a0f16;
             --card-bg: #111827;
@@ -40,675 +62,2945 @@
             --text-muted: #9ca3af;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
-        body { background-color: var(--bg-dark); color: var(--text-main); overflow-x: hidden; position: relative; }
-        .gradient-text { background: linear-gradient(90deg, #ff00ff, var(--cyan-blue), var(--neon-green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        /* Navbar */
-        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 8%; background: rgba(10, 15, 22, 0.95); backdrop-filter: blur(10px); position: fixed; width: 100%; top: 0; z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .logo-container { display: flex; align-items: center; gap: 12px; cursor: pointer; text-decoration: none; }
-        
-        /* Custom Typography styling matching your image */
-        .brand-text { font-size: 24px; font-weight: 700; letter-spacing: 3px; color: #ffffff; display: flex; align-items: center; font-family: 'Poppins', sans-serif; }
-        .brand-i { position: relative; display: inline-block; margin: 0 2px; }
-        .sparkle-star { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; fill: url(#star-grad); filter: drop-shadow(0 0 8px #a855f7); }
-        
-        .nav-links { display: flex; gap: 40px; list-style: none; align-items: center; }
-        .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 400; transition: 0.3s; font-size: 1.05rem; }
-        .nav-links a:hover { color: var(--cyan-blue); }
-        .btn-primary { background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; transition: 0.3s; box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); border: none; cursor: pointer; display: inline-block; text-align: center; font-family: 'Poppins', sans-serif; }
-        .btn-primary:hover { box-shadow: 0 0 25px rgba(0, 240, 255, 0.6); transform: translateY(-2px); }
-
-        /* Hero Section */
-        #hero { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 0 20px; background: radial-gradient(circle at center, rgba(168, 85, 247, 0.15) 0%, transparent 60%); position: relative; overflow: hidden; margin-top: 20px; }
-        h1 { font-size: 3.5rem; line-height: 1.2; margin-bottom: 15px; z-index: 2; }
-        .hero-sub { color: var(--text-muted); font-size: 1.15rem; max-width: 750px; margin-bottom: 15px; z-index: 2; line-height: 1.6; }
-        .hero-niche { color: var(--cyan-blue); font-size: 0.95rem; font-weight: 600; margin-bottom: 30px; z-index: 2; letter-spacing: 0.5px; }
-        .pain-point { font-weight: 600; color: var(--neon-green); font-size: 1.05rem; margin-bottom: 35px; z-index: 2; background: rgba(0, 255, 136, 0.1); padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(0, 255, 136, 0.3); }
-        
-        .floating-icon { position: absolute; opacity: 0.3; z-index: 1; animation: float 6s ease-in-out infinite; }
-        .icon-1 { top: 20%; left: 10%; animation-delay: 0s; width: 120px; border-radius: 50%; box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); opacity: 0.6; }
-        .icon-2 { top: 60%; left: 10%; animation-delay: 2s; color: var(--cyan-blue); font-size: 2.5rem; }
-        .icon-3 { top: 30%; right: 15%; animation-delay: 4s; color: var(--cyan-blue); font-size: 3rem; }
-        .icon-4 { top: 70%; right: 12%; animation-delay: 1s; color: var(--neon-green); font-size: 2.5rem; }
-        @keyframes float { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(10deg); } 100% { transform: translateY(0px) rotate(0deg); } }
-
-        /* Sections */
-        .section { padding: 100px 8%; }
-        .section-title { text-align: center; font-size: 2.8rem; margin-bottom: 60px; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; }
-
-        /* ROI Calculator CSS */
-        .calculator-card { background: var(--card-bg); padding: 40px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); text-align: center; max-width: 800px; margin: 0 auto 60px auto; box-shadow: 0 10px 30px rgba(0, 240, 255, 0.05); }
-        .calc-range { width: 100%; margin: 20px 0; accent-color: var(--cyan-blue); cursor: pointer; height: 8px; }
-        .calc-result { font-size: 2.5rem; font-weight: 700; color: var(--neon-green); margin: 20px 0; }
-        .calc-label { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 10px; display: block; }
-
-        /* Gamified Package Builder CSS */
-        .builder-box { background: rgba(255,255,255,0.02); border: 1px dashed var(--neon-green); border-radius: 15px; padding: 40px; margin-top: 50px; text-align: center; }
-        .feature-grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin: 30px 0; }
-        .feature-item { background: var(--card-bg); padding: 15px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.3s; user-select: none; font-weight: 600; display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 0.95rem; }
-        .feature-item.selected { border-color: var(--neon-green); color: var(--neon-green); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
-        .builder-total { font-size: 2rem; color: white; font-weight: 700; margin: 20px 0; }
-
-        /* Before & After Slider CSS */
-        .ba-container { position: relative; max-width: 800px; margin: 0 auto 60px auto; aspect-ratio: 16/9; border-radius: 15px; overflow: hidden; border: 2px solid var(--card-bg); box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
-        .ba-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        .ba-after { clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%); }
-        .ba-slider-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; z-index: 10; }
-        .ba-slider-line { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: var(--cyan-blue); z-index: 5; pointer-events: none; transform: translateX(-50%); box-shadow: 0 0 15px rgba(0,240,255,0.8); }
-        .ba-slider-btn { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; background: var(--card-bg); border: 3px solid var(--cyan-blue); border-radius: 50%; z-index: 5; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; pointer-events: none; }
-        .ba-labels { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; z-index: 4; font-weight: bold; }
-        .ba-labels span { background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; }
-
-        /* Packages Cards */
-        .card { background: var(--card-bg); padding: 40px 30px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; position: relative; height: 100%; display: flex; flex-direction: column; }
-        .card:hover { transform: translateY(-10px); border-color: var(--neon-green); box-shadow: 0 10px 30px rgba(0, 255, 136, 0.1); }
-        .card h3 { font-size: 1.5rem; margin-bottom: 15px; color: var(--cyan-blue); }
-        .price-container { margin-top: auto; margin-bottom: 10px; }
-        .price { font-size: 2rem; font-weight: 700; color: var(--text-main); display: inline-block; }
-        .bonus-tag { background: rgba(0, 255, 136, 0.1); color: var(--neon-green); padding: 8px 12px; border-radius: 5px; font-size: 0.9rem; font-weight: 600; margin-top: 10px; display: inline-block; border: 1px solid rgba(0, 255, 136, 0.3); }
-        .click-to-order { margin-top: 25px; color: var(--cyan-blue); font-weight: 600; font-size: 0.95rem; transition: 0.3s; text-decoration: none; display: inline-block; cursor: pointer; border: none; background: transparent; padding: 0; font-family: 'Poppins', sans-serif; }
-        .card:hover .click-to-order { color: var(--neon-green); }
-
-        /* Features List in Package Cards */
-        .package-features { list-style: none; margin-bottom: 20px; flex-grow: 1; padding: 0; }
-        .package-features li { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 10px; line-height: 1.6; display: flex; gap: 8px; align-items: flex-start; }
-        .package-features li span { color: var(--neon-green); font-weight: bold; }
-
-        /* Pricing Section Specifics */
-        .bestseller-badge { position: absolute; top: -15px; right: 20px; background: linear-gradient(90deg, #ff4757, #ff6b81); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4); z-index: 10; }
-        .card.bestseller { border-color: var(--neon-green); box-shadow: 0 0 20px rgba(0, 255, 136, 0.15); transform: scale(1.02); }
-        .card.bestseller:hover { transform: scale(1.05) translateY(-10px); }
-
-        /* About & Other Sections */
-        .about-container { display: flex; align-items: center; gap: 50px; background: rgba(255,255,255,0.02); padding: 50px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
-        .about-text { flex: 1; }
-        .about-text h3 { font-size: 2rem; color: var(--cyan-blue); margin-bottom: 20px; }
-        .about-text p { color: var(--text-muted); line-height: 1.8; margin-bottom: 20px; font-size: 1.05rem; }
-        .about-image { flex: 1; text-align: center; position: relative; }
-        .about-image img { width: 100%; max-width: 400px; border-radius: 15px; border: 2px solid var(--neon-green); box-shadow: 0 0 30px rgba(0, 255, 136, 0.2); transition: 0.3s; }
-        .about-image img:hover { transform: scale(1.03); box-shadow: 0 0 40px rgba(0, 240, 255, 0.4); border-color: var(--cyan-blue); }
-
-        /* FAQ Section Specifics */
-        .faq-container { max-width: 800px; margin: 0 auto; }
-        details { background: var(--card-bg); margin-bottom: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; transition: 0.3s; }
-        summary { padding: 20px; font-size: 1.1rem; font-weight: 600; cursor: pointer; color: white; list-style: none; display: flex; justify-content: space-between; align-items: center; }
-        summary::-webkit-details-marker { display: none; }
-        summary:after { content: '+'; color: var(--neon-green); font-size: 1.5rem; transition: 0.3s; }
-        details[open] summary:after { content: '-'; color: var(--cyan-blue); }
-        details[open] { border-color: var(--neon-green); }
-        .faq-content { padding: 0 20px 20px 20px; color: var(--text-muted); line-height: 1.6; }
-
-        /* Forms */
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-        .form-group label span { color: #ff4757; }
-        input, textarea { width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 1rem; }
-        input:focus, textarea:focus { outline: none; border-color: var(--cyan-blue); background: rgba(255,255,255,0.08); }
-        
-        /* Floating WhatsApp Icon */
-        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index: 2000; display: flex; justify-content: center; align-items: center; width: 60px; height: 60px; text-decoration: none; animation: pulse 2s infinite; cursor: pointer; }
-        .whatsapp-float svg { width: 35px; height: 35px; fill: white; }
-        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
-
-        /* Modals & Popups */
-        .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); overflow: auto; }
-        .modal-content { background-color: var(--card-bg); margin: 10% auto; padding: 40px; border: 1px solid var(--neon-green); border-radius: 15px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 0 30px rgba(0, 255, 136, 0.2); text-align: left; }
-        .close-btn { color: var(--text-muted); position: absolute; top: 15px; right: 25px; font-size: 30px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .close-btn:hover { color: var(--neon-green); }
-
-        .hamburger { display: none; cursor: pointer; font-size: 28px; color: var(--text-main); }
-        
-        /* 📱 MOBILE RESPONSIVE CSS 📱 */
-        @media (max-width: 768px) {
-            #hero { height: auto; padding-top: 100px; padding-bottom: 30px; }
-            h1 { font-size: 1.8rem; margin-bottom: 10px; }
-            .hero-sub { font-size: 0.85rem; line-height: 1.5; margin-bottom: 10px; }
-            .hero-niche { font-size: 0.8rem; margin-bottom: 15px; }
-            .pain-point { font-size: 0.85rem; padding: 8px 15px; margin-bottom: 20px; }
-            
-            .section { padding: 30px 5%; }
-            .section-title { font-size: 1.5rem; margin-bottom: 20px; }
-            
-            .grid-3 { gap: 15px; }
-            .card { padding: 20px 15px; }
-            .card h3 { font-size: 1.25rem; margin-bottom: 10px; }
-            .package-features { margin-bottom: 10px; }
-            .package-features li { font-size: 0.85rem; margin-bottom: 5px; }
-            .price { font-size: 1.5rem; }
-            .bonus-tag { font-size: 0.8rem; padding: 5px 10px; margin-top: 5px; }
-            
-            .calculator-card { padding: 20px 15px; margin-bottom: 20px; }
-            .calc-result { font-size: 1.4rem; margin: 10px 0; }
-            #trafficValue { font-size: 1.1rem !important; margin-bottom: 10px; }
-
-            .builder-box { padding: 20px 15px; margin-top: 20px; }
-            .builder-box h3 { font-size: 1.3rem !important; margin-bottom: 10px; }
-            .feature-grid { margin: 15px 0; gap: 6px; } 
-            .feature-item { font-size: 0.7rem; padding: 6px 10px; border-radius: 15px; } 
-            .builder-total { font-size: 1.3rem; margin: 10px 0; }
-
-            .about-container { flex-direction: column; text-align: center; padding: 20px 15px; gap: 15px; }
-            .about-text h3 { font-size: 1.4rem; margin-bottom: 10px; }
-            .about-text p { font-size: 0.9rem; line-height: 1.5; margin-bottom: 10px; }
-
-            summary { padding: 12px; font-size: 0.95rem; }
-            .faq-content { padding: 0 12px 12px 12px; font-size: 0.85rem; }
-            .form-group { margin-bottom: 15px; }
-            .form-group label { font-size: 0.8rem; margin-bottom: 5px; }
-            input, textarea { padding: 10px; font-size: 0.9rem; }
-
-            nav { top: 0; padding: 12px 5%; }
-            .brand-text { font-size: 20px; }
-            .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; width: 100%; background: var(--card-bg); padding: 20px; text-align: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-            .nav-links.active { display: flex; }
-            .nav-links a { font-size: 1rem; }
-            .hamburger { display: block; font-size: 26px; }
-            .floating-icon { display: none; }
-            
-            .whatsapp-float { bottom: 20px; right: 20px; width: 45px; height: 45px; font-size: 24px; }
-            .whatsapp-float svg { width: 24px; height: 24px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
         }
 
-        .fade-in { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
-        .fade-in.visible { opacity: 1; transform: translateY(0); }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .gradient-text {
+            background: linear-gradient(
+                90deg,
+                #ff00ff,
+                var(--cyan-blue),
+                var(--neon-green)
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* =========================================================
+           NAVBAR
+        ========================================================== */
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 8%;
+            background: rgba(10, 15, 22, 0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .brand-text {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .brand-i {
+            position: relative;
+            display: inline-block;
+            margin: 0 2px;
+        }
+
+        .sparkle-star {
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 16px;
+            fill: url(#star-grad);
+            filter: drop-shadow(0 0 8px #a855f7);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 400;
+            transition: 0.3s;
+            font-size: 1.05rem;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan-blue);
+        }
+
+        .client-login-link {
+            background: var(--neon-green);
+            color: #000 !important;
+            padding: 8px 18px;
+            text-decoration: none;
+            font-weight: bold !important;
+            border-radius: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(
+                90deg,
+                var(--neon-green),
+                var(--cyan-blue)
+            );
+            color: #000;
+            padding: 12px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .hamburger {
+            display: none;
+            cursor: pointer;
+            font-size: 28px;
+            color: var(--text-main);
+            background: none;
+            border: none;
+        }
+
+        /* =========================================================
+           HERO
+        ========================================================== */
+
+        #hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 20px;
+            background:
+                radial-gradient(
+                    circle at center,
+                    rgba(168, 85, 247, 0.15) 0%,
+                    transparent 60%
+                );
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            line-height: 1.2;
+            margin-bottom: 15px;
+        }
+
+        .hero-sub {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 750px;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .hero-niche {
+            color: var(--cyan-blue);
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            letter-spacing: 0.5px;
+        }
+
+        .pain-point {
+            font-weight: 600;
+            color: var(--neon-green);
+            font-size: 1.05rem;
+            margin-bottom: 35px;
+            background: rgba(0, 255, 136, 0.1);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .floating-icon {
+            position: absolute;
+            opacity: 0.3;
+            z-index: 1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .icon-1 {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+            width: 120px;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+            opacity: 0.6;
+        }
+
+        .icon-2 {
+            top: 60%;
+            left: 10%;
+            animation-delay: 2s;
+            color: var(--cyan-blue);
+            font-size: 2.5rem;
+        }
+
+        .icon-3 {
+            top: 30%;
+            right: 15%;
+            animation-delay: 4s;
+            color: var(--cyan-blue);
+            font-size: 3rem;
+        }
+
+        .icon-4 {
+            top: 70%;
+            right: 12%;
+            animation-delay: 1s;
+            color: var(--neon-green);
+            font-size: 2.5rem;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        /* =========================================================
+           COMMON SECTIONS
+        ========================================================== */
+
+        .section {
+            padding: 80px 8%;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(300px, 1fr)
+            );
+            gap: 40px;
+        }
+
+        /* =========================================================
+           ROI CALCULATOR
+        ========================================================== */
+
+        .calculator-card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+        }
+
+        .calc-label {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .calc-range {
+            width: 100%;
+            margin: 25px 0;
+            accent-color: var(--cyan-blue);
+            cursor: pointer;
+        }
+
+        .calc-result {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--neon-green);
+            margin: 25px 0;
+        }
+
+        /* =========================================================
+           BEFORE / AFTER
+        ========================================================== */
+
+        .ba-container {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto 60px auto;
+            aspect-ratio: 16/9;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid var(--card-bg);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+
+        .ba-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ba-after {
+            clip-path: polygon(
+                0 0,
+                50% 0,
+                50% 100%,
+                0 100%
+            );
+        }
+
+        .ba-slider-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: ew-resize;
+            z-index: 10;
+        }
+
+        .ba-slider-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: var(--cyan-blue);
+            z-index: 5;
+            pointer-events: none;
+            transform: translateX(-50%);
+            box-shadow: 0 0 15px rgba(0,240,255,0.8);
+        }
+
+        .ba-slider-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: var(--card-bg);
+            border: 3px solid var(--cyan-blue);
+            border-radius: 50%;
+            z-index: 5;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .ba-labels {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 4;
+            font-weight: bold;
+        }
+
+        .ba-labels span {
+            background: rgba(0,0,0,0.7);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* =========================================================
+           PORTFOLIO CARDS
+        ========================================================== */
+
+        .portfolio-card {
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.3s;
+            background: var(--card-bg);
+        }
+
+        .portfolio-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--cyan-blue);
+            box-shadow: 0 10px 30px rgba(0, 240, 255, 0.15);
+        }
+
+        .slider-wrapper {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            border-bottom: 2px solid var(--neon-green);
+            cursor: pointer;
+        }
+
+        .slider-track {
+            display: flex;
+            width: 300%;
+            height: 100%;
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .slider-track img {
+            width: 33.333%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .portfolio-info {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .portfolio-info h4 {
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .portfolio-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* =========================================================
+           ANALYTICS BOX
+        ========================================================== */
+
+        .analytics-box {
+            background: rgba(0, 240, 255, 0.05);
+            border: 1px solid var(--cyan-blue);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            max-width: 800px;
+            margin: 80px auto 0 auto;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.1);
+        }
+
+        .analytics-box h3 {
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .analytics-box p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .analytics-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        /* =========================================================
+           PACKAGE CARDS
+        ========================================================== */
+
+        .card {
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.3s;
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: var(--neon-green);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.1);
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--cyan-blue);
+        }
+
+        .bestseller {
+            border-color: rgba(0,255,136,0.25);
+        }
+
+        .bestseller-badge {
+            display: inline-block;
+            color: var(--neon-green);
+            background: rgba(0,255,136,0.1);
+            border: 1px solid rgba(0,255,136,0.25);
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-bottom: 15px;
+        }
+
+        .price-container {
+            margin-top: auto;
+            margin-bottom: 10px;
+        }
+
+        .price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: inline-block;
+        }
+
+        .bonus-tag {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--neon-green);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 10px;
+            display: inline-block;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .click-to-order {
+            margin-top: 25px;
+            color: var(--cyan-blue);
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            text-align: left;
+        }
+
+        .card:hover .click-to-order {
+            color: var(--neon-green);
+        }
+
+        .package-features {
+            list-style: none;
+            margin-bottom: 20px;
+            flex-grow: 1;
+            padding: 0;
+        }
+
+        .package-features li {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            line-height: 1.6;
+            display: flex;
+            gap: 8px;
+        }
+
+        .package-features li span {
+            color: var(--neon-green);
+            font-weight: bold;
+        }
+
+        /* =========================================================
+           CUSTOM BUILDER
+        ========================================================== */
+
+        .builder-box {
+            background: rgba(255,255,255,0.02);
+            border: 1px dashed var(--neon-green);
+            border-radius: 15px;
+            padding: 40px;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .feature-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .feature-item {
+            background: var(--card-bg);
+            padding: 12px 18px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: 0.3s;
+            user-select: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .feature-item:hover,
+        .feature-item.selected {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(0,255,136,0.15);
+        }
+
+        .builder-total {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* =========================================================
+           GROWTH ADD-ONS
+        ========================================================== */
+
+        .addon-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.3s;
+        }
+
+        .addon-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--cyan-blue);
+            box-shadow: 0 10px 30px rgba(0,240,255,0.1);
+        }
+
+        .addon-icon {
+            font-size: 2.3rem;
+            margin-bottom: 15px;
+        }
+
+        .addon-card h3 {
+            color: var(--cyan-blue);
+            margin-bottom: 10px;
+        }
+
+        .addon-card p {
+            color: var(--text-muted);
+            line-height: 1.7;
+            font-size: 0.9rem;
+        }
+
+        .addon-price {
+            display: inline-block;
+            margin-top: 15px;
+            color: var(--neon-green);
+            font-weight: 700;
+        }
+
+        /* =========================================================
+           ABOUT
+        ========================================================== */
+
+        .about-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 50px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .about-text {
+            flex: 1;
+        }
+
+        .about-text h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .about-text p {
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+
+        .about-image {
+            width: 300px;
+            flex-shrink: 0;
+        }
+
+        .about-image img {
+            width: 100%;
+            border-radius: 15px;
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
+            transition: 0.3s;
+        }
+
+        .about-image img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.4);
+            border-color: var(--cyan-blue);
+        }
+
+        /* =========================================================
+           FAQ
+        ========================================================== */
+
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        details {
+            background: var(--card-bg);
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        summary {
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary:after {
+            content: '+';
+            color: var(--neon-green);
+            font-size: 1.5rem;
+            transition: 0.3s;
+        }
+
+        details[open] summary:after {
+            content: '-';
+            color: var(--cyan-blue);
+        }
+
+        details[open] {
+            border-color: var(--neon-green);
+        }
+
+        .faq-content {
+            padding: 0 20px 20px 20px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* =========================================================
+           ANIMATION
+        ========================================================== */
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* =========================================================
+           WHATSAPP
+        ========================================================== */
+
+        .whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #25d366;
+            color: #FFF;
+            border-radius: 50px;
+            text-align: center;
+            font-size: 30px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px;
+            height: 60px;
+            text-decoration: none;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+        }
+
+        .whatsapp-float svg {
+            width: 35px;
+            height: 35px;
+            fill: white;
+        }
+
+        @keyframes pulse {
+
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+            }
+
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 15px rgba(37, 211, 102, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+            }
+
+        }
+
+        /* =========================================================
+           FOOTER
+        ========================================================== */
+
+        footer {
+            text-align: center;
+            padding: 50px 20px 30px;
+            background: #05080c;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 50px;
+        }
+
+        footer span {
+            color: var(--cyan-blue);
+            font-weight: 600;
+        }
+
+        .footer-social {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 25px 0;
+        }
+
+        .footer-social a {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--cyan-blue);
+            border: 1px solid rgba(0,240,255,0.2);
+            background: rgba(0,240,255,0.05);
+            font-weight: 700;
+        }
+
+        /* =========================================================
+           MOBILE
+        ========================================================== */
+
+        @media (max-width: 768px) {
+
+            nav {
+                padding: 12px 5%;
+            }
+
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                width: 100%;
+                background: var(--card-bg);
+                padding: 20px;
+                gap: 15px;
+                text-align: center;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            #hero {
+                height: auto;
+                min-height: 100vh;
+                padding-top: 100px;
+                padding-bottom: 30px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+                margin-bottom: 10px;
+            }
+
+            .hero-sub {
+                font-size: 0.85rem;
+                line-height: 1.5;
+                margin-bottom: 10px;
+            }
+
+            .hero-niche {
+                font-size: 0.8rem;
+                margin-bottom: 20px;
+            }
+
+            .pain-point {
+                font-size: 0.85rem;
+                margin-bottom: 25px;
+            }
+
+            .section {
+                padding: 40px 5%;
+            }
+
+            .section-title {
+                font-size: 1.6rem;
+                margin-bottom: 30px;
+            }
+
+            .grid-3 {
+                gap: 20px;
+            }
+
+            .ba-container {
+                margin-bottom: 30px;
+            }
+
+            .analytics-box {
+                padding: 25px 15px;
+                margin-top: 40px;
+            }
+
+            .calculator-card {
+                padding: 25px 15px;
+            }
+
+            .calc-result {
+                font-size: 1.5rem;
+            }
+
+            .about-container {
+                flex-direction: column;
+                text-align: center;
+                padding: 25px 18px;
+            }
+
+            .about-image {
+                width: 230px;
+            }
+
+            .builder-box {
+                padding: 25px 15px;
+            }
+
+            .feature-item {
+                font-size: 0.72rem;
+                padding: 8px 10px;
+            }
+
+            .builder-total {
+                font-size: 1.5rem;
+            }
+
+            .whatsapp-float {
+                width: 45px;
+                height: 45px;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .whatsapp-float svg {
+                width: 25px;
+                height: 25px;
+            }
+
+            .floating-icon.icon-1 {
+                width: 80px;
+                left: 5%;
+            }
+
+            .floating-icon.icon-2 {
+                left: 5%;
+                font-size: 1.8rem;
+            }
+
+            .floating-icon.icon-3 {
+                right: 5%;
+                font-size: 2rem;
+            }
+
+            .floating-icon.icon-4 {
+                right: 5%;
+                font-size: 1.8rem;
+            }
+
+        }
+
     </style>
 </head>
+
 <body>
 
-    <!-- Floating Chat Icon (ONLY button that links to WhatsApp) -->
-    <a href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20am%20interested%20in%20your%20services." target="_blank" class="whatsapp-float">
-        <svg viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/></svg>
+    <!-- =========================================================
+         WHATSAPP BUTTON
+    ========================================================== -->
+
+    <a
+        href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20am%20interested%20in%20your%20AI%20automation%20services."
+        target="_blank"
+        rel="noopener noreferrer"
+        class="whatsapp-float"
+        aria-label="Chat with Glime on WhatsApp"
+    >
+        <svg viewBox="0 0 24 24">
+            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/>
+        </svg>
     </a>
 
-    <!-- Navbar with Winged-G Logo and Custom Star Typography -->
+    <!-- =========================================================
+         NAVIGATION
+    ========================================================== -->
+
     <nav>
+
         <a href="index.html" class="logo-container">
-            <!-- Winged G Icon SVG (inspired by your reference image) -->
-            <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 10px rgba(0,240,255,0.4));">
-                <!-- Sweeping Wings on Left -->
-                <path d="M42 20C30 20 15 30 8 45C15 48 25 50 35 48C25 52 15 58 10 68C20 68 35 62 45 52C48 65 42 78 30 85C45 85 60 70 65 52C65 40 65 30 42 20Z" fill="url(#wing-grad-1)"/>
-                <path d="M48 35C38 35 25 42 18 52C25 55 35 56 42 54C35 58 28 64 25 72C35 70 48 60 52 48C52 42 51 38 48 35Z" fill="url(#wing-grad-2)"/>
-                <!-- Bold Letter G on Right with Gradient -->
-                <path d="M78 35H58C52.4772 35 48 39.4772 48 45V55C48 60.5228 52.4772 65 58 65H72V53H62" stroke="url(#g-grad)" stroke-width="8" stroke-linecap="round"/>
-                <path d="M64 53H82V75" stroke="url(#g-grad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <!-- Connected butterfly / automation inspired Glime mark -->
+            <svg
+                width="52"
+                height="52"
+                viewBox="0 0 100 100"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-label="Glime connected automation logo"
+            >
+
+                <path
+                    d="M12 27L30 40L20 63L38 75"
+                    stroke="url(#wing-grad-1)"
+                    stroke-width="2"
+                    opacity=".8"
+                />
+
+                <path
+                    d="M88 27L70 40L80 63L62 75"
+                    stroke="url(#wing-grad-2)"
+                    stroke-width="2"
+                    opacity=".8"
+                />
+
+                <circle cx="12" cy="27" r="3" fill="#EC4899"/>
+                <circle cx="30" cy="40" r="3" fill="#A855F7"/>
+                <circle cx="20" cy="63" r="3" fill="#00F0FF"/>
+                <circle cx="38" cy="75" r="3" fill="#00FF88"/>
+
+                <circle cx="88" cy="27" r="3" fill="#00F0FF"/>
+                <circle cx="70" cy="40" r="3" fill="#3B82F6"/>
+                <circle cx="80" cy="63" r="3" fill="#00F0FF"/>
+                <circle cx="62" cy="75" r="3" fill="#00FF88"/>
+
+                <path
+                    d="M45 45C35 25 14 17 8 25C4 31 15 46 29 50C17 53 9 62 14 70C20 79 39 69 48 56"
+                    fill="url(#wing-grad-1)"
+                    opacity=".92"
+                />
+
+                <path
+                    d="M55 45C65 25 86 17 92 25C96 31 85 46 71 50C83 53 91 62 86 70C80 79 61 69 52 56"
+                    fill="url(#wing-grad-2)"
+                    opacity=".92"
+                />
+
+                <path
+                    d="M47 39L53 39L58 51L53 77L47 77L42 51L47 39Z"
+                    fill="url(#g-grad)"
+                />
+
+                <circle cx="50" cy="14" r="3" fill="#FFFFFF"/>
+                <circle cx="50" cy="88" r="3" fill="#00FF88"/>
+
+                <path
+                    d="M50 17V35M50 77V85"
+                    stroke="#FFFFFF"
+                    stroke-width="1.5"
+                    opacity=".7"
+                />
+
                 <defs>
-                    <linearGradient id="wing-grad-1" x1="8" y1="20" x2="45" y2="85" gradientUnits="userSpaceOnUse">
+
+                    <linearGradient
+                        id="wing-grad-1"
+                        x1="8"
+                        y1="20"
+                        x2="45"
+                        y2="85"
+                        gradientUnits="userSpaceOnUse"
+                    >
                         <stop stop-color="#ec4899"/>
                         <stop offset="0.5" stop-color="#3b82f6"/>
                         <stop offset="1" stop-color="#06b6d4"/>
                     </linearGradient>
-                    <linearGradient id="wing-grad-2" x1="18" y1="35" x2="52" y2="72" gradientUnits="userSpaceOnUse">
+
+                    <linearGradient
+                        id="wing-grad-2"
+                        x1="18"
+                        y1="35"
+                        x2="52"
+                        y2="72"
+                        gradientUnits="userSpaceOnUse"
+                    >
                         <stop stop-color="#a855f7"/>
                         <stop offset="1" stop-color="#00f0ff"/>
                     </linearGradient>
-                    <linearGradient id="g-grad" x1="48" y1="35" x2="82" y2="75" gradientUnits="userSpaceOnUse">
+
+                    <linearGradient
+                        id="g-grad"
+                        x1="48"
+                        y1="35"
+                        x2="82"
+                        y2="75"
+                        gradientUnits="userSpaceOnUse"
+                    >
                         <stop stop-color="#00f0ff"/>
                         <stop offset="0.5" stop-color="#a855f7"/>
                         <stop offset="1" stop-color="#f97316"/>
                     </linearGradient>
-                    <linearGradient id="star-grad" x1="0" y1="0" x2="16" y2="16" gradientUnits="userSpaceOnUse">
+
+                    <linearGradient
+                        id="star-grad"
+                        x1="0"
+                        y1="0"
+                        x2="16"
+                        y2="16"
+                        gradientUnits="userSpaceOnUse"
+                    >
                         <stop stop-color="#c084fc"/>
                         <stop offset="1" stop-color="#38bdf8"/>
                     </linearGradient>
+
                 </defs>
+
             </svg>
-            
-            <!-- Custom Typography matching your reference image -->
-            <div style="display: flex; flex-direction: column;">
+
+            <div style="display:flex;flex-direction:column;">
+
                 <div class="brand-text">
-                    GL<span class="brand-i">I<svg class="sparkle-star" viewBox="0 0 24 24"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg></span>ME
+                    GL
+                    <span class="brand-i">
+                        I
+                        <svg
+                            class="sparkle-star"
+                            viewBox="0 0 24 24"
+                        >
+                            <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
+                        </svg>
+                    </span>
+                    ME
                 </div>
-                <span style="font-size: 7.5px; font-weight: 600; letter-spacing: 3px; color: var(--cyan-blue); text-transform: uppercase; margin-top: -2px;">AI Automation</span>
+
+                <span style="
+                    font-size:7.5px;
+                    font-weight:600;
+                    letter-spacing:3px;
+                    color:var(--cyan-blue);
+                    text-transform:uppercase;
+                    margin-top:-2px;
+                ">
+                    AI Automation
+                </span>
+
             </div>
+
         </a>
-        
+
         <ul class="nav-links" id="navLinks">
-            <li><a href="login.html" style="background: var(--neon-green); color: #000; padding: 8px 18px; text-decoration: none; font-weight: bold; border-radius: 5px;">Client Login</a></li>
-            <li><a href="portfolio.html">Our Work</a></li>
-            <li><a href="#services">Growth Engines</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#faq">FAQ</a></li>
-            <li><a href="contact.html">Contact</a></li>
+
+            <li>
+                <a
+                    href="login.html"
+                    class="client-login-link"
+                >
+                    Client Login
+                </a>
+            </li>
+
+            <li>
+                <a href="portfolio.html">
+                    Our Work
+                </a>
+            </li>
+
+            <li>
+                <a href="#services">
+                    Growth Engines
+                </a>
+            </li>
+
+            <li>
+                <a href="#about">
+                    About
+                </a>
+            </li>
+
+            <li>
+                <a href="#faq">
+                    FAQ
+                </a>
+            </li>
+
+            <li>
+                <a href="contact.html">
+                    Contact
+                </a>
+            </li>
 
         </ul>
-        <button class="btn-primary" style="display: none;" id="navBtn" onclick="window.location.href='contact.html'">Start Your Project</button>
-        <div class="hamburger" onclick="toggleMenu()">☰</div>
+
+        <button
+            class="hamburger"
+            onclick="toggleMenu()"
+            aria-label="Open navigation"
+        >
+            ☰
+        </button>
+
     </nav>
 
+    <!-- =========================================================
+         HERO
+    ========================================================== -->
+
     <section id="hero">
-        <img src="glime-logo.jpg" alt="Glime Logo" class="floating-icon icon-1">
-        <div class="floating-icon icon-2">🤖</div>
-        <div class="floating-icon icon-3">⚡</div>
-        <div class="floating-icon icon-4">✨</div>
-        <h1 class="fade-in">Next-Gen AI Automation<br><span class="gradient-text">& Custom Growth Systems</span></h1>
-        
-        <p class="hero-sub fade-in">Glime delivers futuristic AI-powered workflows, high-converting funnels, and ultra-secure custom software for modern creators & businesses.</p>
-        <p class="hero-niche fade-in">Specializing in AI Lead Generation & Automated Workflows</p>
-        
-        <div class="pain-point fade-in">Scale your business on autopilot with our intelligent custom-coded AI solutions.</div>
-        <button class="btn-primary fade-in" style="z-index: 2; position: relative;" onclick="window.location.href='contact.html'">Start Your Project</button>
+
+        <img
+            src="glime-logo.jpg"
+            alt="Glime Logo"
+            class="floating-icon icon-1"
+        >
+
+        <div class="floating-icon icon-2">
+            🤖
+        </div>
+
+        <div class="floating-icon icon-3">
+            ⚡
+        </div>
+
+        <div class="floating-icon icon-4">
+            ✨
+        </div>
+
+        <h1 class="fade-in">
+            Next-Gen AI Automation
+            <br>
+            <span class="gradient-text">
+                & Custom Growth Systems
+            </span>
+        </h1>
+
+        <p class="hero-sub fade-in">
+            Glime delivers futuristic AI-powered workflows,
+            high-converting funnels, and ultra-secure custom software
+            for modern creators & businesses.
+        </p>
+
+        <p class="hero-niche fade-in">
+            Specializing in AI Lead Generation & Automated Workflows
+        </p>
+
+        <div class="pain-point fade-in">
+            Scale your business on autopilot with our intelligent
+            custom-coded AI solutions.
+        </div>
+
+        <a
+            href="contact.html"
+            class="btn-primary fade-in"
+            style="z-index:2;position:relative;"
+        >
+            Start Your Project
+        </a>
+
     </section>
 
-    <!-- ROI Calculator Section -->
-    <section class="section" style="padding-bottom: 20px;">
-        <h2 class="section-title fade-in">See Your <span class="gradient-text">Growth Potential</span></h2>
+    <!-- =========================================================
+         ROI CALCULATOR
+    ========================================================== -->
+
+    <section
+        class="section"
+        style="padding-bottom:20px;"
+    >
+
+        <h2 class="section-title fade-in">
+            See Your
+            <span class="gradient-text">
+                Growth Potential
+            </span>
+        </h2>
+
         <div class="calculator-card fade-in">
-            <span class="calc-label">How many visitors check your website/profile per month?</span>
-            <input type="range" id="trafficInput" class="calc-range" min="100" max="10000" step="100" value="1000" oninput="calculateROI()">
-            <div style="color: var(--cyan-blue); font-weight: bold; font-size: 1.2rem;" id="trafficValue">1,000 Visitors</div>
-            
-            <hr style="border: 1px solid rgba(255,255,255,0.05); margin: 30px 0;">
-            
-            <p style="color: var(--text-muted); font-size: 0.95rem;">If an AI-powered Glime funnel converts just 2% of them into premium clients (Avg. ₹5,000 value)...</p>
-            <div class="calc-result">Potential Revenue: <br><span id="roiResult">₹1,00,000</span> / month</div>
-            <a href="portfolio.html" class="btn-primary">View Our Work</a>
+
+            <span class="calc-label">
+                How many visitors check your website/profile per month?
+            </span>
+
+            <input
+                type="range"
+                id="trafficInput"
+                class="calc-range"
+                min="100"
+                max="10000"
+                step="100"
+                value="1000"
+                oninput="calculateROI()"
+            >
+
+            <div
+                style="
+                    color:var(--cyan-blue);
+                    font-weight:bold;
+                    font-size:1.2rem;
+                "
+                id="trafficValue"
+            >
+                1,000 Visitors
+            </div>
+
+            <hr
+                style="
+                    border:1px solid rgba(255,255,255,0.05);
+                    margin:30px 0;
+                "
+            >
+
+            <p
+                style="
+                    color:var(--text-muted);
+                    font-size:0.95rem;
+                "
+            >
+                If an AI-powered Glime funnel converts just 2% of them
+                into premium clients (Avg. ₹5,000 value)...
+            </p>
+
+            <div class="calc-result">
+                Potential Revenue:
+                <br>
+                <span id="roiResult">
+                    ₹1,00,000
+                </span>
+                / month
+            </div>
+
+            <a
+                href="portfolio.html"
+                class="btn-primary"
+            >
+                View Our Work
+            </a>
+
         </div>
+
     </section>
 
-    <!-- Portfolio Section -->
-    <section id="portfolio" class="section" style="background: rgba(255,255,255,0.01);">
-        <h2 class="section-title fade-in">Our <span class="gradient-text">Recent Work</span></h2>
-        
+    <!-- =========================================================
+         PORTFOLIO PREVIEW
+    ========================================================== -->
+
+    <section
+        id="portfolio"
+        class="section"
+        style="background:rgba(255,255,255,0.01);"
+    >
+
+        <h2 class="section-title fade-in">
+            Our
+            <span class="gradient-text">
+                Recent Work
+            </span>
+        </h2>
+
         <div class="ba-container fade-in">
+
             <div class="ba-labels">
-                <span>Before (Boring)</span>
-                <span style="background: var(--cyan-blue); color: black;">After (Glime AI Magic)</span>
-            </div>
-            <img src="https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=800&auto=format&fit=crop" class="ba-img" alt="Old Website">
-            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop" class="ba-img ba-after" id="baImageAfter" alt="Glime Website">
-            
-            <input type="range" min="0" max="100" value="50" class="ba-slider-input" oninput="updateBASlider(this.value)">
-            <div class="ba-slider-line" id="baSliderLine"></div>
-            <div class="ba-slider-btn" id="baSliderBtn">◂▸</div>
-        </div>
-    </section>
 
-    <!-- Services / Growth Engines Section -->
-    <section id="services" class="section">
-        <h2 class="section-title fade-in">Choose Your <span class="gradient-text">Growth Engine</span></h2>
-        
+                <span>
+                    Before (Boring)
+                </span>
+
+                <span
+                    style="
+                        background:var(--cyan-blue);
+                        color:black;
+                    "
+                >
+                    After (Glime AI Magic)
+                </span>
+
+            </div>
+
+            <img
+                src="https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=800&auto=format&fit=crop"
+                class="ba-img"
+                alt="Website transformation demo before"
+            >
+
+            <img
+                src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop"
+                class="ba-img ba-after"
+                id="baImageAfter"
+                alt="Website transformation demo after"
+            >
+
+            <input
+                type="range"
+                min="0"
+                max="100"
+                value="50"
+                class="ba-slider-input"
+                oninput="updateBASlider(this.value)"
+                aria-label="Before and after website comparison"
+            >
+
+            <div
+                class="ba-slider-line"
+                id="baSliderLine"
+            ></div>
+
+            <div
+                class="ba-slider-btn"
+                id="baSliderBtn"
+            >
+                ◂▸
+            </div>
+
+        </div>
+
         <div class="grid-3 fade-in">
-            <!-- 1. The AI Launchpad -->
-            <div class="card">
-                <h3>The AI Launchpad</h3>
-                <ul class="package-features">
-                    <li><span>✓</span> 1-Page Ultra-Fast Hand-Coded Landing Page</li>
-                    <li><span>✓</span> Supabase AI Lead Form</li>
-                    <li><span>✓</span> Instant WhatsApp/Email Alerts</li>
-                    <li><span>✓</span> Free Hosting Setup</li>
-                </ul>
-                <div class="price-container">
-                    <span class="price price-in" style="display:none;">₹14,999 <span style="font-size: 1rem; font-weight: 400;">+ ₹299/mo maint.</span></span>
-                    <span class="price price-gl" style="display:none;">$299 <span style="font-size: 1rem; font-weight: 400;">+ $29/mo maint.</span></span>
+
+            <!-- Gym Slider -->
+            <div class="portfolio-card">
+
+                <div
+                    class="slider-wrapper"
+                    onmouseenter="pauseSlider(0)"
+                    onmouseleave="resumeSlider(0)"
+                    ontouchstart="pauseSlider(0)"
+                    ontouchend="resumeSlider(0)"
+                >
+
+                    <div
+                        class="slider-track"
+                        id="track-0"
+                    >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop"
+                            alt="Fitness studio demo"
+                        >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600&auto=format&fit=crop"
+                            alt="Gym equipment demo"
+                        >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=600&auto=format&fit=crop"
+                            alt="Fitness workout demo"
+                        >
+
+                    </div>
+
                 </div>
-                <div class="bonus-tag">🎁 Special Starter Price</div>
-                <button onclick="window.location.href='contact.html'" class="click-to-order">Click to Order →</button>
+
+                <div class="portfolio-info">
+                    <h4>
+                        Fitness Studio Demo
+                    </h4>
+
+                    <p>
+                        High-energy design focused on memberships and conversions.
+                    </p>
+                </div>
+
             </div>
-            
-            <!-- 2. The Lead Gen Engine (Best Seller) -->
+
+            <!-- Boutique Slider -->
+            <div class="portfolio-card">
+
+                <div
+                    class="slider-wrapper"
+                    onmouseenter="pauseSlider(1)"
+                    onmouseleave="resumeSlider(1)"
+                    ontouchstart="pauseSlider(1)"
+                    ontouchend="resumeSlider(1)"
+                >
+
+                    <div
+                        class="slider-track"
+                        id="track-1"
+                    >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600&auto=format&fit=crop"
+                            alt="Boutique dresses demo"
+                        >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=600&auto=format&fit=crop"
+                            alt="Fashion detail demo"
+                        >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=600&auto=format&fit=crop"
+                            alt="Boutique interior demo"
+                        >
+
+                    </div>
+
+                </div>
+
+                <div class="portfolio-info">
+
+                    <h4>
+                        Fashion Boutique Demo
+                    </h4>
+
+                    <p>
+                        Elegant dark theme focused on converting social traffic.
+                    </p>
+
+                </div>
+
+            </div>
+
+            <!-- Cafe Slider -->
+            <div class="portfolio-card">
+
+                <div
+                    class="slider-wrapper"
+                    onmouseenter="pauseSlider(2)"
+                    onmouseleave="resumeSlider(2)"
+                    ontouchstart="pauseSlider(2)"
+                    ontouchend="resumeSlider(2)"
+                >
+
+                    <div
+                        class="slider-track"
+                        id="track-2"
+                    >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600&auto=format&fit=crop"
+                            alt="Cafe aesthetics demo"
+                        >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=600&auto=format&fit=crop"
+                            alt="Coffee cup demo"
+                        >
+
+                        <img
+                            src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=80&w=600&auto=format&fit=crop"
+                            alt="Cafe food demo"
+                        >
+
+                    </div>
+
+                </div>
+
+                <div class="portfolio-info">
+
+                    <h4>
+                        Café & Restaurant Demo
+                    </h4>
+
+                    <p>
+                        Appetizing layout with conversion-focused customer flow.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Data Analytics Highlight -->
+        <div class="analytics-box fade-in">
+
+            <div class="analytics-icon">
+                📊
+            </div>
+
+            <h3>
+                Backed by
+                <span class="gradient-text">
+                    1 Year of Data Analytics
+                </span>
+            </h3>
+
+            <p>
+                At Glime, we don't just build websites that look pretty.
+                With a background in dedicated Boutique Data Analytics,
+                we understand audience behavior and design user flows
+                with conversion in mind.
+            </p>
+
+            <br>
+
+            <a
+                href="contact.html"
+                class="btn-primary"
+                style="font-size:0.9rem;padding:10px 25px;"
+            >
+                Build Your Growth Engine
+            </a>
+
+        </div>
+
+    </section>
+
+    <!-- =========================================================
+         SERVICES / PACKAGES
+    ========================================================== -->
+
+    <section id="services" class="section">
+
+        <h2 class="section-title fade-in">
+
+            Choose Your
+            <span class="gradient-text">
+                Growth Engine
+            </span>
+
+        </h2>
+
+        <div class="grid-3 fade-in">
+
+            <!-- AI Launchpad -->
+            <div class="card">
+
+                <h3>
+                    The AI Launchpad
+                </h3>
+
+                <ul class="package-features">
+
+                    <li>
+                        <span>✓</span>
+                        1-Page Ultra-Fast Hand-Coded Landing Page
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        Supabase AI Lead Form
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        Instant WhatsApp/Email Alerts
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        Free Hosting Setup
+                    </li>
+
+                </ul>
+
+                <div class="price-container">
+
+                    <span
+                        class="price price-in"
+                        style="display:none;"
+                    >
+                        ₹14,999
+                        <span style="font-size:1rem;font-weight:400;">
+                            + ₹299/mo maint.
+                        </span>
+                    </span>
+
+                    <span
+                        class="price price-gl"
+                        style="display:none;"
+                    >
+                        $299
+                        <span style="font-size:1rem;font-weight:400;">
+                            + $29/mo maint.
+                        </span>
+                    </span>
+
+                </div>
+
+                <div class="bonus-tag">
+                    🎁 Special Starter Price
+                </div>
+
+                <button
+                    onclick="goToContact('The AI Launchpad')"
+                    class="click-to-order"
+                >
+                    Click to Order →
+                </button>
+
+            </div>
+
+            <!-- Lead Gen Engine -->
             <div class="card bestseller">
-                <div class="bestseller-badge">🔥 Best Seller</div>
-                <h3>The Lead Gen Engine</h3>
-                <ul class="package-features">
-                    <li><span>✓</span> 5-Page Premium Hand-Coded Website</li>
-                    <li><span>✓</span> AI Appointment Calendar</li>
-                    <li><span>✓</span> Auto-Follow up Emails</li>
-                    <li><span>✓</span> Supabase Client Portal Dashboard</li>
-                    <li><span>✓</span> Local SEO Setup</li>
-                </ul>
-                <div class="price-container">
-                    <span class="price price-in" style="display:none;">₹34,999 <span style="font-size: 1rem; font-weight: 400;">+ ₹599/mo maint.</span></span>
-                    <span class="price price-gl" style="display:none;">$699 <span style="font-size: 1rem; font-weight: 400;">+ $59/mo maint.</span></span>
+
+                <div class="bestseller-badge">
+                    🔥 Best Seller
                 </div>
-                <div class="bonus-tag">🎁 High ROI for Clinics & Businesses</div>
-                <button onclick="window.location.href='contact.html'" class="click-to-order">Click to Order →</button>
+
+                <h3>
+                    The Lead Gen Engine
+                </h3>
+
+                <ul class="package-features">
+
+                    <li>
+                        <span>✓</span>
+                        5-Page Premium Hand-Coded Website
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        AI Appointment Calendar
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        Auto-Follow up Emails
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        Supabase Client Portal Dashboard
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        Local SEO Setup
+                    </li>
+
+                </ul>
+
+                <div class="price-container">
+
+                    <span
+                        class="price price-in"
+                        style="display:none;"
+                    >
+                        ₹34,999
+                        <span style="font-size:1rem;font-weight:400;">
+                            + ₹599/mo maint.
+                        </span>
+                    </span>
+
+                    <span
+                        class="price price-gl"
+                        style="display:none;"
+                    >
+                        $699
+                        <span style="font-size:1rem;font-weight:400;">
+                            + $59/mo maint.
+                        </span>
+                    </span>
+
+                </div>
+
+                <div class="bonus-tag">
+                    🎁 High ROI for Clinics & Businesses
+                </div>
+
+                <button
+                    onclick="goToContact('The Lead Gen Engine')"
+                    class="click-to-order"
+                >
+                    Click to Order →
+                </button>
+
             </div>
-            
-            <!-- 3. The Global AI Autopilot (VIP) -->
+
+            <!-- Global AI Autopilot -->
             <div class="card">
-                <h3>The Global AI Autopilot (VIP)</h3>
+
+                <h3>
+                    The Global AI Autopilot (VIP)
+                </h3>
+
                 <ul class="package-features">
-                    <li><span>✓</span> 12-Page Unhackable Platform</li>
-                    <li><span>✓</span> 24/7 Custom AI WhatsApp/Telegram Bot</li>
-                    <li><span>✓</span> n8n / Make CRM Workflows</li>
-                    <li><span>✓</span> VIP Analytics Dashboard</li>
-                    <li><span>✓</span> Automated Invoicing</li>
+
+                    <li>
+                        <span>✓</span>
+                        12-Page Unhackable Platform
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        24/7 Custom AI WhatsApp/Telegram Bot
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        n8n / Make CRM Workflows
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        VIP Analytics Dashboard
+                    </li>
+
+                    <li>
+                        <span>✓</span>
+                        Automated Invoicing
+                    </li>
+
                 </ul>
+
                 <div class="price-container">
-                    <span class="price price-in" style="display:none;">₹79,999 <span style="font-size: 1rem; font-weight: 400;">+ ₹1,199/mo maint.</span></span>
-                    <span class="price price-gl" style="display:none;">$1,499 <span style="font-size: 1rem; font-weight: 400;">+ $119/mo maint.</span></span>
+
+                    <span
+                        class="price price-in"
+                        style="display:none;"
+                    >
+                        ₹79,999
+                        <span style="font-size:1rem;font-weight:400;">
+                            + ₹1,199/mo maint.
+                        </span>
+                    </span>
+
+                    <span
+                        class="price price-gl"
+                        style="display:none;"
+                    >
+                        $1,499
+                        <span style="font-size:1rem;font-weight:400;">
+                            + $119/mo maint.
+                        </span>
+                    </span>
+
                 </div>
-                <div class="bonus-tag">🎁 1 Year VIP Maintenance Included</div>
-                <button onclick="window.location.href='contact.html'" class="click-to-order">Click to Order →</button>
+
+                <div class="bonus-tag">
+                    🎁 1 Year VIP Maintenance Included
+                </div>
+
+                <button
+                    onclick="goToContact('The Global AI Autopilot (VIP)')"
+                    class="click-to-order"
+                >
+                    Click to Order →
+                </button>
+
             </div>
+
         </div>
 
-        <!-- Custom Builder Box -->
+        <!-- =====================================================
+             CUSTOM BUILDER
+        ====================================================== -->
+
         <div class="builder-box fade-in">
-            <h3 style="color: var(--cyan-blue); font-size: 1.8rem;">Build Your Custom Growth Engine 🛠️</h3>
-            <p style="color: var(--text-muted); margin-top: 10px;">Select the premium add-ons you need, and see the price update instantly.</p>
-            
+
+            <h3
+                style="
+                    color:var(--cyan-blue);
+                    font-size:1.8rem;
+                "
+            >
+                Build Your Custom Growth Engine 🛠️
+            </h3>
+
+            <p
+                style="
+                    color:var(--text-muted);
+                    margin-top:10px;
+                "
+            >
+                Select the premium add-ons you need,
+                and see the price update instantly.
+            </p>
+
             <div class="feature-grid">
-                <div class="feature-item" onclick="toggleFeature(this, 3999, 'Advanced Appointment System')">☑️ Advanced Appointment System (+₹3,999)</div>
-                <div class="feature-item" onclick="toggleFeature(this, 2999, 'Extra Landing Page')">☑️ Extra Landing Page (+₹2,999)</div>
-                <div class="feature-item" onclick="toggleFeature(this, 999, 'Professional Business Email')">☑️ Professional Business Email (+₹999)</div>
-                <div class="feature-item" onclick="toggleFeature(this, 2499, 'Premium SEO Setup')">☑️ Premium SEO Setup (+₹2,499)</div>
-                <div class="feature-item" onclick="toggleFeature(this, 1999, 'AI WhatsApp Lead Bot')">☑️ AI WhatsApp Lead Bot (+₹1,999)</div>
-                <div class="feature-item" onclick="toggleFeature(this, 2999, 'Payment Link Setup')">☑️ Payment Link Setup (+₹2,999)</div>
-                <div class="feature-item" onclick="toggleFeature(this, 4999, 'Supabase Client Dashboard')">☑️ Supabase Client Dashboard (+₹4,999)</div>
-                <div class="feature-item" onclick="toggleFeature(this, 3999, 'Fast Delivery (48 Hours)')">☑️ Fast Delivery 48 Hrs (+₹3,999)</div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,3999,'Advanced Appointment System')"
+                >
+                    ☑️ Advanced Appointment System (+₹3,999)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,2999,'Extra Landing Page')"
+                >
+                    ☑️ Extra Landing Page (+₹2,999)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,999,'Professional Business Email')"
+                >
+                    ☑️ Professional Business Email (+₹999)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,2499,'Premium SEO Setup')"
+                >
+                    ☑️ Premium SEO Setup (+₹2,499)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,1999,'AI WhatsApp Lead Bot')"
+                >
+                    ☑️ AI WhatsApp Lead Bot (+₹1,999)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,2999,'Payment Link Setup')"
+                >
+                    ☑️ Payment Link Setup (+₹2,999)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,4999,'Supabase Client Dashboard')"
+                >
+                    ☑️ Supabase Client Dashboard (+₹4,999)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,1999,'Automated PDF Invoice')"
+                >
+                    ☑️ Automated PDF Invoice (+₹1,999)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,1499,'Social Proof Pop-ups')"
+                >
+                    ☑️ Social Proof Pop-ups (+₹1,499)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,2499,'24/7 Security & Uptime Shield')"
+                >
+                    ☑️ 24/7 Security & Uptime (+₹2,499/year)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,2999,'Multi-Language Auto-Translator')"
+                >
+                    ☑️ Multi-Language Auto-Translator (+₹2,999)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,0,'Deep-Web Lead Research Automation')"
+                >
+                    ☑️ Lead Research Automation (Custom Quote)
+                </div>
+
+                <div
+                    class="feature-item"
+                    onclick="toggleFeature(this,3999,'Fast Delivery (48 Hours)')"
+                >
+                    ☑️ Fast Delivery 48 Hrs (+₹3,999)
+                </div>
+
             </div>
 
-            <div class="builder-total">Total Price: <span id="builderPrice">₹0</span></div>
-            <button id="builderOrderBtn" onclick="submitCustomOrder()" class="btn-primary" style="background: white; color: black; display: none;">Click to Order →</button>
+            <div class="builder-total">
+
+                Total Price:
+
+                <span
+                    id="builderPrice"
+                    style="color:var(--neon-green);"
+                >
+                    ₹0
+                </span>
+
+            </div>
+
+            <button
+                id="builderOrderBtn"
+                onclick="submitCustomOrder()"
+                class="btn-primary"
+                style="
+                    background:white;
+                    color:black;
+                    display:none;
+                "
+            >
+                Click to Order →
+            </button>
+
         </div>
+
     </section>
 
-    <!-- About Section -->
+    <!-- =========================================================
+         GROWTH ADD-ONS
+    ========================================================== -->
+
+    <section class="section">
+
+        <h2 class="section-title fade-in">
+
+            Growth
+            <span class="gradient-text">
+                Add-ons
+            </span>
+
+        </h2>
+
+        <div class="grid-3">
+
+            <div class="addon-card fade-in">
+
+                <div class="addon-icon">
+                    🔔
+                </div>
+
+                <h3>
+                    Social Proof Pop-ups
+                </h3>
+
+                <p>
+                    Non-intrusive social-proof notifications using
+                    genuine verified activity or clearly marked demo data.
+                </p>
+
+                <span class="addon-price">
+                    +₹1,499
+                </span>
+
+            </div>
+
+            <div class="addon-card fade-in">
+
+                <div class="addon-icon">
+                    🛡️
+                </div>
+
+                <h3>
+                    24/7 Security & Uptime Shield
+                </h3>
+
+                <p>
+                    Monitoring and maintenance support designed to help
+                    detect downtime and important technical issues.
+                </p>
+
+                <span class="addon-price">
+                    +₹2,499/year
+                </span>
+
+            </div>
+
+            <div class="addon-card fade-in">
+
+                <div class="addon-icon">
+                    🌍
+                </div>
+
+                <h3>
+                    Multi-Language Auto-Translator
+                </h3>
+
+                <p>
+                    Add multilingual website capability for businesses
+                    serving customers in multiple languages.
+                </p>
+
+                <span class="addon-price">
+                    +₹2,999
+                </span>
+
+            </div>
+
+            <div class="addon-card fade-in">
+
+                <div class="addon-icon">
+                    📄
+                </div>
+
+                <h3>
+                    Automated PDF Invoice
+                </h3>
+
+                <p>
+                    Automated invoice generation and email delivery
+                    connected to internal business workflows.
+                </p>
+
+                <span class="addon-price">
+                    +₹1,999
+                </span>
+
+            </div>
+
+            <div class="addon-card fade-in">
+
+                <div class="addon-icon">
+                    🎯
+                </div>
+
+                <h3>
+                    Lead Research Automation
+                </h3>
+
+                <p>
+                    Custom lead-research workflows for relevant business
+                    opportunities, subject to platform permissions and policies.
+                </p>
+
+                <span class="addon-price">
+                    Custom Quote
+                </span>
+
+            </div>
+
+            <div class="addon-card fade-in">
+
+                <div class="addon-icon">
+                    🤖
+                </div>
+
+                <h3>
+                    AI WhatsApp Lead Bot
+                </h3>
+
+                <p>
+                    Automated conversational workflows designed to
+                    capture, qualify and route business inquiries.
+                </p>
+
+                <span class="addon-price">
+                    +₹1,999
+                </span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- =========================================================
+         ABOUT
+    ========================================================== -->
+
     <section id="about" class="section">
-        <h2 class="section-title fade-in">Meet the <span class="gradient-text">Founder</span></h2>
+
+        <h2 class="section-title fade-in">
+
+            Meet the
+            <span class="gradient-text">
+                Founder
+            </span>
+
+        </h2>
+
         <div class="about-container fade-in">
+
             <div class="about-text">
-                <h3>Hi, I'm Vishal Gouttam</h3>
-                <p>I started <strong>Glime</strong> with a clear mission: to build world-class, unhackable digital growth and AI automation systems for modern creators and premium service businesses. While most developers rely on slow, vulnerable no-code tools like WordPress, we hand-code everything from scratch in VS Code.</p>
-                <p>My vision is to bring top 1% global design and AI standards to ambitious professionals worldwide. We don't just build websites; we build intelligent, automated lead-gen engines.</p>
-                <button class="btn-primary" style="margin-top: 10px; border:none; cursor:pointer;" onclick="window.location.href='contact.html'">Let's Talk Business</button>
+
+                <h3>
+                    Hi, I'm Vishal Gouttam
+                </h3>
+
+                <p>
+                    I started <strong>Glime</strong> with a clear mission:
+                    to build world-class digital growth and AI automation
+                    systems for modern creators and premium service businesses.
+                </p>
+
+                <p>
+                    My vision is to bring strong global design and AI standards
+                    to ambitious professionals worldwide. We don't just build
+                    websites; we build intelligent, automated lead-generation
+                    engines.
+                </p>
+
+                <p>
+                    <strong>
+                        Glime AI Automation
+                    </strong>
+                    <br>
+                    Sawai Madhopur, India
+                </p>
+
+                <button
+                    class="btn-primary"
+                    style="
+                        margin-top:10px;
+                        border:none;
+                        cursor:pointer;
+                    "
+                    onclick="window.location.href='contact.html'"
+                >
+                    Let's Talk Business
+                </button>
+
             </div>
+
             <div class="about-image">
-                <img src="vishal-photo.jpg" alt="Vishal Gouttam - Founder of Glime" onerror="this.src='https://placehold.co/400x450/111827/00ff88?text=Vishal+Gouttam'">
+
+                <img
+                    src="vishal-photo.jpg"
+                    alt="Vishal Gouttam - Founder of Glime"
+                    onerror="this.style.display='none'"
+                >
+
             </div>
+
         </div>
+
     </section>
 
-    <!-- FAQ Section -->
+    <!-- =========================================================
+         FAQ
+    ========================================================== -->
+
     <section id="faq" class="section">
-        <h2 class="section-title fade-in">Frequently Asked <span class="gradient-text">Questions</span></h2>
+
+        <h2 class="section-title fade-in">
+
+            Frequently Asked
+            <span class="gradient-text">
+                Questions
+            </span>
+
+        </h2>
+
         <div class="faq-container fade-in">
+
             <details>
-                <summary>Do you use WordPress or No-Code tools?</summary>
-                <div class="faq-content">Never! No-code tools like WordPress are slow, easily hackable, and heavily restricted. Every system at Glime is 100% hand-coded from scratch using VS Code, ensuring ultra-fast speed, absolute security, and zero limitations.</div>
+
+                <summary>
+                    Do you use WordPress or No-Code tools?
+                </summary>
+
+                <div class="faq-content">
+                    We focus on custom-coded solutions and choose
+                    the technology according to the actual project
+                    requirements.
+                </div>
+
             </details>
+
             <details>
-                <summary>Is the Domain & Hosting cost included?</summary>
-                <div class="faq-content">Yes! Our packages include free hosting setup. For domain names, we guide you on how to purchase your own domain (usually ₹500-₹800/year) so you have 100% ownership of your brand name.</div>
+
+                <summary>
+                    Is the Domain & Hosting cost included?
+                </summary>
+
+                <div class="faq-content">
+                    Hosting and domain requirements depend on the selected
+                    project. We discuss the exact setup before development.
+                </div>
+
             </details>
+
             <details>
-                <summary>How many days will it take to build my growth engine?</summary>
-                <div class="faq-content">For our 'Creator Funnel' package, we usually deliver within 3-5 working days. The 'Lead Gen Engine' package takes about 7-10 days depending on your requirements.</div>
+
+                <summary>
+                    How many days will it take to build my growth engine?
+                </summary>
+
+                <div class="faq-content">
+                    Timeline depends on the package, number of pages,
+                    integrations and automation requirements.
+                </div>
+
             </details>
+
             <details>
-                <summary>What if I need changes after the website is live?</summary>
-                <div class="faq-content">Don't worry! We offer a dedicated 'Maintenance & Growth' plan. This covers regular updates, automated adjustments, and ensuring your system is always secure.</div>
+
+                <summary>
+                    What happens after I submit the Contact Form?
+                </summary>
+
+                <div class="faq-content">
+                    Your email will be verified first. After successful
+                    verification, your inquiry can be submitted to our
+                    lead system and our team can contact you.
+                </div>
+
             </details>
+
+            <details>
+
+                <summary>
+                    Can I request custom automation?
+                </summary>
+
+                <div class="faq-content">
+                    Yes. You can select add-ons or describe your requirement
+                    through the Contact Form and we can discuss the appropriate
+                    automation system.
+                </div>
+
+            </details>
+
         </div>
+
     </section>
 
-    <!-- Footer -->
-    <footer style="background-color: #05080c; color: #9ca3af; padding: 50px 20px 30px; text-align: center; font-family: 'Poppins', sans-serif; margin-top: 50px; border-top: 1px solid rgba(255,255,255,0.05);">
-        <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; letter-spacing: 3px; color: #ffffff;">GLIME</h2>
-        <p style="color: #9ca3af; font-size: 0.95rem; margin-bottom: 30px;">AI Automation. Solid Development. Real Growth.</p>
+    <!-- =========================================================
+         FOOTER
+    ========================================================== -->
 
-        <div style="margin-bottom: 30px; font-size: 0.9rem; color: #ffffff;">
-            <p style="margin-bottom: 8px;">✉️ Connect@glime.online</p>
-            <p>🌍 Remote-First Ecosystem | India & Global</p>
+    <footer>
+
+        <h2
+            style="
+                font-size:1.8rem;
+                font-weight:700;
+                margin-bottom:10px;
+                letter-spacing:3px;
+                color:#ffffff;
+            "
+        >
+            GLIME
+        </h2>
+
+        <p>
+            AI Automation. Solid Development. Real Growth.
+        </p>
+
+        <div
+            style="
+                margin:25px 0;
+                font-size:0.9rem;
+                color:#ffffff;
+            "
+        >
+
+            <p style="margin-bottom:8px;">
+                ✉️ connect@glime.online
+            </p>
+
+            <p style="margin-bottom:8px;">
+                📍 Sawai Madhopur, India
+            </p>
+
+            <p>
+                📞 +91 8504926242
+            </p>
+
         </div>
 
-        <div style="margin-bottom: 30px; display: flex; flex-direction: column; gap: 12px; align-items: center;">
-            <a href="index.html#services" style="color: #00f0ff; text-decoration: none; font-weight: 600;">Growth Engines</a>
-            <a href="login.html" style="color: #00f0ff; text-decoration: none; font-weight: 600;">Client Portal Login</a>
-            <a href="contact.html" onclick="window.location.href='contact.html'" style="color: #00ff88; text-decoration: none; font-weight: 600;">Start Your Project</a>
+        <div class="footer-social">
+
+            <a
+                href="https://www.linkedin.com/in/vishal-gouttam-b7834742a"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Glime LinkedIn"
+            >
+                in
+            </a>
+
+            <a
+                href="https://x.com/glime_web"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Glime X"
+            >
+                𝕏
+            </a>
+
         </div>
 
-        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px; margin-bottom: 40px;">
-            <a href="https://www.linkedin.com/in/vishal-gouttam-b7834742a" target="_blank" style="background: rgba(0, 240, 255, 0.1); color: #00f0ff; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 1.2rem; border: 1px solid rgba(0, 240, 255, 0.3);">in</a>
-            <a href="https://x.com/glime_web" target="_blank" style="background: rgba(0, 255, 136, 0.1); color: #00ff88; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 1.2rem; border: 1px solid rgba(0, 255, 136, 0.3);">𝕏</a>
+        <div
+            style="
+                display:flex;
+                justify-content:center;
+                gap:18px;
+                flex-wrap:wrap;
+                margin:20px 0;
+            "
+        >
+
+            <a
+                href="portfolio.html"
+                style="
+                    color:var(--cyan-blue);
+                    text-decoration:none;
+                    font-weight:600;
+                "
+            >
+                Our Work
+            </a>
+
+            <a
+                href="login.html"
+                style="
+                    color:var(--cyan-blue);
+                    text-decoration:none;
+                    font-weight:600;
+                "
+            >
+                Client Portal Login
+            </a>
+
+            <a
+                href="contact.html"
+                style="
+                    color:var(--neon-green);
+                    text-decoration:none;
+                    font-weight:600;
+                "
+            >
+                Contact
+            </a>
+
         </div>
-        <p style="color: #6b7280; font-size: 0.8rem; margin-bottom: 8px;">MSME Registration No: <span style="color: #00ff88; font-weight: 600;">UDYAM-RJ-29-0042695</span></p>
-        <p style="color: #6b7280; font-size: 0.8rem;">© 2026 Glime. Designed & Developed by <span style="color: #00ff88;">Vishal Gouttam & Glime Team</span>.</p>
+
+        <p
+            style="
+                color:#6b7280;
+                font-size:0.8rem;
+                margin-top:20px;
+            "
+        >
+            Udyam Registration:
+            <span>
+                UDYAM-RJ-29-0042695
+            </span>
+        </p>
+
+        <p
+            style="
+                color:#6b7280;
+                font-size:0.8rem;
+                margin-top:8px;
+            "
+        >
+            © 2026 Glime AI Automation.
+            Designed & Developed by
+            <span>
+                Vishal Gouttam & Team
+            </span>
+        </p>
+
     </footer>
 
-    <!-- Order Modal (Connected directly to Database, NO WhatsApp) -->
-    <div id="orderModal" class="modal">
-        <!-- Step 1: Details -->
-        <div class="modal-content" id="modalStep1">
-            <span class="close-btn" onclick="closeModal('orderModal')">&times;</span>
-            <h2 style="color: var(--cyan-blue); margin-bottom: 10px;">Almost there! 🚀</h2>
-            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.95rem;">Please provide basic details to proceed with your order.</p>
-            
-            <div class="form-group"><label>Your Name <span>*</span></label><input type="text" id="orderName" placeholder="John Doe"></div>
-            <div class="form-group"><label>Business/Creator Name <span>*</span></label><input type="text" id="orderBusiness" placeholder="Your Brand Name"></div>
-            <div class="form-group"><label>Email Address <span>*</span></label><input type="email" id="orderEmail" placeholder="name@company.com"></div>
-            
-            <button onclick="goToPaymentStep()" class="btn-primary" style="width: 100%; border-radius: 8px; margin-top: 10px;">Proceed to Payment</button>
-        </div>
-
-        <!-- Step 2: Payment (0% Commission Flow) -->
-        <div class="modal-content" id="modalStep2" style="display: none;">
-            <span class="close-btn" onclick="closeModal('orderModal')">&times;</span>
-            <h2 style="color: var(--cyan-blue); margin-bottom: 10px;">Complete Payment 💳</h2>
-            <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">0% Commission Flow: Pay directly via secure gateway.</p>
-            
-            <!-- UPI QR (Shows for India) -->
-            <div id="payIndia" style="display:none; text-align:center; margin-bottom:20px;">
-                <div style="background: white; padding: 10px; border-radius: 10px; display: inline-block;">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=connect@glime.online&pn=Glime" alt="UPI QR" style="width:150px; height:150px;">
-                </div>
-                <p style="margin-top: 10px; font-weight: bold; color: var(--neon-green);">Scan to Pay with UPI</p>
-            </div>
-            
-            <!-- PayPal Button (Shows for Global) -->
-            <div id="payGlobal" style="display:none; text-align:center; margin-bottom:20px;">
-                <a href="https://paypal.me/glime" target="_blank" class="btn-primary" style="background: #0070ba; color: white; border-radius: 30px; padding: 10px 30px; display: inline-block; box-shadow: none;">Pay with PayPal</a>
-            </div>
-
-            <div class="form-group">
-                <label>Enter UTR / Transaction ID <span>*</span></label>
-                <input type="text" id="orderUTR" placeholder="e.g. 123456789012">
-            </div>
-
-            <button onclick="processFinalOrder()" class="btn-primary" id="submitFinalOrderBtn" style="width: 100%; border-radius: 8px; margin-top: 10px;">Submit for Verification</button>
-            <button onclick="goBackToStep1()" style="background: transparent; border: none; color: var(--text-muted); width: 100%; margin-top: 15px; cursor: pointer; text-decoration: underline;">Back</button>
-        </div>
-    </div>
+    <!-- =========================================================
+         JAVASCRIPT
+    ========================================================== -->
 
     <script>
-        // Supabase DB Configuration
-        var SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
-        var SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-        var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Auto Currency Switcher Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const isIndia = (tz === 'Asia/Calcutta' || tz === 'Asia/Kolkata');
-            document.querySelectorAll('.price-in').forEach(el => el.style.display = isIndia ? 'inline-block' : 'none');
-            document.querySelectorAll('.price-gl').forEach(el => el.style.display = isIndia ? 'none' : 'inline-block');
-        });
+        /* =========================================================
+           MOBILE NAVIGATION
+        ========================================================== */
 
-        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); }}); }, { threshold: 0.1 });
-        document.querySelectorAll('.fade-in').forEach((el) => { observer.observe(el); });
+        function toggleMenu() {
+
+            const navLinks =
+                document.getElementById('navLinks');
+
+            if (navLinks) {
+                navLinks.classList.toggle('active');
+            }
+
+        }
+
+        document.addEventListener(
+            'click',
+            function(event) {
+
+                const navLinks =
+                    document.getElementById('navLinks');
+
+                if (!navLinks) {
+                    return;
+                }
+
+                const isClickInsideNav =
+                    navLinks.contains(event.target);
+
+                const isClickOnToggle =
+                    event.target.closest('.hamburger');
+
+                if (
+                    navLinks.classList.contains('active') &&
+                    !isClickInsideNav &&
+                    !isClickOnToggle
+                ) {
+                    navLinks.classList.remove('active');
+                }
+
+            }
+        );
+
+        window.addEventListener(
+            'scroll',
+            function() {
+
+                const navLinks =
+                    document.getElementById('navLinks');
+
+                if (
+                    navLinks &&
+                    navLinks.classList.contains('active')
+                ) {
+                    navLinks.classList.remove('active');
+                }
+
+            }
+        );
+
+
+        /* =========================================================
+           AUTO CURRENCY SWITCHER
+        ========================================================== */
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            function() {
+
+                const tz =
+                    Intl.DateTimeFormat()
+                        .resolvedOptions()
+                        .timeZone;
+
+                const isIndia =
+                    tz === 'Asia/Calcutta' ||
+                    tz === 'Asia/Kolkata';
+
+                document
+                    .querySelectorAll('.price-in')
+                    .forEach(function(element) {
+
+                        element.style.display =
+                            isIndia
+                                ? 'inline-block'
+                                : 'none';
+
+                    });
+
+                document
+                    .querySelectorAll('.price-gl')
+                    .forEach(function(element) {
+
+                        element.style.display =
+                            isIndia
+                                ? 'none'
+                                : 'inline-block';
+
+                    });
+
+            }
+        );
+
+
+        /* =========================================================
+           SCROLL ANIMATION
+        ========================================================== */
+
+        const observer =
+            new IntersectionObserver(
+                function(entries) {
+
+                    entries.forEach(
+                        function(entry) {
+
+                            if (entry.isIntersecting) {
+
+                                entry.target.classList.add(
+                                    'visible'
+                                );
+
+                            }
+
+                        }
+                    );
+
+                },
+                {
+                    threshold: 0.1
+                }
+            );
+
+        document
+            .querySelectorAll('.fade-in')
+            .forEach(function(element) {
+
+                observer.observe(element);
+
+            });
+
+
+        /* =========================================================
+           ROI CALCULATOR
+        ========================================================== */
 
         function calculateROI() {
-            let traffic = document.getElementById("trafficInput").value;
-            document.getElementById("trafficValue").innerText = Number(traffic).toLocaleString() + " Visitors";
-            let potentialSales = (traffic * 0.02) * 5000;
-            document.getElementById("roiResult").innerText = "₹" + potentialSales.toLocaleString();
+
+            const trafficInput =
+                document.getElementById('trafficInput');
+
+            const trafficValue =
+                document.getElementById('trafficValue');
+
+            const roiResult =
+                document.getElementById('roiResult');
+
+            if (
+                !trafficInput ||
+                !trafficValue ||
+                !roiResult
+            ) {
+                return;
+            }
+
+            const traffic =
+                Number(trafficInput.value);
+
+            trafficValue.innerText =
+                Number(traffic).toLocaleString() +
+                " Visitors";
+
+            const potentialSales =
+                (traffic * 0.02) * 5000;
+
+            roiResult.innerText =
+                "₹" +
+                potentialSales.toLocaleString('en-IN');
+
         }
+
+
+        /* =========================================================
+           BEFORE / AFTER SLIDER
+        ========================================================== */
 
         function updateBASlider(value) {
-            document.getElementById('baImageAfter').style.clipPath = `polygon(0 0, ${value}% 0, ${value}% 100%, 0 100%)`;
-            document.getElementById('baSliderLine').style.left = `${value}%`;
-            document.getElementById('baSliderBtn').style.left = `${value}%`;
+
+            const afterImage =
+                document.getElementById('baImageAfter');
+
+            const sliderLine =
+                document.getElementById('baSliderLine');
+
+            const sliderButton =
+                document.getElementById('baSliderBtn');
+
+            if (
+                !afterImage ||
+                !sliderLine ||
+                !sliderButton
+            ) {
+                return;
+            }
+
+            afterImage.style.clipPath =
+                `polygon(
+                    0 0,
+                    ${value}% 0,
+                    ${value}% 100%,
+                    0 100%
+                )`;
+
+            sliderLine.style.left =
+                `${value}%`;
+
+            sliderButton.style.left =
+                `${value}%`;
+
         }
+
+
+        /* =========================================================
+           PORTFOLIO IMAGE SLIDERS
+        ========================================================== */
+
+        const tracks = [
+            document.getElementById('track-0'),
+            document.getElementById('track-1'),
+            document.getElementById('track-2')
+        ];
+
+        const indices = [
+            0,
+            0,
+            0
+        ];
+
+        const intervals = [];
+
+        function startSlider(index) {
+
+            if (!tracks[index]) {
+                return;
+            }
+
+            clearInterval(
+                intervals[index]
+            );
+
+            intervals[index] =
+                setInterval(
+                    function() {
+
+                        indices[index] =
+                            (indices[index] + 1) % 3;
+
+                        tracks[index].style.transform =
+                            `translateX(-${indices[index] * 33.333}%)`;
+
+                    },
+                    1500
+                );
+
+        }
+
+        function pauseSlider(index) {
+
+            clearInterval(
+                intervals[index]
+            );
+
+        }
+
+        function resumeSlider(index) {
+
+            startSlider(index);
+
+        }
+
+        tracks.forEach(
+            function(track, index) {
+
+                if (track) {
+                    startSlider(index);
+                }
+
+            }
+        );
+
+
+        /* =========================================================
+           CUSTOM ADD-ON BUILDER
+        ========================================================== */
 
         let customTotal = 0;
+
         let selectedFeatures = [];
-        
-        function toggleFeature(element, price, name) {
-            element.classList.toggle('selected');
-            if (element.classList.contains('selected')) {
+
+
+        function toggleFeature(
+            element,
+            price,
+            name
+        ) {
+
+            element.classList.toggle(
+                'selected'
+            );
+
+            if (
+                element.classList.contains(
+                    'selected'
+                )
+            ) {
+
                 customTotal += price;
-                selectedFeatures.push(name);
+
+                selectedFeatures.push(
+                    name
+                );
+
             } else {
+
                 customTotal -= price;
-                selectedFeatures = selectedFeatures.filter(item => item !== name);
+
+                selectedFeatures =
+                    selectedFeatures.filter(
+                        function(item) {
+
+                            return item !== name;
+
+                        }
+                    );
+
             }
-            document.getElementById('builderPrice').innerText = "₹" + customTotal.toLocaleString();
-            let btn = document.getElementById('builderOrderBtn');
-            btn.style.display = (customTotal > 0) ? "inline-block" : "none";
-        }
 
-        let currentOrderDetails = {};
+            const builderPrice =
+                document.getElementById(
+                    'builderPrice'
+                );
 
-        function resetModal() {
-            document.getElementById('modalStep1').style.display = 'block';
-            document.getElementById('modalStep2').style.display = 'none';
-        }
+            const builderOrderBtn =
+                document.getElementById(
+                    'builderOrderBtn'
+                );
 
-        // Functions to open Form directly (No WhatsApp)
-        function openGeneralInquiryModal() { 
-            currentOrderDetails = { package: 'Custom Project / General Inquiry', type: 'general' }; 
-            resetModal();
-            document.getElementById('orderModal').style.display = "block"; 
-        }
-        
-        function openOrderModal(packageName) { 
-            currentOrderDetails = { package: packageName, type: 'fixed' }; 
-            resetModal();
-            document.getElementById('orderModal').style.display = "block"; 
-        }
-        
-        function submitCustomOrder() { 
-            currentOrderDetails = { package: 'Custom Growth Engine', type: 'custom' }; 
-            resetModal();
-            document.getElementById('orderModal').style.display = "block"; 
-        }
+            if (builderPrice) {
 
-        function goToPaymentStep() {
-            let name = document.getElementById('orderName').value.trim();
-            let business = document.getElementById('orderBusiness').value.trim();
-            let email = document.getElementById('orderEmail').value.trim();
-            if (!name || !business || !email) { alert("Please enter Name, Business Name, and Email to proceed."); return; }
-            
-            document.getElementById('modalStep1').style.display = 'none';
-            document.getElementById('modalStep2').style.display = 'block';
+                builderPrice.innerText =
+                    "₹" +
+                    customTotal.toLocaleString('en-IN');
 
-            // Check timezone for payment method display
-            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const isIndia = (tz === 'Asia/Calcutta' || tz === 'Asia/Kolkata');
-            document.getElementById('payIndia').style.display = isIndia ? 'block' : 'none';
-            document.getElementById('payGlobal').style.display = isIndia ? 'none' : 'block';
-        }
-
-        function goBackToStep1() {
-            document.getElementById('modalStep2').style.display = 'none';
-            document.getElementById('modalStep1').style.display = 'block';
-        }
-
-        // New Flow: Silent Database Entry instead of WhatsApp opening
-        async function processFinalOrder() {
-            let utr = document.getElementById('orderUTR').value.trim();
-            if(!utr) { alert("Please enter your UTR / Transaction ID."); return; }
-
-            let name = document.getElementById('orderName').value.trim();
-            let business = document.getElementById('orderBusiness').value.trim();
-            let email = document.getElementById('orderEmail').value.trim();
-            let btn = document.getElementById('submitFinalOrderBtn');
-            
-            btn.innerText = "Submitting to Database...";
-            btn.disabled = true;
-
-            try {
-                // Insert into Supabase exactly as Admin Panel reads it
-                const { data, error } = await supabase.from('client_data').insert([
-                    {
-                        email: email,
-                        project_name: currentOrderDetails.package + " (" + business + ")",
-                        payment_status: "Verification Pending (UTR: " + utr + ")"
-                    }
-                ]);
-
-                if (error) throw error;
-
-                // Success Message
-                alert("✅ Payment details successfully sent to our Admin Panel!\n\nOnce our team verifies your UTR, you will receive an automatic email with your Client Portal ID and Password.");
-                
-                closeModal('orderModal');
-                
-                // Clear fields
-                document.getElementById('orderName').value = '';
-                document.getElementById('orderBusiness').value = '';
-                document.getElementById('orderEmail').value = '';
-                document.getElementById('orderUTR').value = '';
-                goBackToStep1();
-
-            } catch (err) {
-                alert("❌ Database Error: " + err.message);
-            } finally {
-                btn.innerText = "Submit for Verification";
-                btn.disabled = false;
             }
+
+            if (builderOrderBtn) {
+
+                builderOrderBtn.style.display =
+                    selectedFeatures.length > 0
+                        ? "inline-block"
+                        : "none";
+
+            }
+
         }
 
-        function openModal(modalId) { document.getElementById(modalId).style.display = "block"; }
-        function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
-        window.onclick = function(event) { if (event.target.classList.contains('modal')) { event.target.style.display = "none"; } }
-        
-        function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
-        if(window.innerWidth > 768) { document.getElementById('navBtn').style.display = 'block'; }
-        
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.addEventListener('click', () => { document.getElementById('navLinks').classList.remove('active'); });
-        });
 
-        // --- नया कोड: बाहर क्लिक करने या स्क्रॉल करने पर मेन्यू बंद करने के लिए ---
-        document.addEventListener('click', function(event) {
-            var navLinks = document.getElementById('navLinks');
-            var menuIcon = document.querySelector('.menu-icon'); // यह मानते हुए कि आपके ☰ बटन में 'menu-icon' क्लास है, अगर कोई और आईडी है तो उसे यहाँ बदल लें
-            
-            // अगर मेन्यू खुला है, और क्लिक मेन्यू या आइकन के बाहर हुआ है
-            if (navLinks.classList.contains('active') && !navLinks.contains(event.target) && (!menuIcon || !menuIcon.contains(event.target))) {
-                navLinks.classList.remove('active');
+        /* =========================================================
+           PACKAGE -> CONTACT
+        ========================================================== */
+
+        function goToContact(packageName) {
+
+            const params =
+                new URLSearchParams();
+
+            params.set(
+                'package',
+                packageName
+            );
+
+            window.location.href =
+                'contact.html?' +
+                params.toString();
+
+        }
+
+
+        /* =========================================================
+           CUSTOM ADD-ONS -> CONTACT
+        ========================================================== */
+
+        function submitCustomOrder() {
+
+            if (
+                selectedFeatures.length === 0
+            ) {
+                return;
             }
-        });
 
-        window.addEventListener('scroll', function() {
-            var navLinks = document.getElementById('navLinks');
-            if (navLinks.classList.contains('active')) {
-                navLinks.classList.remove('active');
+            const params =
+                new URLSearchParams();
+
+            params.set(
+                'addons',
+                selectedFeatures.join(', ')
+            );
+
+            params.set(
+                'estimate',
+                customTotal
+            );
+
+            window.location.href =
+                'contact.html?' +
+                params.toString();
+
+        }
+
+
+        /* =========================================================
+           INITIAL CALCULATOR
+        ========================================================== */
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            function() {
+
+                calculateROI();
+
             }
-        });
-        // --------------------------------------------------------------------------
-
-        // --- नया और स्मार्ट कोड: बाहर क्लिक करने पर मेन्यू बंद करने के लिए ---
-        document.addEventListener('click', function(event) {
-            var navLinks = document.getElementById('navLinks');
-            if (!navLinks) return; // अगर मेन्यू नहीं है तो एरर मत दो
-            
-            // चेक करो कि क्लिक मेन्यू के अंदर हुआ है या नहीं
-            var isClickInsideNav = navLinks.contains(event.target);
-            
-            // चेक करो कि क्लिक उस बटन पर हुआ है क्या, जिससे मेन्यू खुलता है
-            var isClickOnToggleBtn = event.target.closest('[onclick*="toggleMenu"]');
-
-            // अगर मेन्यू खुला है, और क्लिक मेन्यू व बटन दोनों के बाहर हुआ है, तो बंद कर दो
-            if (navLinks.classList.contains('active') && !isClickInsideNav && !isClickOnToggleBtn) {
-                navLinks.classList.remove('active');
-            }
-        });
-
-        window.addEventListener('scroll', function() {
-            var navLinks = document.getElementById('navLinks');
-            if (navLinks && navLinks.classList.contains('active')) {
-                navLinks.classList.remove('active');
-            }
-        });
-        // --------------------------------------------------------------------------
+        );
 
     </script>
-
 
 </body>
 </html>
