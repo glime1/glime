@@ -3,241 +3,1627 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Glime Web Agency</title>
-    
+
+    <title>Dashboard | Glime AI Automation</title>
+
+    <meta
+        name="description"
+        content="Secure Glime AI Automation client dashboard."
+    >
+
+    <link rel="canonical" href="https://glime.online/dashboard.html">
+
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="glime-logo.jpg">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+        rel="stylesheet"
+    >
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root { --bg-dark: #05080c; --card-bg: #111827; --neon-green: #00ff88; --cyan-blue: #00f0ff; --text-main: #ffffff; --text-muted: #9ca3af; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; position: relative; }
 
-        .sidebar { width: 260px; background: rgba(17, 24, 39, 0.8); border-right: 1px solid rgba(255,255,255,0.05); padding: 30px 20px; display: flex; flex-direction: column; }
-        .logo { font-size: 24px; font-weight: 700; color: white; margin-bottom: 40px; text-align: center; letter-spacing: 1px; }
-        .logo span { color: var(--neon-green); }
-        .nav-item { padding: 15px 20px; color: var(--text-muted); text-decoration: none; border-radius: 10px; margin-bottom: 10px; transition: 0.3s; font-weight: 600; display: block; }
-        .nav-item:hover, .nav-item.active { background: rgba(0, 255, 136, 0.1); color: var(--neon-green); border-left: 4px solid var(--neon-green); }
-        .logout-btn { margin-top: auto; background: rgba(255, 71, 87, 0.1); color: #ff4757; text-align: center; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: bold; border: 1px solid rgba(255, 71, 87, 0.3); transition: 0.3s; cursor: pointer; }
-        .logout-btn:hover { background: #ff4757; color: white; }
+        :root {
+            --bg-dark: #05080c;
+            --card-bg: #111827;
+            --neon-green: #00ff88;
+            --cyan-blue: #00f0ff;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --danger: #ff4757;
+        }
 
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .header h1 { font-size: 1.8rem; color: white; }
-        .header p { color: var(--text-muted); font-size: 0.95rem; }
-        .client-badge { background: rgba(0, 240, 255, 0.1); color: var(--cyan-blue); padding: 8px 15px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; border: 1px solid rgba(0, 240, 255, 0.3); }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
-        .card { background: var(--card-bg); padding: 30px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .card-title { font-size: 1.2rem; color: var(--cyan-blue); margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
-        
-        .status-box { background: rgba(255,255,255,0.02); padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid var(--text-muted); transition: 0.3s; }
-        .status-box h4 { color: white; margin-bottom: 5px; }
-        .status-box p { color: var(--text-muted); font-size: 0.9rem; font-weight: 600; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
 
-        .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .pay-box { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center; transition: 0.3s; }
-        .pay-box:hover { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(0,255,136,0.1); }
-        .pay-box h4 { color: white; margin-bottom: 10px; font-size: 1.1rem; }
-        .upi-id { background: rgba(0, 255, 136, 0.1); color: var(--neon-green); padding: 8px 15px; border-radius: 8px; font-weight: 600; display: inline-block; margin-bottom: 15px; border: 1px solid rgba(0, 255, 136, 0.3); font-size: 0.95rem; }
-        .qr-placeholder { width: 130px; height: 130px; background: transparent; margin: 0 auto; border-radius: 10px; display: flex; justify-content: center; align-items: center; border: 3px solid var(--neon-green); padding: 5px; }
-        .qr-placeholder img { width: 100%; height: 100%; object-fit: contain; border-radius: 5px; background: white; }
-        
-        .intl-box { border-color: rgba(0, 240, 255, 0.3); background: rgba(0, 240, 255, 0.02); }
-        .intl-box:hover { border-color: var(--cyan-blue); box-shadow: 0 0 15px rgba(0,240,255,0.1); }
-        .btn-pay { background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue)); color: #000; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; width: 100%; margin-top: 15px; border: none; cursor: pointer; transition: 0.3s; }
-        .btn-pay:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 240, 255, 0.4); }
-        
-        .invoice-btn { background: rgba(255, 255, 255, 0.1); color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; margin-left: 10px; border: 1px solid rgba(255,255,255,0.2); display: none; }
-        .invoice-btn:hover { background: rgba(255, 255, 255, 0.2); }
+        /* =====================================================
+           SIDEBAR
+        ====================================================== */
 
-        /* Floating WhatsApp Icon */
-        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index: 2000; display: flex; justify-content: center; align-items: center; width: 60px; height: 60px; text-decoration: none; animation: pulse 2s infinite; cursor: pointer; }
-        .whatsapp-float svg { width: 35px; height: 35px; fill: white; }
-        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
+        .sidebar {
+            width: 260px;
+            min-height: 100vh;
+            background: rgba(17, 24, 39, 0.8);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 40px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .logo span {
+            color: var(--neon-green);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: 0.3s;
+            font-weight: 600;
+            display: block;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--neon-green);
+            border-left: 4px solid var(--neon-green);
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--danger);
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* =====================================================
+           MAIN CONTENT
+        ====================================================== */
+
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .client-badge {
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--cyan-blue);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+
+        /* =====================================================
+           CARDS
+        ====================================================== */
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            color: var(--cyan-blue);
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 10px;
+        }
+
+        /* =====================================================
+           STATUS BOX
+        ====================================================== */
+
+        .status-box {
+            background: rgba(255,255,255,0.02);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--text-muted);
+            transition: 0.3s;
+        }
+
+        .status-box h4 {
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .status-box p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* =====================================================
+           PROGRESS CARD
+        ====================================================== */
+
+        .progress-card {
+            margin-bottom: 30px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .progress-header h3 {
+            color: var(--cyan-blue);
+            font-size: 1.2rem;
+        }
+
+        .progress-percentage {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--neon-green);
+        }
+
+        .progress-layout {
+            display: grid;
+            grid-template-columns: 170px 1fr;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .progress-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            background:
+                conic-gradient(
+                    var(--neon-green) 0deg,
+                    var(--cyan-blue) 0deg,
+                    rgba(255,255,255,0.08) 0deg
+                );
+            position: relative;
+        }
+
+        .progress-circle::before {
+            content: "";
+            position: absolute;
+            width: 116px;
+            height: 116px;
+            border-radius: 50%;
+            background: var(--card-bg);
+        }
+
+        .progress-circle span {
+            position: relative;
+            z-index: 2;
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .progress-bar-wrapper {
+            width: 100%;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 13px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 20px;
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--neon-green),
+                    var(--cyan-blue)
+                );
+            transition: width 0.8s ease;
+        }
+
+        .progress-description {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .progress-count {
+            color: white;
+            font-weight: 600;
+        }
+
+        /* =====================================================
+           PAYMENT
+        ====================================================== */
+
+        .payment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .pay-box {
+            background: rgba(255,255,255,0.02);
+            border: 1px dashed rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .pay-box:hover {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(0,255,136,0.1);
+        }
+
+        .pay-box h4 {
+            color: white;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .upi-id {
+            background: rgba(0,255,136,0.1);
+            color: var(--neon-green);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 15px;
+            border: 1px solid rgba(0,255,136,0.3);
+            font-size: 0.95rem;
+        }
+
+        .qr-placeholder {
+            width: 130px;
+            height: 130px;
+            background: transparent;
+            margin: 0 auto;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 3px solid var(--neon-green);
+            padding: 5px;
+        }
+
+        .qr-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 5px;
+            background: white;
+        }
+
+        .intl-box {
+            border-color: rgba(0,240,255,0.3);
+            background: rgba(0,240,255,0.02);
+        }
+
+        .intl-box:hover {
+            border-color: var(--cyan-blue);
+            box-shadow: 0 0 15px rgba(0,240,255,0.1);
+        }
+
+        .btn-pay {
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--neon-green),
+                    var(--cyan-blue)
+                );
+            color: #000;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            width: 100%;
+            margin-top: 15px;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-pay:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 5px 15px rgba(0,240,255,0.4);
+        }
+
+        .invoice-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+        }
+
+        .invoice-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* =====================================================
+           LOADING
+        ====================================================== */
+
+        #dashboardLoading {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .loading-spinner {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--neon-green);
+            border-right-color: var(--cyan-blue);
+            animation: spin 0.9s linear infinite;
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* =====================================================
+           WHATSAPP
+        ====================================================== */
+
+        .whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #25d366;
+            color: #fff;
+            border-radius: 50%;
+            text-align: center;
+            font-size: 30px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px;
+            height: 60px;
+            text-decoration: none;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+        }
+
+        .whatsapp-float svg {
+            width: 35px;
+            height: 35px;
+            fill: white;
+        }
+
+        @keyframes pulse {
+
+            0% {
+                transform: scale(1);
+                box-shadow:
+                    0 0 0 0 rgba(37,211,102,0.7);
+            }
+
+            70% {
+                transform: scale(1.1);
+                box-shadow:
+                    0 0 0 15px rgba(37,211,102,0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow:
+                    0 0 0 0 rgba(37,211,102,0);
+            }
+
+        }
+
+        /* =====================================================
+           MOBILE
+        ====================================================== */
 
         @media (max-width: 900px) {
-            body { flex-direction: column; height: auto; overflow-y: visible; }
-            .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; padding: 20px; gap: 10px; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
-            .logo { width: 100%; margin-bottom: 10px; }
-            .nav-item { margin-bottom: 0; padding: 10px 12px; font-size: 0.9rem; flex: 1 1 45%; text-align: center; }
-            .logout-btn { margin-top: 10px; width: 100%; flex: 1 1 100%; }
-            .main-content { padding: 20px; overflow-y: visible; }
-            .header { flex-direction: column; text-align: left; align-items: flex-start; gap: 15px; }
-            .grid-2 { grid-template-columns: 1fr; gap: 20px; }
-            .payment-grid { grid-template-columns: 1fr; }
-            
-            .whatsapp-float { bottom: 20px; right: 20px; width: 45px; height: 45px; }
-            .whatsapp-float svg { width: 24px; height: 24px; }
+
+            body {
+                flex-direction: column;
+                min-height: auto;
+                overflow-y: visible;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+                gap: 10px;
+                border-right: none;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+
+            .logo {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .nav-item {
+                margin-bottom: 0;
+                padding: 10px 12px;
+                font-size: 0.9rem;
+                flex: 1 1 45%;
+                text-align: center;
+            }
+
+            .logout-btn {
+                margin-top: 10px;
+                width: 100%;
+                flex: 1 1 100%;
+            }
+
+            .main-content {
+                padding: 20px;
+                overflow-y: visible;
+            }
+
+            .header {
+                flex-direction: column;
+                text-align: left;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .payment-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .progress-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .whatsapp-float {
+                bottom: 20px;
+                right: 20px;
+                width: 45px;
+                height: 45px;
+            }
+
+            .whatsapp-float svg {
+                width: 24px;
+                height: 24px;
+            }
+
         }
+
     </style>
 </head>
+
 <body>
 
-    <!-- Floating Chat Icon (ONLY button that links to WhatsApp) -->
-    <a href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20need%20help%20with%20my%20dashboard/project." target="_blank" class="whatsapp-float">
-        <svg viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/></svg>
+    <!-- =====================================================
+         LOADING SCREEN
+    ====================================================== -->
+
+    <div id="dashboardLoading">
+
+        <div class="loading-spinner"></div>
+
+        <div class="loading-text">
+            Securing your client portal...
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         WHATSAPP
+    ====================================================== -->
+
+    <a
+        href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20need%20help%20with%20my%20dashboard/project."
+        target="_blank"
+        rel="noopener noreferrer"
+        class="whatsapp-float"
+        aria-label="Contact Glime on WhatsApp"
+    >
+
+        <svg viewBox="0 0 24 24">
+            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/>
+        </svg>
+
     </a>
 
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
     <div class="sidebar">
-        <div class="logo">G<span>↑</span>ime Portal</div>
-        <a href="#" class="nav-item active">📊 Dashboard</a>
-        <a href="#" class="nav-item">💼 My Project</a>
-        <a href="#" class="nav-item">💸 Billing</a>
-        <button onclick="handleLogout()" class="logout-btn">Secure Logout</button>
+
+        <div class="logo">
+            G<span>↑</span>ime Portal
+        </div>
+
+        <a
+            href="#"
+            class="nav-item active"
+        >
+            📊 Dashboard
+        </a>
+
+        <a
+            href="#projectSection"
+            class="nav-item"
+        >
+            💼 My Project
+        </a>
+
+        <a
+            href="#billingSection"
+            class="nav-item"
+        >
+            💸 Billing
+        </a>
+
+        <button
+            onclick="handleLogout()"
+            class="logout-btn"
+        >
+            Secure Logout
+        </button>
+
     </div>
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
 
     <div class="main-content">
+
         <div class="header">
+
             <div>
-                <h1>Welcome Back, <span id="clientName">...</span> 👋</h1>
-                <p>Manage your custom growth engine and billing here.</p>
+
+                <h1>
+                    Welcome Back,
+                    <span id="clientName">...</span>
+                    👋
+                </h1>
+
+                <p>
+                    Manage your custom growth engine and billing here.
+                </p>
+
             </div>
-            <div class="client-badge">Live Updates Active 🚀</div>
+
+            <div class="client-badge">
+                Live Updates Active 🚀
+            </div>
+
         </div>
+
+        <!-- =================================================
+             PROGRESS GRAPH
+        ================================================== -->
+
+        <div class="card progress-card">
+
+            <div class="progress-header">
+
+                <h3>
+                    Project Progress
+                </h3>
+
+                <div
+                    class="progress-percentage"
+                    id="progressPercentage"
+                >
+                    0%
+                </div>
+
+            </div>
+
+            <div class="progress-layout">
+
+                <div
+                    class="progress-circle"
+                    id="progressCircle"
+                >
+                    <span id="progressCircleText">
+                        0%
+                    </span>
+                </div>
+
+                <div class="progress-bar-wrapper">
+
+                    <div class="progress-bar">
+
+                        <div
+                            class="progress-bar-fill"
+                            id="progressBarFill"
+                        ></div>
+
+                    </div>
+
+                    <p class="progress-description">
+
+                        Your project completion is calculated
+                        automatically from the three development
+                        stages shown below.
+
+                        <br><br>
+
+                        Completed stages:
+
+                        <span
+                            class="progress-count"
+                            id="progressCount"
+                        >
+                            0 / 3
+                        </span>
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- =================================================
+             PROJECT + PAYMENT
+        ================================================== -->
 
         <div class="grid-2">
-            <!-- Project Card -->
-            <div class="card">
-                <h3 class="card-title">Project: <span id="dynamicProjectName" style="color: white;">Loading...</span></h3>
-                
-                <!-- Dynamic Steps -->
-                <div class="status-box" id="box_step1">
-                    <h4>Step 1: UI/UX Wireframing</h4>
-                    <p>Status: <span id="dynamicStep1">Fetching...</span></p>
-                </div>
-                
-                <div class="status-box" id="box_step2">
-                    <h4>Step 2: Custom VS Code Development</h4>
-                    <p>Status: <span id="dynamicStep2">Fetching...</span></p>
+
+            <!-- PROJECT -->
+            <div
+                class="card"
+                id="projectSection"
+            >
+
+                <h3 class="card-title">
+
+                    Project:
+
+                    <span
+                        id="dynamicProjectName"
+                        style="color:white;"
+                    >
+                        Loading...
+                    </span>
+
+                </h3>
+
+                <!-- STEP 1 -->
+
+                <div
+                    class="status-box"
+                    id="box_step1"
+                >
+
+                    <h4>
+                        Step 1: UI/UX Wireframing
+                    </h4>
+
+                    <p>
+                        Status:
+
+                        <span id="dynamicStep1">
+                            Fetching...
+                        </span>
+                    </p>
+
                 </div>
 
-                <div class="status-box" id="box_step3">
-                    <h4>Step 3: Database & Testing</h4>
-                    <p>Status: <span id="dynamicStep3">Fetching...</span></p>
+                <!-- STEP 2 -->
+
+                <div
+                    class="status-box"
+                    id="box_step2"
+                >
+
+                    <h4>
+                        Step 2: Custom VS Code Development
+                    </h4>
+
+                    <p>
+                        Status:
+
+                        <span id="dynamicStep2">
+                            Fetching...
+                        </span>
+                    </p>
+
                 </div>
+
+                <!-- STEP 3 -->
+
+                <div
+                    class="status-box"
+                    id="box_step3"
+                >
+
+                    <h4>
+                        Step 3: Database & Testing
+                    </h4>
+
+                    <p>
+                        Status:
+
+                        <span id="dynamicStep3">
+                            Fetching...
+                        </span>
+                    </p>
+
+                </div>
+
             </div>
 
-            <!-- Payment Card -->
-            <div class="card">
-                <h3 class="card-title">Billing & Payments 💸</h3>
-                
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
-                    Payment Status: <strong id="dynamicPaymentStatus" style="color: white; font-size: 1.1rem; text-transform: uppercase;">Fetching...</strong>
-                    <a href="#" id="dynamicInvoiceBtn" class="invoice-btn" target="_blank">📄 View Invoice</a>
+            <!-- PAYMENT -->
+
+            <div
+                class="card"
+                id="billingSection"
+            >
+
+                <h3 class="card-title">
+                    Billing & Payments 💸
+                </h3>
+
+                <p
+                    style="
+                        color:var(--text-muted);
+                        font-size:0.9rem;
+                        margin-bottom:20px;
+                    "
+                >
+
+                    Payment Status:
+
+                    <strong
+                        id="dynamicPaymentStatus"
+                        style="
+                            color:white;
+                            font-size:1.1rem;
+                            text-transform:uppercase;
+                        "
+                    >
+                        Fetching...
+                    </strong>
+
+                    <a
+                        href="#"
+                        id="dynamicInvoiceBtn"
+                        class="invoice-btn"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        📄 View Invoice
+                    </a>
+
                 </p>
-                
-                <!-- Keeps the fallback payment methods visible in case they need to pay the remaining balance -->
-                <div class="payment-grid" id="paymentMethodsBox">
+
+                <!-- PAYMENT METHODS REMAIN -->
+                <div
+                    class="payment-grid"
+                    id="paymentMethodsBox"
+                >
+
+                    <!-- INDIA -->
+
                     <div class="pay-box">
-                        <h4>🇮🇳 Indian Clients</h4>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">0% Fee via UPI</p>
-                        <div class="upi-id">connect@glime.online</div> 
-                        <div class="qr-placeholder">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=connect@glime.online&pn=Glime" alt="Scan to Pay">
+
+                        <h4>
+                            🇮🇳 Indian Clients
+                        </h4>
+
+                        <p
+                            style="
+                                font-size:0.8rem;
+                                color:var(--text-muted);
+                                margin-bottom:10px;
+                            "
+                        >
+                            0% Fee via UPI
+                        </p>
+
+                        <div class="upi-id">
+                            connect@glime.online
                         </div>
+
+                        <div class="qr-placeholder">
+
+                            <img
+                                src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=connect@glime.online%26pn=Glime"
+                                alt="Scan to Pay"
+                            >
+
+                        </div>
+
                     </div>
+
+                    <!-- INTERNATIONAL -->
+
                     <div class="pay-box intl-box">
-                        <h4>🌍 Global Clients</h4>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Pay via Credit Card / PayPal</p>
-                        <div style="font-size: 2.5rem; margin: 15px 0;">💳</div>
-                        <button class="btn-pay" onclick="window.open('https://paypal.me/glime', '_blank')">Pay Securely ($)</button>
+
+                        <h4>
+                            🌍 Global Clients
+                        </h4>
+
+                        <p
+                            style="
+                                font-size:0.8rem;
+                                color:var(--text-muted);
+                                margin-bottom:10px;
+                            "
+                        >
+                            Pay via Credit Card / PayPal
+                        </p>
+
+                        <div
+                            style="
+                                font-size:2.5rem;
+                                margin:15px 0;
+                            "
+                        >
+                            💳
+                        </div>
+
+                        <button
+                            class="btn-pay"
+                            onclick="window.open('https://paypal.me/glime', '_blank')"
+                        >
+                            Pay Securely ($)
+                        </button>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
     <script>
-        const loggedInEmail = localStorage.getItem('glime_client_email'); 
-        
-        if (!loggedInEmail) {
-            window.location.href = "login.html";
-        } else {
-            let namePart = loggedInEmail.split('@')[0];
-            document.getElementById('clientName').innerText = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-            initDashboard();
-        }
 
-        function handleLogout() {
-            localStorage.removeItem('glime_client_email');
-            window.location.href = "login.html";
-        }
+        /* =====================================================
+           SUPABASE
+        ====================================================== */
 
-        // स्टेटस के रंग बदलने का फंक्शन
-        function setStepColor(stepId, boxId, statusText) {
-            let textSpan = document.getElementById(stepId);
-            let box = document.getElementById(boxId);
-            
-            textSpan.innerText = statusText;
-            let lowerStatus = statusText.toLowerCase();
+        const SUPABASE_URL =
+            'https://ufoulgbiqgjriwapuopc.supabase.co';
 
-            if(lowerStatus.includes('completed') || lowerStatus.includes('paid')) {
-                textSpan.style.color = 'var(--neon-green)';
-                box.style.borderLeftColor = 'var(--neon-green)';
-            } else if (lowerStatus.includes('progress')) {
-                textSpan.style.color = 'var(--cyan-blue)';
-                box.style.borderLeftColor = 'var(--cyan-blue)';
-            } else {
-                textSpan.style.color = '#ff4757';
-                box.style.borderLeftColor = '#ff4757';
-            }
-        }
+        const SUPABASE_KEY =
+            'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 
-        async function initDashboard() {
-            const supabaseUrl = 'https://ufoulgbiqgjriwapuopc.supabase.co';
-            const supabaseKey = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const supabaseClient =
+            window.supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY
+            );
+
+
+        /* =====================================================
+           ELEMENTS
+        ====================================================== */
+
+        const loadingScreen =
+            document.getElementById(
+                'dashboardLoading'
+            );
+
+
+        /* =====================================================
+           AUTHENTICATION
+        ====================================================== */
+
+        async function initializeDashboard() {
 
             try {
-                const { data, error } = await supabase
-                    .from('client_data') 
-                    .select('*')
-                    .eq('email', loggedInEmail); 
 
-                if (error || !data || data.length === 0) return;
+                /*
+                 * Use the real Supabase Auth session.
+                 *
+                 * The localStorage email is only used as a
+                 * convenience/display value, not as authentication.
+                 */
 
-                let clientData = data[0]; 
+                const {
+                    data: sessionData,
+                    error: sessionError
+                } =
+                    await supabaseClient.auth.getSession();
 
-                // प्रोजेक्ट और पेमेंट अपडेट
-                document.getElementById('dynamicProjectName').innerText = clientData.project_name || "Custom Growth Engine";
-                
-                let pStatus = clientData.payment_status || "Pending";
-                let statusElement = document.getElementById('dynamicPaymentStatus');
-                statusElement.innerText = pStatus;
-                
-                // Color formatting for payment status
-                if (pStatus.toLowerCase().includes('paid') || pStatus.toLowerCase().includes('approve')) {
-                    statusElement.style.color = 'var(--neon-green)';
-                    // Optionally hide the payment boxes if fully paid
-                    if(pStatus.toLowerCase() === 'paid') {
-                        document.getElementById('paymentMethodsBox').style.display = 'none';
-                    }
-                } else if (pStatus.toLowerCase().includes('pending')) {
-                    statusElement.style.color = '#ff4757';
-                } else {
-                    statusElement.style.color = 'var(--cyan-blue)';
+                if (sessionError) {
+                    throw sessionError;
                 }
 
-                let invLink = clientData.invoice_link;
-                if (invLink) {
-                    let invoiceBtn = document.getElementById('dynamicInvoiceBtn');
-                    invoiceBtn.href = invLink;
-                    invoiceBtn.style.display = "inline-block"; 
+                const session =
+                    sessionData.session;
+
+                if (
+                    !session ||
+                    !session.user
+                ) {
+
+                    window.location.replace(
+                        'login.html'
+                    );
+
+                    return;
+
                 }
 
-                // 🚀 नए Dynamic Steps अपडेट
-                setStepColor('dynamicStep1', 'box_step1', clientData.step1_status || "Pending");
-                setStepColor('dynamicStep2', 'box_step2', clientData.step2_status || "Pending");
-                setStepColor('dynamicStep3', 'box_step3', clientData.step3_status || "Pending");
+                const authenticatedEmail =
+                    (
+                        session.user.email ||
+                        ''
+                    )
+                    .trim()
+                    .toLowerCase();
 
-            } catch (err) {
-                console.error(err);
+                if (!authenticatedEmail) {
+
+                    await supabaseClient.auth.signOut({
+                        scope: 'local'
+                    });
+
+                    localStorage.removeItem(
+                        'glime_client_email'
+                    );
+
+                    window.location.replace(
+                        'login.html'
+                    );
+
+                    return;
+
+                }
+
+                /*
+                 * Keep compatibility with the existing
+                 * login/dashboard connection.
+                 */
+
+                localStorage.setItem(
+                    'glime_client_email',
+                    authenticatedEmail
+                );
+
+                const namePart =
+                    authenticatedEmail
+                        .split('@')[0];
+
+                document.getElementById(
+                    'clientName'
+                ).innerText =
+                    namePart.charAt(0).toUpperCase() +
+                    namePart.slice(1);
+
+                await initDashboard(
+                    authenticatedEmail
+                );
+
+                loadingScreen.style.display =
+                    'none';
+
+            } catch (error) {
+
+                console.error(
+                    'Dashboard authentication error:',
+                    error
+                );
+
+                localStorage.removeItem(
+                    'glime_client_email'
+                );
+
+                window.location.replace(
+                    'login.html'
+                );
+
             }
+
         }
+
+
+        /* =====================================================
+           LOGOUT
+        ====================================================== */
+
+        async function handleLogout() {
+
+            try {
+
+                const {
+                    error
+                } =
+                    await supabaseClient.auth.signOut({
+                        scope: 'local'
+                    });
+
+                if (error) {
+                    console.error(
+                        'Logout error:',
+                        error
+                    );
+                }
+
+            } finally {
+
+                localStorage.removeItem(
+                    'glime_client_email'
+                );
+
+                localStorage.removeItem(
+                    'glime_verified_email'
+                );
+
+                window.location.replace(
+                    'login.html'
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           STEP STATUS COLOR
+        ====================================================== */
+
+        function setStepColor(
+            stepId,
+            boxId,
+            statusText
+        ) {
+
+            const textSpan =
+                document.getElementById(
+                    stepId
+                );
+
+            const box =
+                document.getElementById(
+                    boxId
+                );
+
+            const safeStatus =
+                statusText || 'Pending';
+
+            textSpan.innerText =
+                safeStatus;
+
+            const lowerStatus =
+                safeStatus.toLowerCase();
+
+            if (
+                lowerStatus.includes('completed') ||
+                lowerStatus.includes('complete') ||
+                lowerStatus.includes('paid')
+            ) {
+
+                textSpan.style.color =
+                    'var(--neon-green)';
+
+                box.style.borderLeftColor =
+                    'var(--neon-green)';
+
+            } else if (
+                lowerStatus.includes('progress') ||
+                lowerStatus.includes('working') ||
+                lowerStatus.includes('active')
+            ) {
+
+                textSpan.style.color =
+                    'var(--cyan-blue)';
+
+                box.style.borderLeftColor =
+                    'var(--cyan-blue)';
+
+            } else {
+
+                textSpan.style.color =
+                    'var(--text-muted)';
+
+                box.style.borderLeftColor =
+                    'var(--text-muted)';
+
+            }
+
+        }
+
+
+        /* =====================================================
+           PROGRESS CALCULATION
+        ====================================================== */
+
+        function isCompletedStatus(
+            status
+        ) {
+
+            if (!status) {
+                return false;
+            }
+
+            const value =
+                String(status)
+                    .trim()
+                    .toLowerCase();
+
+            return (
+                value.includes('completed') ||
+                value.includes('complete') ||
+                value.includes('done') ||
+                value.includes('finished')
+            );
+
+        }
+
+
+        function updateProgress(
+            step1,
+            step2,
+            step3
+        ) {
+
+            const steps = [
+                step1,
+                step2,
+                step3
+            ];
+
+            let completed =
+                0;
+
+            steps.forEach(
+                function(step) {
+
+                    if (
+                        isCompletedStatus(step)
+                    ) {
+
+                        completed++;
+
+                    }
+
+                }
+            );
+
+            const percentage =
+                Math.round(
+                    (
+                        completed /
+                        steps.length
+                    ) * 100
+                );
+
+            document.getElementById(
+                'progressPercentage'
+            ).innerText =
+                percentage + '%';
+
+            document.getElementById(
+                'progressCircleText'
+            ).innerText =
+                percentage + '%';
+
+            document.getElementById(
+                'progressCount'
+            ).innerText =
+                completed + ' / 3';
+
+            document.getElementById(
+                'progressBarFill'
+            ).style.width =
+                percentage + '%';
+
+            /*
+             * 360 degrees = 100%.
+             */
+
+            const degrees =
+                percentage * 3.6;
+
+            document.getElementById(
+                'progressCircle'
+            ).style.background =
+                `conic-gradient(
+                    var(--neon-green) 0deg,
+                    var(--cyan-blue) ${degrees}deg,
+                    rgba(255,255,255,0.08) ${degrees}deg,
+                    rgba(255,255,255,0.08) 360deg
+                )`;
+
+        }
+
+
+        /* =====================================================
+           LOAD CLIENT DATA
+        ====================================================== */
+
+        async function initDashboard(
+            authenticatedEmail
+        ) {
+
+            try {
+
+                /*
+                 * Query only the authenticated client's email.
+                 *
+                 * Database RLS must also enforce this restriction.
+                 */
+
+                const {
+                    data,
+                    error
+                } =
+                    await supabaseClient
+                        .from('client_data')
+                        .select('*')
+                        .eq(
+                            'email',
+                            authenticatedEmail
+                        );
+
+                if (error) {
+
+                    console.error(
+                        'Client data error:',
+                        error
+                    );
+
+                    updateProgress(
+                        'Pending',
+                        'Pending',
+                        'Pending'
+                    );
+
+                    return;
+
+                }
+
+                if (
+                    !data ||
+                    data.length === 0
+                ) {
+
+                    document.getElementById(
+                        'dynamicProjectName'
+                    ).innerText =
+                        'Project information pending';
+
+                    document.getElementById(
+                        'dynamicPaymentStatus'
+                    ).innerText =
+                        'Pending';
+
+                    setStepColor(
+                        'dynamicStep1',
+                        'box_step1',
+                        'Pending'
+                    );
+
+                    setStepColor(
+                        'dynamicStep2',
+                        'box_step2',
+                        'Pending'
+                    );
+
+                    setStepColor(
+                        'dynamicStep3',
+                        'box_step3',
+                        'Pending'
+                    );
+
+                    updateProgress(
+                        'Pending',
+                        'Pending',
+                        'Pending'
+                    );
+
+                    return;
+
+                }
+
+                /*
+                 * Existing structure uses the first matching
+                 * client_data row.
+                 */
+
+                const clientData =
+                    data[0];
+
+                /* ---------------------------------------------
+                   PROJECT
+                ---------------------------------------------- */
+
+                document.getElementById(
+                    'dynamicProjectName'
+                ).innerText =
+                    clientData.project_name ||
+                    'Custom Growth Engine';
+
+
+                /* ---------------------------------------------
+                   PAYMENT
+                ---------------------------------------------- */
+
+                const paymentStatus =
+                    clientData.payment_status ||
+                    'Pending';
+
+                const statusElement =
+                    document.getElementById(
+                        'dynamicPaymentStatus'
+                    );
+
+                statusElement.innerText =
+                    paymentStatus;
+
+                const lowerPaymentStatus =
+                    paymentStatus.toLowerCase();
+
+                if (
+                    lowerPaymentStatus.includes('paid') ||
+                    lowerPaymentStatus.includes('approve')
+                ) {
+
+                    statusElement.style.color =
+                        'var(--neon-green)';
+
+                    /*
+                     * Existing behaviour:
+                     * hide payment methods when fully paid.
+                     */
+
+                    if (
+                        lowerPaymentStatus === 'paid'
+                    ) {
+
+                        document.getElementById(
+                            'paymentMethodsBox'
+                        ).style.display =
+                            'none';
+
+                    }
+
+                } else if (
+                    lowerPaymentStatus.includes('pending')
+                ) {
+
+                    statusElement.style.color =
+                        'var(--danger)';
+
+                } else {
+
+                    statusElement.style.color =
+                        'var(--cyan-blue)';
+
+                }
+
+
+                /* ---------------------------------------------
+                   INVOICE
+                ---------------------------------------------- */
+
+                const invoiceLink =
+                    clientData.invoice_link;
+
+                if (invoiceLink) {
+
+                    const invoiceButton =
+                        document.getElementById(
+                            'dynamicInvoiceBtn'
+                        );
+
+                    invoiceButton.href =
+                        invoiceLink;
+
+                    invoiceButton.style.display =
+                        'inline-block';
+
+                }
+
+
+                /* ---------------------------------------------
+                   PROJECT STEPS
+                ---------------------------------------------- */
+
+                const step1 =
+                    clientData.step1_status ||
+                    'Pending';
+
+                const step2 =
+                    clientData.step2_status ||
+                    'Pending';
+
+                const step3 =
+                    clientData.step3_status ||
+                    'Pending';
+
+                setStepColor(
+                    'dynamicStep1',
+                    'box_step1',
+                    step1
+                );
+
+                setStepColor(
+                    'dynamicStep2',
+                    'box_step2',
+                    step2
+                );
+
+                setStepColor(
+                    'dynamicStep3',
+                    'box_step3',
+                    step3
+                );
+
+
+                /* ---------------------------------------------
+                   GRAPH
+                ---------------------------------------------- */
+
+                updateProgress(
+                    step1,
+                    step2,
+                    step3
+                );
+
+            } catch (error) {
+
+                console.error(
+                    'Dashboard loading error:',
+                    error
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           AUTH STATE LISTENER
+        ====================================================== */
+
+        supabaseClient.auth.onAuthStateChange(
+            function(event, session) {
+
+                if (
+                    event === 'SIGNED_OUT' ||
+                    !session
+                ) {
+
+                    localStorage.removeItem(
+                        'glime_client_email'
+                    );
+
+                    window.location.replace(
+                        'login.html'
+                    );
+
+                }
+
+            }
+        );
+
+
+        /* =====================================================
+           START
+        ====================================================== */
+
+        initializeDashboard();
+
     </script>
+
 </body>
 </html>
