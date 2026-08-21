@@ -1,13 +1,10 @@
 User-agent: *
 Allow: /
 
-User-agent: GPTBot
-Allow: /
+# Private / authentication pages
+Disallow: /login.html
+Disallow: /admin.html
+Disallow: /dashboard.html
 
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
-Sitemap: https://glime.online/sitemap.xml
+# Sitemap
+Sitemap: https://glime.online/sitemap.xmls
