@@ -1,51 +1,564 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+    <title>Contact Glime AI Automation | Start Your Project</title>
 
-  <meta
-    name="description"
-    content="Glime Privacy Policy. Learn how Glime collects, uses, stores and deletes information submitted through its website and business enquiry systems."
-  >
+    <meta
+        name="description"
+        content="Contact Glime AI Automation for AI automation, custom software, websites, lead generation systems and automated business workflows."
+    >
 
-  <title>Privacy Policy | Glime</title>
+    <link rel="canonical" href="https://glime.online/contact.html">
 
-  <link
-    rel="icon"
-    type="image/svg+xml"
-    href="glime_logo_clean.svg"
-  >
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="glime_logo_clean.svg">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
-  >
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
-  >
+    <!-- Google Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+        rel="stylesheet"
+    >
 
-  <link rel="stylesheet" href="privacy.css">
+    <style>
+
+        :root {
+            --bg-dark: #0a0f16;
+            --card-bg: #111827;
+            --neon-green: #00ff88;
+            --cyan-blue: #00f0ff;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --danger: #ff4757;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .gradient-text {
+            background: linear-gradient(
+                90deg,
+                var(--neon-green),
+                var(--cyan-blue)
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* =====================================================
+           NAVIGATION
+        ====================================================== */
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 8%;
+            background: rgba(10, 15, 22, 0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .brand-text {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+        }
+
+        .brand-i {
+            position: relative;
+            display: inline-block;
+            margin: 0 2px;
+        }
+
+        .sparkle-star {
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 16px;
+            fill: #a855f7;
+            filter: drop-shadow(0 0 8px #a855f7);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 35px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 400;
+            transition: 0.3s;
+            font-size: 1rem;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--cyan-blue);
+        }
+
+        .client-login-link {
+            background: var(--neon-green);
+            color: #000 !important;
+            padding: 8px 18px;
+            border-radius: 5px;
+            font-weight: 700 !important;
+        }
+
+        .hamburger {
+            display: none;
+            cursor: pointer;
+            font-size: 28px;
+            color: var(--text-main);
+            background: none;
+            border: none;
+        }
+
+        /* =====================================================
+           HEADER
+        ====================================================== */
+
+        .page-header {
+            padding: 145px 20px 45px;
+            text-align: center;
+            background:
+                radial-gradient(
+                    circle at center,
+                    rgba(0, 240, 255, 0.06) 0%,
+                    transparent 70%
+                );
+        }
+
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* =====================================================
+           FORM
+        ====================================================== */
+
+        .section {
+            padding: 35px 8% 80px;
+        }
+
+        .contact-box {
+            max-width: 720px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 45px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .form-group label span {
+            color: var(--danger);
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 14px 15px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--cyan-blue);
+            background: rgba(255,255,255,0.05);
+            box-shadow: 0 0 15px rgba(0,240,255,0.1);
+        }
+
+        input:disabled {
+            opacity: 0.7;
+        }
+
+        .btn-primary {
+            background: linear-gradient(
+                90deg,
+                var(--neon-green),
+                var(--cyan-blue)
+            );
+            color: #000;
+            padding: 13px 30px;
+            border-radius: 8px;
+            font-weight: 700;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 25px rgba(0,240,255,0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .selected-info {
+            display: none;
+            background: rgba(0,240,255,0.06);
+            border: 1px solid rgba(0,240,255,0.25);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .selected-info strong {
+            color: var(--cyan-blue);
+        }
+
+        /* =====================================================
+           OTP SECTION
+        ====================================================== */
+
+        #otpSection {
+            display: none;
+            margin-top: 25px;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,255,136,0.25);
+            background: rgba(0,255,136,0.04);
+        }
+
+        .otp-title {
+            color: var(--neon-green);
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .otp-description {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        #otpInput {
+            text-align: center;
+            letter-spacing: 8px;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .otp-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .secondary-btn {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .secondary-btn:hover {
+            border-color: var(--cyan-blue);
+            color: var(--cyan-blue);
+        }
+
+        .verify-btn {
+            flex: 2;
+        }
+
+        #statusMessage {
+            display: none;
+            margin-top: 18px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .verified-badge {
+            display: none;
+            color: var(--neon-green);
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        /* =====================================================
+           FOOTER
+        ====================================================== */
+
+        footer {
+            text-align: center;
+            padding: 45px 20px 30px;
+            background: #05080c;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        footer span {
+            color: var(--cyan-blue);
+            font-weight: 600;
+        }
+
+        .footer-social {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 22px 0;
+        }
+
+        .footer-social a {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--cyan-blue);
+            border: 1px solid rgba(0,240,255,0.2);
+            background: rgba(0,240,255,0.05);
+            font-weight: 700;
+        }
+
+        /* =====================================================
+           WHATSAPP
+        ====================================================== */
+
+        .whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #25d366;
+            color: #fff;
+            border-radius: 50%;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px;
+            height: 60px;
+            text-decoration: none;
+            animation: pulse 2s infinite;
+        }
+
+        .whatsapp-float svg {
+            width: 35px;
+            height: 35px;
+            fill: white;
+        }
+
+        @keyframes pulse {
+
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37,211,102,0.7);
+            }
+
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 15px rgba(37,211,102,0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37,211,102,0);
+            }
+
+        }
+
+        /* =====================================================
+           FADE
+        ====================================================== */
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* =====================================================
+           MOBILE
+        ====================================================== */
+
+        @media (max-width: 768px) {
+
+            nav {
+                padding: 12px 5%;
+            }
+
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                width: 100%;
+                background: var(--card-bg);
+                padding: 20px;
+                gap: 15px;
+                text-align: center;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            .page-header {
+                padding-top: 115px;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .page-header p {
+                font-size: 0.9rem;
+            }
+
+            .section {
+                padding: 25px 5% 60px;
+            }
+
+            .contact-box {
+                padding: 25px 18px;
+            }
+
+            .otp-actions {
+                flex-direction: column;
+            }
+
+            .verify-btn,
+            .secondary-btn {
+                flex: auto;
+                width: 100%;
+            }
+
+            .whatsapp-float {
+                width: 45px;
+                height: 45px;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .whatsapp-float svg {
+                width: 25px;
+                height: 25px;
+            }
+
+        }
+
+    </style>
   <link rel="stylesheet" href="glime-global-nav.css">
 </head>
 
 <body>
 
-  <div class="page-glow glow-one" aria-hidden="true"></div>
-  <div class="page-glow glow-two" aria-hidden="true"></div>
+    <!-- =====================================================
+         WHATSAPP
+    ====================================================== -->
 
+    <a
+        href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20need%20help%20with%20my%20project."
+        target="_blank"
+        rel="noopener noreferrer"
+        class="whatsapp-float"
+        aria-label="Contact Glime on WhatsApp"
+    >
+        <svg viewBox="0 0 24 24">
+            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zM20.056 3.945C17.915 1.815 15.076.64 12.038.64 5.764.64.656 5.748.654 12.024c0 2.005.523 3.963 1.517 5.694L.645 23.352l5.773-1.515c1.669.914 3.551 1.397 5.485 1.398h.004c6.271 0 11.38-5.108 11.383-11.383 0-3.039-1.182-5.895-3.328-8.037z"/>
+        </svg>
+    </a>
 
-  <!-- HEADER -->
+    <!-- =====================================================
+         NAV
+    ====================================================== -->
 
-  <header class="glime-global-header">
+    <header class="glime-global-header">
   <div class="glime-nav-inner">
     <a href="index.html" class="glime-brand" aria-label="GLIME Home">
       <img src="glime_logo_clean.svg" alt="GLIME">
@@ -57,7 +570,7 @@
       <a href="how-it-works.html" data-nav="how">How It Works</a>
       <a href="packages.html" data-nav="packages">Packages</a>
       <a href="portfolio.html" data-nav="portfolio">Portfolio</a>
-      <a href="contact.html" data-nav="contact">Contact</a>
+      <a href="contact.html" data-nav="contact" class="active">Contact</a>
       <a href="ai-problem-solver.html" data-nav="ai">AI Tools</a>
       <a href="login.html">Login</a>
     </nav>
@@ -74,555 +587,1227 @@
     <a href="how-it-works.html" data-nav="how">How It Works</a>
     <a href="packages.html" data-nav="packages">Packages</a>
     <a href="portfolio.html" data-nav="portfolio">Portfolio</a>
-    <a href="contact.html" data-nav="contact">Contact</a>
+    <a href="contact.html" data-nav="contact" class="active">Contact</a>
     <a href="ai-problem-solver.html" data-nav="ai">AI Tools</a>
     <a href="login.html">Login</a>
     <a href="ai-problem-solver.html" class="glime-mobile-cta">Solve My Business Problem <span aria-hidden="true">→</span></a>
   </nav>
 </header>
 
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
-  <main>
+    <header class="page-header fade-in">
 
-    <!-- HERO -->
-
-    <section class="hero container">
-
-      <p class="eyebrow">
-        PRIVACY
-      </p>
-
-      <h1>
-        Your information.
-        <span>Handled responsibly.</span>
-      </h1>
-
-      <p class="hero-copy">
-        This Privacy Policy explains what information GLIME
-        collects, why we collect it, how we use it, and how
-        we handle deletion of that information.
-      </p>
-
-      <p class="updated">
-        Last updated: August 2026
-      </p>
-
-    </section>
-
-
-    <!-- POLICY -->
-
-    <section class="policy-section container">
-
-      <div class="policy-layout">
-
-
-        <aside class="policy-nav">
-
-          <p class="eyebrow">
-            ON THIS PAGE
-          </p>
-
-          <a href="#information">
-            Information We Collect
-          </a>
-
-          <a href="#use">
-            How We Use Information
-          </a>
-
-          <a href="#storage">
-            Storage & Security
-          </a>
-
-          <a href="#retention">
-            Data Retention
-          </a>
-
-          <a href="#ai">
-            AI Problem Solver
-          </a>
-
-          <a href="#rights">
-            Your Choices
-          </a>
-
-          <a href="#contact">
-            Contact
-          </a>
-
-        </aside>
-
-
-        <article class="policy-content">
-
-
-          <!-- 01 -->
-
-          <section id="information">
-
-            <span class="section-number">
-              01
+        <h1>
+            Ready to
+            <span class="gradient-text">
+                Upgrade?
             </span>
+        </h1>
 
-            <h2>
-              Information We Collect
-            </h2>
+        <p>
+            Tell us about your brand and let's build a custom digital
+            growth engine that drives actual results.
+        </p>
 
-            <p>
-              When you contact GLIME or submit a business
-              enquiry, we may collect information that you
-              voluntarily provide.
-            </p>
+    </header>
 
-            <ul>
+    <!-- =====================================================
+         CONTACT FORM
+    ====================================================== -->
 
-              <li>
-                Full name
-              </li>
+    <section class="section fade-in">
 
-              <li>
-                Business or creator name
-              </li>
+        <div class="contact-box">
 
-              <li>
-                Email address
-              </li>
+            <div
+                id="selectedInfo"
+                class="selected-info"
+            >
+                <strong>Selected:</strong>
+                <span id="selectedPackage"></span>
 
-              <li>
-                Phone number
-              </li>
+                <br>
 
-              <li>
-                City, state or province, and country
-              </li>
+                <span
+                    id="selectedAddons"
+                    style="
+                        color:var(--text-muted);
+                        font-size:0.85rem;
+                    "
+                ></span>
 
-              <li>
-                Project requirements or business information
-                submitted through an enquiry form
-              </li>
+                <br>
 
-            </ul>
+                <span
+                    id="selectedEstimate"
+                    style="
+                        color:var(--neon-green);
+                        font-size:0.85rem;
+                    "
+                ></span>
+            </div>
 
-            <p>
-              We only ask for information that is relevant to
-              understanding your enquiry, communicating with
-              you, or delivering an agreed service.
-            </p>
+            <form id="mainContactForm">
 
-          </section>
+                <div class="form-group">
 
+                    <label>
+                        Your Full Name
+                        <span>*</span>
+                    </label>
 
-          <!-- 02 -->
+                    <input
+                        type="text"
+                        name="fullName"
+                        placeholder="Your full name"
+                        autocomplete="name"
+                        required
+                    >
 
-          <section id="use">
+                </div>
 
-            <span class="section-number">
-              02
-            </span>
+                <div class="form-group">
 
-            <h2>
-              How We Use Information
-            </h2>
+                    <label>
+                        Business / Creator Name
+                        <span>*</span>
+                    </label>
 
-            <p>
-              Information submitted to GLIME may be used to:
-            </p>
+                    <input
+                        type="text"
+                        name="businessName"
+                        placeholder="Your business"
+                        required
+                    >
 
-            <ul>
+                </div>
 
-              <li>
-                Respond to your enquiry.
-              </li>
+                <div class="form-group">
 
-              <li>
-                Understand your business requirements.
-              </li>
+                    <label>
+                        Email Address
+                        <span>*</span>
+                    </label>
 
-              <li>
-                Discuss potential projects and services.
-              </li>
+                    <input
+                        type="email"
+                        name="email"
+                        id="emailInput"
+                        placeholder="name@company.com"
+                        autocomplete="email"
+                        required
+                    >
 
-              <li>
-                Prepare or manage an agreed project.
-              </li>
+                    <div
+                        id="verifiedBadge"
+                        class="verified-badge"
+                    >
+                        ✓ Email Verified
+                    </div>
 
-              <li>
-                Communicate with you about an active client
-                relationship.
-              </li>
+                </div>
 
-              <li>
-                Improve our website, workflows and services.
-              </li>
+                <div class="form-group">
 
-            </ul>
+                    <label>
+                        Phone Number
+                        <span>*</span>
+                    </label>
 
-            <p>
-              We do not need your information for unrelated
-              purposes, and we do not sell your personal
-              information as part of our normal business
-              operations.
-            </p>
+                    <input
+                        type="tel"
+                        name="phone"
+                        placeholder="+91 85049 26242"
+                        autocomplete="tel"
+                        required
+                    >
 
-          </section>
+                </div>
 
+                <div class="form-group">
 
-          <!-- 03 -->
+                    <label>
+                        City
+                    </label>
 
-          <section id="storage">
+                    <input
+                        type="text"
+                        name="city"
+                        placeholder="Your city"
+                        autocomplete="address-level2"
+                    >
 
-            <span class="section-number">
-              03
-            </span>
+                </div>
 
-            <h2>
-              Storage & Security
-            </h2>
+                <div class="form-group">
 
-            <p>
-              GLIME uses Supabase-based infrastructure for
-              certain application and client-data storage.
-            </p>
+                    <label>
+                        State / Province
+                    </label>
 
-            <p>
-              We take reasonable technical and organisational
-              measures to protect information against
-              unauthorised access, loss, misuse or disclosure.
-            </p>
+                    <input
+                        type="text"
+                        name="state"
+                        placeholder="Your state"
+                        autocomplete="address-level1"
+                    >
 
-            <p>
-              However, no internet-based system can be
-              guaranteed to be completely secure. We therefore
-              cannot promise absolute security of information
-              transmitted or stored online.
-            </p>
+                </div>
 
-          </section>
+                <div class="form-group">
 
+                    <label>
+                        Country
+                    </label>
 
-          <!-- 04 -->
+                    <input
+                        type="text"
+                        name="country"
+                        placeholder="Your country"
+                        value="India"
+                        autocomplete="country-name"
+                    >
 
-          <section id="retention">
+                </div>
 
-            <span class="section-number">
-              04
-            </span>
+                <div class="form-group">
 
-            <h2>
-              Data Retention
-            </h2>
+                    <label>
+                        Project Details
+                        <span>*</span>
+                    </label>
 
-            <p>
-              GLIME follows a limited-retention approach.
-            </p>
+                    <textarea
+                        name="message"
+                        rows="5"
+                        placeholder="Tell us about your project requirements..."
+                        required
+                    ></textarea>
 
-            <div class="retention-card">
+                </div>
 
-              <div>
+                <!-- Hidden values received from index.html -->
 
-                <strong>
-                  Enquiry that does not become a client
-                </strong>
+                <input
+                    type="hidden"
+                    name="selectedPackage"
+                    id="selectedPackageInput"
+                >
 
-                <p>
-                  If we determine that an enquiry will not
-                  proceed into a client relationship, the
-                  relevant enquiry information will be deleted
-                  once it is no longer required for the enquiry.
+                <input
+                    type="hidden"
+                    name="selectedAddons"
+                    id="selectedAddonsInput"
+                >
+
+                <input
+                    type="hidden"
+                    name="estimatedAmount"
+                    id="estimatedAmountInput"
+                >
+
+                <button
+                    type="button"
+                    onclick="sendOTP()"
+                    class="btn-primary"
+                    id="sendOtpBtn"
+                    style="
+                        width:100%;
+                        font-size:1.05rem;
+                        padding:15px;
+                    "
+                >
+                    Send Email OTP
+                </button>
+
+            </form>
+
+            <!-- =================================================
+                 OTP VERIFICATION
+            ================================================== -->
+
+            <div id="otpSection">
+
+                <div class="otp-title">
+                    Verify Your Email
+                </div>
+
+                <p class="otp-description">
+                    We've sent a 6-digit verification code to
+                    <strong id="otpEmailDisplay"></strong>.
+                    Enter the code below to verify your email.
                 </p>
 
-              </div>
+                <input
+                    type="text"
+                    id="otpInput"
+                    inputmode="numeric"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    placeholder="000000"
+                    autocomplete="one-time-code"
+                >
 
+                <div class="otp-actions">
 
-              <div>
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        id="resendBtn"
+                        onclick="sendOTP(true)"
+                    >
+                        Resend OTP
+                    </button>
 
-                <strong>
-                  Active client
-                </strong>
+                    <button
+                        type="button"
+                        class="btn-primary verify-btn"
+                        id="verifyOtpBtn"
+                        onclick="verifyEmailOTP()"
+                    >
+                        Verify Email
+                    </button>
 
-                <p>
-                  Client information may be retained while the
-                  client relationship is active.
-                </p>
-
-              </div>
-
-
-              <div>
-
-                <strong>
-                  After the client relationship ends
-                </strong>
-
-                <p>
-                  Client data is intended to be deleted
-                  approximately two months after the client
-                  relationship ends, subject to any information
-                  that must be retained for legitimate legal,
-                  accounting or contractual reasons.
-                </p>
-
-              </div>
+                </div>
 
             </div>
 
-          </section>
-
-
-          <!-- 05 -->
-
-          <section id="ai">
-
-            <span class="section-number">
-              05
-            </span>
-
-            <h2>
-              AI Problem Solver
-            </h2>
-
-            <p>
-              The current GLIME AI Problem Solver uses
-              JavaScript-based logic running within the
-              application.
-            </p>
-
-            <p>
-              At the current stage, the Problem Solver does
-              not send submitted information to an external
-              AI provider API such as OpenAI or Gemini.
-            </p>
-
-            <p>
-              If GLIME later introduces an external AI service
-              that processes personal information, this Privacy
-              Policy will be updated to explain the relevant
-              processing before that change is relied upon.
-            </p>
-
-          </section>
-
-
-          <!-- 06 -->
-
-          <section id="rights">
-
-            <span class="section-number">
-              06
-            </span>
-
-            <h2>
-              Your Choices
-            </h2>
-
-            <p>
-              You may contact GLIME if you want to ask about
-              information we hold about you or request deletion
-              of information that is no longer required.
-            </p>
-
-            <p>
-              Where applicable, requests will be handled in
-              accordance with the laws and regulations that
-              apply to the relevant processing of personal data.
-            </p>
-
-            <p>
-              We may need to verify the identity of the person
-              making a request before taking action on certain
-              requests.
-            </p>
-
-          </section>
-
-
-          <!-- 07 -->
-
-          <section id="contact">
-
-            <span class="section-number">
-              07
-            </span>
-
-            <h2>
-              Contact GLIME
-            </h2>
-
-            <p>
-              If you have a privacy question, want to request
-              deletion of your information, or want to discuss
-              how your information is handled, contact us at:
-            </p>
-
-            <a
-              class="contact-email"
-              href="mailto:connect@glime.online"
-            >
-              connect@glime.online
-            </a>
-
-            <p class="small-note">
-              We may update this Privacy Policy when our
-              services, technology or applicable requirements
-              change. The latest version will be published
-              on this page.
-            </p>
-
-          </section>
-
-
-        </article>
-
-      </div>
-
-    </section>
-
-
-    <!-- CTA -->
-
-    <section class="cta-section container">
-
-      <div class="cta-card">
-
-        <div>
-
-          <p class="eyebrow">
-            QUESTIONS?
-          </p>
-
-          <h2>
-            Privacy should be simple.
-          </h2>
-
-          <p>
-            If something is unclear, contact GLIME directly.
-          </p>
+            <div id="statusMessage"></div>
 
         </div>
 
-        <a
-          href="mailto:connect@glime.online"
-          class="button button-primary"
-        >
-          Contact GLIME
-          <span aria-hidden="true">→</span>
-        </a>
-
-      </div>
-
     </section>
 
-  </main>
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
 
+    <footer>
 
-  <!-- FOOTER -->
+        <p style="margin-bottom:8px;">
+            ✉️ connect@glime.online
+        </p>
 
-  <footer class="site-footer">
+        <p style="margin-bottom:8px;">
+            📍 Sawai Madhopur, India
+        </p>
 
-    <div class="container footer-inner">
+        <p>
+            📞 +91 8504926242
+        </p>
 
-      <a
-        href="index.html"
-        class="brand"
-        aria-label="Glime home"
-      >
-        <img
-          src="glime_logo_clean.svg"
-          alt="GLIME"
-          class="brand-logo"
+        <div class="footer-social">
+
+            <a
+                href="https://www.linkedin.com/in/vishal-gouttam-b7834742a"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Glime LinkedIn"
+            >
+                in
+            </a>
+
+            <a
+                href="https://x.com/glime_web"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Glime X"
+            >
+                𝕏
+            </a>
+
+        </div>
+
+        <p
+            style="
+                color:#6b7280;
+                font-size:0.8rem;
+                margin-top:15px;
+            "
         >
-      </a>
+            Udyam Registration:
+            <span>
+                UDYAM-RJ-29-0042695
+            </span>
+        </p>
+
+        <p
+            style="
+                margin-top:10px;
+                font-size:0.8rem;
+            "
+        >
+            Designed & Developed by
+            <span>
+                Vishal Gouttam & Team
+            </span>
+            | Glime AI Automation © 2026
+        </p>
+
+    </footer>
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script>
+
+        /* =====================================================
+           SUPABASE
+        ====================================================== */
+
+        const SUPABASE_URL =
+            'https://ufoulgbiqgjriwapuopc.supabase.co';
+
+        const SUPABASE_KEY =
+            'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+
+        const supabaseClient =
+            window.supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY
+            );
 
 
-      <div class="footer-links">
+        /* =====================================================
+           STATE
+        ====================================================== */
 
-        <a href="about.html">
-          About
-        </a>
+        let emailVerified = false;
 
-        <a href="packages.html">
-          Packages
-        </a>
+        let verifiedEmail = '';
 
-        <a href="how-it-works.html">
-          How It Works
-        </a>
+        let otpSending = false;
 
-        <a href="case-studies.html">
-          Case Studies
-        </a>
-
-        <a href="refund-cancellation.html">
-          Refund &amp; Cancellation
-        </a>
-
-        <a href="privacy.html">
-          Privacy
-        </a>
-
-        <a href="terms.html">
-          Terms
-        </a>
-
-        <a href="contact.html">
-          Contact
-        </a>
-
-      </div>
+        let otpVerifying = false;
 
 
-      <p>
-        © 2026 Glime. All rights reserved.
-      </p>
+        /* =====================================================
+           MOBILE NAVIGATION
+        ====================================================== */
 
-    </div>
+        function toggleMenu() {
 
-  </footer>
+            const nav =
+                document.getElementById('navLinks');
+
+            nav.classList.toggle('active');
+
+        }
+
+        document
+            .querySelectorAll('.nav-links a')
+            .forEach(function(link) {
+
+                link.addEventListener(
+                    'click',
+                    function() {
+
+                        document
+                            .getElementById('navLinks')
+                            .classList.remove('active');
+
+                    }
+                );
+
+            });
 
 
-  <script>
+        /* =====================================================
+           FADE ANIMATION
+        ====================================================== */
 
-    const menuButton =
-      document.getElementById("menu-button");
+        const observer =
+            new IntersectionObserver(
+                function(entries) {
 
-    const mainNav =
-      document.getElementById("main-nav");
+                    entries.forEach(
+                        function(entry) {
+
+                            if (entry.isIntersecting) {
+
+                                entry.target.classList.add(
+                                    'visible'
+                                );
+
+                            }
+
+                        }
+                    );
+
+                },
+                {
+                    threshold: 0.1
+                }
+            );
+
+        document
+            .querySelectorAll('.fade-in')
+            .forEach(function(element) {
+
+                observer.observe(element);
+
+            });
 
 
-    if (menuButton && mainNav) {
+        /* =====================================================
+           URL PACKAGE / ADD-ON DATA
+        ====================================================== */
 
-      menuButton.addEventListener("click", () => {
+        function loadSelectedDetails() {
 
-        const isOpen =
-          mainNav.classList.toggle("is-open");
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
 
-        menuButton.setAttribute(
-          "aria-expanded",
-          String(isOpen)
+            const packageName =
+                params.get('package') || '';
+
+            const addons =
+                params.get('addons') || '';
+
+            const estimate =
+                params.get('estimate') || '';
+
+            const selectedInfo =
+                document.getElementById(
+                    'selectedInfo'
+                );
+
+            const selectedPackage =
+                document.getElementById(
+                    'selectedPackage'
+                );
+
+            const selectedAddons =
+                document.getElementById(
+                    'selectedAddons'
+                );
+
+            const selectedEstimate =
+                document.getElementById(
+                    'selectedEstimate'
+                );
+
+            const packageInput =
+                document.getElementById(
+                    'selectedPackageInput'
+                );
+
+            const addonsInput =
+                document.getElementById(
+                    'selectedAddonsInput'
+                );
+
+            const estimateInput =
+                document.getElementById(
+                    'estimatedAmountInput'
+                );
+
+            if (packageName) {
+
+                selectedInfo.style.display =
+                    'block';
+
+                selectedPackage.textContent =
+                    packageName;
+
+                packageInput.value =
+                    packageName;
+
+            }
+
+            if (addons) {
+
+                selectedInfo.style.display =
+                    'block';
+
+                selectedAddons.textContent =
+                    'Add-ons: ' + addons;
+
+                addonsInput.value =
+                    addons;
+
+            }
+
+            if (estimate) {
+
+                selectedInfo.style.display =
+                    'block';
+
+                selectedEstimate.textContent =
+                    'Estimated amount: ₹' +
+                    Number(estimate)
+                        .toLocaleString('en-IN');
+
+                estimateInput.value =
+                    estimate;
+
+            }
+
+        }
+
+
+        /* =====================================================
+           STATUS MESSAGE
+        ====================================================== */
+
+        function showStatus(
+            message,
+            type
+        ) {
+
+            const element =
+                document.getElementById(
+                    'statusMessage'
+                );
+
+            element.style.display =
+                'block';
+
+            element.textContent =
+                message;
+
+            if (type === 'success') {
+
+                element.style.color =
+                    'var(--neon-green)';
+
+                element.style.background =
+                    'rgba(0,255,136,0.08)';
+
+                element.style.border =
+                    '1px solid rgba(0,255,136,0.25)';
+
+            } else if (type === 'error') {
+
+                element.style.color =
+                    '#ff6b7a';
+
+                element.style.background =
+                    'rgba(255,71,87,0.08)';
+
+                element.style.border =
+                    '1px solid rgba(255,71,87,0.25)';
+
+            } else {
+
+                element.style.color =
+                    'var(--cyan-blue)';
+
+                element.style.background =
+                    'rgba(0,240,255,0.08)';
+
+                element.style.border =
+                    '1px solid rgba(0,240,255,0.25)';
+
+            }
+
+        }
+
+
+        /* =====================================================
+           FORM DATA
+        ====================================================== */
+
+        function getFormData() {
+
+            const form =
+                document.getElementById(
+                    'mainContactForm'
+                );
+
+            const formData =
+                new FormData(form);
+
+            return {
+
+                fullName:
+                    formData.get('fullName').trim(),
+
+                businessName:
+                    formData.get('businessName').trim(),
+
+                email:
+                    formData.get('email').trim().toLowerCase(),
+
+                phone:
+                    formData.get('phone').trim(),
+
+                city:
+                    formData.get('city').trim(),
+
+                state:
+                    formData.get('state').trim(),
+
+                country:
+                    formData.get('country').trim(),
+
+                message:
+                    formData.get('message').trim(),
+
+                selectedPackage:
+                    formData.get('selectedPackage').trim(),
+
+                selectedAddons:
+                    formData.get('selectedAddons').trim(),
+
+                estimatedAmount:
+                    formData.get('estimatedAmount').trim()
+
+            };
+
+        }
+
+
+        /* =====================================================
+           VALIDATE BASIC FORM
+        ====================================================== */
+
+        function validateForm() {
+
+            const data =
+                getFormData();
+
+            if (!data.fullName) {
+
+                showStatus(
+                    'Please enter your full name.',
+                    'error'
+                );
+
+                return false;
+
+            }
+
+            if (!data.businessName) {
+
+                showStatus(
+                    'Please enter your business or creator name.',
+                    'error'
+                );
+
+                return false;
+
+            }
+
+            if (!data.email) {
+
+                showStatus(
+                    'Please enter your email address.',
+                    'error'
+                );
+
+                return false;
+
+            }
+
+            if (!data.phone) {
+
+                showStatus(
+                    'Please enter your phone number.',
+                    'error'
+                );
+
+                return false;
+
+            }
+
+            if (!data.message) {
+
+                showStatus(
+                    'Please describe your project requirement.',
+                    'error'
+                );
+
+                return false;
+
+            }
+
+            return true;
+
+        }
+
+
+        /* =====================================================
+           SEND EMAIL OTP
+        ====================================================== */
+
+        async function sendOTP(
+            isResend = false
+        ) {
+
+            if (otpSending) {
+                return;
+            }
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const data =
+                getFormData();
+
+            const emailInput =
+                document.getElementById(
+                    'emailInput'
+                );
+
+            const sendButton =
+                document.getElementById(
+                    'sendOtpBtn'
+                );
+
+            const otpSection =
+                document.getElementById(
+                    'otpSection'
+                );
+
+            const otpEmailDisplay =
+                document.getElementById(
+                    'otpEmailDisplay'
+                );
+
+            otpSending = true;
+
+            sendButton.disabled =
+                true;
+
+            sendButton.textContent =
+                isResend
+                    ? 'Resending OTP...'
+                    : 'Sending OTP...';
+
+            try {
+
+                /*
+                 * Supabase Email OTP
+                 *
+                 * IMPORTANT:
+                 * Magic Link / OTP email template must contain
+                 * {{ .Token }} for a numeric OTP.
+                 */
+
+                const {
+                    error
+                } =
+                    await supabaseClient.auth.signInWithOtp({
+
+                        email: data.email,
+
+                        options: {
+
+                            shouldCreateUser: true
+
+                        }
+
+                    });
+
+                if (error) {
+                    throw error;
+                }
+
+                /*
+                 * Save the form temporarily in this browser.
+                 * It is submitted only after successful OTP verification.
+                 */
+
+                localStorage.setItem(
+                    'glime_pending_contact',
+                    JSON.stringify(data)
+                );
+
+                emailInput.disabled =
+                    true;
+
+                otpEmailDisplay.textContent =
+                    data.email;
+
+                otpSection.style.display =
+                    'block';
+
+                showStatus(
+                    'OTP sent successfully. Please check your email.',
+                    'success'
+                );
+
+                document
+                    .getElementById('otpInput')
+                    .focus();
+
+            } catch (error) {
+
+                console.error(
+                    'OTP send error:',
+                    error
+                );
+
+                showStatus(
+                    'Unable to send OTP: ' +
+                    error.message,
+                    'error'
+                );
+
+            } finally {
+
+                otpSending = false;
+
+                sendButton.disabled =
+                    false;
+
+                sendButton.textContent =
+                    'Send Email OTP';
+
+            }
+
+        }
+
+
+        /* =====================================================
+           VERIFY EMAIL OTP
+        ====================================================== */
+
+        async function verifyEmailOTP() {
+
+            if (otpVerifying) {
+                return;
+            }
+
+            const email =
+                document
+                    .getElementById('emailInput')
+                    .value
+                    .trim()
+                    .toLowerCase();
+
+            const token =
+                document
+                    .getElementById('otpInput')
+                    .value
+                    .trim();
+
+            const verifyButton =
+                document.getElementById(
+                    'verifyOtpBtn'
+                );
+
+            if (!email) {
+
+                showStatus(
+                    'Email address is missing.',
+                    'error'
+                );
+
+                return;
+
+            }
+
+            if (!/^\d{6}$/.test(token)) {
+
+                showStatus(
+                    'Please enter the 6-digit OTP from your email.',
+                    'error'
+                );
+
+                return;
+
+            }
+
+            otpVerifying = true;
+
+            verifyButton.disabled =
+                true;
+
+            verifyButton.textContent =
+                'Verifying...';
+
+            try {
+
+                /*
+                 * Supabase verifies the six-digit email OTP.
+                 */
+
+                const {
+                    data: authData,
+                    error
+                } =
+                    await supabaseClient.auth.verifyOtp({
+
+                        email: email,
+
+                        token: token,
+
+                        type: 'email'
+
+                    });
+
+                if (error) {
+                    throw error;
+                }
+
+                if (!authData || !authData.user) {
+
+                    throw new Error(
+                        'Email verification did not return a valid user.'
+                    );
+
+                }
+
+                emailVerified =
+                    true;
+
+                verifiedEmail =
+                    email;
+
+                document
+                    .getElementById(
+                        'verifiedBadge'
+                    )
+                    .style.display =
+                    'block';
+
+                document
+                    .getElementById(
+                        'otpInput'
+                    )
+                    .disabled =
+                    true;
+
+                verifyButton.textContent =
+                    'Email Verified ✓';
+
+                verifyButton.style.background =
+                    'linear-gradient(90deg,#00ff88,#00ff88)';
+
+                showStatus(
+                    'Email verified successfully. Submitting your inquiry...',
+                    'success'
+                );
+
+                await submitVerifiedLead();
+
+            } catch (error) {
+
+                console.error(
+                    'OTP verification error:',
+                    error
+                );
+
+                showStatus(
+                    'Verification failed: ' +
+                    error.message,
+                    'error'
+                );
+
+                verifyButton.disabled =
+                    false;
+
+                verifyButton.textContent =
+                    'Verify Email';
+
+            } finally {
+
+                otpVerifying = false;
+
+            }
+
+        }
+
+
+        /* =====================================================
+           SUBMIT VERIFIED LEAD
+        ====================================================== */
+
+        async function submitVerifiedLead() {
+
+            const savedData =
+                localStorage.getItem(
+                    'glime_pending_contact'
+                );
+
+            if (!savedData) {
+
+                throw new Error(
+                    'Your form session has expired. Please fill the form again.'
+                );
+
+            }
+
+            const data =
+                JSON.parse(savedData);
+
+            if (
+                !emailVerified ||
+                data.email !== verifiedEmail
+            ) {
+
+                throw new Error(
+                    'Email verification is required before submitting the inquiry.'
+                );
+
+            }
+
+            /*
+             * Keep project name readable for the existing
+             * dashboard/admin system.
+             */
+
+            let projectName =
+                data.selectedPackage ||
+                'Custom Project / General Inquiry';
+
+            if (data.selectedAddons) {
+
+                projectName +=
+                    ' | Add-ons: ' +
+                    data.selectedAddons;
+
+            }
+
+            /*
+             * Insert into the existing client_data table.
+             *
+             * Existing admin/dashboard pages already read:
+             * email
+             * project_name
+             * payment_status
+             *
+             * Therefore payment_status is explicitly marked as
+             * a non-payment lead state.
+             */
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from('client_data')
+                    .insert([
+
+                        {
+
+                            email:
+                                data.email,
+
+                            project_name:
+                                projectName,
+
+                            payment_status:
+                                'Verified Lead (No Payment)'
+
+                        }
+
+                    ]);
+
+            if (error) {
+                throw error;
+            }
+
+            /*
+             * Save useful details locally for the next page/session.
+             * The actual lead record is stored in Supabase.
+             */
+
+            localStorage.setItem(
+                'glime_verified_email',
+                data.email
+            );
+
+            localStorage.removeItem(
+                'glime_pending_contact'
+            );
+
+            /*
+             * Final success state.
+             */
+
+            document
+                .getElementById(
+                    'mainContactForm'
+                )
+                .querySelectorAll('input, textarea, button')
+                .forEach(function(element) {
+
+                    element.disabled =
+                        true;
+
+                });
+
+            document
+                .getElementById(
+                    'otpSection'
+                )
+                .style.display =
+                'none';
+
+            showStatus(
+                '✓ Email verified and your inquiry has been submitted successfully. Our team will contact you soon.',
+                'success'
+            );
+
+        }
+
+
+        /* =====================================================
+           OTP INPUT - ONLY NUMBERS
+        ====================================================== */
+
+        document
+            .getElementById('otpInput')
+            .addEventListener(
+                'input',
+                function() {
+
+                    this.value =
+                        this.value
+                            .replace(/\D/g, '')
+                            .slice(0, 6);
+
+                }
+            );
+
+
+        /* =====================================================
+           ENTER KEY TO VERIFY OTP
+        ====================================================== */
+
+        document
+            .getElementById('otpInput')
+            .addEventListener(
+                'keydown',
+                function(event) {
+
+                    if (
+                        event.key === 'Enter'
+                    ) {
+
+                        event.preventDefault();
+
+                        verifyEmailOTP();
+
+                    }
+
+                }
+            );
+
+
+        /* =====================================================
+           INITIALIZE
+        ====================================================== */
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            function() {
+
+                loadSelectedDetails();
+
+            }
         );
 
-      });
-
-
-      mainNav.querySelectorAll("a").forEach((link) => {
-
-        link.addEventListener("click", () => {
-
-          mainNav.classList.remove("is-open");
-
-          menuButton.setAttribute(
-            "aria-expanded",
-            "false"
-          );
-
-        });
-
-      });
-
-    }
-
-  </script>
+    </script>
 
   <script src="glime-global-nav.js" defer></script>
 </body>
