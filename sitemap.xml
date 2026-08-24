@@ -1,16 +1,19 @@
+ary
+/
+sitemap.xml
+
+
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-
-  <url>
-    <loc>https://glime.online/</loc>
-  </url>
-
-  <url>
-    <loc>https://glime.online/contact.html</loc>
-  </url>
-
-  <url>
-    <loc>https://glime.online/portfolio.html</loc>
-  </url>
-
+  <url><loc>https://glime.online/</loc></url>
+  <url><loc>https://glime.online/about.html</loc></url>
+  <url><loc>https://glime.online/packages.html</loc></url>
+  <url><loc>https://glime.online/how-it-works.html</loc></url>
+  <url><loc>https://glime.online/case-studies.html</loc></url>
+  <url><loc>https://glime.online/ai-problem-solver.html</loc></url>
+  <url><loc>https://glime.online/contact.html</loc></url>
+  <url><loc>https://glime.online/portfolio.html</loc></url>
+  <url><loc>https://glime.online/refund-cancellation.html</loc></url>
+  <url><loc>https://glime.online/privacy.html</loc></url>
+  <url><loc>https://glime.online/terms.html</loc></url>
 </urlset>
