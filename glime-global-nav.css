@@ -1,0 +1,126 @@
+/* =========================================================
+   GLIME GLOBAL NAVIGATION
+   Shared by public pages. Kept isolated from page-specific CSS.
+========================================================= */
+.glime-global-header{
+  position:sticky;
+  top:0;
+  z-index:9999;
+  width:100%;
+  background:rgba(5,11,16,.90);
+  border-bottom:1px solid rgba(184,222,234,.10);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.glime-nav-inner{
+  width:min(1180px,calc(100% - 32px));
+  min-height:78px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:22px;
+}
+.glime-brand{
+  display:inline-flex;
+  align-items:center;
+  flex:0 0 auto;
+  width:78px;
+  height:78px;
+}
+.glime-brand img{
+  display:block;
+  width:78px;
+  height:78px;
+  object-fit:contain;
+}
+.glime-desktop-nav{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:2px;
+  min-width:0;
+}
+.glime-desktop-nav a{
+  display:inline-flex;
+  align-items:center;
+  min-height:40px;
+  padding:8px 10px;
+  color:#9cabb9;
+  border:1px solid transparent;
+  border-radius:9px;
+  text-decoration:none;
+  white-space:nowrap;
+  font:700 .78rem/1.2 "Manrope",Arial,sans-serif;
+  transition:color .18s ease,background .18s ease;
+}
+.glime-desktop-nav a:hover,
+.glime-desktop-nav a.active{
+  color:#f4fbfd;
+  background:rgba(255,255,255,.045);
+}
+.glime-menu-button{
+  display:none;
+  width:46px;
+  height:46px;
+  flex:0 0 46px;
+  padding:0;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:5px;
+  color:#f4fbfd;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(184,222,234,.13);
+  border-radius:11px;
+}
+.glime-menu-button span{
+  display:block;
+  width:22px;
+  height:2px;
+  border-radius:99px;
+  background:currentColor;
+}
+.glime-mobile-nav{
+  display:none;
+  width:min(1180px,calc(100% - 32px));
+  margin:0 auto;
+  padding:8px 0 16px;
+}
+.glime-mobile-nav.open{display:block}
+.glime-mobile-nav a{
+  display:block;
+  padding:12px 10px;
+  color:#9cabb9;
+  border-radius:10px;
+  text-decoration:none;
+  font:700 .88rem/1.35 "Manrope",Arial,sans-serif;
+}
+.glime-mobile-nav a:hover,
+.glime-mobile-nav a.active{
+  color:#f4fbfd;
+  background:rgba(255,255,255,.045);
+}
+.glime-mobile-nav .glime-mobile-cta{
+  margin-top:8px;
+  color:#031014;
+  text-align:center;
+  background:linear-gradient(105deg,#50f5a8,#52e8ff);
+}
+@media (max-width: 1050px){
+  .glime-desktop-nav a{padding-inline:7px;font-size:.74rem}
+}
+@media (max-width: 860px){
+  .glime-nav-inner{min-height:74px}
+  .glime-desktop-nav{display:none}
+  .glime-menu-button{display:flex}
+  .glime-brand,.glime-brand img{width:62px;height:62px}
+}
+@media (max-width: 480px){
+  .glime-nav-inner{width:calc(100% - 24px);min-height:70px}
+  .glime-mobile-nav{width:calc(100% - 24px)}
+  .glime-brand,.glime-brand img{width:58px;height:58px}
+}
+@media (prefers-reduced-motion:reduce){
+  .glime-desktop-nav a{transition:none}
+}
