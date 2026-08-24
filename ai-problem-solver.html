@@ -47,43 +47,154 @@
     <a href="ai-problem-solver.html" class="glime-mobile-cta">Solve My Business Problem <span aria-hidden="true">→</span></a>
   </nav>
 </header>
-    <section id="hero" class="hero view" aria-labelledby="hero-title"><p class="eyebrow">BUSINESS PROBLEM &rarr; SYSTEM DESIGN</p><h1 id="hero-title" tabindex="-1">What&rsquo;s slowing your business down?</h1><p class="hero-copy">Tell Glime where your operation is under pressure. This guided diagnosis maps the likely bottleneck and the AI-enabled system direction worth designing next.</p><button class="button primary" type="button" data-action="start">Start Business Diagnosis <span aria-hidden="true">&rarr;</span></button><ol class="journey" aria-label="Diagnosis journey"><li>Business context</li><li>Diagnosis</li><li>System direction</li></ol><p class="disclosure">This Phase 1 experience uses a transparent local rules-based diagnostic framework. It does not call, simulate, or represent a live AI model.</p></section>
+
+    <section id="hero" class="hero view" aria-labelledby="hero-title">
+      <p class="eyebrow">BUSINESS PROBLEM &rarr; SYSTEM DESIGN</p>
+      <h1 id="hero-title" tabindex="-1">What&rsquo;s slowing your business down?</h1>
+      <p class="hero-copy">Tell Glime where your operation is under pressure. This guided diagnosis maps the likely bottleneck and the AI-enabled system direction worth designing next.</p>
+      <button class="button primary" type="button" data-action="start">Start AI Business Diagnosis <span aria-hidden="true">&rarr;</span></button>
+      <ol class="journey" aria-label="Diagnosis journey">
+        <li>Business context</li>
+        <li>Diagnosis</li>
+        <li>System direction</li>
+      </ol>
+
+      <p class="disclosure"> AI Business diagnosis based on your responses.</p>
+    </section>
+
     <section id="diagnosis" class="diagnosis view" aria-labelledby="diagnosis-title" hidden>
-      <div class="progress-row"><div><p class="eyebrow" id="step-label">STEP 1 OF 4</p><h1 id="diagnosis-title">Start with your business context.</h1></div><span class="progress-count" id="progress-count">25%</span></div><div class="progress-track" role="progressbar" aria-label="Diagnosis progress" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1"><span id="progress-bar"></span></div>
+      <div class="progress-row">
+        <div>
+          <p class="eyebrow" id="step-label">STEP 1 OF 4</p>
+          <h1 id="diagnosis-title">Start with your business context.</h1>
+        </div>
+        <span class="progress-count" id="progress-count">25%</span>
+      </div>
+
+      <div class="progress-track" role="progressbar" aria-label="Diagnosis progress" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1">
+        <span id="progress-bar"></span>
+      </div>
+
       <form id="diagnosis-form" novalidate>
-        <fieldset class="step-panel" data-step="1"><legend tabindex="-1">What type of business are you building?</legend><p>Choose the model that most closely describes how you serve customers.</p><div class="choice-grid" id="business-type-options"></div></fieldset>
-        <fieldset class="step-panel" data-step="2" hidden><legend tabindex="-1">Which industry is closest to your work?</legend><p>This helps make the operational questions relevant to your work.</p><div class="choice-grid" id="industry-options"></div></fieldset>
-        <fieldset class="step-panel" data-step="3" hidden><legend tabindex="-1">What is the main problem right now?</legend><p>Pick the constraint creating the most friction today.</p><div class="choice-grid" id="problem-options"></div></fieldset>
-        <fieldset class="step-panel" data-step="4" hidden><legend id="guided-title" tabindex="-1">Let's understand the bottleneck.</legend><p>Answer the focused questions below. They adapt to your business context and selected problem.</p><div class="question-stack" id="guided-questions"></div></fieldset>
-        <p class="form-error" id="form-error" role="alert"></p><div class="form-actions"><button class="button secondary" id="back-button" type="button" hidden>Back</button><button class="button primary" id="next-button" type="button" aria-describedby="form-error">Continue <span aria-hidden="true">&rarr;</span></button></div>
+        <fieldset class="step-panel" data-step="1">
+          <legend tabindex="-1">What type of business are you building?</legend>
+          <p>Choose the model that most closely describes how you serve customers.</p>
+          <div class="choice-grid" id="business-type-options"></div>
+        </fieldset>
+
+        <fieldset class="step-panel" data-step="2" hidden>
+          <legend tabindex="-1">Which industry is closest to your work?</legend>
+          <p>This helps make the operational questions relevant to your work.</p>
+          <div class="choice-grid" id="industry-options"></div>
+        </fieldset>
+
+        <fieldset class="step-panel" data-step="3" hidden>
+          <legend tabindex="-1">What is the main problem right now?</legend>
+          <p>Pick the constraint creating the most friction today.</p>
+          <div class="choice-grid" id="problem-options"></div>
+        </fieldset>
+
+        <fieldset class="step-panel" data-step="4" hidden>
+          <legend id="guided-title" tabindex="-1">Let's understand the bottleneck.</legend>
+          <p>Answer the focused questions below. They adapt to your business context and selected problem.</p>
+          <div class="question-stack" id="guided-questions"></div>
+        </fieldset>
+
+        <p class="form-error" id="form-error" role="alert"></p>
+
+        <div class="form-actions">
+          <button class="button secondary" id="back-button" type="button" hidden>Back</button>
+          <button class="button primary" id="next-button" type="button" aria-describedby="form-error">
+            Continue <span aria-hidden="true">&rarr;</span>
+          </button>
+        </div>
       </form>
     </section>
-    <section id="analysis" class="analysis view" aria-live="polite" aria-busy="true" hidden><div class="analysis-orbit" aria-hidden="true"><span></span></div><p class="eyebrow">DIAGNOSTIC FRAMEWORK RUNNING</p><h1>Preparing your system direction&hellip;</h1><p id="analysis-status">Mapping your business context.</p><div class="analysis-list" aria-hidden="true"><span>Business context</span><span>Operating bottleneck</span><span>System direction</span></div></section>
-    <section id="results" class="results view" aria-labelledby="results-title" hidden>
-      <div class="results-header"><div><p class="eyebrow">YOUR SYSTEM DIRECTION</p><h1 id="results-title" tabindex="-1">Business diagnosis</h1></div><button class="text-button" type="button" data-action="restart">Start over</button></div><p class="disclosure">This is a local, rules-based recommendation built from your answers. Treat it as a planning starting point, not a guarantee or a live AI assessment.</p><div class="capabilities" aria-label="Recommended capability categories" id="result-capabilities"></div>
-      <div class="result-layout">
-        <article class="card featured"><p class="card-label">PROBLEM IDENTIFIED</p><h2 id="result-problem"></h2><hr><p class="card-label">LIKELY BOTTLENECK</p><p id="result-bottleneck"></p><p class="card-label impact">BUSINESS IMPACT</p><p id="result-impact"></p></article>
-        <article class="card architecture"><p class="card-label">RECOMMENDED AI SYSTEM</p><h2 id="result-system"></h2><div class="system-flow" id="system-flow" aria-label="Recommended system architecture"></div></article>
-        <article class="card"><p class="card-label">RECOMMENDED AUTOMATIONS</p><ul id="result-automations"></ul></article>
-        <article class="card"><p class="card-label">EXPECTED OPERATIONAL IMPROVEMENT</p><p id="result-improvement" class="improvement"></p><p class="note">Potential improvements depend on implementation quality, team adoption, data, and operating conditions.</p></article>
-        <article class="card fit"><p class="card-label">WHY THIS SOLUTION FITS</p><p id="result-fit"></p></article>
+
+    <section id="analysis" class="analysis view" aria-live="polite" aria-busy="true" hidden>
+      <div class="analysis-orbit" aria-hidden="true"><span></span></div>
+      <p class="eyebrow">DIAGNOSTIC FRAMEWORK RUNNING</p>
+      <h1>Preparing your system direction&hellip;</h1>
+      <p id="analysis-status">Mapping your business context.</p>
+      <div class="analysis-list" aria-hidden="true">
+        <span>Business context</span>
+        <span>Operating bottleneck</span>
+        <span>System direction</span>
       </div>
-      <div class="final-cta"><div><p class="eyebrow">NEXT STEP</p><h2>Turn the diagnosis into an implementation plan.</h2></div><a class="button primary" href="contact.html">Build This System <span aria-hidden="true">&rarr;</span></a></div>
     </section>
-  </main><script src="ai-problem-solver.js"></script>
-  
-<footer class="glime-global-footer" style="padding:42px 16px 28px;border-top:1px solid rgba(184,222,234,.10);background:#050b10;color:#9cabb9;text-align:center;font:700 .78rem/1.6 Manrope,Arial,sans-serif;">
-  <div style="max-width:1180px;margin:0 auto;">
-    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px 22px;margin-bottom:14px;">
-      <a href="about.html" style="color:inherit;text-decoration:none;">About</a>
-      <a href="privacy.html" style="color:inherit;text-decoration:none;">Privacy</a>
-      <a href="terms.html" style="color:inherit;text-decoration:none;">Terms</a>
-      <a href="refund-cancellation.html" style="color:inherit;text-decoration:none;">Refund &amp; Cancellation</a>
-      <a href="contact.html" style="color:inherit;text-decoration:none;">Contact</a>
+
+    <section id="results" class="results view" aria-labelledby="results-title" hidden>
+      <div class="results-header">
+        <div>
+          <p class="eyebrow">YOUR SYSTEM DIRECTION</p>
+          <h1 id="results-title" tabindex="-1">Business diagnosis</h1>
+        </div>
+        <button class="text-button" type="button" data-action="restart">Start over</button>
+      </div>
+
+      <p class="disclosure"> AI Business diagnosis based on your responses.</p>
+
+      <div class="capabilities" aria-label="Recommended capability categories" id="result-capabilities"></div>
+
+      <div class="result-layout">
+        <article class="card featured">
+          <p class="card-label">PROBLEM IDENTIFIED</p>
+          <h2 id="result-problem"></h2>
+          <hr>
+          <p class="card-label">LIKELY BOTTLENECK</p>
+          <p id="result-bottleneck"></p>
+          <p class="card-label impact">BUSINESS IMPACT</p>
+          <p id="result-impact"></p>
+        </article>
+
+        <article class="card architecture">
+          <p class="card-label">RECOMMENDED AI SYSTEM</p>
+          <h2 id="result-system"></h2>
+          <div class="system-flow" id="system-flow" aria-label="Recommended system architecture"></div>
+        </article>
+
+        <article class="card">
+          <p class="card-label">RECOMMENDED AUTOMATIONS</p>
+          <ul id="result-automations"></ul>
+        </article>
+
+        <article class="card">
+          <p class="card-label">EXPECTED OPERATIONAL IMPROVEMENT</p>
+          <p id="result-improvement" class="improvement"></p>
+          <p class="note">Potential improvements depend on implementation quality, team adoption, data, and operating conditions.</p>
+        </article>
+
+        <article class="card fit">
+          <p class="card-label">WHY THIS SOLUTION FITS</p>
+          <p id="result-fit"></p>
+        </article>
+      </div>
+
+      <div class="final-cta">
+        <div>
+          <p class="eyebrow">NEXT STEP</p>
+          <h2>Turn the diagnosis into an implementation plan.</h2>
+        </div>
+        <a class="button primary" href="contact.html">Build This System <span aria-hidden="true">&rarr;</span></a>
+      </div>
+    </section>
+  </main>
+
+  <script src="ai-problem-solver.js"></script>
+
+  <footer class="glime-global-footer" style="padding:42px 16px 28px;border-top:1px solid rgba(184,222,234,.10);background:#050b10;color:#9cabb9;text-align:center;font:700 .78rem/1.6 Manrope,Arial,sans-serif;">
+    <div style="max-width:1180px;margin:0 auto;">
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px 22px;margin-bottom:14px;">
+        <a href="about.html" style="color:inherit;text-decoration:none;">About</a>
+        <a href="privacy.html" style="color:inherit;text-decoration:none;">Privacy</a>
+        <a href="terms.html" style="color:inherit;text-decoration:none;">Terms</a>
+        <a href="refund-cancellation.html" style="color:inherit;text-decoration:none;">Refund &amp; Cancellation</a>
+        <a href="contact.html" style="color:inherit;text-decoration:none;">Contact</a>
+      </div>
+      <div>© 2026 GLIME. All rights reserved.</div>
     </div>
-    <div>© 2026 GLIME. All rights reserved.</div>
-  </div>
-</footer>
+  </footer>
+
   <script src="glime-global-nav.js" defer></script>
 </body>
 </html>
