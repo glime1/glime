@@ -118,6 +118,8 @@ button:disabled{opacity:.55;cursor:not-allowed}
           <input type="email" id="clientEmail" placeholder="client@company.com" required>
         </div>
         <button type="button" class="secondary" id="fetchBtn">🔍 Fetch Client</button>
+        <button type="button" class="secondary invite" id="createLeadBtn" disabled>➕ Create Client from Lead</button>
+        <p class="help">If this email is already in Contact Leads but not in client_data, use this button to create the client record.</p>
         <div class="client-meta" id="clientMeta" style="display:none">
           <div class="meta"><small>Client ID</small><strong id="clientIdView">—</strong></div>
           <div class="meta"><small>Email</small><strong id="clientEmailView">—</strong></div>
@@ -272,6 +274,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
     await supabase.auth.signOut();
     currentClientId=null;
     $('inviteBtn').disabled=true;
+    $('createLeadBtn').disabled=true;
     $('clientMeta').style.display='none';
     showLogin('You have been logged out.');
   });
@@ -280,6 +283,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
     if(!session?.user){
       currentClientId=null;
       $('inviteBtn').disabled=true;
+      $('createLeadBtn').disabled=true;
       $('clientMeta').style.display='none';
       showLogin();
     }
@@ -349,6 +353,50 @@ button:disabled{opacity:.55;cursor:not-allowed}
     }
   }
   $('fetchBtn').addEventListener('click',fetchClient);
+
+  $('clientEmail').addEventListener('input',()=>{
+    $('createLeadBtn').disabled = !$('clientEmail').value.trim();
+  });
+
+  $('createLeadBtn').addEventListener('click',async()=>{
+    const email=$('clientEmail').value.trim().toLowerCase();
+    if(!email){setMsg('status-message','Please enter a client email.','#ff5263');return;}
+
+    const btn=$('createLeadBtn');
+    btn.disabled=true;btn.textContent='Creating...';
+    try{
+      const session=await ensureAdminSession();if(!session)return;
+      const {data,error}=await supabase.functions.invoke('admin-create-client-from-lead',{body:{email}});
+      if(error){
+        let detail=error.message||'Could not create client from lead.';
+        try{if(error.context){const payload=await error.context.json();if(payload?.error)detail=payload.error;}}catch(_){}
+        throw new Error(detail);
+      }
+      if(!data?.ok||!data?.client)throw new Error(data?.error||'Client creation failed.');
+
+      const client=data.client;
+      currentClientId=client.id;
+      $('clientEmail').value=client.email||email;
+      $('clientIdView').textContent=client.id||'—';
+      $('clientCodeView').textContent=client.client_id||'Not assigned';
+      $('clientEmailView').textContent=client.email||email;
+      $('clientMeta').style.display='grid';
+      $('projectName').value=client.project_name||'';
+      $('paymentStatus').value=client.payment_status||'Pending';
+      $('invoiceLink').value=client.invoice_link||'';
+      $('step1').value=client.step1_status||'Pending';
+      $('step2').value=client.step2_status||'Pending';
+      $('step3').value=client.step3_status||'Pending';
+      updateOverallStatus();
+      $('inviteBtn').disabled=false;
+      setMsg('status-message',data.message||'Client created from lead successfully.','#00ff88');
+    }catch(err){
+      console.error(err);
+      setMsg('status-message','Create from lead failed: '+(err?.message||String(err)),'#ff5263');
+    }finally{
+      btn.disabled=!$('clientEmail').value.trim();btn.textContent='➕ Create Client from Lead';
+    }
+  });
 
   $('inviteBtn').addEventListener('click',async()=>{
     const email=$('clientEmail').value.trim().toLowerCase();
