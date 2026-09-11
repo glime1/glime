@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reset Admin Password | Glime</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#080d14;--panel:#101827;--border:rgba(255,255,255,.09);
+  --admin:#ff9f43;--cyan:#00eaff;--green:#00ff88;--danger:#ff5263;
+  --text:#f5f7fb;--muted:#9ba7b7;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;padding:18px 14px;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at top,rgba(0,234,255,.07),transparent 35%),var(--bg);
+  color:var(--text);font-family:Poppins,system-ui,sans-serif;
+}
+.card{
+  width:min(500px,100%);padding:26px;border-radius:20px;
+  background:linear-gradient(180deg,rgba(16,24,39,.98),rgba(10,17,27,.98));
+  border:1px solid var(--border);box-shadow:0 18px 55px rgba(0,0,0,.35);
+}
+h1{margin:0;color:var(--admin);font-size:1.45rem}
+.subtitle{color:var(--muted);margin:7px 0 24px;font-size:.9rem;line-height:1.5}
+.step{display:none}.step.active{display:block}
+label{display:block;color:var(--muted);font-size:.78rem;font-weight:600;margin:0 0 7px}
+input{
+  width:100%;padding:13px;border-radius:10px;
+  border:1px solid var(--border);background:rgba(255,255,255,.025);
+  color:#fff;outline:none;font:inherit;margin-bottom:14px;
+}
+input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,234,255,.08)}
+button{
+  width:100%;border:0;border-radius:10px;padding:13px 15px;
+  font:600 .92rem Poppins;cursor:pointer
+}
+.primary{background:var(--admin);color:#111}
+.secondary{margin-top:10px;background:rgba(0,234,255,.08);color:var(--cyan);border:1px solid rgba(0,234,255,.55)}
+button:disabled{opacity:.55;cursor:not-allowed}
+.status{
+  display:none;margin-top:14px;padding:10px;border-radius:9px;
+  font-size:.82rem;text-align:center
+}
+.note{color:var(--muted);font-size:.74rem;line-height:1.5;margin-top:12px}
+.success{color:var(--green)}
+.error{color:var(--danger)}
+.code{text-align:center;letter-spacing:8px;font-size:1.25rem}
+@media(max-width:650px){.card{padding:20px;border-radius:16px}}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔐 Reset Admin Password</h1>
+  <p class="subtitle">Glime Control Room</p>
+
+  <div class="step active" id="step1">
+    <label>Admin Email</label>
+    <input id="email" type="email" value="admin@glime.online" readonly>
+    <button class="primary" id="sendBtn">Send OTP</button>
+    <p class="note">A one-time verification code will be sent to the admin mailbox.</p>
+  </div>
+
+  <div class="step" id="step2">
+    <label>Enter OTP</label>
+    <input id="otp" class="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+           maxlength="8" placeholder="Enter code">
+    <button class="primary" id="verifyBtn">Verify OTP</button>
+    <button class="secondary" id="backBtn">Back</button>
+  </div>
+
+  <div class="step" id="step3">
+    <label>New Password</label>
+    <input id="newPassword" type="password" autocomplete="new-password" placeholder="Enter new password">
+    <label>Confirm New Password</label>
+    <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Re-enter new password">
+    <button class="primary" id="updateBtn">Update Password</button>
+  </div>
+
+  <div class="step" id="step4">
+    <p class="subtitle success" style="margin-bottom:12px">✅ Password updated successfully.</p>
+    <button class="primary" id="adminBtn">Open Admin Panel</button>
+  </div>
+
+  <p id="status" class="status"></p>
+</div>
+
+<script>
+(() => {
+  const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+  const ADMIN_EMAIL = 'admin@glime.online';
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
+  });
+
+  const $ = id => document.getElementById(id);
+  const steps = ['step1','step2','step3','step4'];
+
+  function showStep(id){
+    steps.forEach(x => $(x).classList.toggle('active', x === id));
+  }
+
+  function msg(text, type=''){
+    const el = $('status');
+    el.textContent = text;
+    el.className = 'status ' + type;
+    el.style.display = text ? 'block' : 'none';
+  }
+
+  $('sendBtn').addEventListener('click', async () => {
+    const btn = $('sendBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending OTP...';
+    msg('');
+
+    try{
+      const { error } = await supabase.auth.resetPasswordForEmail(ADMIN_EMAIL, {
+        redirectTo: window.location.origin + '/reset-admin.html'
+      });
+      if(error) throw error;
+
+      showStep('step2');
+      msg('OTP sent to admin@glime.online', 'success');
+    }catch(err){
+      msg('Could not send OTP: ' + (err?.message || String(err)), 'error');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Send OTP';
+    }
+  });
+
+  $('verifyBtn').addEventListener('click', async () => {
+    const token = $('otp').value.trim();
+    if(!token){
+      msg('Please enter the OTP.', 'error');
+      return;
+    }
+
+    const btn = $('verifyBtn');
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+    msg('');
+
+    try{
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: ADMIN_EMAIL,
+        token,
+        type: 'recovery'
+      });
+      if(error) throw error;
+      if(!data?.session) throw new Error('Verification succeeded but no recovery session was created.');
+
+      showStep('step3');
+      msg('OTP verified. Now create a new password.', 'success');
+    }catch(err){
+      msg('OTP verification failed: ' + (err?.message || String(err)), 'error');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Verify OTP';
+    }
+  });
+
+  $('backBtn').addEventListener('click', () => {
+    msg('');
+    showStep('step1');
+  });
+
+  $('updateBtn').addEventListener('click', async () => {
+    const password = $('newPassword').value;
+    const confirm = $('confirmPassword').value;
+
+    if(password.length < 8){
+      msg('Password must be at least 8 characters.', 'error');
+      return;
+    }
+    if(password !== confirm){
+      msg('Passwords do not match.', 'error');
+      return;
+    }
+
+    const btn = $('updateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    msg('');
+
+    try{
+      const { error } = await supabase.auth.updateUser({ password });
+      if(error) throw error;
+
+      await supabase.auth.signOut();
+      showStep('step4');
+      msg('');
+    }catch(err){
+      msg('Password update failed: ' + (err?.message || String(err)), 'error');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Update Password';
+    }
+  });
+
+  $('adminBtn').addEventListener('click', () => {
+    window.location.href = '/admin.html';
+  });
+})();
+</script>
+</body>
+</html>
