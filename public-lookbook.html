@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lookbook | GLIME</title>
+<meta name="description" content="Explore boutique collections and designs from GLIME.">
+<link rel="icon" href="glime_logo_clean.svg">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#05080c;--card:#111827;--g:#00ff88;--c:#00f0ff;--m:#9ca3af}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Poppins,sans-serif}
+body{background:var(--bg);color:#fff;min-height:100vh}
+a{color:inherit;text-decoration:none}
+.top{height:72px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;background:#111827;border-bottom:1px solid #ffffff10}
+.logo{width:105px;height:56px;object-fit:contain}.home{border:1px solid #00f0ff40;color:var(--c);padding:9px 14px;border-radius:9px;font-size:13px}
+main{width:min(1150px,calc(100% - 28px));margin:30px auto}
+.hero{text-align:center;margin:18px 0 30px}.hero h1{font-size:32px}.hero p{color:var(--m);font-size:14px;margin-top:7px}
+.search{max-width:650px;margin:20px auto 0;display:flex;gap:8px}.search input{flex:1}
+input{background:#080c11;color:#fff;border:1px solid #ffffff20;border-radius:10px;padding:12px;font-size:13px;outline:0}
+.section{background:var(--card);border:1px solid #ffffff10;border-radius:15px;padding:22px;margin-bottom:20px}
+.title{color:var(--c);font-size:19px;margin-bottom:15px}
+.collections{display:flex;gap:10px;flex-wrap:wrap}.collection{padding:10px 15px;border:1px solid #00f0ff35;border-radius:20px;color:var(--c);background:#00f0ff08;cursor:pointer;font-size:12px}.collection.active,.collection:hover{background:#00ff8810;border-color:#00ff8860;color:var(--g)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.design{background:#080c11;border:1px solid #ffffff10;border-radius:13px;overflow:hidden}.pic{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#111}.body{padding:14px}.body h3{font-size:16px}.desc{color:var(--m);font-size:12px;line-height:1.5;margin-top:5px}.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.tag{font-size:10px;color:#cbd0d6;border:1px solid #ffffff18;border-radius:13px;padding:4px 7px}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.wa,.share{padding:9px 12px;border-radius:8px;font-size:11px;font-weight:600}.wa{background:var(--g);color:#03110a}.share{border:1px solid #00f0ff40;color:var(--c);background:#00f0ff08}
+.empty{text-align:center;color:#747c86;border:1px dashed #ffffff20;border-radius:10px;padding:28px;font-size:13px}.status{text-align:center;color:var(--m);font-size:12px;padding:18px}
+.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:18px;z-index:10}.modal.show{display:flex}.modalbox{width:min(850px,100%);max-height:92vh;overflow:auto;background:var(--card);border:1px solid #ffffff15;border-radius:16px;padding:18px}.close{float:right;border:1px solid #ffffff20;background:transparent;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}.gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px}.detail h2{font-size:22px}.detail p{color:var(--m);font-size:13px;margin-top:7px;line-height:1.6}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.top{padding:8px 14px}.hero h1{font-size:25px}.grid{grid-template-columns:1fr}.gallery{grid-template-columns:repeat(2,1fr)}.section{padding:17px}.search{flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="top">
+<a href="index.html"><img class="logo" src="glime_logo_clean.svg" alt="GLIME"></a>
+<a class="home" href="index.html">GLIME Home</a>
+</header>
+<main>
+<section class="hero">
+<h1 id="boutiqueName">GLIME Lookbook</h1>
+<p id="boutiqueDescription">Explore our latest collections and designs.</p>
+<div class="search"><input id="search" type="search" placeholder="Search designs, color, fabric, collection..."></div>
+</section>
+<section class="section"><h2 class="title">Collections</h2><div id="collections" class="collections"></div></section>
+<section class="section"><h2 id="designTitle" class="title">Latest Designs</h2><div id="designs" class="grid"></div><div id="status" class="status">Loading...</div></section>
+</main>
+<div id="modal" class="modal">
+<div class="modalbox">
+<button class="close" onclick="closeModal()">Close</button>
+<div id="detail"></div>
+</div>
+</div>
+<script>
+const SUPABASE_URL="https://ufoulgbiqgjriwapuopc.supabase.co";
+const SUPABASE_KEY="sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let lookbook=null,collections=[],items=[],media=[],selectedCollection=null;
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[x]));
+const url=p=>p?sb.storage.from("lookbook-media").getPublicUrl(p).data.publicUrl:"";
+
+function getSlug(){
+ const parts=location.pathname.split("/").filter(Boolean);
+ const last=parts[parts.length-1]||"";
+ if(last.endsWith(".html"))return new URLSearchParams(location.search).get("slug")||"king";
+ return new URLSearchParams(location.search).get("slug")||last||"king";
+}
+async function init(){
+ try{
+  const slug=getSlug();
+  let q=await sb.from("lookbooks").select("*").eq("slug",slug).eq("enabled",true).maybeSingle();
+  if(q.error)throw q.error;
+  if(!q.data){
+   $("status").textContent="Lookbook not found or not published.";
+   return;
+  }
+  lookbook=q.data;$("boutiqueName").textContent=q.data.name;$("boutiqueDescription").textContent=q.data.description||"Explore our latest collections and designs.";
+  await loadData();
+ }catch(e){console.error(e);$("status").textContent="Unable to load Lookbook."}
+}
+async function loadData(){
+ let c=await sb.from("lookbook_collections").select("*").eq("lookbook_id",lookbook.id).eq("published",true).order("sort_order").order("created_at");
+ if(c.error)throw c.error;collections=c.data||[];
+ let i=await sb.from("lookbook_items").select("*").eq("lookbook_id",lookbook.id).eq("published",true).order("sort_order").order("created_at");
+ if(i.error)throw i.error;items=i.data||[];
+ const ids=items.map(x=>x.id);
+ if(ids.length){let m=await sb.from("lookbook_media").select("*").in("item_id",ids).order("sort_order");if(m.error)throw m.error;media=m.data||[]}
+ renderCollections();renderItems(items)
+}
+function renderCollections(){
+ $("collections").innerHTML=`<button class="collection active" onclick="chooseCollection(null,this)">All</button>`+collections.map(c=>`<button class="collection" onclick="chooseCollection('${c.id}',this)">${esc(c.name)}</button>`).join("");
+}
+function chooseCollection(id,el){
+ selectedCollection=id;document.querySelectorAll(".collection").forEach(x=>x.classList.remove("active"));el.classList.add("active");
+ renderItems(filtered())
+}
+function filtered(){
+ const term=$("search").value.trim().toLowerCase();
+ return items.filter(x=>{
+  const c=collections.find(c=>c.id===x.collection_id);
+  const text=[x.title,x.description,x.price,x.size,x.color,x.fabric,x.category,c?.name].join(" ").toLowerCase();
+  return (!selectedCollection||x.collection_id===selectedCollection)&&(!term||text.includes(term))
+ })
+}
+function renderItems(list){
+ $("designTitle").textContent=selectedCollection?(collections.find(c=>c.id===selectedCollection)?.name||"Designs"):"Latest Designs";
+ if(!list.length){$("designs").innerHTML='<div class="empty">No published designs found.</div>';$("status").textContent="";return}
+ $("status").textContent=`${list.length} design${list.length===1?"":"s"}`;
+ const mm={};media.forEach(m=>(mm[m.item_id]??=[]).push(m));
+ $("designs").innerHTML=list.map(x=>{
+  const ms=mm[x.id]||[],cover=x.cover_image||(ms[0]?.storage_path||"");
+  const message=encodeURIComponent(`Hello, I am interested in the design "${x.title}"${x.price?` (${x.price})`:""} from ${lookbook.name}.`);
+  return `<article class="design">${cover?`<img class="pic" src="${esc(url(cover))}" alt="${esc(x.title)}" loading="lazy">`:""}<div class="body"><h3>${esc(x.title)}</h3><p class="desc">${esc(x.description||"")}</p><div class="meta">${x.price?`<span class="tag">${esc(x.price)}</span>`:""}${x.color?`<span class="tag">${esc(x.color)}</span>`:""}${x.fabric?`<span class="tag">${esc(x.fabric)}</span>`:""}${x.size?`<span class="tag">Size: ${esc(x.size)}</span>`:""}${ms.length?`<span class="tag">${ms.length} photos</span>`:""}</div><div class="actions"><button class="share" onclick="openDetail('${x.id}')">View Design</button>${lookbook.whatsapp_number?`<a class="wa" href="https://wa.me/${String(lookbook.whatsapp_number).replace(/\\D/g,"")}?text=${message}" target="_blank" rel="noopener">WhatsApp Enquiry</a>`:""}</div></div></article>`
+ }).join("")
+}
+function openDetail(id){
+ const x=items.find(i=>i.id===id);if(!x)return;
+ const ms=media.filter(m=>m.item_id===id),message=encodeURIComponent(`Hello, I am interested in the design "${x.title}" from ${lookbook.name}.`);
+ $("detail").innerHTML=`<div class="gallery">${ms.map(m=>`<img src="${esc(url(m.storage_path))}" alt="${esc(x.title)}">`).join("")}</div><div class="detail"><h2>${esc(x.title)}</h2><p>${esc(x.description||"")}</p><div class="meta">${x.price?`<span class="tag">${esc(x.price)}</span>`:""}${x.color?`<span class="tag">${esc(x.color)}</span>`:""}${x.fabric?`<span class="tag">${esc(x.fabric)}</span>`:""}${x.size?`<span class="tag">Size: ${esc(x.size)}</span>`:""}</div>${lookbook.whatsapp_number?`<div class="actions"><a class="wa" href="https://wa.me/${String(lookbook.whatsapp_number).replace(/\\D/g,"")}?text=${message}" target="_blank" rel="noopener">WhatsApp Enquiry</a><button class="share" onclick="shareDesign('${x.id}')">Share</button></div>`:""}</div>`;
+ $("modal").classList.add("show")
+}
+function closeModal(){$("modal").classList.remove("show")}
+async function shareDesign(id){
+ const u=location.origin+location.pathname+"?slug="+encodeURIComponent(getSlug())+"&design="+encodeURIComponent(id);
+ if(navigator.share){try{await navigator.share({title:lookbook.name,url:u})}catch(e){}}else{await navigator.clipboard?.writeText(u);alert("Design link copied.")}
+}
+$("search").addEventListener("input",()=>renderItems(filtered()));
+$("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
+init();
+</script>
+</body>
+</html>
