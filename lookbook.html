@@ -57,38 +57,7 @@ async function delC(id){if(!confirm('Delete this collection and its designs?'))r
 async function editD(id){let r=await s.from('lookbook_items').select('*').eq('id',id).eq('client_id',cid).maybeSingle();if(r.error)throw r.error;if(!r.data)return;let x=r.data;sel=x.collection_id;fill(sel);$('eid').value=x.id;$('dtitle').value=x.title||'';$('ddesc').value=x.description||'';$('dprice').value=x.price||'';$('dsize').value=x.size||'';$('dcolor').value=x.color||'';$('dfabric').value=x.fabric||'';$('featured').checked=!!x.featured;$('published').checked=!!x.published;$('ft').textContent='Edit Design';$('save').textContent='Update Design';$('df').classList.remove('hidden');$('df').scrollIntoView({behavior:'smooth'})}
 async function toggleD(id,p){let r=await s.from('lookbook_items').update({published:p,updated_at:new Date().toISOString()}).eq('id',id).eq('client_id',cid);if(r.error)return alert(r.error.message);if(sel)await loadD(sel)}
 async function delD(id){if(!confirm('Delete this design and all its photos?'))return;let m=await s.from('lookbook_media').select('storage_path').eq('item_id',id);if(m.data?.length){let z=await s.storage.from('lookbook-media').remove(m.data.map(x=>x.storage_path));if(z.error)return alert(z.error.message)}let r=await s.from('lookbook_items').delete().eq('id',id).eq('client_id',cid);if(r.error)return alert(r.error.message);if(sel)await loadD(sel)}
-async function upload(id,cid2){
-  let fs=Array.from($('photos').files||[]).slice(0,10);
-  if(!fs.length)return[];
-  let sessionResult=await s.auth.getSession();
-  if(sessionResult.error)throw sessionResult.error;
-  let accessToken=sessionResult.data.session?.access_token;
-  if(!accessToken)throw Error('Session expired. Please log in again.');
-  let paths=[];
-  for(let i=0;i<fs.length;i++){
-    let f=fs[i];
-    let form=new FormData();
-    form.append('file',f,f.name);
-    form.append('item_id',id);
-    form.append('collection_id',cid2);
-    form.append('lookbook_id',lb.id);
-    let response=await fetch(U+'/functions/v1/lookbook-upload',{
-      method:'POST',
-      headers:{
-        'Authorization':'Bearer '+accessToken,
-        'apikey':K
-      },
-      body:form
-    });
-    let body={};
-    try{body=await response.json()}catch(_){}
-    if(!response.ok||!body.ok){
-      throw Error(body.error||('Photo upload failed (HTTP '+response.status+')'));
-    }
-    if(body.path)paths.push(body.path);
-  }
-  return paths;
-}
+async function upload(id,collectionId){let fs=Array.from($('photos').files||[]).slice(0,10);if(!fs.length)return[];let q=await s.auth.getSession();if(q.error)throw q.error;let token=q.data.session?.access_token;if(!token)throw Error('Your session has expired. Please log in again.');let paths=[];for(let i=0;i<fs.length;i++){let f=fs[i];if(!f.type.startsWith('image/'))throw Error(`${f.name} is not an image.`);let form=new FormData();form.append('file',f,f.name);form.append('item_id',id);form.append('collection_id',collectionId);form.append('lookbook_id',lb.id);let r=await fetch(UPLOAD_URL,{method:'POST',headers:{Authorization:`Bearer ${token}`,'apikey':K},body:form});let data={};try{data=await r.json()}catch(_){ }if(!r.ok)throw Error(data.error||data.message||`Photo upload failed (${r.status}).`);if(data.storage_path)paths.push(data.storage_path);else if(data.path)paths.push(data.path)}return paths}
 $('lbform').onsubmit=async ev=>{ev.preventDefault();try{let name=$('lbname').value.trim(),r=await s.from('lookbooks').insert({client_id:cid,name,slug:slug(name)||'lookbook',description:$('lbdesc').value.trim()||null,enabled:true}).select().single();if(r.error)throw r.error;M('lbmsg','Lookbook created successfully.');await loadLB()}catch(x){M('lbmsg',x.message,0)}};
 $('cform').onsubmit=async ev=>{ev.preventDefault();try{let name=$('cname').value.trim(),sl=slug(name);if(!sl)throw Error('Please enter a valid collection name.');let q=await s.from('lookbook_collections').select('id').eq('client_id',cid).eq('lookbook_id',lb.id).eq('slug',sl).maybeSingle();if(q.error)throw q.error;if(q.data)throw Error('This collection already exists.');let n=await s.from('lookbook_collections').select('id',{count:'exact',head:true}).eq('client_id',cid).eq('lookbook_id',lb.id);if(n.error)throw n.error;let r=await s.from('lookbook_collections').insert({client_id:cid,lookbook_id:lb.id,name,slug:sl,description:$('cdesc').value.trim()||null,sort_order:n.count||0,published:false});if(r.error)throw r.error;$('cname').value='';$('cdesc').value='';M('cmsg','Collection added successfully.');await loadC()}catch(x){M('cmsg',x.message,0)}};
 $('dform').onsubmit=async ev=>{ev.preventDefault();$('save').disabled=true;try{let edit=$('eid').value,col=$('dcol').value,title=$('dtitle').value.trim();if(!col||!title)return;let p={client_id:cid,lookbook_id:lb.id,collection_id:col,title,description:$('ddesc').value.trim()||null,price:$('dprice').value.trim()||null,size:$('dsize').value.trim()||null,color:$('dcolor').value.trim()||null,fabric:$('dfabric').value.trim()||null,featured:$('featured').checked,published:$('published').checked,updated_at:new Date().toISOString()},id=edit,isNew=!edit;if(edit){let r=await s.from('lookbook_items').update(p).eq('id',edit).eq('client_id',cid);if(r.error)throw r.error}else{let n=await s.from('lookbook_items').select('id',{count:'exact',head:true}).eq('client_id',cid).eq('lookbook_id',lb.id).eq('collection_id',col);if(n.error)throw n.error;p.sort_order=n.count||0;let r=await s.from('lookbook_items').insert(p).select().single();if(r.error)throw r.error;id=r.data.id}let paths=await upload(id,col);if(paths.length){let r=await s.from('lookbook_media').select('storage_path').eq('item_id',id).order('sort_order').limit(1).maybeSingle();if(r.error)throw r.error;if(r.data){let z=await s.from('lookbook_items').update({cover_image:r.data.storage_path,updated_at:new Date().toISOString()}).eq('id',id).eq('client_id',cid);if(z.error)throw z.error}}sel=col;M('dmsg',isNew?'Design added successfully.':'Design updated successfully.');clearD();fill(col);await loadD(col)}catch(x){console.error(x);M('dmsg',x.message||'Unable to save design.',0)}finally{$('save').disabled=false}};
