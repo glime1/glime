@@ -1681,26 +1681,26 @@
              */
 
             const {
-                error
-            } =
-                await supabaseClient
-                    .from('client_data')
-                    .insert([
-
-                        {
-
-                            email:
-                                data.email,
-
-                            project_name:
-                                projectName,
-
-                            payment_status:
-                                'Verified Lead (No Payment)'
-
-                        }
-
-                    ]);
+    error
+} =
+    await supabaseClient
+        .from('contact_leads')
+        .insert([
+            {
+                full_name: data.fullName,
+                business_name: data.businessName,
+                email: data.email,
+                phone: data.phone,
+                city: data.city || null,
+                state: data.state || null,
+                country: data.country || null,
+                message: data.message,
+                selected_package: data.selectedPackage || null,
+                selected_addons: data.selectedAddons || null,
+                estimated_amount: data.estimatedAmount || null,
+                status: 'New'
+            }
+        ]);
 
             if (error) {
                 throw error;
