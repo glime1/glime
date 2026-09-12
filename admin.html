@@ -489,6 +489,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
       const client=data.client;
       currentClientId=client.id;
+      await loadClientStorage();
       $('clientEmail').value=client.email||email;
       $('clientIdView').textContent=client.id||'—';
       $('clientCodeView').textContent=client.client_id||'Not assigned';
