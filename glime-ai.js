@@ -1,12 +1,54 @@
+
 (() => {
   "use strict";
 
+  /*
+   * ==========================================================
+   * GLIME AI — PRODUCTION FRONTEND
+   * ==========================================================
+   *
+   * Browser
+   *    ↓
+   * Supabase Edge Function
+   *    ↓
+   * Session / usage validation
+   *    ↓
+   * GLIME AI logic
+   *    ↓
+   * Gemini
+   *
+   * IMPORTANT:
+   * Gemini API key is NEVER stored here.
+   */
+
+  const SUPABASE_URL =
+    "https://ufoulgbiqgjriwapuopc.supabase.co";
+
+  /*
+   * यहाँ अपना existing Supabase PUBLISHABLE / ANON KEY डालें.
+   *
+   * SERVICE ROLE KEY यहाँ कभी नहीं डालनी है.
+   */
+  const SUPABASE_PUBLISHABLE_KEY =
+    "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE";
+
+  const EDGE_FUNCTION_URL =
+    `${SUPABASE_URL}/functions/v1/glime-ai`;
+
+  const GUEST_LIMIT = 5;
+  const VERIFIED_LIMIT = 15;
+
+  const SESSION_STORAGE_KEY = "glime_ai_session_id";
+
   const state = {
-    questionsUsed: 0,
+    sessionId: null,
     verified: false,
+    questionsUsed: 0,
+    lockedUntil: null,
     messages: [],
-    guestLimit: 5,
-    verifiedLimit: 15
+    diagnosis: null,
+    busy: false,
+    email: ""
   };
 
   const $ = (id) => document.getElementById(id);
@@ -20,19 +62,132 @@
   const lockCard = $("lock-card");
   const diagnosisCard = $("diagnosis-card");
   const composerArea = $("composer-area");
+  const sendButton = $("send-button");
+
+  /*
+   * ==========================================================
+   * SUPABASE CLIENT
+   * ==========================================================
+   */
+
+  let supabaseClient = null;
+
+  async function loadSupabase() {
+
+    if (
+      typeof window.supabase !== "undefined" &&
+      window.supabase.createClient
+    ) {
+      return;
+    }
+
+    await new Promise((resolve, reject) => {
+
+      const script = document.createElement("script");
+
+      script.src =
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+
+      script.onload = resolve;
+
+      script.onerror = () => {
+        reject(
+          new Error("Supabase library could not be loaded.")
+        );
+      };
+
+      document.head.appendChild(script);
+    });
+  }
+
+  async function initSupabase() {
+
+    await loadSupabase();
+
+    if (
+      SUPABASE_PUBLISHABLE_KEY ===
+      "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE"
+    ) {
+      throw new Error(
+        "Supabase publishable key is not configured."
+      );
+    }
+
+    supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        }
+      );
+  }
+
+  /*
+   * ==========================================================
+   * SESSION
+   * ==========================================================
+   */
+
+  function getOrCreateSessionId() {
+
+    let id =
+      localStorage.getItem(
+        SESSION_STORAGE_KEY
+      );
+
+    if (!id) {
+
+      if (crypto.randomUUID) {
+        id = crypto.randomUUID();
+      } else {
+        id =
+          `${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}`;
+      }
+
+      localStorage.setItem(
+        SESSION_STORAGE_KEY,
+        id
+      );
+    }
+
+    return id;
+  }
+
+  /*
+   * ==========================================================
+   * UI
+   * ==========================================================
+   */
 
   function addMessage(role, text) {
-    const row = document.createElement("div");
-    row.className = `message ${role}`;
 
-    const bubble = document.createElement("div");
-    bubble.className = "message-bubble";
+    const row =
+      document.createElement("div");
+
+    row.className =
+      `message ${role}`;
+
+    const bubble =
+      document.createElement("div");
+
+    bubble.className =
+      "message-bubble";
+
     bubble.textContent = text;
 
     row.appendChild(bubble);
+
     chatWindow.appendChild(row);
 
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    chatWindow.scrollTop =
+      chatWindow.scrollHeight;
 
     state.messages.push({
       role,
@@ -41,9 +196,14 @@
   }
 
   function showTyping() {
-    const row = document.createElement("div");
+
+    hideTyping();
+
+    const row =
+      document.createElement("div");
 
     row.className = "message ai";
+
     row.id = "typing-indicator";
 
     row.innerHTML = `
@@ -55,11 +215,15 @@
     `;
 
     chatWindow.appendChild(row);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    chatWindow.scrollTop =
+      chatWindow.scrollHeight;
   }
 
   function hideTyping() {
-    const typing = $("typing-indicator");
+
+    const typing =
+      $("typing-indicator");
 
     if (typing) {
       typing.remove();
@@ -67,25 +231,31 @@
   }
 
   function updateCounter() {
-    const limit = state.verified
-      ? state.verifiedLimit
-      : state.guestLimit;
 
-    const remaining = Math.max(
-      0,
-      limit - state.questionsUsed
-    );
+    const limit =
+      state.verified
+        ? VERIFIED_LIMIT
+        : GUEST_LIMIT;
+
+    const remaining =
+      Math.max(
+        0,
+        limit - state.questionsUsed
+      );
 
     counter.textContent =
       `${state.questionsUsed} / ${limit}`;
 
-    usageText.textContent = state.verified
-      ? `${remaining} QUESTIONS REMAINING`
-      : `${remaining} FREE QUESTIONS`;
+    usageText.textContent =
+      state.verified
+        ? `${remaining} QUESTIONS REMAINING`
+        : `${remaining} FREE QUESTIONS`;
   }
 
   function showGuestGate() {
+
     accessCard.hidden = false;
+
     composerArea.hidden = true;
 
     accessCard.scrollIntoView({
@@ -94,12 +264,48 @@
     });
   }
 
-  function showDiagnosis(summary) {
+  function showLock(lockedUntil) {
+
+    state.lockedUntil =
+      lockedUntil || null;
+
+    lockCard.hidden = false;
+
+    composerArea.hidden = true;
+
+    const lockTime =
+      $("lock-time");
+
+    if (lockedUntil) {
+
+      const date =
+        new Date(lockedUntil);
+
+      lockTime.textContent =
+        `Available again: ${date.toLocaleString()}`;
+
+    } else {
+
+      lockTime.textContent =
+        "Please try again later.";
+    }
+
+    lockCard.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }
+
+  function showDiagnosis(data) {
+
     diagnosisCard.hidden = false;
 
+    const summary =
+      data?.summary ||
+      "GLIME AI has understood your business context and prepared a practical system direction.";
+
     $("diagnosis-summary").textContent =
-      summary ||
-      "GLIME AI has understood your business context. Your requirement can now be turned into a practical system plan.";
+      summary;
 
     diagnosisCard.scrollIntoView({
       behavior: "smooth",
@@ -107,177 +313,499 @@
     });
   }
 
-  function resetChat() {
-    state.questionsUsed = 0;
-    state.verified = false;
-    state.messages = [];
+  function setComposerEnabled(enabled) {
 
-    chatWindow.innerHTML = "";
+    input.disabled =
+      !enabled;
 
-    accessCard.hidden = true;
-    lockCard.hidden = true;
-    diagnosisCard.hidden = true;
-
-    composerArea.hidden = false;
-
-    input.disabled = false;
-    $("send-button").disabled = false;
-
-    input.value = "";
-
-    $("email-form").hidden = false;
-    $("otp-form").hidden = true;
-
-    $("email-error").textContent = "";
-    $("otp-error").textContent = "";
-
-    updateCounter();
-
-    addMessage(
-      "ai",
-      "नमस्ते! मैं GLIME AI हूँ — आपका AI Business Consultant। पहले मुझे अपने business और उस problem के बारे में बताइए जिसे आप solve करना चाहते हैं।"
-    );
+    sendButton.disabled =
+      !enabled;
   }
 
+  /*
+   * ==========================================================
+   * EDGE FUNCTION REQUEST
+   * ==========================================================
+   */
+
+  async function callGLIMEAI(message) {
+
+    const session =
+      await supabaseClient.auth.getSession();
+
+    const accessToken =
+      session?.data?.session?.access_token ||
+      null;
+
+    const response =
+      await fetch(
+        EDGE_FUNCTION_URL,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            ...(accessToken
+              ? {
+                  "Authorization":
+                    `Bearer ${accessToken}`
+                }
+              : {})
+          },
+
+          body: JSON.stringify({
+
+            session_id:
+              state.sessionId,
+
+            message,
+
+            messages:
+              state.messages,
+
+            client_context: {
+              page: "glime-ai",
+              source: "glime-ai.html"
+            }
+          })
+        }
+      );
+
+    let data = null;
+
+    try {
+      data =
+        await response.json();
+    } catch {
+      throw new Error(
+        "Invalid response from GLIME AI server."
+      );
+    }
+
+    if (!response.ok) {
+
+      const error =
+        new Error(
+          data?.error ||
+          "GLIME AI request failed."
+        );
+
+      error.code =
+        data?.code;
+
+      error.locked_until =
+        data?.locked_until;
+
+      error.questions_used =
+        data?.questions_used;
+
+      throw error;
+    }
+
+    return data;
+  }
+
+  /*
+   * ==========================================================
+   * SEND MESSAGE
+   * ==========================================================
+   */
+
   async function sendMessage(text) {
-    const trimmed = text.trim();
+
+    const trimmed =
+      text.trim();
 
     if (!trimmed) {
       return;
     }
 
-    const limit = state.verified
-      ? state.verifiedLimit
-      : state.guestLimit;
-
-    /*
-     * Frontend limit is only for UI.
-     * Production security must also enforce this
-     * on the Supabase Edge Function.
-     */
-
-    if (state.questionsUsed >= limit) {
-      if (!state.verified) {
-        showGuestGate();
-      }
-
+    if (state.busy) {
       return;
     }
 
-    addMessage("user", trimmed);
+    state.busy = true;
+
+    setComposerEnabled(false);
+
+    addMessage(
+      "user",
+      trimmed
+    );
 
     input.value = "";
 
-    /*
-     * Only visitor messages count as questions.
-     * AI replies do not count.
-     */
-    state.questionsUsed += 1;
-
-    updateCounter();
-
-    input.disabled = true;
-    $("send-button").disabled = true;
-
     showTyping();
 
-    /*
-     * ==========================================================
-     * PRODUCTION BACKEND CONNECTION
-     * ==========================================================
-     *
-     * यहाँ बाद में Supabase Edge Function connect होगी.
-     *
-     * Frontend से Gemini API को direct call नहीं करना है.
-     *
-     * Expected flow:
-     *
-     * Browser
-     *    ↓
-     * Supabase Edge Function
-     *    ↓
-     * Guest/session validation
-     *    ↓
-     * Knowledge Base retrieval
-     *    ↓
-     * GLIME diagnosis logic
-     *    ↓
-     * Gemini API
-     *    ↓
-     * Response
-     *    ↓
-     * Browser
-     *
-     * Gemini API key कभी भी इस file में नहीं आएगी.
-     */
+    try {
 
-    await new Promise((resolve) => {
-      setTimeout(resolve, 550);
-    });
+      const data =
+        await callGLIMEAI(
+          trimmed
+        );
 
-    hideTyping();
+      hideTyping();
 
-    /*
-     * ==========================================================
-     * GUEST PASS
-     * ==========================================================
-     */
+      /*
+       * Server is authoritative.
+       * Never trust frontend question count.
+       */
 
-    if (
-      !state.verified &&
-      state.questionsUsed >= state.guestLimit
-    ) {
+      if (
+        Number.isInteger(
+          data.questions_used
+        )
+      ) {
+        state.questionsUsed =
+          data.questions_used;
+      }
+
+      if (
+        typeof data.verified ===
+        "boolean"
+      ) {
+        state.verified =
+          data.verified;
+      }
+
+      updateCounter();
+
+      /*
+       * Server may return access state.
+       */
+
+      if (data.locked) {
+
+        showLock(
+          data.locked_until
+        );
+
+        return;
+      }
+
+      /*
+       * AI response
+       */
+
+      if (data.reply) {
+
+        addMessage(
+          "ai",
+          data.reply
+        );
+      }
+
+      /*
+       * Diagnosis
+       */
+
+      if (
+        data.diagnosis
+      ) {
+
+        state.diagnosis =
+          data.diagnosis;
+
+        showDiagnosis(
+          data.diagnosis
+        );
+      }
+
+      /*
+       * Guest limit reached
+       */
+
+      if (
+        data.requires_email
+      ) {
+
+        showGuestGate();
+
+        return;
+      }
+
+      /*
+       * Verified user limit reached
+       */
+
+      if (
+        data.limit_reached &&
+        state.verified
+      ) {
+
+        showDiagnosis(
+          data.diagnosis
+        );
+
+        return;
+      }
+
+      setComposerEnabled(true);
+
+      input.focus();
+
+    } catch (error) {
+
+      hideTyping();
+
+      /*
+       * Guest access exhausted.
+       */
+
+      if (
+        error.code ===
+        "GUEST_LIMIT_REACHED"
+      ) {
+
+        addMessage(
+          "ai",
+          "मैं आपकी requirement समझ रहा हूँ। आगे बढ़ने के लिए अपना email verify कर दें। इससे मैं आपकी business requirement को save करके personalized recommendation दे सकूँगा।"
+        );
+
+        showGuestGate();
+
+        return;
+      }
+
+      /*
+       * 2-hour lock.
+       */
+
+      if (
+        error.code ===
+        "ACCESS_LOCKED"
+      ) {
+
+        showLock(
+          error.locked_until
+        );
+
+        return;
+      }
+
+      /*
+       * Generic server error.
+       */
+
       addMessage(
         "ai",
-        "मैं आपकी requirement समझ रहा हूँ। आगे बढ़ने के लिए अपना email verify कर दें। इससे मैं आपकी business requirement को save करके personalized recommendation दे सकूँगा।"
+        "अभी GLIME AI से connection में समस्या आ रही है। कृपया थोड़ी देर बाद फिर कोशिश करें।"
       );
 
-      input.disabled = true;
-      $("send-button").disabled = true;
-
-      showGuestGate();
-
-      return;
-    }
-
-    /*
-     * ==========================================================
-     * VERIFIED USER LIMIT
-     * ==========================================================
-     */
-
-    if (
-      state.verified &&
-      state.questionsUsed >= state.verifiedLimit
-    ) {
-      addMessage(
-        "ai",
-        "आपकी 15 सवालों की access limit पूरी हो गई है। अब आपकी collected business context को diagnosis और system recommendation में बदला जा सकता है।"
+      console.error(
+        "GLIME AI error:",
+        error
       );
 
-      showDiagnosis();
+      setComposerEnabled(true);
+      input.focus();
+    } finally {
 
-      input.disabled = true;
-      $("send-button").disabled = true;
-
-      return;
+      state.busy = false;
     }
-
-    /*
-     * Temporary response until the real AI backend
-     * is connected.
-     */
-
-    addMessage(
-      "ai",
-      "समझ गया। अब मैं आपकी बात को business context के साथ देख रहा हूँ। अगला सवाल आपकी requirement के उस हिस्से को समझने के लिए होगा जो अभी missing है।"
-    );
-
-    input.disabled = false;
-    $("send-button").disabled = false;
-
-    input.focus();
   }
+
+  /*
+   * ==========================================================
+   * EMAIL OTP
+   * ==========================================================
+   */
+
+  async function sendOTP(email) {
+
+    if (!supabaseClient) {
+      throw new Error(
+        "Supabase is not initialized."
+      );
+    }
+
+    const {
+      error
+    } =
+      await supabaseClient.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true
+        }
+      });
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  /*
+   * ==========================================================
+   * EMAIL FORM
+   * ==========================================================
+   */
+
+  $("email-form").addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+      const email =
+        $("email-input")
+          .value
+          .trim()
+          .toLowerCase();
+
+      const errorBox =
+        $("email-error");
+
+      errorBox.textContent = "";
+
+      if (
+        !email ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+          .test(email)
+      ) {
+
+        errorBox.textContent =
+          "Please enter a valid email address.";
+
+        return;
+      }
+
+      const button =
+        $("email-form")
+          .querySelector("button");
+
+      button.disabled = true;
+
+      try {
+
+        await sendOTP(email);
+
+        state.email =
+          email;
+
+        $("email-form").hidden =
+          true;
+
+        $("otp-form").hidden =
+          false;
+
+        $("otp-input").focus();
+
+      } catch (error) {
+
+        errorBox.textContent =
+          error?.message ||
+          "Unable to send OTP. Please try again.";
+
+      } finally {
+
+        button.disabled = false;
+      }
+    }
+  );
+
+  /*
+   * ==========================================================
+   * VERIFY OTP
+   * ==========================================================
+   */
+
+  $("otp-form").addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+      const otp =
+        $("otp-input")
+          .value
+          .trim();
+
+      const errorBox =
+        $("otp-error");
+
+      errorBox.textContent = "";
+
+      if (!/^\d{6}$/.test(otp)) {
+
+        errorBox.textContent =
+          "Please enter the 6-digit OTP.";
+
+        return;
+      }
+
+      const button =
+        $("otp-form")
+          .querySelector("button");
+
+      button.disabled = true;
+
+      try {
+
+        const {
+          data,
+          error
+        } =
+          await supabaseClient.auth.verifyOtp({
+            email: state.email,
+            token: otp,
+            type: "email"
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        if (!data?.session) {
+
+          throw new Error(
+            "Email verification did not create a session."
+          );
+        }
+
+        state.verified =
+          true;
+
+        /*
+         * IMPORTANT:
+         * Do NOT reset questions locally.
+         *
+         * The Edge Function/database is authoritative.
+         */
+
+        accessCard.hidden =
+          true;
+
+        lockCard.hidden =
+          true;
+
+        composerArea.hidden =
+          false;
+
+        setComposerEnabled(true);
+
+        updateCounter();
+
+        addMessage(
+          "ai",
+          "Email verified. अब हम आपकी business requirement को आगे समझ सकते हैं।"
+        );
+
+        input.focus();
+
+      } catch (error) {
+
+        errorBox.textContent =
+          error?.message ||
+          "Invalid or expired OTP.";
+
+      } finally {
+
+        button.disabled = false;
+      }
+    }
+  );
 
   /*
    * ==========================================================
@@ -285,27 +813,33 @@
    * ==========================================================
    */
 
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
+  form.addEventListener(
+    "submit",
+    (event) => {
 
-    sendMessage(input.value);
-  });
-
-  /*
-   * Enter = Send
-   * Shift + Enter = New Line
-   */
-
-  input.addEventListener("keydown", (event) => {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
       event.preventDefault();
 
-      form.requestSubmit();
+      sendMessage(
+        input.value
+      );
     }
-  });
+  );
+
+  input.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        form.requestSubmit();
+      }
+    }
+  );
 
   /*
    * ==========================================================
@@ -315,104 +849,35 @@
 
   $("restart-chat").addEventListener(
     "click",
-    resetChat
-  );
-
-  /*
-   * ==========================================================
-   * EMAIL
-   * ==========================================================
-   */
-
-  $("email-form").addEventListener(
-    "submit",
-    async (event) => {
-      event.preventDefault();
-
-      const email =
-        $("email-input").value.trim();
-
-      const error =
-        $("email-error");
-
-      if (
-        !email ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-      ) {
-        error.textContent =
-          "Please enter a valid email address.";
-
-        return;
-      }
-
-      error.textContent = "";
+    () => {
 
       /*
-       * Production:
+       * Start over only clears the
+       * local conversation UI.
        *
-       * Supabase Auth OTP / Edge Function
-       * email OTP request यहाँ आएगा.
+       * It does NOT erase the server-side
+       * usage counter.
        */
 
-      $("email-form").hidden = true;
-      $("otp-form").hidden = false;
+      state.messages = [];
 
-      $("otp-input").focus();
-    }
-  );
+      state.diagnosis = null;
 
-  /*
-   * ==========================================================
-   * OTP VERIFICATION
-   * ==========================================================
-   */
-
-  $("otp-form").addEventListener(
-    "submit",
-    async (event) => {
-      event.preventDefault();
-
-      const otp =
-        $("otp-input").value.trim();
-
-      const error =
-        $("otp-error");
-
-      if (!/^\d{6}$/.test(otp)) {
-        error.textContent =
-          "Please enter the 6-digit OTP.";
-
-        return;
-      }
-
-      error.textContent = "";
-
-      /*
-       * IMPORTANT:
-       *
-       * यह temporary frontend verification है.
-       *
-       * Production में यहाँ वास्तविक Supabase
-       * OTP verification होगी.
-       *
-       * Successful verification के बाद backend
-       * verified session बनाएगा.
-       */
-
-      state.verified = true;
-      state.questionsUsed = 0;
+      chatWindow.innerHTML = "";
 
       accessCard.hidden = true;
+      lockCard.hidden = true;
+      diagnosisCard.hidden = true;
+
       composerArea.hidden = false;
 
-      input.disabled = false;
-      $("send-button").disabled = false;
+      setComposerEnabled(true);
 
       updateCounter();
 
       addMessage(
         "ai",
-        "Email verified. अब आपके पास 15 questions हैं। अब हम आपकी business requirement को और गहराई से समझ सकते हैं।"
+        "नमस्ते! मैं GLIME AI हूँ — आपका AI Business Consultant। पहले मुझे अपने business और उस problem के बारे में बताइए जिसे आप solve करना चाहते हैं।"
       );
 
       input.focus();
@@ -425,6 +890,38 @@
    * ==========================================================
    */
 
-  resetChat();
+  async function initialize() {
+
+    state.sessionId =
+      getOrCreateSessionId();
+
+    updateCounter();
+
+    addMessage(
+      "ai",
+      "नमस्ते! मैं GLIME AI हूँ — आपका AI Business Consultant। पहले मुझे अपने business और उस problem के बारे में बताइए जिसे आप solve करना चाहते हैं।"
+    );
+
+    try {
+
+      await initSupabase();
+
+    } catch (error) {
+
+      console.error(
+        "GLIME AI initialization error:",
+        error
+      );
+
+      setComposerEnabled(false);
+
+      addMessage(
+        "ai",
+        "GLIME AI अभी configure हो रहा है। कृपया थोड़ी देर बाद फिर कोशिश करें।"
+      );
+    }
+  }
+
+  initialize();
 
 })();
