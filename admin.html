@@ -126,6 +126,57 @@ button:disabled{opacity:.55;cursor:not-allowed}
           <div class="meta"><small>Client ID</small><strong id="clientCodeView">—</strong></div>
         </div>
       </div>
+      <div class="section">
+  <div class="section-title">2. Lookbook Storage</div>
+
+  <div class="client-meta" id="storageMeta" style="display:none">
+    <div class="meta">
+      <small>Storage Used</small>
+      <strong id="storageUsedView">—</strong>
+    </div>
+
+    <div class="meta">
+      <small>Storage Limit</small>
+      <strong id="storageLimitView">—</strong>
+    </div>
+
+    <div class="meta">
+      <small>Storage Remaining</small>
+      <strong id="storageRemainingView">—</strong>
+    </div>
+
+    <div class="meta">
+      <small>Reserved</small>
+      <strong id="storageReservedView">—</strong>
+    </div>
+  </div>
+
+  <div class="form-group" style="margin-top:14px">
+    <label for="newStorageLimit">New Storage Limit (MB)</label>
+    <input
+      type="number"
+      id="newStorageLimit"
+      min="1"
+      step="1"
+      placeholder="Example: 100"
+    >
+  </div>
+
+  <button
+    type="button"
+    class="primary"
+    id="updateStorageBtn"
+  >
+    Update Storage Limit
+  </button>
+
+  <p id="storage-status" class="help"></p>
+
+  <p class="help">
+    Default client storage is 50 MB.
+    Only GLIME Admin can change this limit.
+  </p>
+</div>
 
       <div class="section">
         <div class="section-title">2. Project</div>
