@@ -94,6 +94,50 @@
 
   /*
    * ==========================================================
+   * PROBLEM SOLVER DIAGNOSIS
+   * ==========================================================
+   *
+   * ai-problem-solver.js saves the diagnosis in localStorage.
+   * GLIME AI reads it from there and sends it to the server.
+   */
+
+  function getSavedProblemSolverDiagnosis() {
+    try {
+      const raw =
+        localStorage.getItem(
+          "glime_business_diagnosis"
+        );
+
+      if (!raw) {
+        return null;
+      }
+
+      const saved =
+        JSON.parse(raw);
+
+      if (
+        !saved ||
+        typeof saved !== "object"
+      ) {
+        return null;
+      }
+
+      return saved;
+
+    } catch (error) {
+
+      console.warn(
+        "GLIME Problem Solver diagnosis could not be loaded:",
+        error
+      );
+
+      return null;
+    }
+  }
+
+
+  /*
+   * ==========================================================
    * SUPABASE
    * ==========================================================
    */
@@ -122,11 +166,13 @@
         resolve;
 
       script.onerror = () => {
+
         reject(
           new Error(
             "Supabase library could not be loaded."
           )
         );
+
       };
 
       document.head.appendChild(script);
@@ -144,6 +190,7 @@
         "PASTE_YOUR"
       )
     ) {
+
       throw new Error(
         "Supabase publishable key is not configured."
       );
@@ -202,6 +249,7 @@
       );
 
     } catch {
+
       /*
        * If localStorage is unavailable,
        * session still works for current page.
@@ -218,6 +266,7 @@
      *
      * UUID is preferred.
      */
+
     try {
 
       if (
@@ -225,6 +274,7 @@
         typeof window.crypto.randomUUID ===
           "function"
       ) {
+
         return window.crypto.randomUUID();
       }
 
@@ -619,6 +669,7 @@
      * Always get the latest Supabase
      * authentication session.
      */
+
     const authResult =
       await supabaseClient.auth.getSession();
 
@@ -630,6 +681,7 @@
     /*
      * Server session token.
      */
+
     const sessionToken =
       state.sessionToken ||
       getOrCreateSessionToken();
@@ -648,10 +700,10 @@
     const headers = {
 
       "Content-Type":
-        "application/json"
-      ,
-"apikey":
-  SUPABASE_PUBLISHABLE_KEY
+        "application/json",
+
+      "apikey":
+        SUPABASE_PUBLISHABLE_KEY
     };
 
 
@@ -659,6 +711,7 @@
      * Only send Authorization when
      * the visitor has a verified Supabase session.
      */
+
     if (accessToken) {
 
       headers.Authorization =
@@ -722,6 +775,7 @@
     /*
      * Server may issue a new token.
      */
+
     if (data?.sessionToken) {
 
       saveSessionToken(
@@ -765,6 +819,7 @@
        * If server says currently locked,
        * show lock immediately.
        */
+
       if (data?.locked) {
 
         showLock(
@@ -780,6 +835,7 @@
        * If already verified,
        * make sure guest gate is hidden.
        */
+
       if (state.verified) {
 
         hideAccessCard();
@@ -810,6 +866,7 @@
        * Don't block the page if status
        * temporarily fails.
        */
+
       if (composerArea) {
         composerArea.hidden = false;
       }
@@ -846,6 +903,7 @@
      * If currently locked,
      * don't send anything.
      */
+
     if (
       state.lockedUntil &&
       new Date(state.lockedUntil)
@@ -864,6 +922,7 @@
      * If guest limit is already reached,
      * don't call Gemini again.
      */
+
     if (
       !state.verified &&
       state.questionsUsed >=
@@ -880,6 +939,7 @@
      * If verified limit is reached,
      * don't call Gemini again.
      */
+
     if (
       state.verified &&
       state.questionsUsed >=
@@ -905,6 +965,7 @@
     /*
      * Add user's message locally.
      */
+
     addMessage(
       "user",
       trimmed
@@ -921,6 +982,14 @@
 
     try {
 
+      /*
+       * Load the latest diagnosis saved
+       * by GLIME Problem Solver.
+       */
+      const problemSolverDiagnosis =
+        getSavedProblemSolverDiagnosis();
+
+
       const data =
         await callEdge(
           "chat",
@@ -932,11 +1001,15 @@
               state.messages,
 
             client_context: {
+
               page:
                 "glime-ai",
 
               source:
-                "glime-ai.html"
+                "glime-ai.html",
+
+              problem_solver_diagnosis:
+                problemSolverDiagnosis
             }
           }
         );
@@ -1067,6 +1140,7 @@
       /*
        * Guest limit reached
        */
+
       if (
         error.code ===
         "GUEST_LIMIT_REACHED"
@@ -1086,6 +1160,7 @@
       /*
        * Access locked
        */
+
       if (
         error.code ===
         "ACCESS_LOCKED"
@@ -1102,6 +1177,7 @@
       /*
        * Verified limit
        */
+
       if (
         error.code ===
         "VERIFIED_LIMIT_REACHED"
@@ -1118,6 +1194,7 @@
       /*
        * Generic error
        */
+
       console.error(
         "GLIME AI error:",
         error
@@ -1387,6 +1464,7 @@
           /*
            * Verify email OTP with Supabase.
            */
+
           const result =
             await supabaseClient.auth
               .verifyOtp({
@@ -1411,6 +1489,7 @@
            * Supabase should now have
            * an authenticated user session.
            */
+
           if (!result.data?.session) {
 
             throw new Error(
@@ -1424,6 +1503,7 @@
            * existing anonymous session is now
            * verified.
            */
+
           const bindData =
             await callEdge(
               "bind"
@@ -1438,6 +1518,7 @@
           /*
            * Hide access gate.
            */
+
           emailForm.hidden =
             true;
 
@@ -1452,12 +1533,14 @@
           /*
            * Remove lock UI if any.
            */
+
           hideLockCard();
 
 
           /*
            * Restore composer.
            */
+
           if (composerArea) {
             composerArea.hidden =
               false;
@@ -1474,6 +1557,7 @@
            * → server continues from existing
            * session and applies verified access.
            */
+
           updateCounter();
 
 
@@ -1490,6 +1574,7 @@
           /*
            * Optional confirmation inside chat.
            */
+
           addMessage(
             "ai",
             "Email verify हो गया है। अब हम आपकी business requirement को और detail में समझ सकते हैं।"
@@ -1533,6 +1618,7 @@
    *
    * It only clears the visual chat.
    */
+
   const restartButton =
     $("restart-chat");
 
@@ -1609,18 +1695,37 @@
       /*
        * Prepare local reference.
        */
+
       getOrCreateSessionToken();
+
+
+      /*
+       * Restore Problem Solver diagnosis
+       * if it exists.
+       */
+
+      const savedDiagnosis =
+        getSavedProblemSolverDiagnosis();
+
+      if (savedDiagnosis) {
+
+        state.diagnosis =
+          savedDiagnosis.diagnosis ||
+          savedDiagnosis;
+      }
 
 
       /*
        * Load Supabase.
        */
+
       await initSupabase();
 
 
       /*
        * Ask server for current state.
        */
+
       await loadInitialStatus();
 
 
@@ -1647,6 +1752,7 @@
        * Don't expose technical
        * details to visitor.
        */
+
       addMessage(
         "ai",
         "GLIME AI अभी initialize नहीं हो पाया। कृपया page को refresh करके फिर कोशिश करें।"
@@ -1658,6 +1764,7 @@
   /*
    * Start only after DOM exists.
    */
+
   if (
     document.readyState ===
     "loading"
