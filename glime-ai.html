@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GLIME AI — an AI business consultant that understands your business and guides you toward the right system.">
+  <title>GLIME AI | Business Consultant</title>
+  <link rel="icon" type="image/jpeg" href="glime_logo_clean.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="glime-ai.css">
+  <link rel="stylesheet" href="glime-global-nav.css">
+</head>
+<body>
+  <div class="page-glow glow-one" aria-hidden="true"></div>
+  <div class="page-glow glow-two" aria-hidden="true"></div>
+
+  <main class="shell">
+    <header class="glime-global-header">
+      <div class="glime-nav-inner">
+        <a href="index.html" class="glime-brand" aria-label="GLIME Home">
+          <img src="glime_logo_clean.svg" alt="GLIME">
+        </a>
+        <nav class="glime-desktop-nav" aria-label="Main navigation">
+          <a href="index.html" data-nav="home">Home</a>
+          <a href="index.html#solutions" data-nav="solutions">Solutions</a>
+          <a href="how-it-works.html" data-nav="how">How It Works</a>
+          <a href="packages.html" data-nav="packages">Packages</a>
+          <a href="portfolio.html" data-nav="portfolio">Portfolio</a>
+          <a href="contact.html" data-nav="contact">Contact</a>
+          <a href="ai-problem-solver.html" data-nav="ai" class="active">AI Tools</a>
+          <a href="login.html">Login</a>
+        </nav>
+        <button class="glime-menu-button" id="glime-menu-button" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="glime-mobile-nav">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <nav class="glime-mobile-nav" id="glime-mobile-nav" aria-label="Mobile navigation">
+        <a href="index.html" data-nav="home">Home</a>
+        <a href="index.html#solutions" data-nav="solutions">Solutions</a>
+        <a href="how-it-works.html" data-nav="how">How It Works</a>
+        <a href="packages.html" data-nav="packages">Packages</a>
+        <a href="portfolio.html" data-nav="portfolio">Portfolio</a>
+        <a href="contact.html" data-nav="contact">Contact</a>
+        <a href="ai-problem-solver.html" data-nav="ai" class="active">AI Tools</a>
+        <a href="login.html">Login</a>
+        <a href="glime-ai.html" class="glime-mobile-cta">Talk to GLIME AI <span aria-hidden="true">→</span></a>
+      </nav>
+    </header>
+
+    <section class="ai-shell" aria-labelledby="ai-title">
+      <div class="ai-heading">
+        <div>
+          <p class="eyebrow">GLIME AI · BUSINESS CONSULTANT</p>
+          <h1 id="ai-title">Let's understand your business.</h1>
+          <p class="hero-copy">Tell me what is happening in your business. I’ll ask only the questions needed to understand the problem and guide you toward the right system.</p>
+        </div>
+        <div class="usage-badge" id="usage-badge" aria-live="polite">
+          <span class="usage-dot" aria-hidden="true"></span>
+          <span id="usage-text">5 FREE QUESTIONS</span>
+        </div>
+      </div>
+
+      <div class="chat-card">
+        <div class="chat-topbar">
+          <div class="ai-identity">
+            <div class="ai-mark" aria-hidden="true">G</div>
+            <div>
+              <strong>GLIME AI</strong>
+              <span>Business Consultant</span>
+            </div>
+          </div>
+          <button class="text-button" id="restart-chat" type="button">Start over</button>
+        </div>
+
+        <div class="chat-window" id="chat-window" role="log" aria-live="polite" aria-label="GLIME AI conversation"></div>
+
+        <div class="composer-area" id="composer-area">
+          <form class="composer" id="chat-form" novalidate>
+            <label class="sr-only" for="chat-input">Your message</label>
+            <textarea id="chat-input" rows="1" maxlength="2000" placeholder="Tell me about your business or problem..." autocomplete="off"></textarea>
+            <button class="send-button" id="send-button" type="submit" aria-label="Send message">→</button>
+          </form>
+          <div class="composer-meta">
+            <span>GLIME AI understands your business context.</span>
+            <span id="question-counter">0 / 5</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="access-card" id="access-card" hidden aria-labelledby="access-title">
+        <p class="card-label">GUEST PASS</p>
+        <h2 id="access-title">Continue with free access.</h2>
+        <p>आपने अपने 5 free questions पूरे कर लिए हैं। Email verify करके बातचीत जारी रखें और अपनी business requirement को personalized recommendation तक ले जाएँ।</p>
+        <form id="email-form" class="access-form" novalidate>
+          <label for="email-input">Email address</label>
+          <div class="inline-field">
+            <input id="email-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" maxlength="254" required>
+            <button class="button primary" type="submit">Continue with Email <span aria-hidden="true">→</span></button>
+          </div>
+          <p class="form-error" id="email-error" role="alert"></p>
+        </form>
+        <form id="otp-form" class="access-form" hidden novalidate>
+          <label for="otp-input">Enter the OTP sent to your email</label>
+          <div class="inline-field">
+            <input id="otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit OTP" maxlength="6" required>
+            <button class="button primary" type="submit">Verify Email <span aria-hidden="true">→</span></button>
+          </div>
+          <p class="form-error" id="otp-error" role="alert"></p>
+        </form>
+      </section>
+
+      <section class="lock-card" id="lock-card" hidden aria-live="polite">
+        <p class="card-label">ACCESS PAUSED</p>
+        <h2>Your 15-question access is complete.</h2>
+        <p>GLIME AI will be available again after the 2-hour access window.</p>
+        <div class="lock-time" id="lock-time">—</div>
+      </section>
+
+      <section class="diagnosis-card" id="diagnosis-card" hidden aria-labelledby="diagnosis-title">
+        <div>
+          <p class="eyebrow">BUSINESS DIAGNOSIS</p>
+          <h2 id="diagnosis-title">Your system direction is ready.</h2>
+          <p id="diagnosis-summary"></p>
+        </div>
+        <div class="diagnosis-actions">
+          <a class="button primary" href="contact.html">Build This System <span aria-hidden="true">→</span></a>
+          <a class="button secondary" href="contact.html">Contact GLIME</a>
+          <a class="button secondary" href="contact.html">Book Demo</a>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="glime-global-footer">
+    <div class="footer-links">
+      <a href="about.html">About</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="refund-cancellation.html">Refund &amp; Cancellation</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <div>© 2026 GLIME. All rights reserved.</div>
+  </footer>
+
+  <script src="glime-ai.js"></script>
+  <script src="glime-global-nav.js" defer></script>
+</body>
+</html>
