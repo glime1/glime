@@ -1461,6 +1461,17 @@ h1, h2, h3, p, a, button, span { overflow-wrap:break-word; word-break:normal; }
   <link rel="stylesheet" href="glime-global-nav.css?v=2">
 
 <style id="glime-nav-v2-override">
+  .glime-global-header{
+  position:fixed !important;
+  top:0;
+  left:0;
+  right:0;
+  z-index:9999;
+}
+
+body{
+  padding-top:82px;
+}
 /* Final GLIME navigation guard: keeps the shared menu stable even if page CSS changes. */
 .glime-global-header{width:100%;overflow:visible!important;}
 .glime-nav-inner{width:min(1180px,calc(100% - 32px));min-height:82px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:22px;}
