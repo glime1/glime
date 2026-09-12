@@ -649,6 +649,9 @@
 
       "Content-Type":
         "application/json"
+      ,
+"apikey":
+  SUPABASE_PUBLISHABLE_KEY
     };
 
 
