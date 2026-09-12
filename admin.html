@@ -404,6 +404,67 @@ button:disabled{opacity:.55;cursor:not-allowed}
     }
   }
   $('fetchBtn').addEventListener('click',fetchClient);
+    function formatStorage(bytes) {
+    const n = Number(bytes || 0);
+
+    if (n < 1024 * 1024) {
+      return Math.round(n / 1024) + ' KB';
+    }
+
+    return (n / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  async function loadClientStorage() {
+    if (!currentClientId) {
+      $('storageMeta').style.display = 'none';
+      return;
+    }
+
+    try {
+      const session = await ensureAdminSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.rpc(
+        'get_lookbook_storage_admin',
+        {
+          p_email: $('clientEmail').value.trim().toLowerCase()
+        }
+      );
+
+      if (error) throw error;
+
+      if (!data) {
+        $('storageMeta').style.display = 'none';
+        return;
+      }
+
+      $('storageUsedView').textContent =
+        formatStorage(data.bytes_used);
+
+      $('storageLimitView').textContent =
+        formatStorage(data.storage_limit_bytes);
+
+      $('storageRemainingView').textContent =
+        formatStorage(data.remaining_bytes);
+
+      $('storageReservedView').textContent =
+        formatStorage(data.reserved_bytes);
+
+      $('storageMeta').style.display = 'grid';
+
+      $('newStorageLimit').value =
+        Math.round(Number(data.storage_limit_bytes) / 1048576);
+
+    } catch (err) {
+      console.error(err);
+
+      setMsg(
+        'storage-status',
+        'Storage fetch failed: ' + (err?.message || String(err)),
+        '#ff5263'
+      );
+    }
+  }
 
   $('clientEmail').addEventListener('input',()=>{
     $('createLeadBtn').disabled = !$('clientEmail').value.trim();
