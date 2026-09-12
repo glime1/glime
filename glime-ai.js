@@ -1,4 +1,3 @@
-
 (() => {
   "use strict";
 
@@ -9,28 +8,31 @@
    *
    * Browser
    *    ↓
-   * Supabase Edge Function
+   * Supabase Auth
    *    ↓
-   * Session / usage validation
+   * GLIME AI Edge Function
+   *    ↓
+   * Session / Usage validation
    *    ↓
    * GLIME AI logic
    *    ↓
    * Gemini
    *
    * IMPORTANT:
-   * Gemini API key is NEVER stored here.
+   * Gemini API key is NEVER stored in this file.
    */
 
   const SUPABASE_URL =
     "https://ufoulgbiqgjriwapuopc.supabase.co";
 
   /*
-   * यहाँ अपना existing Supabase PUBLISHABLE / ANON KEY डालें.
+   * Supabase Publishable Key
    *
-   * SERVICE ROLE KEY यहाँ कभी नहीं डालनी है.
+   * This is safe for frontend use.
+   * NEVER put Service Role Key here.
    */
   const SUPABASE_PUBLISHABLE_KEY =
-    "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE";
+    "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
   const EDGE_FUNCTION_URL =
     `${SUPABASE_URL}/functions/v1/glime-ai`;
@@ -38,10 +40,15 @@
   const GUEST_LIMIT = 5;
   const VERIFIED_LIMIT = 15;
 
-  const SESSION_STORAGE_KEY = "glime_ai_session_id";
+  /*
+   * IMPORTANT:
+   * This stores the SERVER-GENERATED session token.
+   */
+  const SESSION_STORAGE_KEY =
+    "glime_ai_session_token";
 
   const state = {
-    sessionId: null,
+    sessionToken: null,
     verified: false,
     questionsUsed: 0,
     lockedUntil: null,
@@ -51,26 +58,48 @@
     email: ""
   };
 
-  const $ = (id) => document.getElementById(id);
+  const $ = (id) =>
+    document.getElementById(id);
 
-  const chatWindow = $("chat-window");
-  const input = $("chat-input");
-  const form = $("chat-form");
-  const counter = $("question-counter");
-  const usageText = $("usage-text");
-  const accessCard = $("access-card");
-  const lockCard = $("lock-card");
-  const diagnosisCard = $("diagnosis-card");
-  const composerArea = $("composer-area");
-  const sendButton = $("send-button");
+  const chatWindow =
+    $("chat-window");
+
+  const input =
+    $("chat-input");
+
+  const form =
+    $("chat-form");
+
+  const counter =
+    $("question-counter");
+
+  const usageText =
+    $("usage-text");
+
+  const accessCard =
+    $("access-card");
+
+  const lockCard =
+    $("lock-card");
+
+  const diagnosisCard =
+    $("diagnosis-card");
+
+  const composerArea =
+    $("composer-area");
+
+  const sendButton =
+    $("send-button");
+
 
   /*
    * ==========================================================
-   * SUPABASE CLIENT
+   * SUPABASE
    * ==========================================================
    */
 
   let supabaseClient = null;
+
 
   async function loadSupabase() {
 
@@ -83,16 +112,20 @@
 
     await new Promise((resolve, reject) => {
 
-      const script = document.createElement("script");
+      const script =
+        document.createElement("script");
 
       script.src =
         "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 
-      script.onload = resolve;
+      script.onload =
+        resolve;
 
       script.onerror = () => {
         reject(
-          new Error("Supabase library could not be loaded.")
+          new Error(
+            "Supabase library could not be loaded."
+          )
         );
       };
 
@@ -100,13 +133,16 @@
     });
   }
 
+
   async function initSupabase() {
 
     await loadSupabase();
 
     if (
-      SUPABASE_PUBLISHABLE_KEY ===
-      "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE"
+      !SUPABASE_PUBLISHABLE_KEY ||
+      SUPABASE_PUBLISHABLE_KEY.includes(
+        "PASTE_YOUR"
+      )
     ) {
       throw new Error(
         "Supabase publishable key is not configured."
@@ -127,46 +163,124 @@
       );
   }
 
+
   /*
    * ==========================================================
-   * SESSION
+   * SESSION TOKEN
    * ==========================================================
    */
 
-  function getOrCreateSessionId() {
+  function getStoredSessionToken() {
 
-    let id =
-      localStorage.getItem(
+    try {
+
+      return localStorage.getItem(
         SESSION_STORAGE_KEY
       );
 
-    if (!id) {
+    } catch {
 
-      if (crypto.randomUUID) {
-        id = crypto.randomUUID();
-      } else {
-        id =
-          `${Date.now()}-${Math.random()
-            .toString(36)
-            .slice(2)}`;
-      }
+      return null;
+    }
+  }
+
+
+  function saveSessionToken(token) {
+
+    if (!token) {
+      return;
+    }
+
+    state.sessionToken =
+      token;
+
+    try {
 
       localStorage.setItem(
         SESSION_STORAGE_KEY,
-        id
+        token
       );
+
+    } catch {
+      /*
+       * If localStorage is unavailable,
+       * session still works for current page.
+       */
+    }
+  }
+
+
+  function createTemporarySessionToken() {
+
+    /*
+     * Server will replace/accept this token
+     * according to its session handling.
+     *
+     * UUID is preferred.
+     */
+    try {
+
+      if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+          "function"
+      ) {
+        return window.crypto.randomUUID();
+      }
+
+    } catch {
+      // fallback below
     }
 
-    return id;
+    return (
+      `${Date.now()}-` +
+      `${Math.random()
+        .toString(36)
+        .slice(2)}` +
+      `${Math.random()
+        .toString(36)
+        .slice(2)}`
+    );
   }
+
+
+  function getOrCreateSessionToken() {
+
+    const existing =
+      getStoredSessionToken();
+
+    if (existing) {
+
+      state.sessionToken =
+        existing;
+
+      return existing;
+    }
+
+    const token =
+      createTemporarySessionToken();
+
+    saveSessionToken(token);
+
+    return token;
+  }
+
 
   /*
    * ==========================================================
-   * UI
+   * UI HELPERS
    * ==========================================================
    */
 
-  function addMessage(role, text) {
+  function addMessage(
+    role,
+    text,
+    saveToState = true
+  ) {
+
+    if (!text) {
+      return;
+    }
 
     const row =
       document.createElement("div");
@@ -180,7 +294,8 @@
     bubble.className =
       "message-bubble";
 
-    bubble.textContent = text;
+    bubble.textContent =
+      text;
 
     row.appendChild(bubble);
 
@@ -189,11 +304,15 @@
     chatWindow.scrollTop =
       chatWindow.scrollHeight;
 
-    state.messages.push({
-      role,
-      text
-    });
+    if (saveToState) {
+
+      state.messages.push({
+        role,
+        text
+      });
+    }
   }
+
 
   function showTyping() {
 
@@ -202,9 +321,11 @@
     const row =
       document.createElement("div");
 
-    row.className = "message ai";
+    row.className =
+      "message ai";
 
-    row.id = "typing-indicator";
+    row.id =
+      "typing-indicator";
 
     row.innerHTML = `
       <div class="message-bubble typing">
@@ -220,6 +341,7 @@
       chatWindow.scrollHeight;
   }
 
+
   function hideTyping() {
 
     const typing =
@@ -229,6 +351,7 @@
       typing.remove();
     }
   }
+
 
   function updateCounter() {
 
@@ -243,69 +366,134 @@
         limit - state.questionsUsed
       );
 
-    counter.textContent =
-      `${state.questionsUsed} / ${limit}`;
+    if (counter) {
 
-    usageText.textContent =
-      state.verified
-        ? `${remaining} QUESTIONS REMAINING`
-        : `${remaining} FREE QUESTIONS`;
+      counter.textContent =
+        `${state.questionsUsed} / ${limit}`;
+    }
+
+    if (usageText) {
+
+      usageText.textContent =
+        state.verified
+          ? `${remaining} QUESTIONS REMAINING`
+          : `${remaining} FREE QUESTIONS`;
+    }
   }
+
+
+  function hideAccessCard() {
+
+    if (accessCard) {
+      accessCard.hidden = true;
+    }
+  }
+
 
   function showGuestGate() {
 
-    accessCard.hidden = false;
+    if (accessCard) {
+      accessCard.hidden = false;
+    }
 
-    composerArea.hidden = true;
+    if (composerArea) {
+      composerArea.hidden = true;
+    }
 
-    accessCard.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
+    if (accessCard) {
+
+      accessCard.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }
   }
+
+
+  function hideLockCard() {
+
+    if (lockCard) {
+      lockCard.hidden = true;
+    }
+  }
+
 
   function showLock(lockedUntil) {
 
     state.lockedUntil =
       lockedUntil || null;
 
-    lockCard.hidden = false;
+    if (lockCard) {
+      lockCard.hidden = false;
+    }
 
-    composerArea.hidden = true;
+    if (composerArea) {
+      composerArea.hidden = true;
+    }
 
     const lockTime =
       $("lock-time");
 
-    if (lockedUntil) {
+    if (lockTime) {
 
-      const date =
-        new Date(lockedUntil);
+      if (lockedUntil) {
 
-      lockTime.textContent =
-        `Available again: ${date.toLocaleString()}`;
+        const date =
+          new Date(lockedUntil);
 
-    } else {
+        lockTime.textContent =
+          `Available again: ${date.toLocaleString()}`;
 
-      lockTime.textContent =
-        "Please try again later.";
+      } else {
+
+        lockTime.textContent =
+          "Please try again later.";
+      }
     }
 
-    lockCard.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
+    if (lockCard) {
+
+      lockCard.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }
   }
+
 
   function showDiagnosis(data) {
 
-    diagnosisCard.hidden = false;
+    if (!diagnosisCard) {
+      return;
+    }
+
+    diagnosisCard.hidden =
+      false;
 
     const summary =
       data?.summary ||
       "GLIME AI has understood your business context and prepared a practical system direction.";
 
-    $("diagnosis-summary").textContent =
-      summary;
+    const summaryElement =
+      $("diagnosis-summary");
+
+    if (summaryElement) {
+
+      summaryElement.textContent =
+        summary;
+    }
+
+    const titleElement =
+      $("diagnosis-title");
+
+    if (
+      titleElement &&
+      data?.title
+    ) {
+
+      titleElement.textContent =
+        data.title;
+    }
 
     diagnosisCard.scrollIntoView({
       behavior: "smooth",
@@ -313,76 +501,193 @@
     });
   }
 
+
   function setComposerEnabled(enabled) {
 
-    input.disabled =
-      !enabled;
+    if (input) {
+      input.disabled =
+        !enabled;
+    }
 
-    sendButton.disabled =
-      !enabled;
+    if (sendButton) {
+      sendButton.disabled =
+        !enabled;
+    }
   }
+
 
   /*
    * ==========================================================
-   * EDGE FUNCTION REQUEST
+   * SERVER STATE
    * ==========================================================
    */
 
-  async function callGLIMEAI(message) {
+  function applyServerState(data) {
 
-    const session =
+    if (!data) {
+      return;
+    }
+
+    /*
+     * Support both snake_case and camelCase.
+     */
+
+    const questionsUsed =
+      data.questions_used ??
+      data.questionsUsed;
+
+    if (
+      Number.isInteger(
+        questionsUsed
+      )
+    ) {
+
+      state.questionsUsed =
+        questionsUsed;
+    }
+
+
+    const verified =
+      data.verified;
+
+    if (
+      typeof verified ===
+      "boolean"
+    ) {
+
+      state.verified =
+        verified;
+    }
+
+
+    const lockedUntil =
+      data.locked_until ??
+      data.lockedUntil ??
+      null;
+
+    state.lockedUntil =
+      lockedUntil;
+
+
+    if (data.sessionToken) {
+
+      saveSessionToken(
+        data.sessionToken
+      );
+    }
+
+
+    if (data.session_token) {
+
+      saveSessionToken(
+        data.session_token
+      );
+    }
+
+
+    if (data.diagnosis) {
+
+      state.diagnosis =
+        data.diagnosis;
+    }
+
+
+    updateCounter();
+  }
+
+
+  /*
+   * ==========================================================
+   * EDGE FUNCTION
+   * ==========================================================
+   */
+
+  async function callEdge(
+    action,
+    payload = {}
+  ) {
+
+    if (!supabaseClient) {
+
+      throw new Error(
+        "Supabase is not initialized."
+      );
+    }
+
+
+    /*
+     * Always get the latest Supabase
+     * authentication session.
+     */
+    const authResult =
       await supabaseClient.auth.getSession();
 
     const accessToken =
-      session?.data?.session?.access_token ||
-      null;
+      authResult?.data?.session
+        ?.access_token || null;
+
+
+    /*
+     * Server session token.
+     */
+    const sessionToken =
+      state.sessionToken ||
+      getOrCreateSessionToken();
+
+
+    const body = {
+
+      action,
+
+      sessionToken,
+
+      ...payload
+    };
+
+
+    const headers = {
+
+      "Content-Type":
+        "application/json"
+    };
+
+
+    /*
+     * Only send Authorization when
+     * the visitor has a verified Supabase session.
+     */
+    if (accessToken) {
+
+      headers.Authorization =
+        `Bearer ${accessToken}`;
+    }
+
 
     const response =
       await fetch(
         EDGE_FUNCTION_URL,
         {
           method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            ...(accessToken
-              ? {
-                  "Authorization":
-                    `Bearer ${accessToken}`
-                }
-              : {})
-          },
-
-          body: JSON.stringify({
-
-            session_id:
-              state.sessionId,
-
-            message,
-
-            messages:
-              state.messages,
-
-            client_context: {
-              page: "glime-ai",
-              source: "glime-ai.html"
-            }
-          })
+          headers,
+          body: JSON.stringify(body)
         }
       );
+
 
     let data = null;
 
     try {
+
       data =
         await response.json();
+
     } catch {
+
       throw new Error(
         "Invalid response from GLIME AI server."
       );
     }
+
 
     if (!response.ok) {
 
@@ -396,16 +701,120 @@
         data?.code;
 
       error.locked_until =
-        data?.locked_until;
+        data?.locked_until ??
+        data?.lockedUntil;
 
       error.questions_used =
-        data?.questions_used;
+        data?.questions_used ??
+        data?.questionsUsed;
+
+      error.requires_email =
+        data?.requires_email ??
+        data?.requiresEmail;
 
       throw error;
     }
 
+
+    /*
+     * Server may issue a new token.
+     */
+    if (data?.sessionToken) {
+
+      saveSessionToken(
+        data.sessionToken
+      );
+    }
+
+    if (data?.session_token) {
+
+      saveSessionToken(
+        data.session_token
+      );
+    }
+
+
+    applyServerState(data);
+
     return data;
   }
+
+
+  /*
+   * ==========================================================
+   * INITIAL SERVER STATUS
+   * ==========================================================
+   */
+
+  async function loadInitialStatus() {
+
+    try {
+
+      const data =
+        await callEdge(
+          "status"
+        );
+
+      applyServerState(data);
+
+
+      /*
+       * If server says currently locked,
+       * show lock immediately.
+       */
+      if (data?.locked) {
+
+        showLock(
+          data.locked_until ??
+          data.lockedUntil
+        );
+
+        return;
+      }
+
+
+      /*
+       * If already verified,
+       * make sure guest gate is hidden.
+       */
+      if (state.verified) {
+
+        hideAccessCard();
+
+        if (composerArea) {
+          composerArea.hidden = false;
+        }
+
+        setComposerEnabled(true);
+
+      } else {
+
+        if (composerArea) {
+          composerArea.hidden = false;
+        }
+
+        setComposerEnabled(true);
+      }
+
+    } catch (error) {
+
+      console.error(
+        "GLIME AI status error:",
+        error
+      );
+
+      /*
+       * Don't block the page if status
+       * temporarily fails.
+       */
+      if (composerArea) {
+        composerArea.hidden = false;
+      }
+
+      setComposerEnabled(true);
+    }
+  }
+
 
   /*
    * ==========================================================
@@ -416,80 +825,147 @@
   async function sendMessage(text) {
 
     const trimmed =
-      text.trim();
+      String(text || "")
+        .trim();
+
 
     if (!trimmed) {
       return;
     }
 
+
     if (state.busy) {
       return;
     }
 
-    state.busy = true;
 
-    setComposerEnabled(false);
+    /*
+     * If currently locked,
+     * don't send anything.
+     */
+    if (
+      state.lockedUntil &&
+      new Date(state.lockedUntil)
+        .getTime() > Date.now()
+    ) {
 
+      showLock(
+        state.lockedUntil
+      );
+
+      return;
+    }
+
+
+    /*
+     * If guest limit is already reached,
+     * don't call Gemini again.
+     */
+    if (
+      !state.verified &&
+      state.questionsUsed >=
+        GUEST_LIMIT
+    ) {
+
+      showGuestGate();
+
+      return;
+    }
+
+
+    /*
+     * If verified limit is reached,
+     * don't call Gemini again.
+     */
+    if (
+      state.verified &&
+      state.questionsUsed >=
+        VERIFIED_LIMIT
+    ) {
+
+      showLock(
+        state.lockedUntil
+      );
+
+      return;
+    }
+
+
+    state.busy =
+      true;
+
+    setComposerEnabled(
+      false
+    );
+
+
+    /*
+     * Add user's message locally.
+     */
     addMessage(
       "user",
       trimmed
     );
 
-    input.value = "";
+
+    if (input) {
+      input.value = "";
+    }
+
 
     showTyping();
+
 
     try {
 
       const data =
-        await callGLIMEAI(
-          trimmed
+        await callEdge(
+          "chat",
+          {
+            message:
+              trimmed,
+
+            messages:
+              state.messages,
+
+            client_context: {
+              page:
+                "glime-ai",
+
+              source:
+                "glime-ai.html"
+            }
+          }
         );
+
 
       hideTyping();
 
-      /*
-       * Server is authoritative.
-       * Never trust frontend question count.
-       */
-
-      if (
-        Number.isInteger(
-          data.questions_used
-        )
-      ) {
-        state.questionsUsed =
-          data.questions_used;
-      }
-
-      if (
-        typeof data.verified ===
-        "boolean"
-      ) {
-        state.verified =
-          data.verified;
-      }
-
-      updateCounter();
 
       /*
-       * Server may return access state.
+       * ======================================================
+       * LOCK
+       * ======================================================
        */
 
-      if (data.locked) {
+      if (data?.locked) {
 
         showLock(
-          data.locked_until
+          data.locked_until ??
+          data.lockedUntil
         );
 
         return;
       }
 
+
       /*
-       * AI response
+       * ======================================================
+       * AI REPLY
+       * ======================================================
        */
 
-      if (data.reply) {
+      if (data?.reply) {
 
         addMessage(
           "ai",
@@ -497,13 +973,14 @@
         );
       }
 
+
       /*
-       * Diagnosis
+       * ======================================================
+       * DIAGNOSIS
+       * ======================================================
        */
 
-      if (
-        data.diagnosis
-      ) {
+      if (data?.diagnosis) {
 
         state.diagnosis =
           data.diagnosis;
@@ -513,12 +990,16 @@
         );
       }
 
+
       /*
-       * Guest limit reached
+       * ======================================================
+       * GUEST EMAIL GATE
+       * ======================================================
        */
 
       if (
-        data.requires_email
+        data?.requires_email ||
+        data?.requiresEmail
       ) {
 
         showGuestGate();
@@ -526,34 +1007,63 @@
         return;
       }
 
+
       /*
-       * Verified user limit reached
+       * ======================================================
+       * VERIFIED LIMIT
+       * ======================================================
        */
 
       if (
-        data.limit_reached &&
-        state.verified
+        data?.limit_reached ||
+        data?.limitReached
       ) {
 
-        showDiagnosis(
-          data.diagnosis
-        );
+        if (
+          data?.diagnosis
+        ) {
 
-        return;
+          showDiagnosis(
+            data.diagnosis
+          );
+        }
+
+        if (
+          data?.locked
+        ) {
+
+          showLock(
+            data.locked_until ??
+            data.lockedUntil
+          );
+
+          return;
+        }
       }
 
-      setComposerEnabled(true);
 
-      input.focus();
+      /*
+       * ======================================================
+       * NORMAL CONTINUATION
+       * ======================================================
+       */
+
+      setComposerEnabled(
+        true
+      );
+
+      if (input) {
+        input.focus();
+      }
 
     } catch (error) {
 
       hideTyping();
 
-      /*
-       * Guest access exhausted.
-       */
 
+      /*
+       * Guest limit reached
+       */
       if (
         error.code ===
         "GUEST_LIMIT_REACHED"
@@ -569,10 +1079,10 @@
         return;
       }
 
-      /*
-       * 2-hour lock.
-       */
 
+      /*
+       * Access locked
+       */
       if (
         error.code ===
         "ACCESS_LOCKED"
@@ -585,27 +1095,75 @@
         return;
       }
 
+
       /*
-       * Generic server error.
+       * Verified limit
        */
+      if (
+        error.code ===
+        "VERIFIED_LIMIT_REACHED"
+      ) {
+
+        showLock(
+          error.locked_until
+        );
+
+        return;
+      }
+
+
+      /*
+       * Generic error
+       */
+      console.error(
+        "GLIME AI error:",
+        error
+      );
+
 
       addMessage(
         "ai",
         "अभी GLIME AI से connection में समस्या आ रही है। कृपया थोड़ी देर बाद फिर कोशिश करें।"
       );
 
-      console.error(
-        "GLIME AI error:",
-        error
+
+      setComposerEnabled(
+        true
       );
 
-      setComposerEnabled(true);
-      input.focus();
+      if (input) {
+        input.focus();
+      }
+
     } finally {
 
-      state.busy = false;
+      state.busy =
+        false;
     }
   }
+
+
+  /*
+   * ==========================================================
+   * CHAT FORM
+   * ==========================================================
+   */
+
+  if (form) {
+
+    form.addEventListener(
+      "submit",
+      async (event) => {
+
+        event.preventDefault();
+
+        await sendMessage(
+          input?.value || ""
+        );
+      }
+    );
+  }
+
 
   /*
    * ==========================================================
@@ -616,25 +1174,30 @@
   async function sendOTP(email) {
 
     if (!supabaseClient) {
+
       throw new Error(
         "Supabase is not initialized."
       );
     }
 
-    const {
-      error
-    } =
-      await supabaseClient.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true
-        }
-      });
 
-    if (error) {
-      throw error;
+    const result =
+      await supabaseClient.auth
+        .signInWithOtp({
+
+          email,
+
+          options: {
+            shouldCreateUser: true
+          }
+        });
+
+
+    if (result.error) {
+      throw result.error;
     }
   }
+
 
   /*
    * ==========================================================
@@ -642,68 +1205,120 @@
    * ==========================================================
    */
 
-  $("email-form").addEventListener(
-    "submit",
-    async (event) => {
+  const emailForm =
+    $("email-form");
 
-      event.preventDefault();
 
-      const email =
-        $("email-input")
-          .value
-          .trim()
-          .toLowerCase();
+  if (emailForm) {
 
-      const errorBox =
-        $("email-error");
+    emailForm.addEventListener(
+      "submit",
+      async (event) => {
 
-      errorBox.textContent = "";
+        event.preventDefault();
 
-      if (
-        !email ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-          .test(email)
-      ) {
 
-        errorBox.textContent =
-          "Please enter a valid email address.";
+        const email =
+          $("email-input")
+            ?.value
+            ?.trim()
+            ?.toLowerCase() || "";
 
-        return;
+
+        const errorBox =
+          $("email-error");
+
+
+        if (errorBox) {
+          errorBox.textContent =
+            "";
+        }
+
+
+        if (
+          !email ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+            .test(email)
+        ) {
+
+          if (errorBox) {
+
+            errorBox.textContent =
+              "Please enter a valid email address.";
+          }
+
+          return;
+        }
+
+
+        const button =
+          emailForm.querySelector(
+            "button"
+          );
+
+
+        if (button) {
+          button.disabled =
+            true;
+        }
+
+
+        try {
+
+          await sendOTP(
+            email
+          );
+
+
+          state.email =
+            email;
+
+
+          emailForm.hidden =
+            true;
+
+
+          const otpForm =
+            $("otp-form");
+
+
+          if (otpForm) {
+
+            otpForm.hidden =
+              false;
+          }
+
+
+          $("otp-input")
+            ?.focus();
+
+
+        } catch (error) {
+
+          console.error(
+            "OTP send error:",
+            error
+          );
+
+
+          if (errorBox) {
+
+            errorBox.textContent =
+              error?.message ||
+              "Unable to send OTP. Please try again.";
+          }
+
+        } finally {
+
+          if (button) {
+            button.disabled =
+              false;
+          }
+        }
       }
+    );
+  }
 
-      const button =
-        $("email-form")
-          .querySelector("button");
-
-      button.disabled = true;
-
-      try {
-
-        await sendOTP(email);
-
-        state.email =
-          email;
-
-        $("email-form").hidden =
-          true;
-
-        $("otp-form").hidden =
-          false;
-
-        $("otp-input").focus();
-
-      } catch (error) {
-
-        errorBox.textContent =
-          error?.message ||
-          "Unable to send OTP. Please try again.";
-
-      } finally {
-
-        button.disabled = false;
-      }
-    }
-  );
 
   /*
    * ==========================================================
@@ -711,200 +1326,300 @@
    * ==========================================================
    */
 
-  $("otp-form").addEventListener(
-    "submit",
-    async (event) => {
+  const otpForm =
+    $("otp-form");
 
-      event.preventDefault();
 
-      const otp =
-        $("otp-input")
-          .value
-          .trim();
+  if (otpForm) {
 
-      const errorBox =
-        $("otp-error");
-
-      errorBox.textContent = "";
-
-      if (!/^\d{6}$/.test(otp)) {
-
-        errorBox.textContent =
-          "Please enter the 6-digit OTP.";
-
-        return;
-      }
-
-      const button =
-        $("otp-form")
-          .querySelector("button");
-
-      button.disabled = true;
-
-      try {
-
-        const {
-          data,
-          error
-        } =
-          await supabaseClient.auth.verifyOtp({
-            email: state.email,
-            token: otp,
-            type: "email"
-          });
-
-        if (error) {
-          throw error;
-        }
-
-        if (!data?.session) {
-
-          throw new Error(
-            "Email verification did not create a session."
-          );
-        }
-
-        state.verified =
-          true;
-
-        /*
-         * IMPORTANT:
-         * Do NOT reset questions locally.
-         *
-         * The Edge Function/database is authoritative.
-         */
-
-        accessCard.hidden =
-          true;
-
-        lockCard.hidden =
-          true;
-
-        composerArea.hidden =
-          false;
-
-        setComposerEnabled(true);
-
-        updateCounter();
-
-        addMessage(
-          "ai",
-          "Email verified. अब हम आपकी business requirement को आगे समझ सकते हैं।"
-        );
-
-        input.focus();
-
-      } catch (error) {
-
-        errorBox.textContent =
-          error?.message ||
-          "Invalid or expired OTP.";
-
-      } finally {
-
-        button.disabled = false;
-      }
-    }
-  );
-
-  /*
-   * ==========================================================
-   * CHAT FORM
-   * ==========================================================
-   */
-
-  form.addEventListener(
-    "submit",
-    (event) => {
-
-      event.preventDefault();
-
-      sendMessage(
-        input.value
-      );
-    }
-  );
-
-  input.addEventListener(
-    "keydown",
-    (event) => {
-
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
+    otpForm.addEventListener(
+      "submit",
+      async (event) => {
 
         event.preventDefault();
 
-        form.requestSubmit();
+
+        const otp =
+          $("otp-input")
+            ?.value
+            ?.trim() || "";
+
+
+        const errorBox =
+          $("otp-error");
+
+
+        if (errorBox) {
+          errorBox.textContent =
+            "";
+        }
+
+
+        if (!/^\d{6}$/.test(otp)) {
+
+          if (errorBox) {
+
+            errorBox.textContent =
+              "Please enter the 6-digit OTP.";
+          }
+
+          return;
+        }
+
+
+        const button =
+          otpForm.querySelector(
+            "button"
+          );
+
+
+        if (button) {
+          button.disabled =
+            true;
+        }
+
+
+        try {
+
+          /*
+           * Verify email OTP with Supabase.
+           */
+          const result =
+            await supabaseClient.auth
+              .verifyOtp({
+
+                email:
+                  state.email,
+
+                token:
+                  otp,
+
+                type:
+                  "email"
+              });
+
+
+          if (result.error) {
+            throw result.error;
+          }
+
+
+          /*
+           * Supabase should now have
+           * an authenticated user session.
+           */
+          if (!result.data?.session) {
+
+            throw new Error(
+              "Email verification succeeded but no authenticated session was created."
+            );
+          }
+
+
+          /*
+           * Tell GLIME AI server that this
+           * existing anonymous session is now
+           * verified.
+           */
+          const bindData =
+            await callEdge(
+              "bind"
+            );
+
+
+          applyServerState(
+            bindData
+          );
+
+
+          /*
+           * Hide access gate.
+           */
+          emailForm.hidden =
+            true;
+
+
+          otpForm.hidden =
+            true;
+
+
+          hideAccessCard();
+
+
+          /*
+           * Remove lock UI if any.
+           */
+          hideLockCard();
+
+
+          /*
+           * Restore composer.
+           */
+          if (composerArea) {
+            composerArea.hidden =
+              false;
+          }
+
+
+          /*
+           * IMPORTANT:
+           * Existing question count is NOT reset.
+           *
+           * Example:
+           * 5 guest questions used
+           * → verify email
+           * → server continues from existing
+           * session and applies verified access.
+           */
+          updateCounter();
+
+
+          setComposerEnabled(
+            true
+          );
+
+
+          if (input) {
+            input.focus();
+          }
+
+
+          /*
+           * Optional confirmation inside chat.
+           */
+          addMessage(
+            "ai",
+            "Email verify हो गया है। अब हम आपकी business requirement को और detail में समझ सकते हैं।"
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "OTP verification error:",
+            error
+          );
+
+
+          if (errorBox) {
+
+            errorBox.textContent =
+              error?.message ||
+              "Invalid or expired OTP. Please try again.";
+          }
+
+        } finally {
+
+          if (button) {
+            button.disabled =
+              false;
+          }
+        }
       }
-    }
-  );
-
-  /*
-   * ==========================================================
-   * START OVER
-   * ==========================================================
-   */
-
-  $("restart-chat").addEventListener(
-    "click",
-    () => {
-
-      /*
-       * Start over only clears the
-       * local conversation UI.
-       *
-       * It does NOT erase the server-side
-       * usage counter.
-       */
-
-      state.messages = [];
-
-      state.diagnosis = null;
-
-      chatWindow.innerHTML = "";
-
-      accessCard.hidden = true;
-      lockCard.hidden = true;
-      diagnosisCard.hidden = true;
-
-      composerArea.hidden = false;
-
-      setComposerEnabled(true);
-
-      updateCounter();
-
-      addMessage(
-        "ai",
-        "नमस्ते! मैं GLIME AI हूँ — आपका AI Business Consultant। पहले मुझे अपने business और उस problem के बारे में बताइए जिसे आप solve करना चाहते हैं।"
-      );
-
-      input.focus();
-    }
-  );
-
-  /*
-   * ==========================================================
-   * INITIALIZE
-   * ==========================================================
-   */
-
-  async function initialize() {
-
-    state.sessionId =
-      getOrCreateSessionId();
-
-    updateCounter();
-
-    addMessage(
-      "ai",
-      "नमस्ते! मैं GLIME AI हूँ — आपका AI Business Consultant। पहले मुझे अपने business और उस problem के बारे में बताइए जिसे आप solve करना चाहते हैं।"
     );
+  }
+
+
+  /*
+   * ==========================================================
+   * RESTART CHAT
+   * ==========================================================
+   *
+   * IMPORTANT:
+   * This does NOT reset the server usage count.
+   *
+   * It only clears the visual chat.
+   */
+  const restartButton =
+    $("restart-chat");
+
+
+  if (restartButton) {
+
+    restartButton.addEventListener(
+      "click",
+      () => {
+
+        if (state.busy) {
+          return;
+        }
+
+
+        state.messages =
+          [];
+
+        state.diagnosis =
+          null;
+
+
+        if (chatWindow) {
+
+          chatWindow.innerHTML =
+            "";
+        }
+
+
+        /*
+         * Keep server session and usage.
+         * This prevents bypassing the limit
+         * by clicking Start Over.
+         */
+
+        updateCounter();
+
+
+        if (
+          !state.lockedUntil &&
+          (
+            state.verified ||
+            state.questionsUsed <
+              GUEST_LIMIT
+          )
+        ) {
+
+          if (composerArea) {
+            composerArea.hidden =
+              false;
+          }
+
+          setComposerEnabled(
+            true
+          );
+
+          input?.focus();
+        }
+      }
+    );
+  }
+
+
+  /*
+   * ==========================================================
+   * INIT
+   * ==========================================================
+   */
+
+  async function init() {
 
     try {
 
+      /*
+       * Prepare local reference.
+       */
+      getOrCreateSessionToken();
+
+
+      /*
+       * Load Supabase.
+       */
       await initSupabase();
+
+
+      /*
+       * Ask server for current state.
+       */
+      await loadInitialStatus();
+
 
     } catch (error) {
 
@@ -913,15 +1628,46 @@
         error
       );
 
-      setComposerEnabled(false);
 
+      if (composerArea) {
+        composerArea.hidden =
+          false;
+      }
+
+
+      setComposerEnabled(
+        true
+      );
+
+
+      /*
+       * Don't expose technical
+       * details to visitor.
+       */
       addMessage(
         "ai",
-        "GLIME AI अभी configure हो रहा है। कृपया थोड़ी देर बाद फिर कोशिश करें।"
+        "GLIME AI अभी initialize नहीं हो पाया। कृपया page को refresh करके फिर कोशिश करें।"
       );
     }
   }
 
-  initialize();
+
+  /*
+   * Start only after DOM exists.
+   */
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      init
+    );
+
+  } else {
+
+    init();
+  }
 
 })();
