@@ -471,6 +471,55 @@ button:disabled{opacity:.55;cursor:not-allowed}
     $('createLeadBtn').disabled = !$('clientEmail').value.trim();
   });
 
+  $('updateStorageBtn').addEventListener('click',async()=>{
+    if(!currentClientId){
+      setMsg('storage-status','Fetch a client first.','#ff5263');
+      return;
+    }
+
+    const mb=Number($('newStorageLimit').value);
+    if(!Number.isFinite(mb)||mb<1){
+      setMsg('storage-status','Enter a storage limit of at least 1 MB.','#ff5263');
+      return;
+    }
+
+    const btn=$('updateStorageBtn');
+    btn.disabled=true;
+    btn.textContent='Updating...';
+
+    try{
+      const session=await ensureAdminSession();
+      if(!session)return;
+
+      const limitBytes=Math.round(mb*1048576);
+
+      const {error}=await supabase.rpc('set_lookbook_storage_limit',{
+        p_client_id:currentClientId,
+        p_limit_bytes:limitBytes
+      });
+
+      if(error)throw error;
+
+      await loadClientStorage();
+
+      setMsg(
+        'storage-status',
+        `Storage limit updated to ${mb} MB.`,
+        '#00ff88'
+      );
+    }catch(err){
+      console.error(err);
+      setMsg(
+        'storage-status',
+        'Storage update failed: '+(err?.message||String(err)),
+        '#ff5263'
+      );
+    }finally{
+      btn.disabled=false;
+      btn.textContent='Update Storage Limit';
+    }
+  });
+
   $('createLeadBtn').addEventListener('click',async()=>{
     const email=$('clientEmail').value.trim().toLowerCase();
     if(!email){setMsg('status-message','Please enter a client email.','#ff5263');return;}
@@ -489,8 +538,8 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
       const client=data.client;
       currentClientId=client.id;
-      await loadClientStorage();
       $('clientEmail').value=client.email||email;
+      await loadClientStorage();
       $('clientIdView').textContent=client.id||'—';
       $('clientCodeView').textContent=client.client_id||'Not assigned';
       $('clientEmailView').textContent=client.email||email;
