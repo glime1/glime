@@ -382,6 +382,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
       if(!data?.length){setMsg('status-message','No client found with this email.','#ff5263');return;}
       const client=data[0];
       currentClientId=client.id;
+      await loadClientStorage();
       $('clientEmail').value=client.email||email;
       $('clientIdView').textContent=client.id||'—';
       $('clientCodeView').textContent=client.client_id||'Not assigned';
