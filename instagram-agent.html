@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLIME AI Sales Agent</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="stylesheet" href="instagram-agent.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <img src="glime_logo_clean.svg" alt="GLIME">
+  </a>
+  <a href="dashboard.html" class="back">← Dashboard</a>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div>
+      <span class="eyebrow">GLIME AI SALES AGENT</span>
+      <h1>Instagram enquiries, handled by AI.</h1>
+      <p>आपके existing Lookbook catalogue के आधार पर AI customers को product details, price, size, colour और fabric की जानकारी दे सकता है.</p>
+    </div>
+    <div class="status-card">
+      <span class="status-label">Agent Status</span>
+      <strong id="agentStatus">Checking...</strong>
+      <small id="statusHint">Your module access is being checked.</small>
+    </div>
+  </section>
+
+  <section id="lockedState" class="card hidden">
+    <div class="icon">🔒</div>
+    <h2>AI Sales Agent is not active</h2>
+    <p>यह module अभी आपके account पर enabled नहीं है. GLIME Admin से activation करवाएँ.</p>
+    <a class="button secondary" href="contact.html">Contact GLIME</a>
+  </section>
+
+  <section id="agentState" class="hidden">
+    <div class="grid">
+      <article class="card">
+        <h2>🤖 AI Sales Agent</h2>
+        <p class="muted">Instagram DMs के repetitive questions को automatically handle करने के लिए तैयार.</p>
+        <div class="info-row"><span>Catalogue source</span><strong id="catalogueStatus">Checking...</strong></div>
+        <div class="info-row"><span>Published products</span><strong id="productCount">—</strong></div>
+        <div class="info-row"><span>Instagram</span><strong id="instagramStatus">Not connected</strong></div>
+      </article>
+
+      <article class="card">
+        <h2>💬 What the agent can answer</h2>
+        <ul class="features">
+          <li>Product price & details</li>
+          <li>Size, colour & fabric</li>
+          <li>Basic catalogue questions</li>
+          <li>Catalogue / product link</li>
+          <li>Enquiry capture</li>
+          <li>Human handoff when needed</li>
+        </ul>
+      </article>
+    </div>
+
+    <article class="card connect-card">
+      <div>
+        <h2>Instagram Connection</h2>
+        <p class="muted">Instagram/Meta connection अगला setup step है. अभी यह screen module access और catalogue readiness दिखाती है.</p>
+      </div>
+      <button id="connectBtn" class="button primary" type="button">Connect Instagram</button>
+    </article>
+
+    <article class="card">
+      <h2>⚙️ Agent Controls</h2>
+      <div class="toggle-row">
+        <div>
+          <strong>AI auto-reply</strong>
+          <p class="muted">Instagram integration connect होने के बाद automatic replies enable होंगे.</p>
+        </div>
+        <span class="pill">Coming next</span>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <strong>Human handoff</strong>
+          <p class="muted">Complex या uncertain conversation को human के लिए छोड़ने का option.</p>
+        </div>
+        <span class="pill">Planned</span>
+      </div>
+    </article>
+  </section>
+
+  <div id="pageMessage" class="message" role="status"></div>
+</main>
+
+<script src="instagram-agent.js"></script>
+</body>
+</html>
