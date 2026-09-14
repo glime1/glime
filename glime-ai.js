@@ -814,6 +814,12 @@
 
       applyServerState(data);
 
+       // Never restore an old Business Diagnosis on page load.
+       state.diagnosis = null;
+
+       if (diagnosisCard) {
+        diagnosisCard.hidden = true;
+       }
 
       /*
        * If server says currently locked,
