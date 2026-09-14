@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLIME Voice AI</title>
+  <link rel="stylesheet" href="voice-ai.css">
+</head>
+<body>
+  <main class="voice-app">
+    <section class="voice-card">
+      <div class="brand">GLIME <span>VOICE AI</span></div>
+      <div id="status" class="status">Checking access…</div>
+      <div id="orb" class="orb"><div class="orb-core">🎙️</div></div>
+      <h1 id="agentName">Voice AI</h1>
+      <p id="agentGoal">Your AI assistant is getting ready.</p>
+      <div id="conversation" class="conversation" aria-live="polite"></div>
+      <div class="controls">
+        <button id="startBtn" class="primary" disabled>🎙️ Start Conversation</button>
+        <button id="stopBtn" class="secondary" disabled>■ Stop</button>
+      </div>
+      <p class="hint">Chrome/Android is recommended for browser microphone support.</p>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="voice-ai.js"></script>
+</body>
+</html>
