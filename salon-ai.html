@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salon AI | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="salon-ai.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="shell">
+<header class="topbar">
+<div><div class="brand">GLIME</div><div class="subtitle">Salon AI Control Center</div></div>
+<a href="dashboard.html" class="back">← Dashboard</a>
+</header>
+<main>
+<section class="hero">
+<div><span class="eyebrow">SALON AI CORE</span><h1>Your Salon, One AI Brain.</h1>
+<p>Manage services, staff, business hours and offers from one place. Instagram, WhatsApp, Website and Voice will use this same business knowledge.</p></div>
+<div class="status"><span id="accessDot"></span><span id="accessText">Checking access…</span></div>
+</section>
+<div id="message" class="message"></div>
+<section class="grid stats">
+<div class="card stat-card"><span>Services</span><strong id="serviceCount">—</strong></div>
+<div class="card stat-card"><span>Staff</span><strong id="staffCount">—</strong></div>
+<div class="card stat-card"><span>Leads</span><strong id="leadCount">—</strong></div>
+<div class="card stat-card"><span>Appointments</span><strong id="appointmentCount">—</strong></div>
+</section>
+<section class="grid two">
+<div class="card">
+<div class="card-head"><div><h2>Salon Profile</h2><p class="muted">Basic information used by the AI agent.</p></div><button id="saveProfile">Save</button></div>
+<div class="form-grid">
+<label>Business name<input id="businessName" type="text" placeholder="Your Salon"></label>
+<label>Phone<input id="phone" type="tel" placeholder="+91..."></label>
+<label>WhatsApp<input id="whatsapp" type="tel" placeholder="+91..."></label>
+<label>Email<input id="email" type="email" placeholder="salon@example.com"></label>
+<label class="full">Address<textarea id="address" rows="2" placeholder="Salon address"></textarea></label>
+<label class="full">Description<textarea id="description" rows="3" placeholder="Short description of your salon"></textarea></label>
+</div></div>
+<div class="card">
+<div class="card-head"><div><h2>AI Settings</h2><p class="muted">Controls for the future unified agent.</p></div><button id="saveAI">Save</button></div>
+<div class="form-grid">
+<label>Agent name<input id="agentName" type="text" placeholder="GLIME Salon Assistant"></label>
+<label>Language<select id="language"><option value="hi-en">Hindi + English</option><option value="hi">Hindi</option><option value="en">English</option></select></label>
+<label class="full">Greeting<textarea id="greeting" rows="2" placeholder="Namaste! Main aapki booking mein help kar sakta hoon."></textarea></label>
+<label class="full">Custom instructions<textarea id="instructions" rows="3" placeholder="Example: Never invent prices. Ask before booking."></textarea></label>
+<label class="check"><input id="bookingEnabled" type="checkbox"> Booking enabled</label>
+<label class="check"><input id="handoffEnabled" type="checkbox"> Human handoff enabled</label>
+</div></div>
+</section>
+<section class="grid two">
+<div class="card">
+<div class="card-head"><div><h2>Services</h2><p class="muted">Services the AI can explain to customers.</p></div><button id="addService">+ Add Service</button></div>
+<div id="services" class="list"></div>
+</div>
+<div class="card">
+<div class="card-head"><div><h2>Staff</h2><p class="muted">Experts available for salon services.</p></div><button id="addStaff">+ Add Staff</button></div>
+<div id="staff" class="list"></div>
+</div>
+</section>
+<section class="card">
+<div class="card-head"><div><h2>Channels</h2><p class="muted">Connect these after the Salon Core is configured.</p></div></div>
+<div class="channels">
+<div><b>Instagram</b><span>Ready for Meta connector</span></div>
+<div><b>WhatsApp</b><span>Ready for WhatsApp Business connector</span></div>
+<div><b>Website</b><span>Uses GLIME Agent Engine</span></div>
+<div><b>Voice</b><span>Optional OmniDimension connector</span></div>
+</div>
+</section>
+</main>
+</div>
+<script src="salon-ai.js"></script>
+</body>
+</html>
