@@ -1,18 +1,12 @@
 /* =========================================================
    GLIME — UNIVERSAL ADMIN MODULE MANAGER
    ---------------------------------------------------------
-   One common control room for all GLIME modules.
-
-   IMPORTANT:
-   - Does NOT replace admin.html
-   - Does NOT modify existing admin logic
-   - Only renders after admin authentication
-   - Uses client_modules as the single access-control layer
+   One common module access control for all GLIME modules.
+   Does not replace admin.html.
 ========================================================= */
 
 (() => {
   'use strict';
-
 
   /* =======================================================
      CONFIG
@@ -27,32 +21,6 @@
   const ADMIN_EMAIL =
     'admin@glime.online';
 
-
-  const supabase =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true
-        }
-      }
-    );
-
-
-  /* =======================================================
-     STATE
-  ======================================================= */
-
-  let currentClient = null;
-
-  let modules = [];
-
-  let accessMap = {};
-
-
   const SECTION_ID =
     'glime-universal-module-manager';
 
@@ -61,8 +29,25 @@
 
 
   /* =======================================================
+     STATE
+  ======================================================= */
+
+  let supabaseClient = null;
+
+  let currentClient = null;
+
+  let modules = [];
+
+  let accessMap = {};
+
+
+  /* =======================================================
      HELPERS
   ======================================================= */
+
+  const $ = (id) =>
+    document.getElementById(id);
+
 
   function escapeHtml(value) {
 
@@ -76,94 +61,19 @@
   }
 
 
-  function getControlRoom() {
+  function showMessage(text, type = 'info') {
 
-    return document.getElementById(
-      'control-room'
-    );
+    const el = $('glimeModuleMessage');
 
-  }
+    if (!el) return;
 
-
-  function getClientEmail() {
-
-    const input =
-      document.getElementById(
-        'clientEmail'
-      );
-
-    return (
-      input?.value
-        ?.trim()
-        ?.toLowerCase() || ''
-    );
-
-  }
-
-
-  function showMessage(
-    text,
-    type = 'info'
-  ) {
-
-    const el =
-      document.getElementById(
-        'glimeModuleMessage'
-      );
-
-    if (!el) {
-      return;
-    }
-
-
-    el.textContent =
-      text || '';
-
+    el.textContent = text || '';
 
     el.style.display =
-      text
-        ? 'block'
-        : 'none';
+      text ? 'block' : 'none';
 
-
-    if (type === 'success') {
-
-      el.style.color =
-        '#00ff88';
-
-      el.style.background =
-        'rgba(0,255,136,.07)';
-
-      el.style.border =
-        '1px solid rgba(0,255,136,.25)';
-
-    }
-
-    else if (type === 'error') {
-
-      el.style.color =
-        '#ff5263';
-
-      el.style.background =
-        'rgba(255,82,99,.07)';
-
-      el.style.border =
-        '1px solid rgba(255,82,99,.25)';
-
-    }
-
-    else {
-
-      el.style.color =
-        '#9ba7b7';
-
-      el.style.background =
-        'rgba(255,255,255,.03)';
-
-      el.style.border =
-        '1px solid rgba(255,255,255,.08)';
-
-    }
+    el.className =
+      'gm-message ' + type;
 
   }
 
@@ -174,32 +84,20 @@
 
   function addStyles() {
 
-    if (
-      document.getElementById(
-        STYLE_ID
-      )
-    ) {
-      return;
-    }
-
+    if ($(STYLE_ID)) return;
 
     const style =
       document.createElement('style');
 
-
-    style.id =
-      STYLE_ID;
-
+    style.id = STYLE_ID;
 
     style.textContent = `
 
       #${SECTION_ID} {
         margin-top:22px;
         padding-top:20px;
-        border-top:
-          1px solid rgba(255,255,255,.09);
+        border-top:1px solid rgba(255,255,255,.09);
       }
-
 
       #${SECTION_ID} .gm-title {
         color:#ff9f43;
@@ -208,7 +106,6 @@
         margin-bottom:7px;
       }
 
-
       #${SECTION_ID} .gm-subtitle {
         color:#9ba7b7;
         font-size:.75rem;
@@ -216,347 +113,208 @@
         margin-bottom:15px;
       }
 
-
       #${SECTION_ID} .gm-list {
         display:flex;
         flex-direction:column;
         gap:12px;
       }
 
-
       #${SECTION_ID} .gm-card {
-
         padding:16px;
-
-        border:
-          1px solid rgba(255,255,255,.09);
-
+        border:1px solid rgba(255,255,255,.09);
         border-radius:14px;
-
-        background:
-          rgba(255,255,255,.02);
-
+        background:rgba(255,255,255,.02);
       }
-
 
       #${SECTION_ID} .gm-head {
-
         display:flex;
-
         justify-content:space-between;
-
         align-items:flex-start;
-
         gap:12px;
-
         margin-bottom:14px;
-
       }
-
 
       #${SECTION_ID} .gm-name {
-
         color:#fff;
-
         font-size:.92rem;
-
         font-weight:700;
-
       }
-
 
       #${SECTION_ID} .gm-slug {
-
         color:#687587;
-
         font-size:.66rem;
-
         margin-top:3px;
-
       }
-
 
       #${SECTION_ID} .gm-status {
-
         display:inline-flex;
-
         align-items:center;
-
-        gap:6px;
-
         padding:5px 9px;
-
         border-radius:999px;
-
         font-size:.68rem;
-
         font-weight:700;
-
         white-space:nowrap;
-
       }
-
-
-      #${SECTION_ID} .gm-status-dot {
-
-        width:7px;
-
-        height:7px;
-
-        border-radius:50%;
-
-        background:currentColor;
-
-      }
-
 
       #${SECTION_ID} .gm-status.off {
-
         color:#9ba7b7;
-
-        background:
-          rgba(255,255,255,.04);
-
-        border:
-          1px solid rgba(255,255,255,.08);
-
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.08);
       }
-
 
       #${SECTION_ID} .gm-status.on {
-
         color:#00ff88;
-
-        background:
-          rgba(0,255,136,.07);
-
-        border:
-          1px solid rgba(0,255,136,.25);
-
+        background:rgba(0,255,136,.07);
+        border:1px solid rgba(0,255,136,.25);
       }
-
 
       #${SECTION_ID} .gm-grid {
-
         display:grid;
-
-        grid-template-columns:
-          repeat(2,minmax(0,1fr));
-
+        grid-template-columns:repeat(2,minmax(0,1fr));
         gap:10px;
-
       }
-
 
       #${SECTION_ID} .gm-field label {
-
         display:block;
-
         color:#9ba7b7;
-
         font-size:.69rem;
-
         font-weight:600;
-
         margin-bottom:6px;
-
       }
-
 
       #${SECTION_ID} .gm-field input {
-
         width:100%;
-
         box-sizing:border-box;
-
         padding:10px 11px;
-
         border-radius:9px;
-
-        border:
-          1px solid rgba(255,255,255,.09);
-
-        background:
-          rgba(255,255,255,.025);
-
+        border:1px solid rgba(255,255,255,.09);
+        background:rgba(255,255,255,.025);
         color:#fff;
-
         outline:none;
-
         font:inherit;
-
       }
-
 
       #${SECTION_ID} .gm-check {
-
         display:flex;
-
         align-items:center;
-
         gap:8px;
-
         min-height:40px;
-
         padding:9px 11px;
-
-        border:
-          1px solid rgba(255,255,255,.09);
-
+        border:1px solid rgba(255,255,255,.09);
         border-radius:9px;
-
-        background:
-          rgba(255,255,255,.025);
-
+        background:rgba(255,255,255,.025);
         color:#fff;
-
         font-size:.76rem;
-
         cursor:pointer;
-
       }
-
 
       #${SECTION_ID} .gm-check input {
-
         width:auto;
-
         accent-color:#00ff88;
-
       }
-
 
       #${SECTION_ID} .gm-save {
-
         width:100%;
-
         margin-top:11px;
-
         background:#00ff88;
-
         color:#06100b;
-
         border:0;
-
         border-radius:9px;
-
         padding:10px 14px;
-
-        font:
-          700 .82rem
-          Poppins,
-          system-ui,
-          sans-serif;
-
+        font:700 .82rem Poppins,system-ui,sans-serif;
         cursor:pointer;
-
       }
-
 
       #${SECTION_ID} .gm-save:disabled {
-
         opacity:.55;
-
         cursor:not-allowed;
-
       }
-
 
       #${SECTION_ID} .gm-message {
-
         display:none;
-
         margin-top:14px;
-
         padding:10px 12px;
-
         border-radius:9px;
-
         font-size:.74rem;
-
         line-height:1.5;
-
       }
 
+      #${SECTION_ID} .gm-message.success {
+        display:block;
+        color:#00ff88;
+        background:rgba(0,255,136,.07);
+        border:1px solid rgba(0,255,136,.25);
+      }
+
+      #${SECTION_ID} .gm-message.error {
+        display:block;
+        color:#ff5263;
+        background:rgba(255,82,99,.07);
+        border:1px solid rgba(255,82,99,.25);
+      }
+
+      #${SECTION_ID} .gm-message.info {
+        display:block;
+        color:#9ba7b7;
+        background:rgba(255,255,255,.03);
+        border:1px solid rgba(255,255,255,.08);
+      }
 
       #${SECTION_ID} .gm-empty {
-
         padding:16px;
-
-        border:
-          1px dashed rgba(255,255,255,.12);
-
+        border:1px dashed rgba(255,255,255,.12);
         border-radius:12px;
-
         color:#9ba7b7;
-
         font-size:.78rem;
-
         text-align:center;
-
       }
-
 
       @media(max-width:650px) {
 
         #${SECTION_ID} .gm-grid {
-
           grid-template-columns:1fr;
-
         }
 
         #${SECTION_ID} .gm-head {
-
           flex-direction:column;
-
         }
 
       }
 
     `;
 
-
-    document.head.appendChild(
-      style
-    );
+    document.head.appendChild(style);
 
   }
 
 
   /* =======================================================
-     CREATE SECTION
+     CREATE MODULE SECTION
   ======================================================= */
 
   function createSection() {
 
-    if (
-      document.getElementById(
-        SECTION_ID
-      )
-    ) {
-      return;
+    if ($(SECTION_ID)) {
+      return true;
     }
-
 
     const controlRoom =
-      getControlRoom();
-
+      $('control-room');
 
     if (!controlRoom) {
-      return;
+      console.error(
+        'GLIME Module Manager: #control-room not found.'
+      );
+      return false;
     }
 
-
     addStyles();
-
 
     const section =
       document.createElement('div');
 
-
     section.id =
       SECTION_ID;
-
 
     section.innerHTML = `
 
@@ -564,15 +322,10 @@
         5. Module Access Control
       </div>
 
-
       <div class="gm-subtitle">
-
         Select which GLIME modules this client
-        is allowed to use. Only enabled modules
-        should appear in the client dashboard.
-
+        is allowed to use.
       </div>
-
 
       <div
         id="glimeModuleList"
@@ -580,11 +333,10 @@
       >
 
         <div class="gm-empty">
-          Loading modules...
+          Fetch a client to load modules.
         </div>
 
       </div>
-
 
       <div
         id="glimeModuleMessage"
@@ -593,69 +345,70 @@
 
     `;
 
+    controlRoom.appendChild(section);
 
-    controlRoom.appendChild(
-      section
-    );
+    return true;
 
   }
 
 
   /* =======================================================
-     FIND CLIENT
+     ADMIN CHECK
   ======================================================= */
 
-  async function findClient() {
+  async function isAdmin() {
 
-    const email =
-      getClientEmail();
+    if (!supabaseClient) {
+      return false;
+    }
 
+    try {
 
-    if (!email) {
+      const {
+        data,
+        error
+      } =
+        await supabaseClient.auth.getSession();
 
-      throw new Error(
-        'पहले Client Email डालें।'
+      if (error) {
+        console.error(
+          'GLIME admin session error:',
+          error
+        );
+        return false;
+      }
+
+      const user =
+        data?.session?.user;
+
+      if (!user) {
+        return false;
+      }
+
+      const email =
+        (user.email || '')
+          .trim()
+          .toLowerCase();
+
+      return email ===
+        ADMIN_EMAIL.toLowerCase();
+
+    } catch (error) {
+
+      console.error(
+        'GLIME admin check failed:',
+        error
       );
 
-    }
-
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from('client_data')
-        .select('*')
-        .ilike(
-          'email',
-          email
-        )
-        .limit(1)
-        .maybeSingle();
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    if (!data) {
-
-      throw new Error(
-        'इस email से कोई client नहीं मिला।'
-      );
+      return false;
 
     }
-
-
-    return data;
 
   }
 
 
   /* =======================================================
-     LOAD MODULES
+     LOAD ALL MODULES
   ======================================================= */
 
   async function loadModules() {
@@ -664,7 +417,7 @@
       data,
       error
     } =
-      await supabase
+      await supabaseClient
         .from('modules')
         .select(`
           id,
@@ -678,15 +431,12 @@
           }
         );
 
-
     if (error) {
       throw error;
     }
 
-
     modules =
       data || [];
-
 
     return modules;
 
@@ -694,7 +444,7 @@
 
 
   /* =======================================================
-     LOAD CLIENT ACCESS
+     LOAD CLIENT MODULE ACCESS
   ======================================================= */
 
   async function loadClientAccess(
@@ -705,7 +455,7 @@
       data,
       error
     } =
-      await supabase
+      await supabaseClient
         .from('client_modules')
         .select(`
           id,
@@ -723,14 +473,11 @@
           clientId
         );
 
-
     if (error) {
       throw error;
     }
 
-
     accessMap = {};
-
 
     (data || []).forEach(
       row => {
@@ -742,14 +489,13 @@
       }
     );
 
-
     return data || [];
 
   }
 
 
   /* =======================================================
-     FORMAT DATE
+     DATE FORMAT
   ======================================================= */
 
   function toDateTimeLocal(
@@ -760,10 +506,8 @@
       return '';
     }
 
-
     const date =
       new Date(value);
-
 
     if (
       Number.isNaN(
@@ -773,12 +517,10 @@
       return '';
     }
 
-
     const pad =
       n =>
         String(n)
           .padStart(2,'0');
-
 
     return (
       date.getFullYear() +
@@ -810,29 +552,22 @@
   function renderModules() {
 
     const list =
-      document.getElementById(
-        'glimeModuleList'
-      );
-
+      $('glimeModuleList');
 
     if (!list) {
       return;
     }
 
-
     if (!modules.length) {
 
       list.innerHTML = `
-
         <div class="gm-empty">
           No modules registered in GLIME yet.
         </div>
-
       `;
 
       return;
     }
-
 
     list.innerHTML =
       modules.map(
@@ -843,20 +578,16 @@
               String(module.id)
             ] || null;
 
-
           const enabled =
             row?.enabled === true ||
             row?.status === 'active' ||
             row?.status === 'trial';
 
-
           const visible =
             row?.visible_to_client === true;
 
-
           const plan =
             row?.plan || '';
-
 
           const expires =
             row?.expires_at
@@ -865,14 +596,12 @@
                 )
               : '';
 
-
           return `
 
             <div
               class="gm-card"
-              data-module-id="${module.id}"
+              data-module-id="${escapeHtml(module.id)}"
             >
-
 
               <div class="gm-head">
 
@@ -886,7 +615,6 @@
 
                   </div>
 
-
                   <div class="gm-slug">
 
                     ${escapeHtml(
@@ -897,34 +625,25 @@
 
                 </div>
 
-
                 <span
                   class="gm-status ${
                     enabled
                       ? 'on'
                       : 'off'
                   }"
-                  data-status-for="${module.id}"
+                  data-status
                 >
-
-                  <span
-                    class="gm-status-dot"
-                  ></span>
-
                   ${
                     enabled
-                      ? 'Active'
-                      : 'Inactive'
+                      ? '● Active'
+                      : '● Inactive'
                   }
-
                 </span>
-
 
               </div>
 
 
               <div class="gm-grid">
-
 
                 <div class="gm-field">
 
@@ -932,13 +651,10 @@
                     Plan
                   </label>
 
-
                   <input
                     type="text"
-                    data-plan="${module.id}"
-                    value="${escapeHtml(
-                      plan
-                    )}"
+                    data-plan
+                    value="${escapeHtml(plan)}"
                     placeholder="e.g. 500"
                   >
 
@@ -951,11 +667,10 @@
                     Expiry Date
                   </label>
 
-
                   <input
                     type="datetime-local"
-                    data-expiry="${module.id}"
-                    value="${expires}"
+                    data-expiry
+                    value="${escapeHtml(expires)}"
                   >
 
                 </div>
@@ -965,12 +680,8 @@
 
                   <input
                     type="checkbox"
-                    data-visible="${module.id}"
-                    ${
-                      visible
-                        ? 'checked'
-                        : ''
-                    }
+                    data-visible
+                    ${visible ? 'checked' : ''}
                   >
 
                   Show module to client
@@ -982,18 +693,13 @@
 
                   <input
                     type="checkbox"
-                    data-enabled="${module.id}"
-                    ${
-                      enabled
-                        ? 'checked'
-                        : ''
-                    }
+                    data-enabled
+                    ${enabled ? 'checked' : ''}
                   >
 
                   Activate module
 
                 </label>
-
 
               </div>
 
@@ -1001,15 +707,10 @@
               <button
                 type="button"
                 class="gm-save"
-                data-save-module="${module.id}"
+                data-save
               >
-
-                Save ${escapeHtml(
-                  module.name
-                )} Access
-
+                Save Module Access
               </button>
-
 
             </div>
 
@@ -1020,46 +721,9 @@
       .join('');
 
 
-    bindModuleButtons();
+    /* ENABLE / DISABLE STATUS */
 
-  }
-
-
-  /* =======================================================
-     BIND BUTTONS
-  ======================================================= */
-
-  function bindModuleButtons() {
-
-    document
-      .querySelectorAll(
-        '[data-save-module]'
-      )
-      .forEach(
-        button => {
-
-          button.addEventListener(
-            'click',
-            async () => {
-
-              const moduleId =
-                button.dataset
-                  .saveModule;
-
-
-              await saveModule(
-                moduleId,
-                button
-              );
-
-            }
-          );
-
-        }
-      );
-
-
-    document
+    list
       .querySelectorAll(
         '[data-enabled]'
       )
@@ -1070,12 +734,53 @@
             'change',
             () => {
 
-              updateVisualStatus(
-                checkbox.dataset
-                  .enabled,
-                checkbox.checked
-              );
+              const card =
+                checkbox.closest(
+                  '.gm-card'
+                );
 
+              const status =
+                card?.querySelector(
+                  '[data-status]'
+                );
+
+              if (!status) {
+                return;
+              }
+
+              status.textContent =
+                checkbox.checked
+                  ? '● Active'
+                  : '● Inactive';
+
+              status.className =
+                'gm-status ' +
+                (
+                  checkbox.checked
+                    ? 'on'
+                    : 'off'
+                );
+
+            }
+          );
+
+        }
+      );
+
+
+    /* SAVE BUTTONS */
+
+    list
+      .querySelectorAll(
+        '[data-save]'
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            'click',
+            () => {
+              saveModule(button);
             }
           );
 
@@ -1086,157 +791,427 @@
 
 
   /* =======================================================
-     UPDATE VISUAL STATUS
+     SAVE MODULE
   ======================================================= */
 
-  function updateVisualStatus(
-    moduleId,
-    enabled
+  async function saveModule(
+    button
   ) {
 
-    const status =
-      document.querySelector(
-        `[data-status-for="${moduleId}"]`
+    if (
+      !currentClient ||
+      !currentClient.client_id
+    ) {
+
+      showMessage(
+        'पहले Client Fetch करें।',
+        'error'
       );
 
+      return;
 
-    if (!status) {
+    }
+
+
+    const card =
+      button.closest(
+        '.gm-card'
+      );
+
+    if (!card) {
       return;
     }
 
 
-    status.className =
-      'gm-status ' +
-      (
-        enabled
-          ? 'on'
-          : 'off'
+    const moduleId =
+      Number(
+        card.dataset.moduleId
       );
 
+    const enabled =
+      card.querySelector(
+        '[data-enabled]'
+      ).checked;
 
-    status.innerHTML = `
+    const visible =
+      card.querySelector(
+        '[data-visible]'
+      ).checked;
 
-      <span
-        class="gm-status-dot"
-      ></span>
+    const plan =
+      card.querySelector(
+        '[data-plan]'
+      ).value.trim();
 
-      ${
-        enabled
-          ? 'Active'
-          : 'Inactive'
+    const expiryRaw =
+      card.querySelector(
+        '[data-expiry]'
+      ).value;
+
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      'Saving...';
+
+
+    try {
+
+      const old =
+        accessMap[
+          String(moduleId)
+        ] || {};
+
+
+      const payload = {
+
+        client_id:
+          currentClient.client_id,
+
+        module_id:
+          moduleId,
+
+        enabled:
+          enabled,
+
+        visible_to_client:
+          visible,
+
+        status:
+          enabled
+            ? 'active'
+            : 'inactive',
+
+        plan:
+          plan || null,
+
+        activated_at:
+          enabled
+            ? (
+                old.activated_at ||
+                new Date().toISOString()
+              )
+            : null,
+
+        expires_at:
+          expiryRaw
+            ? new Date(
+                expiryRaw
+              ).toISOString()
+            : null
+
+      };
+
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from('client_modules')
+          .upsert(
+            payload,
+            {
+              onConflict:
+                'client_id,module_id'
+            }
+          );
+
+
+      if (error) {
+        throw error;
       }
 
-    `;
+
+      accessMap[
+        String(moduleId)
+      ] = payload;
+
+
+      showMessage(
+        'Module access successfully saved.',
+        'success'
+      );
+
+
+      renderModules();
+
+    } catch (error) {
+
+      console.error(
+        'GLIME Module Save Error:',
+        error
+      );
+
+      showMessage(
+        'Module save failed: ' +
+        (
+          error?.message ||
+          String(error)
+        ),
+        'error'
+      );
+
+    } finally {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        'Save Module Access';
+
+    }
 
   }
 
+
   /* =======================================================
-     SHOW AFTER LOGIN
+     FIND CLIENT
   ======================================================= */
 
-  async function showAfterLogin() {
+  async function findClient() {
 
-    const isAdmin =
-      await checkAdminSession();
+    const input =
+      $('clientEmail');
+
+    const email =
+      (
+        input?.value ||
+        ''
+      )
+      .trim()
+      .toLowerCase();
 
 
-    if (!isAdmin) {
+    if (!email) {
 
-      removeSection();
+      showMessage(
+        'पहले Client Email डालें।',
+        'error'
+      );
 
       return;
 
     }
 
 
-    createSection();
-
-
-    /*
-     * Existing admin.html fetch button
-     * must remain the source of client selection.
-     */
-
-    setTimeout(
-      () => {
-
-        hookFetchButton();
-
-      },
-      300
+    showMessage(
+      'Client और modules load हो रहे हैं...',
+      'info'
     );
 
 
-    setTimeout(
-      () => {
+    try {
 
-        hookFetchButton();
+      /* FIND CLIENT */
 
-      },
-      1200
-    );
+      const {
+        data,
+        error
+      } =
+        await supabaseClient
+          .from('client_data')
+          .select('*')
+          .ilike(
+            'email',
+            email
+          )
+          .limit(1)
+          .maybeSingle();
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      if (!data) {
+
+        throw new Error(
+          'इस email से कोई client नहीं मिला।'
+        );
+
+      }
+
+
+      currentClient =
+        data;
+
+
+      /* LOAD MODULES */
+
+      await loadModules();
+
+
+      /* LOAD ACCESS */
+
+      await loadClientAccess(
+        data.client_id
+      );
+
+
+      /* RENDER */
+
+      renderModules();
+
+
+      showMessage(
+        `${data.client_id} के लिए ${modules.length} modules loaded.`,
+        'success'
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        'GLIME Module Manager Error:',
+        error
+      );
+
+
+      const list =
+        $('glimeModuleList');
+
+      if (list) {
+
+        list.innerHTML = `
+          <div class="gm-empty">
+            Modules load नहीं हो सके।
+          </div>
+        `;
+
+      }
+
+
+      showMessage(
+        'Module Manager Error: ' +
+        (
+          error?.message ||
+          String(error)
+        ),
+        'error'
+      );
+
+    }
 
   }
 
 
   /* =======================================================
-     REMOVE BEFORE LOGOUT
+     REMOVE SECTION
   ======================================================= */
 
   function removeSection() {
 
     const section =
-      document.getElementById(
-        SECTION_ID
-      );
-
+      $(SECTION_ID);
 
     if (section) {
-
       section.remove();
+    }
+
+  }
+
+ /* =======================================================
+     INITIALIZE
+  ======================================================= */
+
+  async function init() {
+
+    /* WAIT FOR SUPABASE LIBRARY */
+
+    if (
+      !window.supabase ||
+      typeof window.supabase.createClient !==
+        'function'
+    ) {
+
+      console.error(
+        'GLIME Module Manager: Supabase library unavailable.'
+      );
+
+      return;
 
     }
 
 
-    currentClient =
-      null;
+    /* CREATE CLIENT */
 
-    modules =
-      [];
+    supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY,
+        {
+          auth: {
+            persistSession:true,
+            autoRefreshToken:true,
+            detectSessionInUrl:true
+          }
+        }
+      );
 
-    accessMap =
-      {};
 
-  }
+    /* WAIT UNTIL ADMIN HTML IS READY */
+
+    const start =
+      async () => {
+
+        const controlRoom =
+          $('control-room');
+
+        if (!controlRoom) {
+          return;
+        }
 
 
-  /* =======================================================
-     AUTH LISTENER
-  ======================================================= */
+        const admin =
+          await isAdmin();
 
-  function listenAuthChanges() {
 
-    supabase.auth.onAuthStateChange(
+        if (admin) {
+
+          createSection();
+
+        } else {
+
+          removeSection();
+
+        }
+
+      };
+
+
+    await start();
+
+
+    /* AUTH CHANGES */
+
+    supabaseClient.auth.onAuthStateChange(
       (
         event,
         session
       ) => {
 
         setTimeout(
-          () => {
+          async () => {
+
+            const email =
+              (
+                session?.user?.email ||
+                ''
+              )
+              .trim()
+              .toLowerCase();
+
 
             if (
-              session?.user
+              email ===
+              ADMIN_EMAIL.toLowerCase()
             ) {
 
-              showAfterLogin()
-                .catch(
-                  console.error
-                );
+              createSection();
 
-            }
-
-            else {
+            } else {
 
               removeSection();
 
@@ -1249,64 +1224,25 @@
       }
     );
 
-  }
+
+    /* FETCH CLIENT BUTTON */
+
+    const fetchBtn =
+      $('fetchBtn');
 
 
-  /* =======================================================
-     INIT
-  ======================================================= */
+    if (fetchBtn) {
 
-  async function init() {
-
-    try {
-
-      /*
-       * IMPORTANT:
-       * We check authentication BEFORE
-       * creating the module manager.
-       */
-
-      const isAdmin =
-        await checkAdminSession();
-
-
-      if (!isAdmin) {
-
-        removeSection();
-
-        /*
-         * Login screen remains completely
-         * controlled by admin.html.
-         */
-
-        listenAuthChanges();
-
-        return;
-
-      }
-
-
-      createSection();
-
-
-      hookFetchButton();
-
-
-      listenAuthChanges();
-
-
-    } catch (error) {
-
-      console.warn(
-        'GLIME Module Manager init:',
-        error.message ||
-        String(error)
+      fetchBtn.addEventListener(
+        'click',
+        findClient
       );
 
+    } else {
 
-      removeSection();
-
-      listenAuthChanges();
+      console.error(
+        'GLIME Module Manager: #fetchBtn not found.'
+      );
 
     }
 
@@ -1324,7 +1260,10 @@
 
     document.addEventListener(
       'DOMContentLoaded',
-      init
+      init,
+      {
+        once:true
+      }
     );
 
   } else {
@@ -1334,8 +1273,3 @@
   }
 
 })();
-
-
-  
-
-  
