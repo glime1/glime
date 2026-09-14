@@ -55,6 +55,12 @@
             href: 'salon-ai.html'
         },
 
+        voice_ai: {
+            name: 'Voice AI',
+            icon: '🎙️',
+            href: 'voice-ai.html'
+        },
+
         gallery: {
             name: 'Lookbook',
             icon: '📖',
