@@ -1,26 +1,40 @@
 (() => {
   const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+
   const MODULE_SLUG = 'instagram_ai_sales_agent';
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
+  const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
     }
-  });
+  );
 
-  const $ = id => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
-  function message(text) {
+  /* ---------------------------------
+     MESSAGE
+  --------------------------------- */
+
+  function message(text, type = '') {
     const el = $('pageMessage');
 
     if (!el) return;
 
     el.textContent = text || '';
     el.style.display = text ? 'block' : 'none';
+    el.dataset.type = type;
   }
+
+  /* ---------------------------------
+     AGENT STATUS
+  --------------------------------- */
 
   function setStatus(text, hint) {
     const status = $('agentStatus');
@@ -35,27 +49,143 @@
     }
   }
 
+  /* ---------------------------------
+     INSTAGRAM STATUS
+  --------------------------------- */
+
+  function setInstagramStatus(text) {
+    const el = $('instagramStatus');
+
+    if (el) {
+      el.textContent = text;
+    }
+  }
+
+  /* ---------------------------------
+     CONNECT BUTTON
+  --------------------------------- */
+
+  function setConnectButton(text, disabled = false) {
+    const button = $('connectBtn');
+
+    if (!button) return;
+
+    button.textContent = text;
+    button.disabled = disabled;
+  }
+
+  /* ---------------------------------
+     CLEAN OAUTH QUERY
+  --------------------------------- */
+
+  function cleanOAuthQuery() {
+    const url = new URL(window.location.href);
+
+    [
+      'instagram_connected',
+      'instagram_username',
+      'instagram_error'
+    ].forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
+    window.history.replaceState(
+      {},
+      document.title,
+      url.pathname + url.search + url.hash
+    );
+  }
+
+  /* ---------------------------------
+     HANDLE OAUTH RESULT
+  --------------------------------- */
+
+  function handleOAuthResult() {
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const connected =
+      params.get('instagram_connected') === '1';
+
+    const username =
+      params.get('instagram_username');
+
+    const error =
+      params.get('instagram_error');
+
+    if (connected) {
+      message(
+        username
+          ? `Instagram @${username} successfully connected to GLIME.`
+          : 'Instagram successfully connected to GLIME.',
+        'success'
+      );
+
+      if (username) {
+        setInstagramStatus(`@${username}`);
+      } else {
+        setInstagramStatus('Connected');
+      }
+
+      setConnectButton(
+        'Reconnect Instagram',
+        false
+      );
+    }
+
+    if (error) {
+      message(
+        `Instagram connection failed: ${error}`,
+        'error'
+      );
+
+      setInstagramStatus('Not connected');
+      setConnectButton(
+        'Connect Instagram',
+        false
+      );
+    }
+
+    if (connected || error) {
+      cleanOAuthQuery();
+    }
+  }
+
+  /* ---------------------------------
+     GET AUTHENTICATED CLIENT
+  --------------------------------- */
+
   async function getClient() {
-    const { data: auth, error: authError } =
-      await supabase.auth.getSession();
+    const {
+      data: auth,
+      error: authError
+    } = await supabase.auth.getSession();
 
     if (authError) {
       throw authError;
     }
 
-    const user = auth?.session?.user;
+    const user =
+      auth?.session?.user;
 
     if (!user) {
       location.replace('login.html');
       return null;
     }
 
-    let { data, error } = await supabase
+    let {
+      data,
+      error
+    } = await supabase
       .from('client_data')
       .select(
         'id,client_id,auth_user_id,email,client_name,full_name,name'
       )
-      .eq('auth_user_id', user.id)
+      .eq(
+        'auth_user_id',
+        user.id
+      )
       .maybeSingle();
 
     if (error) {
@@ -64,21 +194,29 @@
 
     /*
      * Fallback:
-     * If auth_user_id is not linked yet, find the client
-     * using the authenticated user's email.
+     * If auth_user_id is not linked,
+     * find client by email.
      */
+
     if (!data && user.email) {
-      const result = await supabase
-        .from('client_data')
-        .select(
-          'id,client_id,auth_user_id,email,client_name,full_name,name'
-        )
-        .ilike('email', user.email.trim().toLowerCase())
-        .order('created_at', {
-          ascending: false
-        })
-        .limit(1)
-        .maybeSingle();
+      const result =
+        await supabase
+          .from('client_data')
+          .select(
+            'id,client_id,auth_user_id,email,client_name,full_name,name'
+          )
+          .ilike(
+            'email',
+            user.email.trim().toLowerCase()
+          )
+          .order(
+            'created_at',
+            {
+              ascending: false
+            }
+          )
+          .limit(1)
+          .maybeSingle();
 
       if (result.error) {
         throw result.error;
@@ -90,9 +228,182 @@
     return data;
   }
 
-  async function load() {
+  /* ---------------------------------
+     LOAD INSTAGRAM CONNECTION STATUS
+  --------------------------------- */
+
+  async function loadInstagramConnection() {
     try {
-      const client = await getClient();
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke(
+        'instagram-connection-status',
+        {
+          body: {}
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      /*
+       * Not connected
+       */
+
+      if (!data?.connected) {
+
+        if (data?.expired) {
+          setInstagramStatus(
+            'Connection expired'
+          );
+        } else {
+          setInstagramStatus(
+            'Not connected'
+          );
+        }
+
+        setConnectButton(
+          'Connect Instagram',
+          false
+        );
+
+        return;
+      }
+
+      /*
+       * Connected
+       */
+
+      const username =
+        data.username
+          ? `@${data.username}`
+          : 'Connected';
+
+      setInstagramStatus(
+        username
+      );
+
+      setConnectButton(
+        'Reconnect Instagram',
+        false
+      );
+
+    } catch (error) {
+
+      console.error(
+        'GLIME Instagram connection status error:',
+        error
+      );
+
+      /*
+       * Status API failure should not
+       * break the entire dashboard.
+       */
+
+      setInstagramStatus(
+        'Not connected'
+      );
+
+      setConnectButton(
+        'Connect Instagram',
+        false
+      );
+    }
+  }
+
+  /* ---------------------------------
+     START INSTAGRAM OAUTH
+  --------------------------------- */
+
+  async function connectInstagram() {
+
+    try {
+
+      message(
+        'Instagram connection शुरू हो रही है…'
+      );
+
+      setConnectButton(
+        'Connecting…',
+        true
+      );
+
+      /*
+       * Ask Supabase Edge Function
+       * to create the secure OAuth flow.
+       */
+
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke(
+        'instagram-oauth-start',
+        {
+          body: {}
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      /*
+       * OAuth URL must come
+       * from backend.
+       */
+
+      if (!data?.url) {
+        throw new Error(
+          'GLIME did not receive an Instagram authorization URL.'
+        );
+      }
+
+      /*
+       * Redirect client to Meta /
+       * Instagram authorization page.
+       */
+
+      window.location.href =
+        data.url;
+
+    } catch (error) {
+
+      console.error(
+        'GLIME Instagram OAuth start error:',
+        error
+      );
+
+      setConnectButton(
+        'Connect Instagram',
+        false
+      );
+
+      message(
+        error?.message ||
+        'Instagram connection शुरू नहीं हो सकी।',
+        'error'
+      );
+    }
+  }
+
+  /* ---------------------------------
+     LOAD PAGE
+  --------------------------------- */
+
+  async function load() {
+
+    /*
+     * Check OAuth result first.
+     */
+
+    handleOAuthResult();
+
+    try {
+
+      const client =
+        await getClient();
 
       if (!client) {
         return;
@@ -104,16 +415,22 @@
         );
       }
 
-      /*
-       * Find the Instagram AI Sales Agent module.
-       */
+      /* ---------------------------------
+         FIND MODULE
+      --------------------------------- */
+
       const {
         data: module,
         error: moduleError
       } = await supabase
         .from('modules')
-        .select('id,name,slug')
-        .eq('slug', MODULE_SLUG)
+        .select(
+          'id,name,slug'
+        )
+        .eq(
+          'slug',
+          MODULE_SLUG
+        )
         .maybeSingle();
 
       if (moduleError) {
@@ -121,26 +438,27 @@
       }
 
       /*
-       * Module has not yet been created by Admin.
+       * Module does not exist.
        */
+
       if (!module) {
+
         setStatus(
           'Not configured',
           'GLIME Admin has not created this module yet.'
         );
 
-        const lockedState = $('lockedState');
-
-        if (lockedState) {
-          lockedState.classList.remove('hidden');
-        }
+        $('lockedState')
+          ?.classList
+          .remove('hidden');
 
         return;
       }
 
-      /*
-       * Check whether this client has access to the module.
-       */
+      /* ---------------------------------
+         CHECK CLIENT ACCESS
+      --------------------------------- */
+
       const {
         data: access,
         error: accessError
@@ -149,8 +467,14 @@
         .select(
           'enabled,status,visible_to_client,activated_at,expires_at,plan'
         )
-        .eq('client_id', client.client_id)
-        .eq('module_id', module.id)
+        .eq(
+          'client_id',
+          client.client_id
+        )
+        .eq(
+          'module_id',
+          module.id
+        )
         .maybeSingle();
 
       if (accessError) {
@@ -163,77 +487,90 @@
       const active =
         access?.enabled === true &&
         (
+          access?.status === 'active' ||
+          access?.status === 'trial'
+        ) &&
+        (
           !access?.expires_at ||
-          new Date(access.expires_at) > new Date()
+          new Date(access.expires_at) >
+          new Date()
         );
 
-      /*
-       * Module is completely unavailable.
-       */
+      /* ---------------------------------
+         LOCKED
+      --------------------------------- */
+
       if (!visible && !active) {
+
         setStatus(
           'Locked',
           'This module is not enabled for your account.'
         );
 
-        const lockedState = $('lockedState');
-
-        if (lockedState) {
-          lockedState.classList.remove('hidden');
-        }
+        $('lockedState')
+          ?.classList
+          .remove('hidden');
 
         return;
       }
 
-      /*
-       * Module is visible but not activated.
-       */
+      /* ---------------------------------
+         VISIBLE BUT NOT ACTIVE
+      --------------------------------- */
+
       if (!active) {
+
         setStatus(
           'Available',
           'The module is visible but has not been activated.'
         );
 
-        const lockedState = $('lockedState');
-
-        if (lockedState) {
-          lockedState.classList.remove('hidden');
-        }
+        $('lockedState')
+          ?.classList
+          .remove('hidden');
 
         return;
       }
 
-      /*
-       * Module is active.
-       */
+      /* ---------------------------------
+         ACTIVE
+      --------------------------------- */
+
       setStatus(
         'Active',
         'Your GLIME AI Sales Agent module is enabled.'
       );
 
-      const agentState = $('agentState');
+      $('agentState')
+        ?.classList
+        .remove('hidden');
 
-      if (agentState) {
-        agentState.classList.remove('hidden');
-      }
+      /* ---------------------------------
+         LOAD LOOKBOOK
+      --------------------------------- */
 
-      /*
-       * Load the client's existing Lookbook.
-       *
-       * The Instagram AI Sales Agent will eventually
-       * use this existing catalogue as its product source.
-       */
       const {
         data: lookbook,
         error: lookbookError
       } = await supabase
         .from('lookbooks')
-        .select('id,name,enabled')
-        .eq('client_id', client.client_id)
-        .eq('enabled', true)
-        .order('created_at', {
-          ascending: true
-        })
+        .select(
+          'id,name,enabled'
+        )
+        .eq(
+          'client_id',
+          client.client_id
+        )
+        .eq(
+          'enabled',
+          true
+        )
+        .order(
+          'created_at',
+          {
+            ascending: true
+          }
+        )
         .limit(1)
         .maybeSingle();
 
@@ -241,59 +578,77 @@
         throw lookbookError;
       }
 
-      /*
-       * No active catalogue.
-       */
-      if (!lookbook) {
-        const catalogueStatus = $('catalogueStatus');
-        const productCount = $('productCount');
+      /* ---------------------------------
+         NO LOOKBOOK
+      --------------------------------- */
 
-        if (catalogueStatus) {
-          catalogueStatus.textContent =
+      if (!lookbook) {
+
+        if ($('catalogueStatus')) {
+          $('catalogueStatus').textContent =
             'No active Lookbook';
         }
 
-        if (productCount) {
-          productCount.textContent = '0';
+        if ($('productCount')) {
+          $('productCount').textContent =
+            '0';
         }
 
-        return;
+      } else {
+
+        /* ---------------------------------
+           COUNT PUBLISHED PRODUCTS
+        --------------------------------- */
+
+        const {
+          count,
+          error: countError
+        } = await supabase
+          .from('lookbook_items')
+          .select(
+            'id',
+            {
+              count: 'exact',
+              head: true
+            }
+          )
+          .eq(
+            'client_id',
+            client.client_id
+          )
+          .eq(
+            'lookbook_id',
+            lookbook.id
+          )
+          .eq(
+            'published',
+            true
+          );
+
+        if (countError) {
+          throw countError;
+        }
+
+        if ($('catalogueStatus')) {
+          $('catalogueStatus').textContent =
+            lookbook.name ||
+            'Lookbook ready';
+        }
+
+        if ($('productCount')) {
+          $('productCount').textContent =
+            String(count || 0);
+        }
       }
 
-      /*
-       * Count published products from the existing Lookbook.
-       */
-      const {
-        count,
-        error: countError
-      } = await supabase
-        .from('lookbook_items')
-        .select('id', {
-          count: 'exact',
-          head: true
-        })
-        .eq('client_id', client.client_id)
-        .eq('lookbook_id', lookbook.id)
-        .eq('published', true);
+      /* ---------------------------------
+         LOAD INSTAGRAM STATUS
+      --------------------------------- */
 
-      if (countError) {
-        throw countError;
-      }
-
-      const catalogueStatus = $('catalogueStatus');
-      const productCount = $('productCount');
-
-      if (catalogueStatus) {
-        catalogueStatus.textContent =
-          lookbook.name || 'Lookbook ready';
-      }
-
-      if (productCount) {
-        productCount.textContent =
-          String(count || 0);
-      }
+      await loadInstagramConnection();
 
     } catch (err) {
+
       console.error(
         'GLIME Instagram AI Sales Agent error:',
         err
@@ -306,30 +661,32 @@
 
       message(
         'Unable to load AI Sales Agent: ' +
-        (err?.message || String(err))
+        (err?.message || String(err)),
+        'error'
       );
     }
   }
 
-  /*
-   * Temporary button handler.
-   *
-   * Actual Instagram / Meta connection will be implemented
-   * in the next backend step.
-   */
-  const connectBtn = $('connectBtn');
+  /* ---------------------------------
+     BUTTON
+  --------------------------------- */
+
+  const connectBtn =
+    $('connectBtn');
 
   if (connectBtn) {
-    connectBtn.addEventListener('click', () => {
-      message(
-        'Instagram/Meta connection will be added in the next implementation step.'
-      );
-    });
+
+    connectBtn.addEventListener(
+      'click',
+      connectInstagram
+    );
+
   }
 
-  /*
-   * Start module.
-   */
+  /* ---------------------------------
+     START
+  --------------------------------- */
+
   load();
 
 })();
