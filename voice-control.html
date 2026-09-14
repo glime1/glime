@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLIME Voice Control</title>
+  <link rel="stylesheet" href="voice-control.css">
+</head>
+<body>
+  <main class="voice-control-app">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">GLIME • VOICE AI</div>
+        <h1>Voice AI Control Room</h1>
+        <p>Incoming calls, outbound calls aur AI conversation instructions ko ek hi jagah se control karein.</p>
+      </div>
+      <div id="saveState" class="save-state">Checking access…</div>
+    </section>
+
+    <section class="panel master-panel">
+      <div class="panel-copy">
+        <div class="icon">☎</div>
+        <div>
+          <h2>Incoming Calls</h2>
+          <p>AI customer ke incoming calls ko answer kare ya nahi.</p>
+        </div>
+      </div>
+      <button id="incomingToggle" class="toggle off" type="button" aria-pressed="false">
+        <span class="knob"></span><span id="incomingLabel">OFF</span>
+      </button>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Outbound AI Call</h2>
+        <p class="muted">AI sirf tab call kare jab client khud number aur instruction dekar call start kare.</p>
+
+        <label for="phone">Customer Phone Number</label>
+        <input id="phone" type="tel" placeholder="+91 98765 43210" autocomplete="tel">
+
+        <label for="instructions">AI ko kya baat karni hai?</label>
+        <textarea id="instructions" placeholder="Example:
+Customer ko hamare new project ke baare mein batana hai.
+Pehle naam aur requirement poochna hai.
+Budget poochna hai.
+Interested ho to site visit ki preferred date poochni hai.
+Agar customer human executive se baat karna chahe to handoff request note karni hai."></textarea>
+
+        <button id="startCall" class="primary" type="button">Start AI Call</button>
+        <p id="callStatus" class="inline-status"></p>
+      </div>
+
+      <div class="panel">
+        <h2>Conversation Rules</h2>
+        <p class="muted">Ye rules AI ke normal customer conversations par apply honge.</p>
+
+        <label for="rules">Instructions</label>
+        <textarea id="rules" placeholder="Example:
+Friendly aur professional tone rakho.
+Short natural replies do.
+Price confirm na ho to guess mat karo.
+Customer ke sawaal ka seedha jawab do.
+Jhootha promise mat karo."></textarea>
+
+        <button id="saveRules" class="secondary" type="button">Save Instructions</button>
+        <p id="rulesStatus" class="inline-status"></p>
+      </div>
+    </section>
+
+    <section class="panel safety">
+      <h2>Safety Controls</h2>
+      <div class="safety-row"><span>AI automatic outbound calling</span><strong>DISABLED</strong></div>
+      <div class="safety-row"><span>Client confirmation required before outbound call</span><strong>REQUIRED</strong></div>
+      <div class="safety-row"><span>Incoming calls when switch is OFF</span><strong>AI WILL NOT ANSWER</strong></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="voice-control.js"></script>
+</body>
+</html>
