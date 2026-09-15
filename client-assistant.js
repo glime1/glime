@@ -1,475 +1,618 @@
 (() => {
-  'use strict';
+'use strict';
 
-  const SUPABASE_URL =
-    'https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const FUNCTION_URL=`${SUPABASE_URL}/functions/v1/client-assistant`;
 
-  const SUPABASE_KEY =
-    'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-  const FUNCTION_URL =
-    `${SUPABASE_URL}/functions/v1/client-assistant`;
+const $=id=>document.getElementById(id);
 
-  const db =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+const messages=$('messages');
+const form=$('chatForm');
+const input=$('messageInput');
+const send=$('sendBtn');
+const status=$('status');
 
-  const $ = (id) =>
-    document.getElementById(id);
-
-  const messages =
-    $('messages');
-
-  const form =
-    $('chatForm');
-
-  const input =
-    $('messageInput');
-
-  const send =
-    $('sendBtn');
-
-  const status =
-    $('status');
-
-  let history = [];
+let history=[];
 
 
-  /* =====================================================
-     ADD MESSAGE
-  ===================================================== */
+/* =====================================================
+   NORMAL MESSAGE
+===================================================== */
 
-  function addMessage(
+function addMessage(role,text){
+
+  const row=document.createElement('div');
+
+  row.className=`message ${role}`;
+
+  const label=document.createElement('div');
+
+  label.className='message-label';
+
+  label.textContent=
+    role==='user'
+      ?'YOU'
+      :'GLIME AI';
+
+  const bubble=document.createElement('div');
+
+  bubble.className='bubble';
+
+  bubble.textContent=text;
+
+  row.append(label,bubble);
+
+  messages.appendChild(row);
+
+  messages.scrollTop=messages.scrollHeight;
+
+  history.push({
     role,
-    text
-  ) {
+    content:text
+  });
 
-    const row =
-      document.createElement('div');
+  if(history.length>12){
 
-    row.className =
-      `message ${role}`;
+    history=history.slice(-12);
 
+  }
 
-    const label =
-      document.createElement('div');
-
-    label.className =
-      'message-label';
-
-    label.textContent =
-      role === 'user'
-        ? 'YOU'
-        : 'GLIME AI';
+}
 
 
-    const bubble =
-      document.createElement('div');
+/* =====================================================
+   MONEY FORMAT
+===================================================== */
 
-    bubble.className =
-      'bubble';
+function money(value){
 
-    bubble.textContent =
-      text;
-
-
-    row.appendChild(label);
-
-    row.appendChild(bubble);
-
-    messages.appendChild(row);
-
-
-    messages.scrollTop =
-      messages.scrollHeight;
-
-
-    history.push({
-      role,
-      content: text
-    });
-
-
-    /*
-     * Keep browser history small.
-     * The actual authorization/data access
-     * remains server-side.
-     */
-
-    if (history.length > 12) {
-
-      history =
-        history.slice(-12);
-
+  return `₹${Number(value||0).toLocaleString(
+    'en-IN',
+    {
+      maximumFractionDigits:2
     }
+  )}`;
+
+}
+
+
+/* =====================================================
+   BUSINESS REPORT
+===================================================== */
+
+function addReport(report){
+
+  if(!report?.overview)return;
+
+
+  const row=document.createElement('div');
+
+  row.className='message assistant';
+
+
+  const label=document.createElement('div');
+
+  label.className='message-label';
+
+  label.textContent='GLIME AI';
+
+
+  const card=document.createElement('div');
+
+  card.className='report-card';
+
+
+  /* TITLE */
+
+  const title=document.createElement('div');
+
+  title.className='report-title';
+
+  title.innerHTML=
+    '<span class="report-spark">✦</span>' +
+    '<strong>Business Quick Report</strong>';
+
+  card.appendChild(title);
+
+
+  /* METRICS */
+
+  const grid=document.createElement('div');
+
+  grid.className='report-grid';
+
+
+  const metrics=[
+
+    [
+      '👥',
+      report.overview.customers ?? 0,
+      'Customers',
+      'Total'
+    ],
+
+    [
+      '🛒',
+      report.overview.orders ?? 0,
+      'Orders',
+      'Total'
+    ],
+
+    [
+      '₹',
+      money(report.overview.revenue),
+      'Revenue',
+      'Paid sales'
+    ],
+
+    [
+      '📈',
+      report.overview.leads ?? 0,
+      'Leads',
+      'Total'
+    ]
+
+  ];
+
+
+  metrics.forEach(item=>{
+
+    const metric=document.createElement('div');
+
+    metric.className='report-metric';
+
+
+    metric.innerHTML=`
+
+      <div class="report-icon">
+        ${item[0]}
+      </div>
+
+      <div class="report-value">
+        ${String(item[1])}
+      </div>
+
+      <div class="report-name">
+        ${item[2]}
+      </div>
+
+      <div class="report-sub">
+        ${item[3]}
+      </div>
+
+    `;
+
+    grid.appendChild(metric);
+
+  });
+
+
+  card.appendChild(grid);
+
+
+  /* INSIGHTS */
+
+  if(
+    Array.isArray(report.insights) &&
+    report.insights.length
+  ){
+
+    const section=document.createElement('div');
+
+    section.className='report-section';
+
+
+    section.innerHTML=
+      '<div class="report-section-title">💡 Insights</div>';
+
+
+    const list=document.createElement('ul');
+
+
+    report.insights
+      .slice(0,5)
+      .forEach(text=>{
+
+        const li=document.createElement('li');
+
+        li.textContent=text;
+
+        list.appendChild(li);
+
+      });
+
+
+    section.appendChild(list);
+
+    card.appendChild(section);
 
   }
 
 
-  /* =====================================================
-     INITIALIZE AUTH
-  ===================================================== */
+  /* DATA NOTE */
 
-  async function initialize() {
+  const note=document.createElement('div');
 
-    try {
+  note.className='report-note';
 
-      const {
-        data,
-        error
-      } =
-        await db.auth.getSession();
+  note.textContent=
+    report.data_note ||
+    'यह report आपके authenticated business data से तैयार की गई है।';
+
+  card.appendChild(note);
 
 
-      if (error) {
+  /* ACTION BUTTONS */
 
-        throw error;
+  const actions=document.createElement('div');
 
-      }
-
-
-      const session =
-        data?.session;
+  actions.className='report-actions';
 
 
-      if (
-        !session ||
-        !session.user
-      ) {
+  const actionItems=[
 
-        window.location.href =
-          'login.html';
+    [
+      'Customers list',
+      'मेरे customers की list दिखाओ'
+    ],
 
-        return;
+    [
+      'Recent orders',
+      'मेरे recent orders दिखाओ'
+    ],
 
-      }
+    [
+      'Top customers',
+      'मेरे top customers कौन हैं?'
+    ],
 
+    [
+      'Next step',
+      'मेरे business के लिए अभी सबसे जरूरी next step क्या है?'
+    ]
 
-      const email =
-        session.user.email || '';
-
-
-      const clientName =
-        $('clientName');
-
-
-      if (clientName) {
-
-        clientName.textContent =
-          ` • ${email}`;
-
-      }
+  ];
 
 
-    } catch (error) {
+  actionItems.forEach(item=>{
 
-      console.error(
-        'Client Assistant auth error:',
-        error
-      );
+    const button=document.createElement('button');
 
-      status.textContent =
-        'Login session verify नहीं हो सकी।';
+    button.type='button';
 
-    }
-
-  }
+    button.textContent=item[0];
 
 
-  /* =====================================================
-     SEND MESSAGE
-  ===================================================== */
+    button.onclick=()=>{
 
-  form.addEventListener(
-    'submit',
-    async (event) => {
-
-      event.preventDefault();
-
-
-      const text =
-        input.value.trim();
-
-
-      if (!text) {
-
-        return;
-
-      }
-
-
-      addMessage(
-        'user',
-        text
-      );
-
-
-      input.value = '';
+      input.value=item[1];
 
       updateCharacterCount();
 
+      input.focus();
 
-      send.disabled = true;
+    };
 
 
-      status.textContent =
-        'आपके business data को सुरक्षित रूप से check किया जा रहा है…';
+    actions.appendChild(button);
 
+  });
 
-      try {
 
-        /*
-         * Get current authenticated session.
-         */
+  card.appendChild(actions);
 
-        const {
-          data,
-          error
-        } =
-          await db.auth.getSession();
 
+  row.append(label,card);
 
-        if (error) {
+  messages.appendChild(row);
 
-          throw error;
+  messages.scrollTop=messages.scrollHeight;
 
-        }
+}
 
 
-        const session =
-          data?.session;
+/* =====================================================
+   AUTH INITIALIZE
+===================================================== */
 
+async function initialize(){
 
-        if (!session) {
+  try{
 
-          throw new Error(
-            'Login required'
-          );
+    const{
+      data,
+      error
+    }=await db.auth.getSession();
 
-        }
 
+    if(error)throw error;
 
-        /*
-         * IMPORTANT:
-         *
-         * client_id is NOT sent from the
-         * browser.
-         *
-         * The Edge Function receives the
-         * authenticated JWT and resolves
-         * the correct client itself.
-         */
 
-        const response =
-          await fetch(
-            FUNCTION_URL,
-            {
-              method: 'POST',
+    if(!data?.session?.user){
 
-              headers: {
-
-                'Content-Type':
-                  'application/json',
-
-                'Authorization':
-                  `Bearer ${session.access_token}`
-
-              },
-
-              body:
-                JSON.stringify({
-
-                  message:
-                    text,
-
-                  history:
-                    history
-
-                })
-
-            }
-          );
-
-
-        const result =
-          await response.json();
-
-
-        if (!response.ok) {
-
-          throw new Error(
-            result?.error ||
-            'Assistant unavailable'
-          );
-
-        }
-
-
-        addMessage(
-          'assistant',
-          result?.answer ||
-          'कोई उत्तर नहीं मिला।'
-        );
-
-
-        status.textContent =
-          '';
-
-
-      } catch (error) {
-
-        console.error(
-          'Client Assistant error:',
-          error
-        );
-
-
-        addMessage(
-          'assistant',
-          error?.message ||
-          'अभी assistant उपलब्ध नहीं है।'
-        );
-
-
-        status.textContent =
-          '';
-
-      } finally {
-
-        send.disabled =
-          false;
-
-        input.focus();
-
-      }
-
-    }
-  );
-
-
-  /* =====================================================
-     CLEAR CHAT
-  ===================================================== */
-
-  $('clearBtn')
-    ?.addEventListener(
-      'click',
-      () => {
-
-        history = [];
-
-        messages.innerHTML = '';
-
-        addMessage(
-          'assistant',
-          'चैट साफ हो गई। अब अपना business सवाल पूछें।'
-        );
-
-        status.textContent =
-          '';
-
-      }
-    );
-
-
-  /* =====================================================
-     QUICK SUGGESTIONS
-  ===================================================== */
-
-  document
-    .querySelectorAll(
-      '[data-prompt]'
-    )
-    .forEach(
-      (button) => {
-
-        button.addEventListener(
-          'click',
-          () => {
-
-            input.value =
-              button.dataset.prompt ||
-              '';
-
-            updateCharacterCount();
-
-            input.focus();
-
-          }
-        );
-
-      }
-    );
-
-
-  /* =====================================================
-     CHARACTER COUNT
-  ===================================================== */
-
-  function updateCharacterCount() {
-
-    const counter =
-      $('charCount');
-
-
-    if (!counter) {
+      location.href='login.html';
 
       return;
 
     }
 
 
-    counter.textContent =
+    const clientName=$('clientName');
+
+
+    if(clientName){
+
+      clientName.textContent=
+        ` • ${data.session.user.email||''}`;
+
+    }
+
+
+  }catch(error){
+
+    console.error(error);
+
+    status.textContent=
+      'Login session verify नहीं हो सकी।';
+
+  }
+
+}
+
+
+/* =====================================================
+   SEND MESSAGE
+===================================================== */
+
+form.addEventListener(
+  'submit',
+  async event=>{
+
+    event.preventDefault();
+
+
+    const text=input.value.trim();
+
+
+    if(!text)return;
+
+
+    addMessage(
+      'user',
+      text
+    );
+
+
+    input.value='';
+
+    updateCharacterCount();
+
+
+    send.disabled=true;
+
+
+    status.textContent=
+      'आपके business data को सुरक्षित रूप से check किया जा रहा है…';
+
+
+    try{
+
+      const{
+        data,
+        error
+      }=await db.auth.getSession();
+
+
+      if(error)throw error;
+
+
+      if(!data?.session){
+
+        throw Error(
+          'Login required'
+        );
+
+      }
+
+
+      const response=
+        await fetch(
+          FUNCTION_URL,
+          {
+
+            method:'POST',
+
+            headers:{
+
+              'Content-Type':
+                'application/json',
+
+              'Authorization':
+                `Bearer ${data.session.access_token}`
+
+            },
+
+            body:
+              JSON.stringify({
+
+                message:text,
+
+                history:history
+
+              })
+
+          }
+        );
+
+
+      const result=
+        await response.json();
+
+
+      if(!response.ok){
+
+        throw Error(
+          result?.error ||
+          'Assistant unavailable'
+        );
+
+      }
+
+
+      addMessage(
+        'assistant',
+        result?.answer ||
+        'कोई उत्तर नहीं मिला।'
+      );
+
+
+      /* REPORT */
+
+      if(result?.report){
+
+        addReport(
+          result.report
+        );
+
+      }
+
+
+      status.textContent='';
+
+
+    }catch(error){
+
+      console.error(error);
+
+
+      addMessage(
+        'assistant',
+        error?.message ||
+        'अभी assistant उपलब्ध नहीं है।'
+      );
+
+
+      status.textContent='';
+
+
+    }finally{
+
+      send.disabled=false;
+
+      input.focus();
+
+    }
+
+  }
+);
+
+
+/* =====================================================
+   CLEAR CHAT
+===================================================== */
+
+$('clearBtn')?.addEventListener(
+  'click',
+  ()=>{
+
+    history=[];
+
+    messages.innerHTML='';
+
+
+    addMessage(
+      'assistant',
+      'चैट साफ हो गई। अब अपना business सवाल पूछें।'
+    );
+
+
+    status.textContent='';
+
+  }
+);
+
+
+/* =====================================================
+   QUICK SUGGESTIONS
+===================================================== */
+
+document
+  .querySelectorAll('[data-prompt]')
+  .forEach(button=>{
+
+    button.addEventListener(
+      'click',
+      ()=>{
+
+        input.value=
+          button.dataset.prompt||'';
+
+        updateCharacterCount();
+
+        input.focus();
+
+      }
+    );
+
+  });
+
+
+/* =====================================================
+   CHARACTER COUNT
+===================================================== */
+
+function updateCharacterCount(){
+
+  const counter=$('charCount');
+
+  if(counter){
+
+    counter.textContent=
       `${input.value.length} / 2000`;
 
   }
 
-
-  input.addEventListener(
-    'input',
-    updateCharacterCount
-  );
+}
 
 
-  /* =====================================================
-     ENTER / MOBILE BEHAVIOUR
-  ===================================================== */
+input.addEventListener(
+  'input',
+  updateCharacterCount
+);
 
-  input.addEventListener(
-    'keydown',
-    (event) => {
 
-      /*
-       * Desktop:
-       * Enter sends message.
-       *
-       * Shift + Enter:
-       * new line.
-       */
+/* =====================================================
+   ENTER SEND
+===================================================== */
 
-      if (
-        event.key === 'Enter' &&
-        !event.shiftKey
-      ) {
+input.addEventListener(
+  'keydown',
+  event=>{
 
-        event.preventDefault();
+    if(
+      event.key==='Enter' &&
+      !event.shiftKey
+    ){
 
-        form.requestSubmit();
+      event.preventDefault();
 
-      }
+      form.requestSubmit();
 
     }
-  );
+
+  }
+);
 
 
-  /* =====================================================
-     START
-  ===================================================== */
+/* =====================================================
+   START
+===================================================== */
 
-  updateCharacterCount();
+updateCharacterCount();
 
-  initialize();
+initialize();
 
 })();
