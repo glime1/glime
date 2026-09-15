@@ -1,10 +1,20 @@
 (function () {
   "use strict";
 
-  // GLIME Voice Provider Admin Add-on
-  // Does NOT replace admin.html or admin-modules-addon.js.
+  /*
+   * GLIME Voice Provider Admin Add-on
+   *
+   * IMPORTANT:
+   * - admin.html को replace नहीं करता
+   * - admin-modules-addon.js को touch नहीं करता
+   * - Login screen पर दिखाई नहीं देगा
+   * - केवल Admin Control Room के अंदर दिखाई देगा
+   * - Provider data admin-only RPC से load होता है
+   */
 
-  const SUPABASE_URL = "https://ufoulgbiqgjriwapuopc.supabase.co";
+  const SUPABASE_URL =
+    "https://ufoulgbiqgjriwapuopc.supabase.co";
+
   const SUPABASE_PUBLISHABLE_KEY =
     "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
@@ -19,11 +29,13 @@
       description: "Primary GLIME voice provider",
       badge: "Recommended"
     },
+
     exotel: {
       name: "Exotel",
       description: "India-focused telephony / voice infrastructure",
       badge: "India"
     },
+
     plivo: {
       name: "Plivo",
       description: "Voice API and real-time AI streaming",
@@ -31,9 +43,8 @@
     }
   };
 
-  let root = null;
-  let currentClientId = null;
   let currentAgent = null;
+  let lastClientEmail = "";
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -44,222 +55,239 @@
       .replace(/'/g, "&#039;");
   }
 
-  function getClientId() {
-    // First try common IDs used by the existing admin page.
-    const selectors = [
-      "#clientId",
-      "#currentClientId",
-      "[data-client-id]"
-    ];
-
-    for (const selector of selectors) {
-      const el = document.querySelector(selector);
-
-      if (el) {
-        const value =
-          el.value ||
-          el.textContent ||
-          el.dataset?.clientId ||
-          "";
-
-        if (String(value).trim()) {
-          return String(value).trim();
-        }
-      }
-    }
-
-    // Fallback: inspect client email field and ask the existing
-    // admin page's client state to populate this when available.
-    return null;
-  }
+  /* ---------------------------------
+     STYLES
+  --------------------------------- */
 
   function injectStyles() {
-    if (document.getElementById("glime-voice-provider-addon-style")) {
+    if (
+      document.getElementById(
+        "glime-voice-provider-addon-style"
+      )
+    ) {
       return;
     }
 
     const style = document.createElement("style");
-    style.id = "glime-voice-provider-addon-style";
+
+    style.id =
+      "glime-voice-provider-addon-style";
 
     style.textContent = `
-      .glime-vp-card {
-        margin-top: 18px;
-        padding: 20px;
-        border: 1px solid rgba(82,232,255,.18);
-        border-radius: 16px;
-        background: linear-gradient(
-          145deg,
-          rgba(5,11,16,.98),
-          rgba(10,20,27,.96)
-        );
-        color: #f4fbfd;
+      #glime-voice-provider-addon {
+        display: none;
       }
 
-      .glime-vp-title {
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:12px;
-        margin-bottom:6px;
+      #glime-voice-provider-addon.glime-vp-visible {
+        display: block;
       }
 
-      .glime-vp-title h3 {
-        margin:0;
-        font-size:18px;
+      .glime-vp-section {
+        margin-top: 22px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255,255,255,.09);
       }
 
-      .glime-vp-subtitle {
-        margin:0 0 16px;
-        color:#9cabb9;
-        font-size:13px;
+      .glime-vp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
       }
 
-      .glime-vp-grid {
-        display:grid;
-        grid-template-columns:repeat(3,minmax(0,1fr));
-        gap:12px;
-      }
-
-      .glime-vp-option {
-        position:relative;
-        cursor:pointer;
-        border:1px solid rgba(156,171,185,.18);
-        border-radius:13px;
-        padding:15px;
-        background:rgba(255,255,255,.025);
-        transition:.2s ease;
-      }
-
-      .glime-vp-option:hover {
-        border-color:rgba(82,232,255,.45);
-        transform:translateY(-1px);
-      }
-
-      .glime-vp-option.active {
-        border-color:#50f5a8;
-        box-shadow:0 0 0 1px rgba(80,245,168,.2);
-      }
-
-      .glime-vp-option input {
-        position:absolute;
-        opacity:0;
-        pointer-events:none;
-      }
-
-      .glime-vp-name {
-        font-weight:700;
-        margin-bottom:5px;
-      }
-
-      .glime-vp-description {
-        color:#9cabb9;
-        font-size:12px;
-        line-height:1.45;
-      }
-
-      .glime-vp-badge {
-        display:inline-block;
-        margin-top:10px;
-        padding:3px 7px;
-        border-radius:999px;
-        font-size:10px;
-        color:#050b10;
-        background:#50f5a8;
-        font-weight:700;
-      }
-
-      .glime-vp-actions {
-        display:flex;
-        align-items:center;
-        gap:12px;
-        margin-top:16px;
-        flex-wrap:wrap;
-      }
-
-      .glime-vp-save {
-        border:0;
-        border-radius:10px;
-        padding:10px 16px;
-        cursor:pointer;
-        background:#50f5a8;
-        color:#050b10;
-        font-weight:800;
-      }
-
-      .glime-vp-save:disabled {
-        opacity:.5;
-        cursor:not-allowed;
-      }
-
-      .glime-vp-status {
-        color:#9cabb9;
-        font-size:12px;
+      .glime-vp-header h3 {
+        margin: 0;
+        color: #ff9f43;
+        font-size: 1rem;
       }
 
       .glime-vp-current {
-        color:#52e8ff;
-        font-weight:700;
+        color: #00eaff;
+        font-weight: 700;
+        font-size: .8rem;
       }
 
-      @media (max-width: 800px) {
+      .glime-vp-subtitle {
+        color: #9ba7b7;
+        margin: 0 0 14px;
+        font-size: .78rem;
+      }
+
+      .glime-vp-grid {
+        display: grid;
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .glime-vp-option {
+        position: relative;
+        cursor: pointer;
+        border: 1px solid rgba(255,255,255,.09);
+        border-radius: 12px;
+        padding: 14px;
+        background: rgba(255,255,255,.025);
+        transition: .2s ease;
+      }
+
+      .glime-vp-option:hover {
+        border-color: rgba(0,234,255,.45);
+      }
+
+      .glime-vp-option.active {
+        border-color: #00ff88;
+        box-shadow:
+          0 0 0 1px rgba(0,255,136,.15);
+      }
+
+      .glime-vp-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .glime-vp-name {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .glime-vp-description {
+        color: #9ba7b7;
+        font-size: .72rem;
+        line-height: 1.45;
+      }
+
+      .glime-vp-badge {
+        display: inline-block;
+        margin-top: 9px;
+        padding: 3px 7px;
+        border-radius: 999px;
+        font-size: 10px;
+        color: #061016;
+        background: #00ff88;
+        font-weight: 700;
+      }
+
+      .glime-vp-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+
+      .glime-vp-save {
+        width: auto !important;
+        margin: 0 !important;
+        background: #00ff88 !important;
+        color: #061016 !important;
+      }
+
+      .glime-vp-status {
+        color: #9ba7b7;
+        font-size: .72rem;
+      }
+
+      @media (max-width: 650px) {
+
         .glime-vp-grid {
-          grid-template-columns:1fr;
+          grid-template-columns: 1fr;
         }
+
+        .glime-vp-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
       }
     `;
 
     document.head.appendChild(style);
   }
 
-  function findMountPoint() {
-    const candidates = [
-      "#clientDetails",
-      "#clientPanel",
-      "#clientInfo",
-      "#moduleManager",
-      "#modulesContainer",
-      ".client-details",
-      ".client-panel",
-      "main"
-    ];
+  /* ---------------------------------
+     CONTROL ROOM
+  --------------------------------- */
 
-    for (const selector of candidates) {
-      const el = document.querySelector(selector);
-      if (el) return el;
-    }
-
-    return document.body;
+  function getControlRoom() {
+    return document.getElementById(
+      "control-room"
+    );
   }
 
+  function isLoggedIn() {
+    const controlRoom =
+      getControlRoom();
+
+    if (!controlRoom) {
+      return false;
+    }
+
+    return (
+      getComputedStyle(controlRoom).display !==
+      "none"
+    );
+  }
+
+  /* ---------------------------------
+     UI SHELL
+  --------------------------------- */
+
   function renderShell() {
-    if (document.getElementById("glime-voice-provider-addon")) {
-      root = document.getElementById("glime-voice-provider-addon");
+
+    if (
+      document.getElementById(
+        "glime-voice-provider-addon"
+      )
+    ) {
       return;
     }
 
-    const mount = findMountPoint();
+    const controlRoom =
+      getControlRoom();
 
-    root = document.createElement("section");
-    root.id = "glime-voice-provider-addon";
-    root.className = "glime-vp-card";
+    if (!controlRoom) {
+      return;
+    }
+
+    const root =
+      document.createElement("section");
+
+    root.id =
+      "glime-voice-provider-addon";
+
+    root.className =
+      "glime-vp-section";
 
     root.innerHTML = `
-      <div class="glime-vp-title">
-        <h3>🎙️ Voice AI Provider</h3>
-        <span class="glime-vp-current" id="glimeVpCurrent">
+      <div class="glime-vp-header">
+
+        <h3>
+          🎙️ Voice AI Provider
+        </h3>
+
+        <span
+          class="glime-vp-current"
+          id="glimeVpCurrent"
+        >
           Not loaded
         </span>
+
       </div>
 
       <p class="glime-vp-subtitle">
-        Select which telephony provider this client's Voice AI will use.
+        Select which telephony provider this
+        client's Voice AI will use.
       </p>
 
-      <div class="glime-vp-grid" id="glimeVpGrid">
-        Loading providers…
-      </div>
+      <div
+        class="glime-vp-grid"
+        id="glimeVpGrid"
+      ></div>
 
       <div class="glime-vp-actions">
+
         <button
           type="button"
           class="glime-vp-save"
@@ -273,49 +301,138 @@
           class="glime-vp-status"
           id="glimeVpStatus"
         >
-          Select a client first.
+          Fetch a client first.
         </span>
+
       </div>
     `;
 
-    mount.appendChild(root);
+    /*
+     * IMPORTANT:
+     * Add inside existing Admin Control Room.
+     * NOT document.body.
+     */
+    controlRoom.appendChild(root);
 
-    document
-      .getElementById("glimeVpSave")
-      .addEventListener("click", saveProvider);
+    const saveButton =
+      document.getElementById(
+        "glimeVpSave"
+      );
+
+    if (saveButton) {
+      saveButton.addEventListener(
+        "click",
+        saveProvider
+      );
+    }
   }
 
-  async function loadProviders() {
-    const grid = document.getElementById("glimeVpGrid");
+  function setVisible(visible) {
 
-    if (!grid) return;
+    const root =
+      document.getElementById(
+        "glime-voice-provider-addon"
+      );
 
-    const { data, error } = await db
-      .from("voice_providers")
-      .select("provider_key,display_name,enabled")
-      .eq("enabled", true)
-      .order("id", { ascending: true });
-
-    if (error) {
-      grid.innerHTML =
-        `<div style="color:#ff8d8d">Unable to load providers.</div>`;
-      console.error("GLIME Voice Provider:", error);
+    if (!root) {
       return;
     }
 
-    if (!data?.length) {
-      grid.innerHTML =
-        `<div style="color:#ffcc80">No voice providers are enabled.</div>`;
+    root.classList.toggle(
+      "glime-vp-visible",
+      !!visible
+    );
+  }
+
+  function setStatus(message) {
+
+    const el =
+      document.getElementById(
+        "glimeVpStatus"
+      );
+
+    if (el) {
+      el.textContent = message;
+    }
+  }
+
+  /* ---------------------------------
+     LOAD PROVIDERS
+  --------------------------------- */
+
+  async function loadProviders() {
+
+    const grid =
+      document.getElementById(
+        "glimeVpGrid"
+      );
+
+    if (!grid) {
+      return;
+    }
+
+    grid.innerHTML = `
+      <div style="color:#9ba7b7">
+        Loading providers…
+      </div>
+    `;
+
+    /*
+     * Admin-only RPC.
+     *
+     * We intentionally do NOT read
+     * voice_providers directly from
+     * the browser.
+     */
+    const {
+      data,
+      error
+    } = await db.rpc(
+      "admin_list_voice_providers"
+    );
+
+    if (error) {
+
+      console.error(
+        "GLIME Voice Provider list:",
+        error
+      );
+
+      grid.innerHTML = `
+        <div style="color:#ff5263">
+          Unable to load providers.
+        </div>
+      `;
+
+      return;
+    }
+
+    if (!data || !data.length) {
+
+      grid.innerHTML = `
+        <div style="color:#ffcc80">
+          No voice providers are enabled.
+        </div>
+      `;
+
       return;
     }
 
     grid.innerHTML = data
       .map((provider) => {
-        const key = provider.provider_key;
-        const meta = PROVIDER_META[key] || {};
+
+        const key =
+          provider.provider_key;
+
+        const meta =
+          PROVIDER_META[key] || {};
 
         return `
-          <label class="glime-vp-option" data-provider="${escapeHtml(key)}">
+          <label
+            class="glime-vp-option"
+            data-provider="${escapeHtml(key)}"
+          >
+
             <input
               type="radio"
               name="glimeVoiceProvider"
@@ -323,88 +440,211 @@
             >
 
             <div class="glime-vp-name">
-              ${escapeHtml(provider.display_name || meta.name || key)}
+              ${escapeHtml(
+                provider.display_name ||
+                meta.name ||
+                key
+              )}
             </div>
 
             <div class="glime-vp-description">
-              ${escapeHtml(meta.description || "Voice provider")}
+              ${escapeHtml(
+                meta.description ||
+                "Voice provider"
+              )}
             </div>
 
             ${
               meta.badge
-                ? `<span class="glime-vp-badge">
+                ? `
+                  <span class="glime-vp-badge">
                     ${escapeHtml(meta.badge)}
-                   </span>`
+                  </span>
+                `
                 : ""
             }
+
           </label>
         `;
       })
       .join("");
 
-    grid.querySelectorAll("input").forEach((input) => {
-      input.addEventListener("change", () => {
-        grid.querySelectorAll(".glime-vp-option")
-          .forEach((el) => el.classList.remove("active"));
+    grid
+      .querySelectorAll("input")
+      .forEach((input) => {
 
-        input.closest(".glime-vp-option")?.classList.add("active");
+        input.addEventListener(
+          "change",
+          () => {
 
-        const save = document.getElementById("glimeVpSave");
-        if (save) save.disabled = false;
+            grid
+              .querySelectorAll(
+                ".glime-vp-option"
+              )
+              .forEach((el) => {
+
+                el.classList.remove(
+                  "active"
+                );
+
+              });
+
+            input
+              .closest(
+                ".glime-vp-option"
+              )
+              ?.classList.add(
+                "active"
+              );
+
+            const save =
+              document.getElementById(
+                "glimeVpSave"
+              );
+
+            if (save) {
+              save.disabled = false;
+            }
+
+          }
+        );
+
       });
-    });
   }
 
-  async function loadClientVoiceAgent(clientId) {
-    if (!clientId) {
-      setStatus("Client ID not available yet.");
+  /* ---------------------------------
+     LOAD CLIENT VOICE AI
+  --------------------------------- */
+
+  async function loadClientByEmail(
+    email
+  ) {
+
+    if (!isLoggedIn()) {
       return;
     }
 
-    currentClientId = clientId;
-    setStatus("Loading Voice AI configuration…");
+    const cleanEmail =
+      String(email || "")
+        .trim()
+        .toLowerCase();
 
-    const { data, error } = await db.rpc(
-      "admin_get_voice_agent_provider",
+    if (!cleanEmail) {
+      return;
+    }
+
+    lastClientEmail =
+      cleanEmail;
+
+    setVisible(true);
+
+    setStatus(
+      "Loading Voice AI configuration…"
+    );
+
+    /*
+     * Admin-only RPC.
+     *
+     * Email -> client -> Voice Agent
+     */
+    const {
+      data,
+      error
+    } = await db.rpc(
+      "admin_get_voice_agent_provider_by_email",
       {
-        p_client_id: clientId
+        p_email: cleanEmail
       }
     );
 
     if (error) {
-      console.error("GLIME Voice Provider load:", error);
-      setStatus("Unable to load Voice AI configuration.");
+
+      console.error(
+        "GLIME Voice Provider load:",
+        error
+      );
+
+      currentAgent = null;
+
+      setStatus(
+        "Unable to load Voice AI configuration."
+      );
+
       return;
     }
 
-    currentAgent = data?.[0] || null;
+    currentAgent =
+      data?.[0] || null;
 
-    const current = document.getElementById("glimeVpCurrent");
+    const current =
+      document.getElementById(
+        "glimeVpCurrent"
+      );
+
+    const save =
+      document.getElementById(
+        "glimeVpSave"
+      );
 
     if (!currentAgent) {
-      if (current) current.textContent = "No Voice AI agent";
-      setStatus("This client does not have an active Voice AI agent.");
+
+      if (current) {
+        current.textContent =
+          "No Voice AI agent";
+      }
+
+      if (save) {
+        save.disabled = true;
+      }
+
+      setStatus(
+        "This client does not have a Voice AI agent."
+      );
+
       return;
     }
 
     const provider =
-      PROVIDER_META[currentAgent.provider_key]?.name ||
+      PROVIDER_META[
+        currentAgent.provider_key
+      ]?.name ||
       currentAgent.provider_key ||
       "Not configured";
 
     if (current) {
-      current.textContent = provider;
+      current.textContent =
+        provider;
     }
 
-    const radio = document.querySelector(
-      `input[name="glimeVoiceProvider"][value="${CSS.escape(
-        currentAgent.provider_key || ""
-      )}"]`
-    );
+    /*
+     * Select current provider.
+     */
+    const radio =
+      document.querySelector(
+        `input[name="glimeVoiceProvider"][value="${CSS.escape(
+          currentAgent.provider_key || ""
+        )}"]`
+      );
 
     if (radio) {
+
       radio.checked = true;
-      radio.closest(".glime-vp-option")?.classList.add("active");
+
+      radio
+        .closest(
+          ".glime-vp-option"
+        )
+        ?.classList.add(
+          "active"
+        );
+    }
+
+    if (save) {
+
+      save.disabled = true;
+
+      save.textContent =
+        "Save Provider";
     }
 
     setStatus(
@@ -412,141 +652,346 @@
     );
   }
 
+  /* ---------------------------------
+     SAVE PROVIDER
+  --------------------------------- */
+
   async function saveProvider() {
+
     if (!currentAgent?.agent_id) {
-      setStatus("No Voice AI agent found.");
+
+      setStatus(
+        "No Voice AI agent found."
+      );
+
       return;
     }
 
-    const selected = document.querySelector(
-      'input[name="glimeVoiceProvider"]:checked'
-    );
+    const selected =
+      document.querySelector(
+        'input[name="glimeVoiceProvider"]:checked'
+      );
 
     if (!selected) {
-      setStatus("Please select a provider.");
+
+      setStatus(
+        "Please select a provider."
+      );
+
       return;
     }
 
-    const providerKey = selected.value;
-    const save = document.getElementById("glimeVpSave");
+    const save =
+      document.getElementById(
+        "glimeVpSave"
+      );
 
     if (save) {
+
       save.disabled = true;
-      save.textContent = "Saving…";
+
+      save.textContent =
+        "Saving…";
     }
 
-    setStatus("Updating Voice AI provider…");
+    setStatus(
+      "Updating Voice AI provider…"
+    );
 
-    const { data, error } = await db.rpc(
+    const {
+      data,
+      error
+    } = await db.rpc(
       "admin_set_voice_agent_provider",
       {
-        p_agent_id: currentAgent.agent_id,
-        p_provider_key: providerKey
+        p_agent_id:
+          currentAgent.agent_id,
+
+        p_provider_key:
+          selected.value
       }
     );
 
     if (error) {
-      console.error("GLIME Voice Provider save:", error);
+
+      console.error(
+        "GLIME Voice Provider save:",
+        error
+      );
+
       setStatus(
-        error.message || "Unable to update provider."
+        error.message ||
+        "Unable to update provider."
       );
 
       if (save) {
+
         save.disabled = false;
-        save.textContent = "Save Provider";
+
+        save.textContent =
+          "Save Provider";
       }
 
       return;
     }
 
-    currentAgent = data;
+    currentAgent =
+      Array.isArray(data)
+        ? data[0]
+        : data;
 
-    const current = document.getElementById("glimeVpCurrent");
+    const current =
+      document.getElementById(
+        "glimeVpCurrent"
+      );
 
     if (current) {
+
       current.textContent =
-        PROVIDER_META[providerKey]?.name || providerKey;
+        PROVIDER_META[
+          selected.value
+        ]?.name ||
+        selected.value;
     }
 
-    setStatus("Provider updated successfully.");
+    setStatus(
+      "Provider updated successfully."
+    );
 
     if (save) {
+
+      save.textContent =
+        "Saved ✓";
+
       save.disabled = true;
-      save.textContent = "Saved ✓";
     }
   }
 
-  function setStatus(message) {
-    const el = document.getElementById("glimeVpStatus");
-    if (el) el.textContent = message;
-  }
+  /* ---------------------------------
+     ADMIN HOOKS
+  --------------------------------- */
 
-  /*
-   * Try to detect client changes without modifying admin.html.
-   *
-   * Existing admin.html can expose client information in several ways.
-   * The add-on observes DOM changes and retries automatically.
-   */
-  function detectClient() {
-    const clientId = getClientId();
+  function attachAdminHooks() {
 
-    if (clientId && clientId !== currentClientId) {
-      loadClientVoiceAgent(clientId);
+    const fetchBtn =
+      document.getElementById(
+        "fetchBtn"
+      );
+
+    if (
+      fetchBtn &&
+      !fetchBtn.dataset
+        .glimeVoiceProviderHooked
+    ) {
+
+      fetchBtn.dataset
+        .glimeVoiceProviderHooked =
+        "true";
+
+      fetchBtn.addEventListener(
+        "click",
+        () => {
+
+          /*
+           * Existing admin.html
+           * fetchClient() remains untouched.
+           *
+           * We wait for it to finish,
+           * then load Voice AI config.
+           */
+          setTimeout(() => {
+
+            const email =
+              document.getElementById(
+                "clientEmail"
+              )?.value || "";
+
+            loadClientByEmail(
+              email
+            );
+
+          }, 700);
+
+        }
+      );
+    }
+
+    const logoutBtn =
+      document.getElementById(
+        "logoutBtn"
+      );
+
+    if (
+      logoutBtn &&
+      !logoutBtn.dataset
+        .glimeVoiceProviderHooked
+    ) {
+
+      logoutBtn.dataset
+        .glimeVoiceProviderHooked =
+        "true";
+
+      logoutBtn.addEventListener(
+        "click",
+        () => {
+
+          currentAgent =
+            null;
+
+          lastClientEmail =
+            "";
+
+          setVisible(false);
+
+        }
+      );
     }
   }
 
-  function observeAdminPage() {
-    const observer = new MutationObserver(() => {
-      detectClient();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true
-    });
-
-    setInterval(detectClient, 1200);
-  }
+  /* ---------------------------------
+     INIT
+  --------------------------------- */
 
   async function init() {
+
     if (!window.supabase) {
+
       console.error(
-        "GLIME Voice Provider Add-on: Supabase client library not loaded."
+        "GLIME Voice Provider: Supabase client unavailable."
       );
+
       return;
     }
 
     injectStyles();
-    renderShell();
-    await loadProviders();
 
-    detectClient();
-    observeAdminPage();
+    renderShell();
+
+    attachAdminHooks();
 
     /*
-     * Public helper so the existing admin page can explicitly notify
-     * this addon when a client has been fetched.
+     * NEVER show provider card
+     * on login screen.
+     */
+    setVisible(false);
+
+    /*
+     * If already logged in,
+     * load existing client if available.
+     */
+    if (isLoggedIn()) {
+
+      const email =
+        document.getElementById(
+          "clientEmail"
+        )?.value || "";
+
+      if (email) {
+
+        await loadProviders();
+
+        await loadClientByEmail(
+          email
+        );
+      }
+    }
+
+    /*
+     * Watch the existing admin UI.
      *
-     * Example:
-     * window.GLIMEVoiceProviderAdmin.setClient("GLM-0001");
+     * No admin.html replacement.
+     */
+    const observer =
+      new MutationObserver(() => {
+
+        attachAdminHooks();
+
+        if (!isLoggedIn()) {
+
+          setVisible(false);
+
+          return;
+        }
+
+        const email =
+          document.getElementById(
+            "clientEmail"
+          )?.value || "";
+
+        if (
+          email &&
+          email !== lastClientEmail
+        ) {
+
+          lastClientEmail =
+            email;
+
+          loadProviders();
+
+          loadClientByEmail(
+            email
+          );
+        }
+
+      });
+
+    observer.observe(
+      document.body,
+      {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: [
+          "style",
+          "class"
+        ]
+      }
+    );
+
+    /*
+     * Public helper.
      */
     window.GLIMEVoiceProviderAdmin = {
-      setClient: function (clientId) {
-        if (clientId) {
-          loadClientVoiceAgent(String(clientId).trim());
-        }
+
+      setClientEmail: (
+        email
+      ) => {
+        loadClientByEmail(
+          email
+        );
       },
 
-      reload: function () {
-        detectClient();
+      reload: () => {
+
+        const email =
+          document.getElementById(
+            "clientEmail"
+          )?.value || "";
+
+        loadProviders();
+
+        loadClientByEmail(
+          email
+        );
       }
+
     };
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      init
+    );
+
   } else {
+
     init();
+
   }
+
 })();
