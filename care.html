@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GLIME CARE</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="stylesheet" href="care.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <img src="glime_logo_clean.svg" alt="GLIME">
+    <span>CARE</span>
+  </a>
+  <a href="dashboard.html" class="back">← Dashboard</a>
+</header>
+
+<main>
+<section class="hero">
+  <div>
+    <p class="eyebrow">GLIME CARE</p>
+    <h1>Your AI Care Control Center</h1>
+    <p>Manage permissions, actions, tasks, notes and connected services from one secure place.</p>
+  </div>
+  <div id="profileBadge" class="badge">Checking access…</div>
+</section>
+
+<div id="error" class="alert error hidden"></div>
+
+<section class="stats">
+  <article><span>Pending</span><strong id="pendingCount">0</strong></article>
+  <article><span>Permissions</span><strong id="permissionCount">0</strong></article>
+  <article><span>Integrations</span><strong id="integrationCount">0</strong></article>
+  <article><span>Tasks</span><strong id="taskCount">0</strong></article>
+</section>
+
+<section class="grid">
+  <article class="card">
+    <div class="cardHead"><h2>Permissions</h2><span class="muted">Your CARE controls</span></div>
+    <div id="permissions" class="list"><div class="empty">Loading…</div></div>
+  </article>
+
+  <article class="card">
+    <div class="cardHead"><h2>Pending Actions</h2><span class="muted">Requires your attention</span></div>
+    <div id="pending" class="list"><div class="empty">Loading…</div></div>
+  </article>
+
+  <article class="card">
+    <div class="cardHead"><h2>Tasks</h2><span class="muted">Care coordination</span></div>
+    <div id="tasks" class="list"><div class="empty">Loading…</div></div>
+  </article>
+
+  <article class="card">
+    <div class="cardHead"><h2>Notes</h2><span class="muted">Private CARE notes</span></div>
+    <div id="notes" class="list"><div class="empty">Loading…</div></div>
+  </article>
+
+  <article class="card full">
+    <div class="cardHead"><h2>Recent Activity</h2><span class="muted">Latest CARE actions</span></div>
+    <div id="recent" class="list"><div class="empty">Loading…</div></div>
+  </article>
+
+  <article class="card">
+    <div class="cardHead"><h2>Connected Services</h2><span class="muted">OAuth/device connections</span></div>
+    <div id="integrations" class="list"><div class="empty">Loading…</div></div>
+  </article>
+</section>
+</main>
+
+<script src="care.js"></script>
+</body>
+</html>
