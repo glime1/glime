@@ -1,15 +1,222 @@
 *{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#07111f;color:#eef4ff;min-height:100vh}
-.voice-app{min-height:100vh;display:grid;place-items:center;padding:20px}
-.voice-card{width:min(760px,100%);min-height:650px;border:1px solid rgba(255,255,255,.1);border-radius:28px;background:linear-gradient(180deg,#101d31,#091321);box-shadow:0 30px 80px rgba(0,0,0,.35);padding:30px;display:flex;flex-direction:column;align-items:center}
-.brand{font-weight:800;letter-spacing:.12em;font-size:14px;align-self:flex-start}.brand span{font-weight:500;opacity:.55;margin-left:8px}
-.status{margin-top:22px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.06);font-size:13px;color:#aebbd0}
-.orb{width:150px;height:150px;border-radius:50%;margin:34px 0 18px;display:grid;place-items:center;background:radial-gradient(circle,rgba(110,231,183,.28),rgba(59,130,246,.08) 55%,transparent 70%);box-shadow:0 0 70px rgba(96,165,250,.12)}
-.orb-core{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:#14243a;border:1px solid rgba(255,255,255,.12);font-size:34px}
-.orb.listening{animation:pulse 1.3s infinite}.orb.speaking{animation:pulse .8s infinite}
-@keyframes pulse{50%{transform:scale(1.08);box-shadow:0 0 90px rgba(110,231,183,.25)}}
-h1{margin:0;font-size:30px}.voice-card>p:not(.hint){margin:8px 0 20px;color:#9eacc1;text-align:center}
-.conversation{width:100%;height:300px;overflow:auto;padding:14px;border-radius:18px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.07)}
-.msg{max-width:86%;padding:11px 14px;border-radius:15px;margin:9px 0;line-height:1.45;font-size:14px;white-space:pre-wrap}.msg.user{margin-left:auto;background:#183553}.msg.ai{margin-right:auto;background:#17251f}
-.controls{display:flex;gap:12px;margin-top:20px;width:100%}button{flex:1;border:0;border-radius:14px;padding:14px 18px;font-size:15px;font-weight:700;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:#eaf4ff;color:#08111f}.secondary{background:#18263a;color:#dce7f5}.hint{font-size:12px;color:#718096;margin-top:16px}
-@media(max-width:600px){.voice-card{padding:20px;min-height:620px}.orb{margin-top:25px}.conversation{height:250px}}
+
+:root{
+  --glime-bg:#050b10;
+  --glime-card:#0a151c;
+  --glime-card-2:#0d1b23;
+  --glime-mint:#50f5a8;
+  --glime-cyan:#52e8ff;
+  --glime-text:#f4fbfd;
+  --glime-muted:#9cabb9;
+}
+
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 50% 15%,rgba(80,245,168,.07),transparent 32%),
+    var(--glime-bg);
+  color:var(--glime-text);
+  min-height:100vh;
+}
+
+.voice-app{
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:20px;
+}
+
+.voice-card{
+  width:min(760px,100%);
+  min-height:650px;
+  border:1px solid rgba(82,232,255,.16);
+  border-radius:28px;
+  background:linear-gradient(180deg,var(--glime-card-2),var(--glime-card));
+  box-shadow:
+    0 30px 80px rgba(0,0,0,.45),
+    0 0 45px rgba(80,245,168,.035);
+  padding:30px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.brand{
+  font-weight:800;
+  letter-spacing:.12em;
+  font-size:14px;
+  align-self:flex-start;
+  color:var(--glime-mint);
+}
+
+.brand span{
+  font-weight:500;
+  opacity:.7;
+  margin-left:8px;
+  color:var(--glime-cyan);
+}
+
+.status{
+  margin-top:22px;
+  padding:8px 14px;
+  border-radius:999px;
+  background:rgba(80,245,168,.07);
+  border:1px solid rgba(80,245,168,.15);
+  font-size:13px;
+  color:var(--glime-muted);
+}
+
+.orb{
+  width:150px;
+  height:150px;
+  border-radius:50%;
+  margin:34px 0 18px;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(
+      circle,
+      rgba(80,245,168,.30),
+      rgba(82,232,255,.12) 55%,
+      transparent 70%
+    );
+  box-shadow:
+    0 0 70px rgba(80,245,168,.12),
+    0 0 110px rgba(82,232,255,.06);
+}
+
+.orb-core{
+  width:92px;
+  height:92px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#0b1921;
+  border:1px solid rgba(82,232,255,.22);
+  box-shadow:inset 0 0 25px rgba(80,245,168,.05);
+  font-size:34px;
+}
+
+.orb.listening{animation:pulse 1.3s infinite}
+.orb.speaking{animation:pulse .8s infinite}
+
+@keyframes pulse{
+  50%{
+    transform:scale(1.08);
+    box-shadow:
+      0 0 90px rgba(80,245,168,.25),
+      0 0 130px rgba(82,232,255,.08);
+  }
+}
+
+h1{
+  margin:0;
+  font-size:30px;
+  color:var(--glime-text);
+}
+
+.voice-card>p:not(.hint){
+  margin:8px 0 20px;
+  color:var(--glime-muted);
+  text-align:center;
+}
+
+.conversation{
+  width:100%;
+  height:300px;
+  overflow:auto;
+  padding:14px;
+  border-radius:18px;
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(82,232,255,.10);
+}
+
+.msg{
+  max-width:86%;
+  padding:11px 14px;
+  border-radius:15px;
+  margin:9px 0;
+  line-height:1.45;
+  font-size:14px;
+  white-space:pre-wrap;
+}
+
+.msg.user{
+  margin-left:auto;
+  background:rgba(82,232,255,.10);
+  border:1px solid rgba(82,232,255,.10);
+  color:var(--glime-text);
+}
+
+.msg.ai{
+  margin-right:auto;
+  background:rgba(80,245,168,.09);
+  border:1px solid rgba(80,245,168,.09);
+  color:var(--glime-text);
+}
+
+.controls{
+  display:flex;
+  gap:12px;
+  margin-top:20px;
+  width:100%;
+}
+
+button{
+  flex:1;
+  border:0;
+  border-radius:14px;
+  padding:14px 18px;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.primary{
+  background:linear-gradient(135deg,var(--glime-mint),var(--glime-cyan));
+  color:#04100d;
+  box-shadow:0 8px 28px rgba(80,245,168,.12);
+}
+
+.primary:hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:0 10px 34px rgba(80,245,168,.18);
+}
+
+.secondary{
+  background:#0d1b23;
+  color:var(--glime-text);
+  border:1px solid rgba(82,232,255,.14);
+}
+
+.secondary:hover:not(:disabled){
+  border-color:rgba(82,232,255,.28);
+}
+
+.hint{
+  font-size:12px;
+  color:var(--glime-muted);
+  margin-top:16px;
+}
+
+@media(max-width:600px){
+  .voice-card{
+    padding:20px;
+    min-height:620px;
+  }
+
+  .orb{
+    margin-top:25px;
+  }
+
+  .conversation{
+    height:250px;
+  }
+}
