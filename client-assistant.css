@@ -546,3 +546,297 @@ textarea:focus {
     line-height: 1.6;
   }
 }
+
+/* =====================================================
+   BUSINESS QUICK REPORT
+===================================================== */
+
+.report-card{
+  width:min(100%,820px);
+  padding:18px;
+  border:1px solid rgba(82,232,255,.14);
+  border-radius:18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(17,31,46,.98),
+      rgba(9,18,28,.98)
+    );
+
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.22);
+}
+
+
+/* TITLE */
+
+.report-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  margin-bottom:15px;
+
+  color:#f4fbfd;
+
+  font-size:15px;
+}
+
+
+.report-spark{
+  display:grid;
+  place-items:center;
+
+  width:34px;
+  height:34px;
+
+  border:1px solid rgba(82,232,255,.2);
+
+  border-radius:10px;
+
+  color:var(--cyan);
+}
+
+
+/* METRICS GRID */
+
+.report-grid{
+  display:grid;
+
+  grid-template-columns:
+    repeat(4,1fr);
+
+  border:1px solid var(--line);
+
+  border-radius:15px;
+
+  overflow:hidden;
+}
+
+
+.report-metric{
+  min-width:0;
+
+  padding:15px 10px;
+
+  text-align:center;
+
+  border-right:
+    1px solid var(--line);
+}
+
+
+.report-metric:last-child{
+  border-right:0;
+}
+
+
+/* ICON */
+
+.report-icon{
+  min-height:25px;
+
+  font-size:18px;
+}
+
+
+/* VALUE */
+
+.report-value{
+  margin-top:3px;
+
+  color:var(--green);
+
+  font-size:
+    clamp(18px,3vw,25px);
+
+  font-weight:800;
+
+  letter-spacing:-.03em;
+
+  overflow-wrap:anywhere;
+}
+
+
+/* NAME */
+
+.report-name{
+  margin-top:2px;
+
+  color:#e5edf2;
+
+  font-size:10px;
+
+  font-weight:700;
+}
+
+
+/* SUBTEXT */
+
+.report-sub{
+  margin-top:2px;
+
+  color:#687887;
+
+  font-family:
+    "DM Mono",
+    monospace;
+
+  font-size:8px;
+}
+
+
+/* INSIGHTS */
+
+.report-section{
+  margin-top:18px;
+
+  padding-top:16px;
+
+  border-top:
+    1px solid var(--line);
+}
+
+
+.report-section-title{
+  margin-bottom:8px;
+
+  color:#f4fbfd;
+
+  font-size:13px;
+
+  font-weight:800;
+}
+
+
+.report-section ul{
+  margin:0;
+
+  padding-left:19px;
+
+  color:#c0ccd5;
+
+  font-size:11px;
+
+  line-height:1.75;
+}
+
+
+/* DATA NOTE */
+
+.report-note{
+  margin-top:15px;
+
+  color:#748392;
+
+  font-family:
+    "DM Mono",
+    monospace;
+
+  font-size:8px;
+
+  line-height:1.6;
+}
+
+
+/* ACTION BUTTONS */
+
+.report-actions{
+  display:flex;
+
+  flex-wrap:wrap;
+
+  gap:8px;
+
+  margin-top:15px;
+}
+
+
+.report-actions button{
+  padding:8px 11px;
+
+  border:
+    1px solid
+    rgba(82,232,255,.18);
+
+  border-radius:10px;
+
+  background:
+    rgba(82,232,255,.035);
+
+  color:#a8b7c3;
+
+  cursor:pointer;
+
+  font-size:9px;
+}
+
+
+.report-actions button:hover{
+
+  border-color:
+    rgba(82,232,255,.35);
+
+  color:var(--cyan);
+
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media(max-width:560px){
+
+  .report-card{
+    padding:13px;
+  }
+
+
+  .report-grid{
+
+    grid-template-columns:
+      repeat(2,1fr);
+
+  }
+
+
+  .report-metric:nth-child(2){
+
+    border-right:0;
+
+  }
+
+
+  .report-metric:nth-child(-n+2){
+
+    border-bottom:
+      1px solid var(--line);
+
+  }
+
+
+  .report-metric{
+
+    padding:13px 8px;
+
+  }
+
+
+  .report-value{
+
+    font-size:18px;
+
+  }
+
+
+  .report-actions button{
+
+    flex:
+      1 1
+      calc(50% - 8px);
+
+  }
+
+  }
