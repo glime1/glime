@@ -7,11 +7,18 @@ const $ = (id) => document.getElementById(id);
 
 let clientId = null;
 let agentId = null;
+
 let incomingEnabled = false;
+let outboundEnabled = false;
+let agentPhoneNumber = "";
 
 function state(text, cls = "") {
-  $("saveState").textContent = text;
-  $("saveState").className = "save-state " + cls;
+  const el = $("saveState");
+
+  if (!el) return;
+
+  el.textContent = text;
+  el.className = "save-state " + cls;
 }
 
 async function getClient() {
@@ -61,16 +68,27 @@ async function loadAgent() {
   agentId = data.id;
 
   incomingEnabled = data.incoming_enabled === true;
+  outboundEnabled = data.outbound_enabled === true;
+  agentPhoneNumber = data.phone_number || "";
 
-  renderToggle();
+  renderIncomingToggle();
+  renderOutboundState();
 
-  $("rules").value = data.instructions || "";
+  if ($("rules")) {
+    $("rules").value = data.instructions || "";
+  }
 
   state("Voice AI ready", "ok");
 }
 
-function renderToggle() {
+/* -----------------------------
+   INCOMING CALL CONTROL
+----------------------------- */
+
+function renderIncomingToggle() {
   const button = $("incomingToggle");
+
+  if (!button) return;
 
   button.classList.toggle("on", incomingEnabled);
   button.classList.toggle("off", !incomingEnabled);
@@ -80,8 +98,10 @@ function renderToggle() {
     String(incomingEnabled)
   );
 
-  $("incomingLabel").textContent =
-    incomingEnabled ? "ON" : "OFF";
+  if ($("incomingLabel")) {
+    $("incomingLabel").textContent =
+      incomingEnabled ? "ON" : "OFF";
+  }
 }
 
 async function setIncoming() {
@@ -91,9 +111,13 @@ async function setIncoming() {
 
   incomingEnabled = next;
 
-  renderToggle();
+  renderIncomingToggle();
 
-  $("incomingToggle").disabled = true;
+  const button = $("incomingToggle");
+
+  if (button) {
+    button.disabled = true;
+  }
 
   state("Saving incoming call setting…");
 
@@ -104,12 +128,14 @@ async function setIncoming() {
     })
     .eq("id", agentId);
 
-  $("incomingToggle").disabled = false;
+  if (button) {
+    button.disabled = false;
+  }
 
   if (error) {
     incomingEnabled = !next;
 
-    renderToggle();
+    renderIncomingToggle();
 
     state(error.message, "error");
 
@@ -124,15 +150,117 @@ async function setIncoming() {
   );
 }
 
-async function saveRules() {
+/* -----------------------------
+   OUTBOUND CALL CONTROL
+----------------------------- */
+
+function renderOutboundState() {
+  /*
+   * Current HTML may not yet have a dedicated outbound toggle.
+   *
+   * इसलिए यह function existing UI को break नहीं करता.
+   */
+
+  const button = $("outboundToggle");
+
+  if (button) {
+    button.classList.toggle("on", outboundEnabled);
+    button.classList.toggle("off", !outboundEnabled);
+
+    button.setAttribute(
+      "aria-pressed",
+      String(outboundEnabled)
+    );
+  }
+
+  if ($("outboundLabel")) {
+    $("outboundLabel").textContent =
+      outboundEnabled ? "ON" : "OFF";
+  }
+
+  /*
+   * Start button को भी outbound permission के अनुसार
+   * enable/disable किया जाता है.
+   */
+
+  const startButton = $("startCall");
+
+  if (startButton) {
+    startButton.disabled = !outboundEnabled;
+  }
+
+  if ($("outboundStatus")) {
+    $("outboundStatus").textContent =
+      outboundEnabled
+        ? "Outbound calling is ON."
+        : "Outbound calling is OFF.";
+  }
+}
+
+async function setOutbound() {
   if (!agentId) return;
 
-  $("rulesStatus").textContent = "Saving…";
+  const next = !outboundEnabled;
+
+  outboundEnabled = next;
+
+  renderOutboundState();
+
+  const button = $("outboundToggle");
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  state("Saving outbound call setting…");
 
   const { error } = await db
     .from("voice_agents")
     .update({
-      instructions: $("rules").value.trim()
+      outbound_enabled: next
+    })
+    .eq("id", agentId);
+
+  if (button) {
+    button.disabled = false;
+  }
+
+  if (error) {
+    outboundEnabled = !next;
+
+    renderOutboundState();
+
+    state(error.message, "error");
+
+    return;
+  }
+
+  state(
+    next
+      ? "Outbound calls are ON"
+      : "Outbound calls are OFF",
+    "ok"
+  );
+}
+
+/* -----------------------------
+   SAVE AI RULES
+----------------------------- */
+
+async function saveRules() {
+  if (!agentId) return;
+
+  const rules = $("rules");
+
+  if (!rules) return;
+
+  $("rulesStatus").textContent = "Saving…";
+  $("rulesStatus").className = "inline-status";
+
+  const { error } = await db
+    .from("voice_agents")
+    .update({
+      instructions: rules.value.trim()
     })
     .eq("id", agentId);
 
@@ -149,9 +277,28 @@ async function saveRules() {
   }
 }
 
+/* -----------------------------
+   SECURE OUTBOUND REQUEST
+----------------------------- */
+
 async function startOutboundCall() {
-  const phone = $("phone").value.trim();
-  const instructions = $("instructions").value.trim();
+  /*
+   * HARD SAFETY CHECK
+   *
+   * Outbound OFF होने पर किसी भी हालत में
+   * Edge Function को request नहीं भेजेंगे.
+   */
+
+  if (!outboundEnabled) {
+    $("callStatus").textContent =
+      "Outbound Calls OFF हैं. पहले Outbound Calls को ON करें.";
+
+    return;
+  }
+
+  const phone = $("phone")?.value.trim() || "";
+  const instructions =
+    $("instructions")?.value.trim() || "";
 
   if (!/^\+?[0-9][0-9\s-]{7,19}$/.test(phone)) {
     $("callStatus").textContent =
@@ -167,41 +314,169 @@ async function startOutboundCall() {
     return;
   }
 
-  $("startCall").disabled = true;
+  if (instructions.length > 8000) {
+    $("callStatus").textContent =
+      "Instructions 8000 characters se kam honi chahiye.";
+
+    return;
+  }
+
+  const button = $("startCall");
+
+  if (button) {
+    button.disabled = true;
+  }
 
   $("callStatus").textContent =
-    "Call request prepare ho rahi hai…";
+    "Secure outbound call request bheji ja rahi hai…";
 
-  /*
-   * IMPORTANT:
-   * Provider ko direct browser se call nahi kiya jayega.
-   *
-   * Secure outbound-call Edge Function next step mein connect hogi.
-   *
-   * Automatic calling intentionally disabled hai.
-   */
+  try {
+    /*
+     * Current logged-in session.
+     *
+     * Secret/API key browser mein expose nahi hogi.
+     */
 
-  $("callStatus").textContent =
-    "Number aur instructions ready hain. Secure outbound calling backend connect hone ke baad yahin se call start hogi.";
+    const {
+      data: { session },
+      error: sessionError
+    } = await db.auth.getSession();
 
-  $("startCall").disabled = false;
+    if (sessionError) {
+      throw sessionError;
+    }
+
+    if (!session) {
+      throw new Error(
+        "Session expired. Please login again."
+      );
+    }
+
+    /*
+     * Secure Supabase Edge Function.
+     *
+     * IMPORTANT:
+     * यह अभी phone provider को directly call नहीं करती.
+     * यह केवल voice_outbound_requests में request बनाती है.
+     */
+
+    const {
+      data,
+      error
+    } = await db.functions.invoke(
+      "voice-outbound-create",
+      {
+        body: {
+          phone,
+          instructions
+        }
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.success) {
+      throw new Error(
+        data?.error ||
+        "Outbound call request create nahi ho saki."
+      );
+    }
+
+    $("callStatus").textContent =
+      "Outbound call request successfully create ho gayi.";
+
+    state(
+      "Outbound call request created.",
+      "ok"
+    );
+
+    /*
+     * Provider अभी connected नहीं है,
+     * इसलिए यहाँ fake "Call started" message नहीं दिखाएँगे.
+     */
+
+    if (data.status === "requested") {
+      $("callStatus").textContent =
+        "Request create ho gayi. Phone provider connect hone ke baad actual call start hogi.";
+    }
+
+  } catch (error) {
+    console.error(
+      "Outbound call error:",
+      error
+    );
+
+    $("callStatus").textContent =
+      error?.message ||
+      "Outbound call request failed.";
+
+    state(
+      "Outbound request failed.",
+      "error"
+    );
+
+  } finally {
+    /*
+     * अगर outbound अभी भी ON है तो button वापस enable करें.
+     * OFF हो चुका हो तो disabled रहेगा.
+     */
+
+    if (button) {
+      button.disabled = !outboundEnabled;
+    }
+  }
 }
 
-$("incomingToggle").addEventListener(
-  "click",
-  setIncoming
-);
+/* -----------------------------
+   EVENT LISTENERS
+----------------------------- */
 
-$("saveRules").addEventListener(
-  "click",
-  saveRules
-);
+if ($("incomingToggle")) {
+  $("incomingToggle").addEventListener(
+    "click",
+    setIncoming
+  );
+}
 
-$("startCall").addEventListener(
-  "click",
-  startOutboundCall
-);
+if ($("outboundToggle")) {
+  $("outboundToggle").addEventListener(
+    "click",
+    setOutbound
+  );
+}
+
+if ($("saveRules")) {
+  $("saveRules").addEventListener(
+    "click",
+    saveRules
+  );
+}
+
+if ($("startCall")) {
+  $("startCall").addEventListener(
+    "click",
+    startOutboundCall
+  );
+}
+
+/* -----------------------------
+   INITIAL LOAD
+----------------------------- */
 
 loadAgent().catch((error) => {
-  state(error.message, "error");
+  console.error(
+    "Voice Control load error:",
+    error
+  );
+
+  state(
+    error.message,
+    "error"
+  );
+
+  if ($("startCall")) {
+    $("startCall").disabled = true;
+  }
 });
