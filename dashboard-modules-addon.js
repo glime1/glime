@@ -89,7 +89,7 @@
             name: 'Leads',
             icon: '👥',
             href: 'leads.html'
-        }
+        },
 
         client_data_assistant: {
             name: 'Client Data Assistant',
