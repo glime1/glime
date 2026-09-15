@@ -91,6 +91,12 @@
             href: 'leads.html'
         }
 
+        client_data_assistant: {
+            name: 'Client Data Assistant',
+            icon: '🧠',
+            href: 'client-assistant.html'
+        }
+
     };
 
 
