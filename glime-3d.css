@@ -1,0 +1,295 @@
+/* =========================================================
+   GLIME 3D HERO ADD-ON
+   Self-contained visual layer for index.html
+   No external library required.
+========================================================= */
+
+.glime-3d-addon {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 390px;
+  margin-top: 22px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(184, 222, 234, 0.13);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(82, 232, 255, 0.10), transparent 34%),
+    radial-gradient(circle at 20% 20%, rgba(166, 140, 255, 0.08), transparent 30%),
+    rgba(3, 10, 15, 0.55);
+  perspective: 900px;
+}
+
+.glime-3d-addon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(82, 232, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(82, 232, 255, 0.035) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at center, black 20%, transparent 78%);
+  pointer-events: none;
+}
+
+.glime-3d-addon::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(82, 232, 255, 0.06);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.glime-3d-stage {
+  position: relative;
+  width: 100%;
+  height: 390px;
+  transform-style: preserve-3d;
+  transition: transform 0.35s ease-out;
+}
+
+.glime-3d-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 230px;
+  height: 230px;
+  transform: translate(-50%, -50%) rotateX(67deg) rotateZ(0deg);
+  transform-style: preserve-3d;
+  border: 1px solid rgba(82, 232, 255, 0.20);
+  border-radius: 50%;
+  box-shadow: 0 0 35px rgba(82, 232, 255, 0.07);
+  animation: glime3dRing 12s linear infinite;
+}
+
+.glime-3d-ring.ring-two {
+  width: 310px;
+  height: 170px;
+  transform: translate(-50%, -50%) rotateX(67deg) rotateZ(55deg);
+  border-color: rgba(166, 140, 255, 0.16);
+  animation-duration: 16s;
+  animation-direction: reverse;
+}
+
+.glime-3d-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 108px;
+  height: 108px;
+  transform: translate(-50%, -50%) translateZ(65px);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(82, 232, 255, 0.45);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.15), transparent 22%),
+    linear-gradient(145deg, rgba(22, 52, 66, 0.98), rgba(6, 19, 27, 0.98));
+  box-shadow:
+    0 0 0 8px rgba(82, 232, 255, 0.035),
+    0 0 45px rgba(82, 232, 255, 0.22);
+  color: #f4fbfd;
+  font-family: "DM Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  animation: glime3dCore 3.8s ease-in-out infinite;
+}
+
+.glime-3d-core span {
+  display: block;
+  font-size: 0.58rem;
+  margin-top: 3px;
+  color: #52e8ff;
+  letter-spacing: 0.12em;
+}
+
+.glime-3d-node {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 88px;
+  min-height: 54px;
+  padding: 9px 8px;
+  display: grid;
+  place-items: center;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--angle))
+    translateY(calc(var(--distance) * -1))
+    rotate(calc(var(--angle) * -1))
+    translateZ(var(--depth));
+  transform-style: preserve-3d;
+  border: 1px solid rgba(184, 222, 234, 0.16);
+  border-radius: 13px;
+  background: rgba(10, 23, 32, 0.92);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.20);
+  color: #c9d7de;
+  font-family: "Manrope", Arial, sans-serif;
+  font-size: 0.63rem;
+  font-weight: 800;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition:
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease;
+  animation: glime3dNodeFloat 4.5s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.glime-3d-node:hover {
+  color: #f4fbfd;
+  border-color: rgba(82, 232, 255, 0.42);
+  box-shadow: 0 0 28px rgba(82, 232, 255, 0.12);
+}
+
+.glime-3d-node small {
+  display: block;
+  margin-top: 3px;
+  color: #6f818c;
+  font-family: "DM Mono", monospace;
+  font-size: 0.48rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.glime-3d-line {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--length);
+  height: 1px;
+  transform-origin: left center;
+  transform:
+    translateY(-50%)
+    rotate(var(--line-angle))
+    translateZ(30px);
+  background: linear-gradient(
+    90deg,
+    rgba(82, 232, 255, 0.42),
+    rgba(82, 232, 255, 0.03)
+  );
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.glime-3d-status {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border: 1px solid rgba(184, 222, 234, 0.10);
+  border-radius: 999px;
+  background: rgba(5, 13, 18, 0.72);
+  color: #9cabb9;
+  font-family: "DM Mono", monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.glime-3d-status i {
+  width: 6px;
+  height: 6px;
+  display: block;
+  border-radius: 50%;
+  background: #50f5a8;
+  box-shadow: 0 0 10px rgba(80, 245, 168, 0.65);
+  animation: glime3dPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes glime3dRing {
+  from { transform: translate(-50%, -50%) rotateX(67deg) rotateZ(0deg); }
+  to   { transform: translate(-50%, -50%) rotateX(67deg) rotateZ(360deg); }
+}
+
+@keyframes glime3dCore {
+  0%, 100% { transform: translate(-50%, -50%) translateZ(65px) scale(1); }
+  50%      { transform: translate(-50%, -50%) translateZ(82px) scale(1.035); }
+}
+
+@keyframes glime3dNodeFloat {
+  0%, 100% {
+    margin-top: 0;
+  }
+  50% {
+    margin-top: -5px;
+  }
+}
+
+@keyframes glime3dPulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.85); }
+  50%      { opacity: 1; transform: scale(1.15); }
+}
+
+@media (max-width: 700px) {
+  .glime-3d-addon {
+    min-height: 330px;
+    border-radius: 18px;
+  }
+
+  .glime-3d-stage {
+    height: 330px;
+  }
+
+  .glime-3d-ring {
+    width: 180px;
+    height: 180px;
+  }
+
+  .glime-3d-ring.ring-two {
+    width: 245px;
+    height: 135px;
+  }
+
+  .glime-3d-core {
+    width: 82px;
+    height: 82px;
+    transform: translate(-50%, -50%) translateZ(45px);
+    font-size: 0.62rem;
+  }
+
+  .glime-3d-node {
+    width: 72px;
+    min-height: 46px;
+    padding: 7px 5px;
+    font-size: 0.53rem;
+  }
+
+  .glime-3d-node small {
+    font-size: 0.42rem;
+  }
+
+  .glime-3d-status {
+    left: 10px;
+    bottom: 10px;
+    font-size: 0.46rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glime-3d-ring,
+  .glime-3d-core,
+  .glime-3d-node,
+  .glime-3d-status i {
+    animation: none;
+  }
+
+  .glime-3d-stage {
+    transition: none;
+  }
+}
