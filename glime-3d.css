@@ -1,295 +1,1196 @@
 /* =========================================================
-   GLIME 3D HERO ADD-ON
-   Self-contained visual layer for index.html
-   No external library required.
-========================================================= */
+   GLIME 3D — BUSINESS OPERATING LAYER
+   Visual layer for glime-3d.js
+   No external libraries
+   ========================================================= */
 
 .glime-3d-addon {
+  --g3d-cyan: #52e8ff;
+  --g3d-green: #50f5a8;
+  --g3d-purple: #a68cff;
+  --g3d-text: #f4fbff;
+  --g3d-muted: #8ea5b3;
+  --g3d-line: rgba(82, 232, 255, .24);
+  --g3d-panel: rgba(8, 18, 25, .88);
+
   position: relative;
-  z-index: 1;
   width: 100%;
-  min-height: 390px;
-  margin-top: 22px;
+  margin: 34px 0;
+  padding: 28px;
+  border: 1px solid rgba(82, 232, 255, .16);
+  border-radius: 28px;
   overflow: hidden;
-  isolation: isolate;
-  border: 1px solid rgba(184, 222, 234, 0.13);
-  border-radius: 22px;
   background:
-    radial-gradient(circle at 50% 45%, rgba(82, 232, 255, 0.10), transparent 34%),
-    radial-gradient(circle at 20% 20%, rgba(166, 140, 255, 0.08), transparent 30%),
-    rgba(3, 10, 15, 0.55);
-  perspective: 900px;
+    radial-gradient(circle at 50% 46%, rgba(82, 232, 255, .10), transparent 25%),
+    radial-gradient(circle at 18% 20%, rgba(166, 140, 255, .07), transparent 28%),
+    linear-gradient(145deg, rgba(8, 19, 27, .98), rgba(5, 12, 18, .98));
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, .34),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  color: var(--g3d-text);
+  isolation: isolate;
 }
 
-.glime-3d-addon::before {
+.glime-3d-addon *,
+.glime-3d-addon *::before,
+.glime-3d-addon *::after {
+  box-sizing: border-box;
+}
+
+.glime-3d-header {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.glime-3d-eyebrow,
+.glime-context-label,
+.glime-example-label,
+.glime-processing-head > span:first-child {
+  display: block;
+  margin-bottom: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  line-height: 1.3;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--g3d-cyan);
+}
+
+.glime-3d-header h2 {
+  max-width: 720px;
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: clamp(22px, 3vw, 34px);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+}
+
+.glime-3d-header p {
+  max-width: 680px;
+  margin: 12px 0 0;
+  color: var(--g3d-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.glime-3d-live {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid rgba(80,245,168,.18);
+  border-radius: 999px;
+  background: rgba(80,245,168,.05);
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  letter-spacing: .12em;
+  color: var(--g3d-green);
+}
+
+.glime-3d-live-dot,
+.glime-processing-state i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--g3d-green);
+  box-shadow: 0 0 14px rgba(80,245,168,.8);
+  animation: glimeLivePulse 1.8s ease-in-out infinite;
+}
+
+/* =========================================================
+   3D STAGE
+   ========================================================= */
+
+.glime-3d-stage {
+  --mouse-x: 0;
+  --mouse-y: 0;
+
+  position: relative;
+  width: 100%;
+  height: 560px;
+  margin-top: 4px;
+  overflow: hidden;
+  perspective: 1100px;
+  transform-style: preserve-3d;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(82,232,255,.08), transparent 30%),
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: auto, 42px 42px, 42px 42px;
+  border: 1px solid rgba(255,255,255,.045);
+}
+
+.glime-3d-stage::before {
   content: "";
   position: absolute;
   inset: 0;
+  pointer-events: none;
   background:
-    linear-gradient(rgba(82, 232, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(82, 232, 255, 0.035) 1px, transparent 1px);
-  background-size: 34px 34px;
-  mask-image: radial-gradient(circle at center, black 20%, transparent 78%);
-  pointer-events: none;
+    radial-gradient(ellipse at center, transparent 25%, rgba(3,9,14,.58) 78%),
+    linear-gradient(to bottom, transparent 70%, rgba(3,9,14,.55));
+  z-index: 2;
 }
 
-.glime-3d-addon::after {
-  content: "";
+.glime-3d-grid {
   position: absolute;
-  width: 260px;
-  height: 260px;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: rgba(82, 232, 255, 0.06);
-  filter: blur(30px);
-  pointer-events: none;
-}
-
-.glime-3d-stage {
-  position: relative;
+  bottom: -180px;
   width: 100%;
-  height: 390px;
-  transform-style: preserve-3d;
-  transition: transform 0.35s ease-out;
+  height: 380px;
+  transform:
+    translateX(-50%)
+    perspective(600px)
+    rotateX(67deg);
+  transform-origin: center top;
+  background:
+    linear-gradient(rgba(82,232,255,.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(82,232,255,.09) 1px, transparent 1px);
+  background-size: 45px 45px;
+  opacity: .34;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.glime-3d-ring {
+/* =========================================================
+   ORBITS
+   ========================================================= */
+
+.glime-3d-orbit {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 230px;
-  height: 230px;
-  transform: translate(-50%, -50%) rotateX(67deg) rotateZ(0deg);
-  transform-style: preserve-3d;
-  border: 1px solid rgba(82, 232, 255, 0.20);
+  border: 1px solid rgba(82,232,255,.13);
   border-radius: 50%;
-  box-shadow: 0 0 35px rgba(82, 232, 255, 0.07);
-  animation: glime3dRing 12s linear infinite;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  z-index: 3;
 }
 
-.glime-3d-ring.ring-two {
+.orbit-one {
   width: 310px;
-  height: 170px;
-  transform: translate(-50%, -50%) rotateX(67deg) rotateZ(55deg);
-  border-color: rgba(166, 140, 255, 0.16);
-  animation-duration: 16s;
-  animation-direction: reverse;
+  height: 310px;
+  margin: -155px 0 0 -155px;
+  transform:
+    rotateX(68deg)
+    rotateZ(-12deg)
+    translateZ(10px);
+  animation: glimeOrbitOne 16s linear infinite;
 }
+
+.orbit-two {
+  width: 455px;
+  height: 455px;
+  margin: -227.5px 0 0 -227.5px;
+  transform:
+    rotateX(67deg)
+    rotateZ(24deg)
+    translateZ(-10px);
+  border-color: rgba(166,140,255,.11);
+  animation: glimeOrbitTwo 22s linear infinite reverse;
+}
+
+.orbit-three {
+  width: 590px;
+  height: 330px;
+  margin: -165px 0 0 -295px;
+  transform:
+    rotateX(67deg)
+    rotateZ(-22deg)
+    translateZ(-18px);
+  border-color: rgba(80,245,168,.08);
+  animation: glimeOrbitThree 28s linear infinite;
+}
+
+/* =========================================================
+   CONNECTIONS
+   ========================================================= */
+
+.glime-3d-connections {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.glime-line {
+  stroke: url(#glimeFlowGradient);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 8;
+  opacity: .48;
+  filter: url(#glimeGlow);
+  animation: glimeLineFlow 3s linear infinite;
+}
+
+.line-support,
+.line-voice {
+  opacity: .62;
+}
+
+.glime-line:nth-of-type(2) { animation-delay: -.5s; }
+.glime-line:nth-of-type(3) { animation-delay: -1s; }
+.glime-line:nth-of-type(4) { animation-delay: -1.5s; }
+.glime-line:nth-of-type(5) { animation-delay: -2s; }
+.glime-line:nth-of-type(6) { animation-delay: -2.5s; }
+
+/* =========================================================
+   PARTICLES
+   ========================================================= */
+
+.glime-3d-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.glime-particle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px;
+  border-radius: 50%;
+  background: var(--g3d-cyan);
+  box-shadow:
+    0 0 8px var(--g3d-cyan),
+    0 0 20px rgba(82,232,255,.45);
+  animation-duration: 3.8s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.particle-1 { animation-name: glimeParticleSales; animation-delay: -.4s; }
+.particle-2 { animation-name: glimeParticleSupport; animation-delay: -1.4s; }
+.particle-3 { animation-name: glimeParticleMarketing; animation-delay: -2.2s; }
+.particle-4 { animation-name: glimeParticleVoice; animation-delay: -.9s; }
+.particle-5 { animation-name: glimeParticleOperations; animation-delay: -2.8s; }
+.particle-6 { animation-name: glimeParticleTasks; animation-delay: -1.8s; }
+.particle-7 { animation-name: glimeParticleIntelligence; animation-delay: -.2s; }
+.particle-8 { animation-name: glimeParticleCare; animation-delay: -3s; }
+
+/* =========================================================
+   CORE
+   ========================================================= */
 
 .glime-3d-core {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 108px;
-  height: 108px;
-  transform: translate(-50%, -50%) translateZ(65px);
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(82, 232, 255, 0.45);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.15), transparent 22%),
-    linear-gradient(145deg, rgba(22, 52, 66, 0.98), rgba(6, 19, 27, 0.98));
-  box-shadow:
-    0 0 0 8px rgba(82, 232, 255, 0.035),
-    0 0 45px rgba(82, 232, 255, 0.22);
-  color: #f4fbfd;
-  font-family: "DM Mono", monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-align: center;
-  animation: glime3dCore 3.8s ease-in-out infinite;
-}
-
-.glime-3d-core span {
-  display: block;
-  font-size: 0.58rem;
-  margin-top: 3px;
-  color: #52e8ff;
-  letter-spacing: 0.12em;
-}
-
-.glime-3d-node {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 88px;
-  min-height: 54px;
-  padding: 9px 8px;
-  display: grid;
-  place-items: center;
+  width: 190px;
+  height: 190px;
   transform:
     translate(-50%, -50%)
-    rotate(var(--angle))
-    translateY(calc(var(--distance) * -1))
-    rotate(calc(var(--angle) * -1))
-    translateZ(var(--depth));
+    translate3d(
+      calc(var(--mouse-x) * 8px),
+      calc(var(--mouse-y) * 8px),
+      55px
+    );
   transform-style: preserve-3d;
-  border: 1px solid rgba(184, 222, 234, 0.16);
-  border-radius: 13px;
-  background: rgba(10, 23, 32, 0.92);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.20);
-  color: #c9d7de;
-  font-family: "Manrope", Arial, sans-serif;
-  font-size: 0.63rem;
-  font-weight: 800;
-  text-align: center;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition:
-    border-color 0.25s ease,
-    color 0.25s ease,
-    box-shadow 0.25s ease;
-  animation: glime3dNodeFloat 4.5s ease-in-out infinite;
-  animation-delay: var(--delay);
+  z-index: 15;
+  transition: transform .35s ease;
 }
 
-.glime-3d-node:hover {
-  color: #f4fbfd;
-  border-color: rgba(82, 232, 255, 0.42);
-  box-shadow: 0 0 28px rgba(82, 232, 255, 0.12);
-}
-
-.glime-3d-node small {
-  display: block;
-  margin-top: 3px;
-  color: #6f818c;
-  font-family: "DM Mono", monospace;
-  font-size: 0.48rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-
-.glime-3d-line {
+.glime-core-ring {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--length);
-  height: 1px;
-  transform-origin: left center;
-  transform:
-    translateY(-50%)
-    rotate(var(--line-angle))
-    translateZ(30px);
-  background: linear-gradient(
-    90deg,
-    rgba(82, 232, 255, 0.42),
-    rgba(82, 232, 255, 0.03)
-  );
-  opacity: 0.7;
+  inset: -13px;
+  border: 1px solid rgba(82,232,255,.28);
+  border-radius: 50%;
+  transform-style: preserve-3d;
   pointer-events: none;
 }
 
-.glime-3d-status {
+.core-ring-one {
+  animation: glimeCoreRingOne 7s linear infinite;
+}
+
+.core-ring-two {
+  inset: -27px;
+  border-color: rgba(166,140,255,.18);
+  animation: glimeCoreRingTwo 10s linear infinite reverse;
+}
+
+.glime-core-inner {
   position: absolute;
-  left: 16px;
-  bottom: 14px;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(82,232,255,.4);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(82,232,255,.17), transparent 45%),
+    rgba(4,13,19,.94);
+  box-shadow:
+    0 0 35px rgba(82,232,255,.14),
+    inset 0 0 35px rgba(82,232,255,.06);
+  transform: translateZ(22px);
+  overflow: hidden;
+}
+
+.glime-core-inner::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.04);
+  pointer-events: none;
+}
+
+.glime-core-mark,
+.glime-context-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(82,232,255,.45);
+  border-radius: 10px;
+  background: rgba(82,232,255,.06);
+  color: var(--g3d-cyan);
+  font-family: "DM Mono", monospace;
+  font-weight: 700;
+}
+
+.glime-core-mark {
+  margin-bottom: 9px;
+  font-size: 17px;
+  box-shadow: 0 0 18px rgba(82,232,255,.1);
+}
+
+.glime-core-title {
+  font-family: "Manrope", sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.glime-core-subtitle {
+  margin-top: 3px;
+  font-family: "DM Mono", monospace;
+  font-size: 8px;
+  letter-spacing: .14em;
+  color: var(--g3d-muted);
+}
+
+.glime-core-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 13px;
+  font-family: "DM Mono", monospace;
+  font-size: 8px;
+  letter-spacing: .11em;
+  color: var(--g3d-green);
+}
+
+.glime-core-status span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--g3d-green);
+  box-shadow: 0 0 9px rgba(80,245,168,.8);
+}
+
+/* =========================================================
+   AGENT NODES
+   ========================================================= */
+
+.glime-agent-node {
+  position: absolute;
+  z-index: 18;
+  width: 130px;
+  height: 72px;
+  transform-style: preserve-3d;
+  transition:
+    transform .3s ease,
+    filter .3s ease;
+}
+
+.glime-agent-node button {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid rgba(82,232,255,.18);
+  border-radius: 15px;
+  background:
+    linear-gradient(145deg, rgba(13,29,39,.94), rgba(6,15,21,.94));
+  color: var(--g3d-text);
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.035);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color .25s ease,
+    background .25s ease,
+    box-shadow .25s ease,
+    transform .25s ease;
+}
+
+.glime-agent-node button:hover,
+.glime-agent-node button:focus-visible,
+.glime-agent-node.active button {
+  border-color: rgba(82,232,255,.62);
+  background:
+    radial-gradient(circle at 50% 20%, rgba(82,232,255,.12), transparent 60%),
+    rgba(7,20,28,.98);
+  box-shadow:
+    0 0 25px rgba(82,232,255,.13),
+    0 16px 38px rgba(0,0,0,.3),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  transform: translateY(-4px) translateZ(18px);
+  outline: none;
+}
+
+.glime-agent-node.active {
+  filter: brightness(1.12);
+}
+
+.agent-icon {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  margin-bottom: 2px;
+  color: var(--g3d-cyan);
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+}
+
+.glime-agent-node strong {
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  letter-spacing: .09em;
+  white-space: nowrap;
+}
+
+.glime-agent-node small {
+  font-family: "DM Mono", monospace;
+  font-size: 7px;
+  letter-spacing: .12em;
+  color: var(--g3d-muted);
+}
+
+/* Node positions */
+
+.node-sales {
+  left: 9%;
+  top: 8%;
+  transform: translate3d(
+    calc(var(--mouse-x) * -12px),
+    calc(var(--mouse-y) * -8px),
+    55px
+  );
+}
+
+.node-support {
+  left: 50%;
+  top: 3%;
+  margin-left: -65px;
+  transform: translate3d(
+    calc(var(--mouse-x) * 2px),
+    calc(var(--mouse-y) * -12px),
+    70px
+  );
+}
+
+.node-marketing {
+  right: 9%;
+  top: 8%;
+  transform: translate3d(
+    calc(var(--mouse-x) * 12px),
+    calc(var(--mouse-y) * -8px),
+    55px
+  );
+}
+
+.node-voice {
+  right: 1%;
+  top: 50%;
+  margin-top: -36px;
+  transform: translate3d(
+    calc(var(--mouse-x) * 14px),
+    calc(var(--mouse-y) * 2px),
+    70px
+  );
+}
+
+.node-operations {
+  right: 9%;
+  bottom: 8%;
+  transform: translate3d(
+    calc(var(--mouse-x) * 12px),
+    calc(var(--mouse-y) * 8px),
+    50px
+  );
+}
+
+.node-tasks {
+  left: 50%;
+  bottom: 2%;
+  margin-left: -65px;
+  transform: translate3d(
+    calc(var(--mouse-x) * -2px),
+    calc(var(--mouse-y) * 12px),
+    72px
+  );
+}
+
+.node-intelligence {
+  left: 9%;
+  bottom: 8%;
+  transform: translate3d(
+    calc(var(--mouse-x) * -12px),
+    calc(var(--mouse-y) * 8px),
+    50px
+  );
+}
+
+.node-care {
+  left: 1%;
+  top: 50%;
+  margin-top: -36px;
+  transform: translate3d(
+    calc(var(--mouse-x) * -14px),
+    calc(var(--mouse-y) * 2px),
+    70px
+  );
+}
+
+/* =========================================================
+   CONTEXT PANEL
+   ========================================================= */
+
+.glime-3d-context {
+  position: relative;
+  z-index: 25;
+  margin-top: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 18px;
+  background: rgba(5,13,19,.72);
+}
+
+.glime-context-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.glime-context-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.glime-context-title {
+  margin-bottom: 5px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+
+.glime-context-text {
+  margin: 0;
+  color: var(--g3d-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.glime-context-example {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 8px;
+  letter-spacing: .08em;
+}
+
+.glime-context-example span {
+  color: var(--g3d-cyan);
+}
+
+.glime-context-example strong {
+  color: #d7e5eb;
+  font-weight: 500;
+}
+
+/* =========================================================
+   PROCESSING PIPELINE
+   ========================================================= */
+
+.glime-3d-processing {
+  position: relative;
+  z-index: 25;
+  margin-top: 14px;
+  padding: 15px 16px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 18px;
+  background: rgba(5,13,19,.72);
+}
+
+.glime-processing-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.glime-processing-head > span:first-child {
+  margin: 0;
+}
+
+.glime-processing-state {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 9px;
-  border: 1px solid rgba(184, 222, 234, 0.10);
-  border-radius: 999px;
-  background: rgba(5, 13, 18, 0.72);
-  color: #9cabb9;
   font-family: "DM Mono", monospace;
-  font-size: 0.52rem;
-  letter-spacing: 0.04em;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  font-size: 8px;
+  letter-spacing: .1em;
+  color: var(--g3d-green);
 }
 
-.glime-3d-status i {
-  width: 6px;
-  height: 6px;
+.glime-processing-track {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.glime-processing-track::-webkit-scrollbar {
+  display: none;
+}
+
+.glime-process-step {
+  flex: 1 1 0;
+  min-width: 120px;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px;
+  background: rgba(255,255,255,.018);
+  transition:
+    border-color .35s ease,
+    background .35s ease,
+    box-shadow .35s ease,
+    transform .35s ease;
+}
+
+.glime-process-step span {
   display: block;
-  border-radius: 50%;
-  background: #50f5a8;
-  box-shadow: 0 0 10px rgba(80, 245, 168, 0.65);
-  animation: glime3dPulse 1.8s ease-in-out infinite;
+  margin-bottom: 5px;
+  font-family: "DM Mono", monospace;
+  font-size: 7px;
+  color: var(--g3d-muted);
 }
 
-@keyframes glime3dRing {
-  from { transform: translate(-50%, -50%) rotateX(67deg) rotateZ(0deg); }
-  to   { transform: translate(-50%, -50%) rotateX(67deg) rotateZ(360deg); }
+.glime-process-step strong {
+  display: block;
+  font-family: "DM Mono", monospace;
+  font-size: 8px;
+  line-height: 1.35;
+  letter-spacing: .04em;
+  white-space: nowrap;
 }
 
-@keyframes glime3dCore {
-  0%, 100% { transform: translate(-50%, -50%) translateZ(65px) scale(1); }
-  50%      { transform: translate(-50%, -50%) translateZ(82px) scale(1.035); }
+.glime-process-step.active {
+  border-color: rgba(82,232,255,.45);
+  background: rgba(82,232,255,.07);
+  box-shadow: 0 0 22px rgba(82,232,255,.08);
+  transform: translateY(-2px);
 }
 
-@keyframes glime3dNodeFloat {
+.glime-process-step.completed {
+  border-color: rgba(80,245,168,.18);
+}
+
+.glime-process-arrow {
+  flex: 0 0 auto;
+  color: rgba(82,232,255,.5);
+  font-family: "DM Mono", monospace;
+}
+
+/* =========================================================
+   EXAMPLE FLOW
+   ========================================================= */
+
+.glime-3d-example {
+  position: relative;
+  z-index: 25;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(82,232,255,.09);
+  border-radius: 18px;
+  background: linear-gradient(
+    90deg,
+    rgba(82,232,255,.035),
+    rgba(166,140,255,.035)
+  );
+}
+
+.glime-3d-example .glime-example-label {
+  margin-bottom: 9px;
+}
+
+.glime-example-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.example-item {
+  padding: 7px 9px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px;
+  background: rgba(255,255,255,.025);
+  font-family: "DM Mono", monospace;
+  font-size: 7px;
+  letter-spacing: .06em;
+  color: #d7e5eb;
+}
+
+.example-arrow {
+  color: var(--g3d-cyan);
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+}
+
+.glime-3d-footnote {
+  position: relative;
+  z-index: 25;
+  margin-top: 10px;
+  text-align: center;
+  color: rgba(142,165,179,.72);
+  font-family: "DM Mono", monospace;
+  font-size: 8px;
+  letter-spacing: .04em;
+}
+
+/* =========================================================
+   KEYFRAMES
+   ========================================================= */
+
+@keyframes glimeLivePulse {
   0%, 100% {
-    margin-top: 0;
+    opacity: .45;
+    transform: scale(.82);
   }
   50% {
-    margin-top: -5px;
+    opacity: 1;
+    transform: scale(1.2);
   }
 }
 
-@keyframes glime3dPulse {
-  0%, 100% { opacity: 0.45; transform: scale(0.85); }
-  50%      { opacity: 1; transform: scale(1.15); }
+@keyframes glimeLineFlow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -26; }
 }
 
-@media (max-width: 700px) {
+@keyframes glimeOrbitOne {
+  from { transform: rotateX(68deg) rotateZ(-12deg) rotateY(0deg) translateZ(10px); }
+  to { transform: rotateX(68deg) rotateZ(348deg) rotateY(0deg) translateZ(10px); }
+}
+
+@keyframes glimeOrbitTwo {
+  from { transform: rotateX(67deg) rotateZ(24deg) rotateY(0deg) translateZ(-10px); }
+  to { transform: rotateX(67deg) rotateZ(-336deg) rotateY(0deg) translateZ(-10px); }
+}
+
+@keyframes glimeOrbitThree {
+  from { transform: rotateX(67deg) rotateZ(-22deg) rotateY(0deg) translateZ(-18px); }
+  to { transform: rotateX(67deg) rotateZ(338deg) rotateY(0deg) translateZ(-18px); }
+}
+
+@keyframes glimeCoreRingOne {
+  from { transform: rotateX(70deg) rotateZ(0deg); }
+  to { transform: rotateX(70deg) rotateZ(360deg); }
+}
+
+@keyframes glimeCoreRingTwo {
+  from { transform: rotateY(70deg) rotateZ(0deg); }
+  to { transform: rotateY(70deg) rotateZ(-360deg); }
+}
+
+/* Particle routes */
+
+@keyframes glimeParticleSales {
+  0% { left: 50%; top: 50%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 17%; top: 14%; opacity: 0; }
+}
+
+@keyframes glimeParticleSupport {
+  0% { left: 50%; top: 50%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 50%; top: 8%; opacity: 0; }
+}
+
+@keyframes glimeParticleMarketing {
+  0% { left: 50%; top: 50%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 83%; top: 14%; opacity: 0; }
+}
+
+@keyframes glimeParticleVoice {
+  0% { left: 50%; top: 50%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 90%; top: 50%; opacity: 0; }
+}
+
+@keyframes glimeParticleOperations {
+  0% { left: 50%; top: 50%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 83%; top: 86%; opacity: 0; }
+}
+
+@keyframes glimeParticleTasks {
+  0% { left: 50%; top: 50%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 50%; top: 92%; opacity: 0; }
+}
+
+@keyframes glimeParticleIntelligence {
+  0% { left: 50%; top: 50%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 17%; top: 86%; opacity: 0; }
+}
+
+@keyframes glimeParticleCare {
+  0% { left: 50%; top: 50%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 10%; top: 50%; opacity: 0; }
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
   .glime-3d-addon {
-    min-height: 330px;
-    border-radius: 18px;
+    padding: 22px;
   }
 
   .glime-3d-stage {
-    height: 330px;
-  }
-
-  .glime-3d-ring {
-    width: 180px;
-    height: 180px;
-  }
-
-  .glime-3d-ring.ring-two {
-    width: 245px;
-    height: 135px;
+    height: 510px;
   }
 
   .glime-3d-core {
-    width: 82px;
-    height: 82px;
-    transform: translate(-50%, -50%) translateZ(45px);
-    font-size: 0.62rem;
+    width: 165px;
+    height: 165px;
   }
 
-  .glime-3d-node {
-    width: 72px;
-    min-height: 46px;
-    padding: 7px 5px;
-    font-size: 0.53rem;
+  .glime-agent-node {
+    width: 116px;
+    height: 67px;
   }
 
-  .glime-3d-node small {
-    font-size: 0.42rem;
+  .node-support,
+  .node-tasks {
+    margin-left: -58px;
   }
 
-  .glime-3d-status {
-    left: 10px;
-    bottom: 10px;
-    font-size: 0.46rem;
+  .node-voice,
+  .node-care {
+    margin-top: -33.5px;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .glime-3d-ring,
-  .glime-3d-core,
-  .glime-3d-node,
-  .glime-3d-status i {
-    animation: none;
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .glime-3d-addon {
+    margin: 24px 0;
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .glime-3d-header {
+    display: block;
+  }
+
+  .glime-3d-live {
+    margin-top: 14px;
   }
 
   .glime-3d-stage {
-    transition: none;
+    height: 450px;
+    border-radius: 18px;
+    background-size: auto, 34px 34px, 34px 34px;
+  }
+
+  .glime-3d-grid {
+    bottom: -120px;
+    height: 270px;
+    background-size: 34px 34px;
+  }
+
+  .orbit-one {
+    width: 230px;
+    height: 230px;
+    margin: -115px 0 0 -115px;
+  }
+
+  .orbit-two {
+    width: 330px;
+    height: 330px;
+    margin: -165px 0 0 -165px;
+  }
+
+  .orbit-three {
+    width: 430px;
+    height: 250px;
+    margin: -125px 0 0 -215px;
+  }
+
+  .glime-3d-core {
+    width: 138px;
+    height: 138px;
+    transform: translate(-50%, -50%) translateZ(45px);
+  }
+
+  .core-ring-two {
+    inset: -19px;
+  }
+
+  .glime-core-title {
+    font-size: 13px;
+  }
+
+  .glime-core-subtitle {
+    font-size: 6px;
+  }
+
+  .glime-core-mark {
+    width: 27px;
+    height: 27px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .glime-core-status {
+    margin-top: 8px;
+    font-size: 6px;
+  }
+
+  .glime-agent-node {
+    width: 92px;
+    height: 58px;
+  }
+
+  .glime-agent-node button {
+    padding: 5px;
+    border-radius: 12px;
+  }
+
+  .glime-agent-node strong {
+    font-size: 7px;
+  }
+
+  .glime-agent-node small {
+    font-size: 5.5px;
+  }
+
+  .agent-icon {
+    width: 17px;
+    height: 17px;
+    font-size: 10px;
+  }
+
+  .node-sales {
+    left: 3%;
+    top: 8%;
+  }
+
+  .node-support {
+    left: 50%;
+    top: 2%;
+    margin-left: -46px;
+  }
+
+  .node-marketing {
+    right: 3%;
+    top: 8%;
+  }
+
+  .node-voice {
+    right: 0;
+    top: 50%;
+    margin-top: -29px;
+  }
+
+  .node-operations {
+    right: 3%;
+    bottom: 8%;
+  }
+
+  .node-tasks {
+    left: 50%;
+    bottom: 2%;
+    margin-left: -46px;
+  }
+
+  .node-intelligence {
+    left: 3%;
+    bottom: 8%;
+  }
+
+  .node-care {
+    left: 0;
+    top: 50%;
+    margin-top: -29px;
+  }
+
+  .glime-3d-context {
+    padding: 14px;
+  }
+
+  .glime-context-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .glime-context-title {
+    font-size: 10px;
+  }
+
+  .glime-context-text {
+    font-size: 11px;
+  }
+
+  .glime-3d-processing {
+    padding: 13px;
+  }
+
+  .glime-processing-track {
+    padding-bottom: 3px;
+  }
+
+  .glime-process-step {
+    min-width: 112px;
+  }
+
+  .glime-process-arrow {
+    display: none;
+  }
+
+  .glime-3d-example {
+    padding: 13px;
+  }
+
+  .glime-example-flow {
+    gap: 5px;
+  }
+
+  .example-item {
+    font-size: 6px;
+    padding: 6px 7px;
+  }
+
+  .example-arrow {
+    font-size: 8px;
+  }
+
+  .glime-3d-footnote {
+    font-size: 7px;
+    line-height: 1.5;
+  }
+
+  /* Mobile touch interaction is tap-first, not hover-first */
+  .glime-agent-node button:hover {
+    transform: none;
+  }
+}
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 430px) {
+  .glime-3d-addon {
+    padding: 14px;
+  }
+
+  .glime-3d-stage {
+    height: 410px;
+  }
+
+  .glime-agent-node {
+    width: 82px;
+    height: 54px;
+  }
+
+  .node-support,
+  .node-tasks {
+    margin-left: -41px;
+  }
+
+  .node-voice,
+  .node-care {
+    margin-top: -27px;
+  }
+
+  .glime-3d-core {
+    width: 124px;
+    height: 124px;
+  }
+
+  .glime-core-title {
+    font-size: 11px;
+  }
+
+  .glime-core-status {
+    display: none;
+  }
+
+  .glime-agent-node strong {
+    font-size: 6.5px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .glime-3d-addon *,
+  .glime-3d-addon *::before,
+  .glime-3d-addon *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+
+  .glime-particle {
+    display: none;
   }
 }
