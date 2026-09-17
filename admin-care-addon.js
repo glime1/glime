@@ -1,14 +1,15 @@
 /* =========================================================
    GLIME CARE — UNIVERSAL ADMIN ACCESS CONTROL
    ---------------------------------------------------------
-   Additive addon for the existing admin.html.
+   Additive addon for existing admin.html.
 
    IMPORTANT:
    - Does NOT replace admin.html.
    - Does NOT modify admin-modules-addon.js.
    - CARE is controlled separately from client_modules.
-   - Only the existing GLIME Admin identity can change CARE.
-   - Backend authorization is enforced by Supabase RPC.
+   - Only GLIME Admin can change CARE.
+   - Uses existing CARE Admin RPCs.
+   - Waits for the existing Admin session before initializing.
 ========================================================= */
 
 (() => {
@@ -20,6 +21,9 @@
   const SUPABASE_KEY =
     'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 
+  const ADMIN_EMAIL =
+    'admin@glime.online';
+
   const SECTION_ID =
     'glime-care-admin-access';
 
@@ -29,22 +33,18 @@
   let db = null;
   let lastClientId = null;
   let initialized = false;
+  let observerStarted = false;
 
   const $ = (id) =>
     document.getElementById(id);
 
-  function esc(value) {
-    return String(value ?? '')
-      .replace(/[&<>"']/g, (c) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      }[c]));
-  }
+
+  /* =========================================================
+     STATUS
+  ========================================================= */
 
   function showStatus(text, type = 'info') {
+
     const el = $('careAdminStatus');
 
     if (!el) return;
@@ -54,14 +54,22 @@
     el.style.display = text ? 'block' : 'none';
   }
 
+
+  /* =========================================================
+     STYLES
+  ========================================================= */
+
   function addStyles() {
+
     if ($(STYLE_ID)) return;
 
-    const style = document.createElement('style');
+    const style =
+      document.createElement('style');
 
     style.id = STYLE_ID;
 
     style.textContent = `
+
       #${SECTION_ID}{
         margin-top:22px;
         padding-top:20px;
@@ -157,6 +165,11 @@
         font:inherit;
       }
 
+      #${SECTION_ID} .gca-field input:focus{
+        border-color:#00eaff;
+        box-shadow:0 0 0 3px rgba(0,234,255,.08);
+      }
+
       #${SECTION_ID} .gca-check{
         display:flex;
         align-items:center;
@@ -186,6 +199,11 @@
         color:#06100b;
         font:700 .82rem Poppins,system-ui,sans-serif;
         cursor:pointer;
+      }
+
+      #${SECTION_ID} .gca-save:hover:not(:disabled){
+        transform:translateY(-1px);
+        box-shadow:0 0 18px rgba(0,255,136,.16);
       }
 
       #${SECTION_ID} .gca-save:disabled{
@@ -227,7 +245,14 @@
         margin-top:10px;
       }
 
+      #${SECTION_ID} .gca-loading{
+        color:#9ba7b7;
+        font-size:.74rem;
+        padding:10px 0;
+      }
+
       @media(max-width:650px){
+
         #${SECTION_ID} .gca-grid{
           grid-template-columns:1fr;
         }
@@ -235,24 +260,33 @@
         #${SECTION_ID} .gca-head{
           flex-direction:column;
         }
+
       }
+
     `;
 
     document.head.appendChild(style);
   }
 
+
+  /* =========================================================
+     CREATE CARE SECTION
+  ========================================================= */
+
   function createSection() {
 
-    if ($(SECTION_ID)) return;
+    if ($(SECTION_ID)) return true;
 
     const controlRoom =
       $('control-room');
 
     if (!controlRoom) {
-      console.error(
-        'GLIME CARE Admin: #control-room not found.'
+
+      console.warn(
+        'GLIME CARE Admin: #control-room not available yet.'
       );
-      return;
+
+      return false;
     }
 
     addStyles();
@@ -263,41 +297,53 @@
     section.id = SECTION_ID;
 
     section.innerHTML = `
+
       <div class="gca-title">
         ❤️ GLIME CARE Access
       </div>
 
       <div class="gca-subtitle">
-        Admin controls whether this client is allowed
-        to use GLIME CARE. CARE permissions and actions
-        are managed separately inside CARE.
+        Admin controls whether this client can use
+        GLIME CARE. CARE permissions and actions remain
+        separately controlled inside GLIME CARE.
       </div>
 
       <div class="gca-card">
 
         <div class="gca-head">
+
           <div>
-            <div class="gca-name"
-                 id="careAdminClientName">
+
+            <div
+              class="gca-name"
+              id="careAdminClientName"
+            >
               No client selected
             </div>
 
-            <div class="gca-id"
-                 id="careAdminClientId">
+            <div
+              class="gca-id"
+              id="careAdminClientId"
+            >
               Fetch a client first.
             </div>
+
           </div>
 
           <span
             id="careAdminBadge"
-            class="gca-badge none">
-            Not enabled
+            class="gca-badge none"
+          >
+            ● Not enabled
           </span>
+
         </div>
+
 
         <div class="gca-grid">
 
           <div class="gca-field">
+
             <label for="careAdminDisplayName">
               CARE Display Name
             </label>
@@ -305,19 +351,28 @@
             <input
               id="careAdminDisplayName"
               type="text"
+              maxlength="120"
               placeholder="Optional"
             >
+
           </div>
 
+
           <label class="gca-check">
+
             <input
               id="careAdminEnabled"
               type="checkbox"
             >
-            Enable GLIME CARE for this client
+
+            <span>
+              Enable GLIME CARE for this client
+            </span>
+
           </label>
 
         </div>
+
 
         <button
           id="careAdminSave"
@@ -328,10 +383,12 @@
           Save CARE Access
         </button>
 
+
         <div
           id="careAdminStatus"
           class="gca-status"
         ></div>
+
 
         <div class="gca-help">
           Disabling CARE pauses the CARE profile.
@@ -339,37 +396,66 @@
         </div>
 
       </div>
+
     `;
 
     controlRoom.appendChild(section);
 
-    $('careAdminSave')
-      ?.addEventListener(
+
+    const saveButton =
+      $('careAdminSave');
+
+    if (saveButton) {
+
+      saveButton.addEventListener(
         'click',
         saveAccess
       );
+
+    }
+
+    return true;
   }
 
+
+  /* =========================================================
+     VERIFY ADMIN
+  ========================================================= */
+
   async function verifyAdmin() {
+
+    if (!db) return false;
 
     const {
       data,
       error
     } = await db.auth.getSession();
 
-    if (error) throw error;
+    if (error) {
+
+      console.error(
+        'GLIME CARE Admin session error:',
+        error
+      );
+
+      return false;
+    }
 
     const email =
       (
-        data?.session?.user?.email ||
-        ''
+        data?.session?.user?.email || ''
       )
       .trim()
       .toLowerCase();
 
     return email ===
-      'admin@glime.online';
+      ADMIN_EMAIL.toLowerCase();
   }
+
+
+  /* =========================================================
+     CURRENT CLIENT
+  ========================================================= */
 
   function getCurrentClientId() {
 
@@ -378,11 +464,23 @@
 
     if (!el) return '';
 
-    return (
-      el.textContent ||
-      ''
-    ).trim();
+    const value =
+      (
+        el.textContent || ''
+      ).trim();
+
+    if (!value) return '';
+
+    if (
+      value === '—' ||
+      value === 'Not assigned'
+    ) {
+      return '';
+    }
+
+    return value;
   }
+
 
   function getCurrentClientName() {
 
@@ -390,69 +488,21 @@
       $('clientEmailView');
 
     return (
-      el?.textContent ||
-      ''
+      el?.textContent || ''
     ).trim();
   }
 
-  async function loadAccess(clientId) {
 
-    if (!clientId) {
-      resetSection();
-      return;
-    }
+  /* =========================================================
+     RESET
+  ========================================================= */
 
-    lastClientId = clientId;
-
-    showStatus(
-      'Checking CARE access…',
-      'info'
-    );
-
-    const {
-      data,
-      error
-    } = await db.rpc(
-      'care_admin_get_access',
-      {
-        p_client_id: clientId
-      }
-    );
-
-    if (error) throw error;
-
-    const profile =
-      data?.profile || null;
-
-    const enabled =
-      data?.enabled === true;
-
-    $('careAdminEnabled').checked =
-      enabled;
-
-    $('careAdminDisplayName').value =
-      profile?.display_name || '';
+  function resetSection() {
 
     const badge =
       $('careAdminBadge');
 
-    if (enabled) {
-
-      badge.textContent =
-        '● Active';
-
-      badge.className =
-        'gca-badge active';
-
-    } else if (profile) {
-
-      badge.textContent =
-        '● Paused';
-
-      badge.className =
-        'gca-badge paused';
-
-    } else {
+    if (badge) {
 
       badge.textContent =
         '● Not enabled';
@@ -462,19 +512,249 @@
 
     }
 
-    $('careAdminClientName').textContent =
-      getCurrentClientName() ||
-      profile?.display_name ||
-      'Selected client';
 
-    $('careAdminClientId').textContent =
-      'Client ID: ' + clientId;
+    const enabled =
+      $('careAdminEnabled');
 
-    $('careAdminSave').disabled =
-      false;
+    if (enabled) {
+
+      enabled.checked = false;
+
+    }
+
+
+    const displayName =
+      $('careAdminDisplayName');
+
+    if (displayName) {
+
+      displayName.value = '';
+
+    }
+
+
+    const save =
+      $('careAdminSave');
+
+    if (save) {
+
+      save.disabled = true;
+
+    }
+
+
+    const name =
+      $('careAdminClientName');
+
+    if (name) {
+
+      name.textContent =
+        'No client selected';
+
+    }
+
+
+    const id =
+      $('careAdminClientId');
+
+    if (id) {
+
+      id.textContent =
+        'Fetch a client first.';
+
+    }
+
 
     showStatus('', 'info');
+
+    lastClientId = null;
   }
+
+
+  /* =========================================================
+     LOAD CARE ACCESS
+  ========================================================= */
+
+  async function loadAccess(clientId) {
+
+    if (!clientId) {
+
+      resetSection();
+
+      return;
+    }
+
+    if (!db) return;
+
+    lastClientId =
+      clientId;
+
+    const name =
+      $('careAdminClientName');
+
+    const id =
+      $('careAdminClientId');
+
+    const save =
+      $('careAdminSave');
+
+    if (name) {
+
+      name.textContent =
+        getCurrentClientName() ||
+        'Selected client';
+
+    }
+
+    if (id) {
+
+      id.textContent =
+        'Client ID: ' + clientId;
+
+    }
+
+    if (save) {
+
+      save.disabled = true;
+
+    }
+
+    showStatus(
+      'Checking CARE access…',
+      'info'
+    );
+
+
+    try {
+
+      const admin =
+        await verifyAdmin();
+
+      if (!admin) {
+
+        throw new Error(
+          'Admin authorization required.'
+        );
+
+      }
+
+
+      const {
+        data,
+        error
+      } = await db.rpc(
+        'care_admin_get_access',
+        {
+          p_client_id:
+            clientId
+        }
+      );
+
+
+      if (error) {
+
+        throw error;
+
+      }
+
+
+      const profile =
+        data?.profile || null;
+
+      const enabled =
+        data?.enabled === true;
+
+
+      const checkbox =
+        $('careAdminEnabled');
+
+      if (checkbox) {
+
+        checkbox.checked =
+          enabled;
+
+      }
+
+
+      const display =
+        $('careAdminDisplayName');
+
+      if (display) {
+
+        display.value =
+          profile?.display_name || '';
+
+      }
+
+
+      const badge =
+        $('careAdminBadge');
+
+      if (badge) {
+
+        if (enabled) {
+
+          badge.textContent =
+            '● Active';
+
+          badge.className =
+            'gca-badge active';
+
+        } else if (profile) {
+
+          badge.textContent =
+            '● Paused';
+
+          badge.className =
+            'gca-badge paused';
+
+        } else {
+
+          badge.textContent =
+            '● Not enabled';
+
+          badge.className =
+            'gca-badge none';
+
+        }
+
+      }
+
+
+      if (save) {
+
+        save.disabled = false;
+
+      }
+
+      showStatus('', 'info');
+
+    } catch (error) {
+
+      console.error(
+        'GLIME CARE Admin load:',
+        error
+      );
+
+      showStatus(
+        error?.message ||
+        'Unable to load CARE access.',
+        'error'
+      );
+
+      if (save) {
+
+        save.disabled = false;
+
+      }
+
+    }
+  }
+
+
+  /* =========================================================
+     SAVE CARE ACCESS
+  ========================================================= */
 
   async function saveAccess() {
 
@@ -492,19 +772,26 @@
       return;
     }
 
+
     const button =
       $('careAdminSave');
 
+    if (!button) return;
+
+
     const enabled =
-      $('careAdminEnabled').checked;
+      $('careAdminEnabled')?.checked === true;
+
 
     const displayName =
       (
-        $('careAdminDisplayName').value ||
+        $('careAdminDisplayName')?.value ||
         ''
       ).trim();
 
+
     button.disabled = true;
+
 
     showStatus(
       enabled
@@ -513,7 +800,20 @@
       'info'
     );
 
+
     try {
+
+      const admin =
+        await verifyAdmin();
+
+      if (!admin) {
+
+        throw new Error(
+          'Admin authorization required.'
+        );
+
+      }
+
 
       const {
         data,
@@ -521,28 +821,44 @@
       } = await db.rpc(
         'care_admin_set_access',
         {
-          p_client_id: clientId,
-          p_enabled: enabled,
+          p_client_id:
+            clientId,
+
+          p_enabled:
+            enabled,
+
           p_display_name:
             displayName || null
         }
       );
 
-      if (error) throw error;
+
+      if (error) {
+
+        throw error;
+
+      }
+
 
       const actualEnabled =
         data?.enabled === true;
 
+
       const badge =
         $('careAdminBadge');
 
+
       if (actualEnabled) {
 
-        badge.textContent =
-          '● Active';
+        if (badge) {
 
-        badge.className =
-          'gca-badge active';
+          badge.textContent =
+            '● Active';
+
+          badge.className =
+            'gca-badge active';
+
+        }
 
         showStatus(
           'GLIME CARE is now enabled for this client.',
@@ -551,22 +867,27 @@
 
       } else {
 
-        badge.textContent =
-          '● Paused';
+        if (badge) {
 
-        badge.className =
-          'gca-badge paused';
+          badge.textContent =
+            '● Paused';
+
+          badge.className =
+            'gca-badge paused';
+
+        }
 
         showStatus(
           'GLIME CARE has been paused. CARE data was not deleted.',
           'success'
         );
+
       }
 
     } catch (error) {
 
       console.error(
-        'GLIME CARE Admin:',
+        'GLIME CARE Admin save:',
         error
       );
 
@@ -579,70 +900,40 @@
     } finally {
 
       button.disabled = false;
+
     }
   }
 
-  function resetSection() {
 
-    const badge =
-      $('careAdminBadge');
-
-    if (badge) {
-
-      badge.textContent =
-        '● Not enabled';
-
-      badge.className =
-        'gca-badge none';
-    }
-
-    if ($('careAdminEnabled')) {
-
-      $('careAdminEnabled').checked =
-        false;
-    }
-
-    if ($('careAdminDisplayName')) {
-
-      $('careAdminDisplayName').value =
-        '';
-    }
-
-    if ($('careAdminSave')) {
-
-      $('careAdminSave').disabled =
-        true;
-    }
-
-    if ($('careAdminClientName')) {
-
-      $('careAdminClientName').textContent =
-        'No client selected';
-    }
-
-    if ($('careAdminClientId')) {
-
-      $('careAdminClientId').textContent =
-        'Fetch a client first.';
-    }
-
-    showStatus('', 'info');
-
-    lastClientId = null;
-  }
+  /* =========================================================
+     WATCH CLIENT SELECTION
+  ========================================================= */
 
   function watchClientSelection() {
+
+    if (observerStarted) return;
 
     const target =
       $('clientCodeView');
 
-    if (!target) return;
+    if (!target) {
+
+      console.warn(
+        'GLIME CARE Admin: clientCodeView not found yet.'
+      );
+
+      return;
+    }
+
+    observerStarted = true;
+
 
     const observer =
       new MutationObserver(() => {
 
         const clientId =
           getCurrentClientId();
+
 
         if (!clientId) {
 
@@ -651,38 +942,42 @@
           return;
         }
 
-        if (clientId === lastClientId) {
+
+        if (
+          clientId ===
+          lastClientId
+        ) {
 
           return;
         }
+
 
         loadAccess(clientId)
           .catch((error) => {
 
             console.error(
-              'GLIME CARE Admin load:',
+              'GLIME CARE Admin watcher:',
               error
             );
 
-            showStatus(
-              error?.message ||
-              'Unable to load CARE access.',
-              'error'
-            );
           });
+
       });
+
 
     observer.observe(
       target,
       {
-        childList: true,
-        characterData: true,
-        subtree: true
+        childList:true,
+        characterData:true,
+        subtree:true
       }
     );
 
+
     const initialClient =
       getCurrentClientId();
+
 
     if (initialClient) {
 
@@ -693,9 +988,50 @@
             'GLIME CARE Admin initial load:',
             error
           );
+
         });
+
     }
   }
+
+
+  /* =========================================================
+     WAIT FOR ADMIN CONTROL ROOM
+  ========================================================= */
+
+  function waitForControlRoom() {
+
+    if ($(SECTION_ID)) {
+
+      watchClientSelection();
+
+      return;
+    }
+
+
+    if (
+      $('control-room') &&
+      $('clientCodeView')
+    ) {
+
+      createSection();
+
+      watchClientSelection();
+
+      return;
+    }
+
+
+    setTimeout(
+      waitForControlRoom,
+      250
+    );
+  }
+
+
+  /* =========================================================
+     INITIALIZE
+  ========================================================= */
 
   async function initialize() {
 
@@ -703,36 +1039,136 @@
 
     initialized = true;
 
+
     try {
+
+      if (!window.supabase) {
+
+        throw new Error(
+          'Supabase library is not available.'
+        );
+
+      }
+
 
       db =
         window.supabase.createClient(
           SUPABASE_URL,
-          SUPABASE_KEY
+          SUPABASE_KEY,
+          {
+            auth:{
+              persistSession:true,
+              autoRefreshToken:true,
+              detectSessionInUrl:true
+            }
+          }
         );
 
-      createSection();
 
-      const admin =
-        await verifyAdmin();
+      /*
+        IMPORTANT:
 
-      if (!admin) {
+        Do NOT remove the CARE section merely because
+        the first session check happens too early.
 
-        const section =
-          $(SECTION_ID);
+        The existing admin.html is responsible for
+        showing the Control Room after Admin login.
+        We wait for that state.
+      */
 
-        if (section) {
-          section.remove();
+
+      let attempts = 0;
+
+      const waitForAdmin =
+        async () => {
+
+          attempts++;
+
+
+          const admin =
+            await verifyAdmin();
+
+
+          if (admin) {
+
+            waitForControlRoom();
+
+            return;
+
+          }
+
+
+          /*
+            Session may not exist yet because the main
+            admin login script is still processing.
+
+            Keep waiting for a short period.
+          */
+
+          if (attempts < 80) {
+
+            setTimeout(
+              waitForAdmin,
+              250
+            );
+
+          } else {
+
+            console.warn(
+              'GLIME CARE Admin: Admin session was not detected.'
+            );
+
+          }
+
+        };
+
+
+      await waitForAdmin();
+
+
+      /*
+        Also listen for future auth changes.
+        This makes the addon recover after login
+        without requiring a page refresh.
+      */
+
+      db.auth.onAuthStateChange(
+        async (_event, session) => {
+
+          const email =
+            (
+              session?.user?.email ||
+              ''
+            )
+            .trim()
+            .toLowerCase();
+
+
+          if (
+            email ===
+            ADMIN_EMAIL.toLowerCase()
+          ) {
+
+            waitForControlRoom();
+
+          } else {
+
+            const section =
+              $(SECTION_ID);
+
+            if (section) {
+
+              section.remove();
+
+            }
+
+            observerStarted = false;
+            lastClientId = null;
+
+          }
+
         }
-
-        console.warn(
-          'GLIME CARE Admin: unauthorized user.'
-        );
-
-        return;
-      }
-
-      watchClientSelection();
+      );
 
     } catch (error) {
 
@@ -740,28 +1176,30 @@
         'GLIME CARE Admin initialization:',
         error
       );
+
     }
   }
 
-  function start() {
 
-    if (
-      document.readyState ===
-      'loading'
-    ) {
+  /* =========================================================
+     START
+  ========================================================= */
 
-      document.addEventListener(
-        'DOMContentLoaded',
-        initialize,
-        { once: true }
-      );
+  if (
+    document.readyState ===
+    'loading'
+  ) {
 
-    } else {
+    document.addEventListener(
+      'DOMContentLoaded',
+      initialize,
+      { once:true }
+    );
 
-      initialize();
-    }
+  } else {
+
+    initialize();
+
   }
-
-  start();
 
 })();
