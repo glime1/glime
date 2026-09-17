@@ -1,128 +1,243 @@
-const SUPABASE_URL = "https://ufoulgbiqgjriwapuopc.supabase.co";
-const SUPABASE_KEY = "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+const SUPABASE_URL =
+  "https://ufoulgbiqgjriwapuopc.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
 const db = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
 
-const $ = (id) => document.getElementById(id);
+const $ = (id) =>
+  document.getElementById(id);
 
 let session = null;
+
+
+/* =====================================================
+   HELPERS
+   ===================================================== */
 
 function value(id) {
   return $(id).value.trim();
 }
 
+
 function updateReview() {
+
   $("review").innerHTML = `
-    <b>Family:</b> ${value("familyName") || "—"}<br>
-    <b>Member:</b> ${value("name") || "—"} ·
-    ${value("relationship") || "—"} ·
-    ${$("role").value}<br>
-    <b>DOB:</b> ${$("dob").value || "—"} ·
-    <b>Gender:</b> ${value("gender") || "—"}<br>
+    <b>Family:</b>
+    ${value("familyName") || "—"}
+    <br>
+
+    <b>Member:</b>
+    ${value("name") || "—"}
+    · ${value("relationship") || "—"}
+    · ${$("role").value}
+
+    <br>
+
+    <b>DOB:</b>
+    ${$("dob").value || "—"}
+
+    ·
+
+    <b>Gender:</b>
+    ${value("gender") || "—"}
+
+    <br>
+
     <b>Emergency:</b>
-    ${$("emergency").checked ? "Yes" : "No"} ·
+    ${$("emergency").checked ? "Yes" : "No"}
+
+    ·
+
     <b>Caregiver:</b>
     ${$("caregiver").checked ? "Yes" : "No"}
   `;
 }
 
+
+/* =====================================================
+   LIVE REVIEW
+   ===================================================== */
+
 document
   .querySelectorAll("input, select")
   .forEach((element) => {
-    element.addEventListener("input", updateReview);
-    element.addEventListener("change", updateReview);
+
+    element.addEventListener(
+      "input",
+      updateReview
+    );
+
+    element.addEventListener(
+      "change",
+      updateReview
+    );
+
   });
 
-async function boot() {
-  const { data, error } = await db.auth.getSession();
 
-  if (error || !data.session) {
-    $("badge").textContent = "Login required";
+/* =====================================================
+   AUTH / CARE ACCESS
+   ===================================================== */
+
+async function boot() {
+
+  const {
+    data,
+    error
+  } = await db.auth.getSession();
+
+
+  if (
+    error ||
+    !data.session
+  ) {
+
+    $("badge").textContent =
+      "Login required";
+
     $("save").disabled = true;
+
     return;
   }
 
+
   session = data.session;
 
+
   $("badge").textContent =
-    `Logged in · ${session.user.email || ""}`;
+    `Logged in · ${
+      session.user.email || ""
+    }`;
+
 
   $("email").value =
     session.user.email || "";
+
 
   $("name").value =
     session.user.user_metadata?.full_name ||
     session.user.user_metadata?.name ||
     "";
 
+
   updateReview();
+
 }
 
+
+/* =====================================================
+   SAVE FAMILY SETUP
+   ===================================================== */
+
 async function saveSetup(event) {
+
   event.preventDefault();
 
+
   if (!session) {
+
     $("status").textContent =
       "Login required.";
+
     return;
   }
 
-  const saveButton = $("save");
+
+  const saveButton =
+    $("save");
+
 
   saveButton.disabled = true;
-  $("status").textContent = "Saving…";
+
+
+  $("status").textContent =
+    "Saving…";
+
 
   try {
 
-    /*
-     * 1. Create / get existing CARE family
-     */
+    /* -------------------------------------------------
+       1. CREATE OR GET FAMILY
+       ------------------------------------------------- */
+
     const {
-      data: familyData,
+      data: familyResponse,
       error: familyError
     } = await db.rpc(
       "care_get_or_create_family",
       {
-        p_name: value("familyName")
+        p_name:
+          value("familyName")
       }
     );
+
 
     if (familyError) {
       throw familyError;
     }
 
-    const family =
-      familyData?.[0] || familyData;
-
-    if (!family?.id) {
-      throw new Error(
-        "Family could not be created."
-      );
-    }
 
     /*
-     * 2. Update family timezone
+     * IMPORTANT:
+     *
+     * RPC returns:
+     *
+     * {
+     *   family: {...},
+     *   profile: {...}
+     * }
      */
+
+    const family =
+      familyResponse?.family;
+
+
+    if (!family?.id) {
+
+      throw new Error(
+        "Family could not be created or loaded."
+      );
+
+    }
+
+
+    /* -------------------------------------------------
+       2. UPDATE FAMILY
+       ------------------------------------------------- */
+
     const {
       error: familyUpdateError
     } = await db
       .from("care_families")
       .update({
-        name: value("familyName"),
-        timezone: $("timezone").value
+
+        name:
+          value("familyName"),
+
+        timezone:
+          $("timezone").value
+
       })
-      .eq("id", family.id);
+      .eq(
+        "id",
+        family.id
+      );
+
 
     if (familyUpdateError) {
       throw familyUpdateError;
     }
 
-    /*
-     * 3. Get active CARE profile
-     */
+
+    /* -------------------------------------------------
+       3. GET ACTIVE CARE PROFILE
+       ------------------------------------------------- */
+
     const {
       data: careProfile,
       error: profileError
@@ -133,92 +248,125 @@ async function saveSetup(event) {
         "auth_user_id",
         session.user.id
       )
-      .eq("status", "active")
+      .eq(
+        "status",
+        "active"
+      )
       .maybeSingle();
+
 
     if (profileError) {
       throw profileError;
     }
 
+
     if (!careProfile) {
+
       throw new Error(
         "Active CARE profile not found."
       );
+
     }
 
-    /*
-     * 4. Structured preferences
-     */
+
+    /* -------------------------------------------------
+       4. STRUCTURED PREFERENCES
+       ------------------------------------------------- */
+
     const preferences = {};
 
+
     if ($("language").value) {
+
       preferences.language =
         $("language").value;
+
     }
+
 
     if ($("communication").value) {
+
       preferences.communication =
         $("communication").value;
+
     }
+
 
     if ($("preferredTime").value) {
+
       preferences.preferred_time =
         $("preferredTime").value;
+
     }
 
-    /*
-     * 5. Create member profile
-     *
-     * DOB + Gender included here.
-     */
+
+    /* -------------------------------------------------
+       5. CREATE MEMBER PROFILE
+       ------------------------------------------------- */
+
     const {
       data: member,
       error: memberError
     } = await db
       .from("care_member_profiles")
       .insert({
-        family_id: family.id,
+
+        family_id:
+          family.id,
 
         care_profile_id:
           careProfile.id,
 
-        name: value("name"),
+        name:
+          value("name"),
 
         relationship:
-          value("relationship") || "Self",
+          value("relationship") ||
+          "Self",
 
         role:
           $("role").value,
 
         phone:
-          value("phone") || null,
+          value("phone") ||
+          null,
 
         email:
           value("email") ||
           session.user.email ||
           null,
 
+        /*
+         * New architecture fields
+         */
+
         date_of_birth:
-          $("dob").value || null,
+          $("dob").value ||
+          null,
 
         gender:
-          value("gender") || null,
+          value("gender") ||
+          null,
 
         availability: {},
 
         preferences:
           preferences
+
       })
       .select()
       .single();
+
 
     if (memberError) {
       throw memberError;
     }
 
-    /*
-     * 6. Create family membership
-     */
+
+    /* -------------------------------------------------
+       6. FAMILY MEMBERSHIP
+       ------------------------------------------------- */
+
     const {
       error: membershipError
     } = await db
@@ -249,43 +397,66 @@ async function saveSetup(event) {
                 ) || 1
               )
             : null
+
       });
+
 
     if (membershipError) {
       throw membershipError;
     }
 
-    /*
-     * 7. Success
-     */
+
+    /* -------------------------------------------------
+       7. SUCCESS
+       ------------------------------------------------- */
+
     $("status").textContent =
       "Setup complete. CARE Dashboard खोल रहे हैं…";
 
+
     setTimeout(() => {
-      location.href = "care.html";
-    }, 500);
+
+      location.href =
+        "care.html";
+
+    }, 700);
+
 
   } catch (error) {
 
     console.error(
-      "CARE setup error:",
+      "GLIME CARE setup error:",
       error
     );
 
+
     $("status").textContent =
-      error.message ||
+      error?.message ||
       "Setup failed.";
+
 
   } finally {
 
     saveButton.disabled = false;
+
   }
+
 }
+
+
+/* =====================================================
+   SUBMIT
+   ===================================================== */
 
 $("setupForm")
   .addEventListener(
     "submit",
     saveSetup
   );
+
+
+/* =====================================================
+   START
+   ===================================================== */
 
 boot();
