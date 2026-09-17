@@ -10,6 +10,7 @@ const db = window.supabase.createClient(
 
 let clientId = null;
 let allLeads = [];
+let customFields = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -112,7 +113,8 @@ async function requireClient() {
 function updateStats() {
 
   if ($("statTotal")) {
-    $("statTotal").textContent = allLeads.length;
+    $("statTotal").textContent =
+      allLeads.length;
   }
 
   if ($("statNew")) {
@@ -136,8 +138,12 @@ function updateStats() {
         const followupDate =
           new Date(lead.next_follow_up_at);
 
-        return followupDate <= now &&
-          !["won", "lost"].includes(lead.status);
+        return (
+          followupDate <= now &&
+          !["won", "lost"].includes(
+            lead.status
+          )
+        );
 
       }).length;
   }
@@ -250,6 +256,7 @@ function render() {
         <tr>
 
           <td>
+
             <div class="lead-name">
               ${esc(displayName)}
             </div>
@@ -257,6 +264,7 @@ function render() {
             <div class="sub">
               ${esc(phone)}
             </div>
+
           </td>
 
           <td>
@@ -270,9 +278,11 @@ function render() {
           </td>
 
           <td>
+
             <span class="pill">
               ${esc(lead.source || "offline")}
             </span>
+
           </td>
 
           <td>
@@ -296,7 +306,9 @@ function render() {
           </td>
 
           <td>
-            ${fmtDate(lead.next_follow_up_at)}
+            ${fmtDate(
+              lead.next_follow_up_at
+            )}
           </td>
 
           <td>
@@ -312,6 +324,7 @@ function render() {
 
         </tr>
       `;
+
     })
     .join("");
 
@@ -360,6 +373,374 @@ async function loadLeads() {
 
 
 /* =========================================================
+   CUSTOM FIELDS
+========================================================= */
+
+async function loadCustomFields() {
+
+  const {
+    data,
+    error
+  } = await db
+    .from("lead_custom_field_definitions")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("sort_order", {
+      ascending: true
+    })
+    .order("created_at", {
+      ascending: true
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  customFields = data || [];
+
+  renderCustomFieldSummary();
+  renderDynamicFields();
+  renderFieldDefinitions();
+}
+
+
+/* =========================================================
+   CUSTOM FIELD SUMMARY
+========================================================= */
+
+function renderCustomFieldSummary() {
+
+  const box =
+    $("customFieldsSummary");
+
+  if (!box) return;
+
+  const active =
+    customFields.filter(
+      (field) => field.is_active
+    );
+
+  if (!active.length) {
+
+    box.innerHTML = `
+      <span class="sub">
+        No custom fields yet.
+        Add fields for your business
+        from “Manage fields”.
+      </span>
+    `;
+
+    return;
+  }
+
+  box.innerHTML = active
+    .map(
+      (field) => `
+        <span class="field-chip">
+          ${esc(field.field_label)}
+
+          <small>
+            ${esc(field.field_type)}
+          </small>
+        </span>
+      `
+    )
+    .join("");
+}
+
+
+/* =========================================================
+   DYNAMIC LEAD FIELDS
+========================================================= */
+
+function renderDynamicFields() {
+
+  const box =
+    $("dynamicLeadFields");
+
+  if (!box) return;
+
+  const active =
+    customFields.filter(
+      (field) => field.is_active
+    );
+
+  if (!active.length) {
+
+    box.innerHTML = "";
+
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="dynamic-fields-title">
+      Custom fields
+    </div>
+
+    <div class="dynamic-fields-grid">
+
+      ${active
+        .map(renderFieldInput)
+        .join("")}
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   CUSTOM FIELD INPUT
+========================================================= */
+
+function renderFieldInput(field) {
+
+  const required =
+    field.is_required
+      ? "required"
+      : "";
+
+  const name =
+    `custom_${field.id}`;
+
+  let control = "";
+
+  /* SELECT / MULTISELECT */
+
+  if (
+    field.field_type === "select" ||
+    field.field_type === "multiselect"
+  ) {
+
+    const options =
+      Array.isArray(field.options)
+        ? field.options
+        : [];
+
+    control = `
+      <select
+        class="input"
+        name="${esc(name)}"
+        ${
+          field.field_type ===
+          "multiselect"
+            ? "multiple"
+            : ""
+        }
+        ${required}
+      >
+
+        ${
+          field.field_type ===
+          "multiselect"
+            ? ""
+            : `
+              <option value="">
+                Select an option
+              </option>
+            `
+        }
+
+        ${options
+          .map(
+            (option) => `
+              <option
+                value="${esc(option)}"
+              >
+                ${esc(option)}
+              </option>
+            `
+          )
+          .join("")}
+
+      </select>
+    `;
+
+  }
+
+  /* NUMBER */
+
+  else if (
+    field.field_type === "number"
+  ) {
+
+    control = `
+      <input
+        class="input"
+        name="${esc(name)}"
+        type="number"
+        step="any"
+        ${required}
+      >
+    `;
+
+  }
+
+  /* DATE */
+
+  else if (
+    field.field_type === "date"
+  ) {
+
+    control = `
+      <input
+        class="input"
+        name="${esc(name)}"
+        type="date"
+        ${required}
+      >
+    `;
+
+  }
+
+  /* BOOLEAN */
+
+  else if (
+    field.field_type === "boolean"
+  ) {
+
+    control = `
+      <select
+        class="input"
+        name="${esc(name)}"
+        ${required}
+      >
+
+        <option value="">
+          Select
+        </option>
+
+        <option value="true">
+          Yes
+        </option>
+
+        <option value="false">
+          No
+        </option>
+
+      </select>
+    `;
+
+  }
+
+  /* TEXT */
+
+  else {
+
+    control = `
+      <input
+        class="input"
+        name="${esc(name)}"
+        type="text"
+        maxlength="1000"
+        ${required}
+      >
+    `;
+  }
+
+  return `
+    <label>
+
+      ${esc(field.field_label)}
+
+      ${
+        field.is_required
+          ? " *"
+          : ""
+      }
+
+      ${control}
+
+    </label>
+  `;
+}
+
+
+/* =========================================================
+   FIELD DEFINITIONS
+========================================================= */
+
+function renderFieldDefinitions() {
+
+  const box =
+    $("fieldDefinitionsList");
+
+  if (!box) return;
+
+  if (!customFields.length) {
+
+    box.innerHTML = `
+      <div class="sub">
+        No custom fields created yet.
+      </div>
+    `;
+
+    return;
+  }
+
+  box.innerHTML =
+    customFields
+      .map(
+        (field) => `
+          <div
+            class="field-definition-row"
+          >
+
+            <div>
+
+              <strong>
+                ${esc(
+                  field.field_label
+                )}
+              </strong>
+
+              <div class="sub">
+
+                ${esc(
+                  field.field_key
+                )}
+
+                ·
+
+                ${esc(
+                  field.field_type
+                )}
+
+                ·
+
+                ${
+                  field.is_required
+                    ? "Required"
+                    : "Optional"
+                }
+
+              </div>
+
+            </div>
+
+            <button
+              class="row-action field-toggle"
+              data-field-id="${esc(
+                field.id
+              )}"
+              data-active="${field.is_active}"
+            >
+
+              ${
+                field.is_active
+                  ? "Disable"
+                  : "Enable"
+              }
+
+            </button>
+
+          </div>
+        `
+      )
+      .join("");
+}
+
+
+/* =========================================================
    MODALS
 ========================================================= */
 
@@ -369,7 +750,9 @@ function openModal(id) {
 
   if (!element) return;
 
-  element.classList.remove("hidden");
+  element.classList.remove(
+    "hidden"
+  );
 }
 
 
@@ -379,7 +762,373 @@ function closeModal(id) {
 
   if (!element) return;
 
-  element.classList.add("hidden");
+  element.classList.add(
+    "hidden"
+  );
+}
+
+
+/* =========================================================
+   FIELD HELPERS
+========================================================= */
+
+function parseOptions(raw) {
+
+  return String(raw || "")
+    .split(/\r?\n|,/)
+    .map(
+      (value) => value.trim()
+    )
+    .filter(Boolean)
+    .filter(
+      (value, index, array) =>
+        array.indexOf(value) === index
+    );
+}
+
+
+function makeFieldKey(label) {
+
+  return String(label || "")
+    .toLowerCase()
+    .trim()
+    .replace(
+      /[^a-z0-9]+/g,
+      "_"
+    )
+    .replace(
+      /^_+|_+$/g,
+      ""
+    )
+    .slice(0, 70);
+}
+
+
+/* =========================================================
+   CREATE CUSTOM FIELD
+========================================================= */
+
+async function createCustomField(event) {
+
+  event.preventDefault();
+
+  const form =
+    new FormData(event.target);
+
+  const label =
+    String(
+      form.get("field_label") || ""
+    ).trim();
+
+  const key =
+    String(
+      form.get("field_key") || ""
+    )
+      .trim()
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9_]+/g,
+        "_"
+      )
+      .replace(
+        /^_+|_+$/g,
+        ""
+      );
+
+  const type =
+    String(
+      form.get("field_type") ||
+      "text"
+    );
+
+  if (!label) {
+
+    showMessage(
+      "Field label is required.",
+      true
+    );
+
+    return;
+  }
+
+  if (!key) {
+
+    showMessage(
+      "Field key is required.",
+      true
+    );
+
+    return;
+  }
+
+  const options =
+    (
+      type === "select" ||
+      type === "multiselect"
+    )
+      ? parseOptions(
+          form.get("options")
+        )
+      : [];
+
+  if (
+    (
+      type === "select" ||
+      type === "multiselect"
+    ) &&
+    !options.length
+  ) {
+
+    showMessage(
+      "Add at least one option for this field type.",
+      true
+    );
+
+    return;
+  }
+
+  const {
+    error
+  } = await db
+    .from(
+      "lead_custom_field_definitions"
+    )
+    .insert({
+
+      client_id:
+        clientId,
+
+      field_key:
+        key,
+
+      field_label:
+        label,
+
+      field_type:
+        type,
+
+      options:
+        options,
+
+      is_required:
+        form.get(
+          "is_required"
+        ) === "on",
+
+      is_active:
+        true,
+
+      sort_order:
+        Number(
+          form.get(
+            "sort_order"
+          ) || 0
+        )
+
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  event.target.reset();
+
+  if ($("fieldType")) {
+
+    $("fieldType")
+      .dispatchEvent(
+        new Event("change")
+      );
+  }
+
+  await loadCustomFields();
+
+  showMessage(
+    "Custom field created."
+  );
+}
+
+
+/* =========================================================
+   ENABLE / DISABLE CUSTOM FIELD
+========================================================= */
+
+async function toggleCustomField(
+  id,
+  active
+) {
+
+  const {
+    error
+  } = await db
+    .from(
+      "lead_custom_field_definitions"
+    )
+    .update({
+      is_active: !active
+    })
+    .eq(
+      "id",
+      id
+    )
+    .eq(
+      "client_id",
+      clientId
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  await loadCustomFields();
+
+  showMessage(
+    !active
+      ? "Custom field enabled."
+      : "Custom field disabled."
+  );
+}
+
+
+/* =========================================================
+   COLLECT CUSTOM VALUES
+========================================================= */
+
+function collectCustomValues(
+  form
+) {
+
+  const values = [];
+
+  const active =
+    customFields.filter(
+      (field) => field.is_active
+    );
+
+  for (const field of active) {
+
+    const element =
+      form.elements[
+        `custom_${field.id}`
+      ];
+
+    if (!element) {
+      continue;
+    }
+
+    let value = null;
+
+    /* MULTISELECT */
+
+    if (
+      field.field_type ===
+      "multiselect"
+    ) {
+
+      value =
+        Array.from(
+          element.selectedOptions
+        )
+          .map(
+            (option) =>
+              option.value
+          )
+          .filter(Boolean);
+    }
+
+    /* BOOLEAN */
+
+    else if (
+      field.field_type ===
+      "boolean"
+    ) {
+
+      value =
+        element.value === ""
+          ? null
+          : element.value === "true";
+    }
+
+    /* NORMAL */
+
+    else {
+
+      value =
+        element.value?.trim
+          ? element.value.trim()
+          : element.value;
+    }
+
+    if (
+      value !== null &&
+      value !== "" &&
+      !(
+        Array.isArray(value) &&
+        !value.length
+      )
+    ) {
+
+      values.push({
+        field_definition_id:
+          field.id,
+
+        value:
+          value
+      });
+    }
+  }
+
+  return values;
+}
+
+
+/* =========================================================
+   SAVE CUSTOM VALUES
+========================================================= */
+
+async function saveCustomValues(
+  leadId,
+  form
+) {
+
+  const values =
+    collectCustomValues(form);
+
+  if (!values.length) {
+    return;
+  }
+
+  const rows =
+    values.map(
+      (value) => ({
+        lead_id:
+          leadId,
+
+        field_definition_id:
+          value.field_definition_id,
+
+        value:
+          value.value
+      })
+    );
+
+  const {
+    error
+  } = await db
+    .from(
+      "lead_custom_field_values"
+    )
+    .upsert(
+      rows,
+      {
+        onConflict:
+          "lead_id,field_definition_id"
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
 }
 
 
@@ -391,69 +1140,91 @@ async function createLead(event) {
 
   event.preventDefault();
 
-  const form = event.target;
+  const form =
+    event.target;
 
   const formData =
     new FormData(form);
 
-  const clean = (value) =>
-    String(value || "").trim();
-
+  const clean =
+    (value) =>
+      String(
+        value || ""
+      ).trim();
 
   const payload = {
 
-    client_id: clientId,
+    client_id:
+      clientId,
 
     name:
-      clean(formData.get("name")),
+      clean(
+        formData.get("name")
+      ),
 
     mobile:
-      clean(formData.get("mobile")) ||
-      null,
+      clean(
+        formData.get("mobile")
+      ) || null,
 
     whatsapp:
-      clean(formData.get("whatsapp")) ||
-      null,
+      clean(
+        formData.get("whatsapp")
+      ) || null,
 
     city_area:
-      clean(formData.get("city_area")) ||
-      null,
+      clean(
+        formData.get("city_area")
+      ) || null,
 
     interest:
-      clean(formData.get("interest")) ||
-      null,
+      clean(
+        formData.get("interest")
+      ) || null,
 
     product_service:
-      clean(formData.get("product_service")) ||
-      null,
+      clean(
+        formData.get(
+          "product_service"
+        )
+      ) || null,
 
     budget:
       formData.get("budget")
-        ? Number(formData.get("budget"))
+        ? Number(
+            formData.get("budget")
+          )
         : null,
 
     priority:
-      clean(formData.get("priority")) ||
-      "normal",
+      clean(
+        formData.get(
+          "priority"
+        )
+      ) || "normal",
 
     next_follow_up_at:
-      formData.get("next_follow_up_at")
+      formData.get(
+        "next_follow_up_at"
+      )
         ? new Date(
-            formData.get("next_follow_up_at")
+            formData.get(
+              "next_follow_up_at"
+            )
           ).toISOString()
         : null,
 
     notes:
-      clean(formData.get("notes")) ||
-      null,
+      clean(
+        formData.get("notes")
+      ) || null,
 
-    source: "offline"
+    source:
+      "offline"
   };
 
 
-  /* ---------------------------------------------
-     VALIDATION
-  --------------------------------------------- */
+  /* VALIDATION */
 
   if (!payload.name) {
 
@@ -466,9 +1237,7 @@ async function createLead(event) {
   }
 
 
-  /* ---------------------------------------------
-     CREATE LEAD
-  --------------------------------------------- */
+  /* CREATE LEAD */
 
   const {
     data: lead,
@@ -483,10 +1252,7 @@ async function createLead(event) {
     throw error;
   }
 
-
-  /* ---------------------------------------------
-     SOURCE RECORD
-  --------------------------------------------- */
+  /* SOURCE */
 
   const {
     error: sourceError
@@ -494,20 +1260,24 @@ async function createLead(event) {
     .from("lead_sources")
     .insert({
 
-      client_id: clientId,
+      client_id:
+        clientId,
 
-      lead_id: lead.id,
+      lead_id:
+        lead.id,
 
-      source_type: "offline",
+      source_type:
+        "offline",
 
-      source_ref: null,
+      source_ref:
+        null,
 
       metadata: {
-        capture: "dashboard_offline"
+        capture:
+          "dashboard_offline"
       }
 
     });
-
 
   if (sourceError) {
 
@@ -518,9 +1288,7 @@ async function createLead(event) {
   }
 
 
-  /* ---------------------------------------------
-     TIMELINE RECORD
-  --------------------------------------------- */
+  /* TIMELINE */
 
   const {
     error: timelineError
@@ -528,25 +1296,30 @@ async function createLead(event) {
     .from("lead_timeline")
     .insert({
 
-      client_id: clientId,
+      client_id:
+        clientId,
 
-      lead_id: lead.id,
+      lead_id:
+        lead.id,
 
-      event_type: "lead_created",
+      event_type:
+        "lead_created",
 
-      title: "Lead captured offline",
+      title:
+        "Lead captured offline",
 
       description:
         "Lead added from the GLIME Leads dashboard.",
 
-      source: "offline",
+      source:
+        "offline",
 
       metadata: {
-        capture: "dashboard_offline"
+        capture:
+          "dashboard_offline"
       }
 
     });
-
 
   if (timelineError) {
 
@@ -556,10 +1329,7 @@ async function createLead(event) {
     );
   }
 
-
-  /* ---------------------------------------------
-     BASIC PROFILE
-  --------------------------------------------- */
+  /* BASIC PROFILE */
 
   const {
     error: profileError
@@ -567,14 +1337,16 @@ async function createLead(event) {
     .from("lead_profiles")
     .insert({
 
-      lead_id: lead.id,
+      lead_id:
+        lead.id,
 
-      intent: "unknown",
+      intent:
+        "unknown",
 
-      urgency: "unknown"
+      urgency:
+        "unknown"
 
     });
-
 
   if (profileError) {
 
@@ -585,19 +1357,85 @@ async function createLead(event) {
   }
 
 
-  /* ---------------------------------------------
-     RESET + REFRESH
-  --------------------------------------------- */
+  /* CUSTOM VALUES */
+
+  try {
+
+    await saveCustomValues(
+      lead.id,
+      form
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Custom field save failed:",
+      error
+    );
+
+    showMessage(
+      "Lead saved, but custom fields could not be saved.",
+      true
+    );
+  }
+
+
+  /* RESET */
 
   form.reset();
 
-  closeModal("leadModal");
+  closeModal(
+    "leadModal"
+  );
 
   await loadLeads();
 
   showMessage(
     "Lead saved successfully."
   );
+}
+
+/* =========================================================
+   FORMAT CUSTOM VALUE
+========================================================= */
+
+function formatCustomValue(
+  field,
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "—";
+  }
+
+  if (
+    field.field_type ===
+    "boolean"
+  ) {
+
+    return (
+      value === true ||
+      value === "true"
+    )
+      ? "Yes"
+      : "No";
+  }
+
+  if (
+    field.field_type ===
+    "multiselect"
+  ) {
+
+    if (Array.isArray(value)) {
+      return value.join(", ");
+    }
+  }
+
+  return String(value);
 }
 
 
@@ -609,13 +1447,13 @@ async function openDetail(id) {
 
   const lead =
     allLeads.find(
-      (item) => item.id === id
+      (item) =>
+        item.id === id
     );
 
   if (!lead) {
     return;
   }
-
 
   const detail =
     $("detailContent");
@@ -635,20 +1473,33 @@ async function openDetail(id) {
     </h2>
 
     <p class="modal-subtitle">
-      Lead details and activity timeline
+      Lead details, custom data
+      and activity timeline
     </p>
 
 
     <div class="detail-grid">
 
       ${[
-        ["Mobile", lead.mobile],
+        [
+          "Mobile",
+          lead.mobile
+        ],
 
-        ["WhatsApp", lead.whatsapp],
+        [
+          "WhatsApp",
+          lead.whatsapp
+        ],
 
-        ["City / Area", lead.city_area],
+        [
+          "City / Area",
+          lead.city_area
+        ],
 
-        ["Interest", lead.interest],
+        [
+          "Interest",
+          lead.interest
+        ],
 
         [
           "Product / Service",
@@ -665,11 +1516,20 @@ async function openDetail(id) {
             : "—"
         ],
 
-        ["Status", lead.status],
+        [
+          "Status",
+          lead.status
+        ],
 
-        ["Priority", lead.priority],
+        [
+          "Priority",
+          lead.priority
+        ],
 
-        ["Source", lead.source],
+        [
+          "Source",
+          lead.source
+        ],
 
         [
           "Next follow-up",
@@ -696,7 +1556,9 @@ async function openDetail(id) {
               </small>
 
               <strong>
-                ${esc(value || "—")}
+                ${esc(
+                  value || "—"
+                )}
               </strong>
 
             </div>
@@ -718,6 +1580,22 @@ async function openDetail(id) {
           )}
         </strong>
 
+      </div>
+
+    </div>
+
+
+    <h3>
+      Custom fields
+    </h3>
+
+    <div
+      id="detailCustomFields"
+      class="detail-grid"
+    >
+
+      <div class="sub">
+        Loading…
       </div>
 
     </div>
@@ -799,352 +1677,393 @@ async function openDetail(id) {
   `;
 
 
-  const statusSelect =
-    $("detailStatus");
+  $("detailStatus").value =
+    lead.status || "new";
 
-  if (statusSelect) {
-
-    statusSelect.value =
-      lead.status || "new";
-  }
+  openModal(
+    "detailModal"
+  );
 
 
-  openModal("detailModal");
+  /* LOAD TIMELINE + CUSTOM VALUES */
+
+  const [
+    timelineResult,
+    valuesResult
+  ] = await Promise.all([
+
+    db
+      .from("lead_timeline")
+      .select("*")
+      .eq(
+        "client_id",
+        clientId
+      )
+      .eq(
+        "lead_id",
+        id
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      ),
+
+    db
+      .from(
+        "lead_custom_field_values"
+      )
+      .select(
+        "field_definition_id,value"
+      )
+      .eq(
+        "lead_id",
+        id
+      )
+
+  ]);
 
 
-  /* =====================================================
-     LOAD TIMELINE
-  ===================================================== */
+  /* TIMELINE */
 
   const {
     data: events,
-    error
-  } = await db
-    .from("lead_timeline")
-    .select("*")
-    .eq("client_id", clientId)
-    .eq("lead_id", id)
-    .order("created_at", {
-      ascending: false
-    });
+    error: eventError
+  } = timelineResult;
 
+  if (eventError) {
 
-  const timeline =
-    $("timelineBox");
-
-
-  if (!timeline) {
-    return;
-  }
-
-
-  if (error) {
-
-    console.error(
-      "Timeline error:",
-      error
-    );
-
-    timeline.innerHTML = `
-      <div class="sub">
-        Timeline unavailable.
-      </div>
-    `;
-
-  } else if (!events?.length) {
-
-    timeline.innerHTML = `
-      <div class="sub">
-        No timeline events yet.
-      </div>
-    `;
+    $("timelineBox").textContent =
+      "Timeline unavailable.";
 
   } else {
 
-    timeline.innerHTML =
-      events
-        .map(
-          (event) => `
+    $("timelineBox").innerHTML =
+      events?.length
 
-            <div class="event">
+        ? events
+            .map(
+              (event) => `
 
-              <strong>
-                ${esc(event.title)}
-              </strong>
+                <div class="event">
 
-              <div class="sub">
+                  <strong>
+                    ${esc(
+                      event.title
+                    )}
+                  </strong>
 
-                ${fmtDate(
-                  event.created_at
-                )}
+                  <div class="sub">
 
-                ·
+                    ${fmtDate(
+                      event.created_at
+                    )}
 
-                ${esc(
-                  event.source ||
-                  "system"
-                )}
+                    ·
 
-              </div>
+                    ${esc(
+                      event.source ||
+                      "system"
+                    )}
 
-              <p>
-                ${esc(
-                  event.description ||
-                  ""
-                )}
-              </p>
+                  </div>
 
-            </div>
+                  <p>
+                    ${esc(
+                      event.description ||
+                      ""
+                    )}
+                  </p>
 
-          `
+                </div>
+
+              `
+            )
+            .join("")
+
+        : `
+          <div class="sub">
+            No timeline events yet.
+          </div>
+        `;
+  }
+
+
+  /* CUSTOM VALUES */
+
+  const {
+    data: values,
+    error: valueError
+  } = valuesResult;
+
+  if (valueError) {
+
+    $("detailCustomFields").innerHTML =
+      `
+        <div class="sub">
+          Custom data unavailable.
+        </div>
+      `;
+
+  } else {
+
+    const byId =
+      new Map(
+        (values || []).map(
+          (value) => [
+            value.field_definition_id,
+            value.value
+          ]
         )
-        .join("");
-  }
+      );
 
+    const active =
+      customFields.filter(
+        (field) =>
+          field.is_active &&
+          byId.has(field.id)
+      );
 
-  /* =====================================================
-     STATUS UPDATE
-  ===================================================== */
+    $("detailCustomFields").innerHTML =
+      active.length
 
-  const saveButton =
-    $("saveDetail");
+        ? active
+            .map(
+              (field) => `
 
+                <div class="detail-item">
 
-  if (saveButton) {
+                  <small>
+                    ${esc(
+                      field.field_label
+                    )}
+                  </small>
 
-    saveButton.onclick =
-      async () => {
+                  <strong>
+                    ${esc(
+                      formatCustomValue(
+                        field,
+                        byId.get(
+                          field.id
+                        )
+                      )
+                    )}
+                  </strong>
 
-        const newStatus =
-          $("detailStatus")?.value;
+                </div>
 
+              `
+            )
+            .join("")
 
-        if (!newStatus) {
+        : `
+          <div class="sub">
+            No custom data saved
+            for this lead.
+          </div>
+        `;
+      }
 
-          showMessage(
-            "Please select a status.",
-            true
-          );
+      /* STATUS UPDATE */
 
-          return;
-        }
-
-
-        saveButton.disabled = true;
-
-        saveButton.textContent =
-          "Saving…";
-
-
-        try {
-
-          const {
-            error: updateError
-          } = await db
-            .from("leads")
-            .update({
-              status: newStatus
-            })
-            .eq("id", id)
-            .eq(
-              "client_id",
-              clientId
-            );
-
-
-          if (updateError) {
-            throw updateError;
-          }
-
-
-          /* -----------------------------------------
-             TIMELINE EVENT
-          ----------------------------------------- */
-
-          const {
-            error: timelineError
-          } = await db
-            .from("lead_timeline")
-            .insert({
-
-              client_id: clientId,
-
-              lead_id: id,
-
-              event_type:
-                "status_changed",
-
-              title:
-                `Status changed to ${newStatus}`,
-
-              description:
-                "Status updated from the GLIME Leads dashboard.",
-
-              source: "dashboard",
-
-              metadata: {
-                status: newStatus
-              }
-
-            });
-
-
-          if (timelineError) {
-
-            console.error(
-              "Status timeline error:",
-              timelineError
-            );
-          }
-
-
-          closeModal(
-            "detailModal"
-          );
-
-          await loadLeads();
-
-          showMessage(
-            "Lead updated."
-          );
-
-        } catch (error) {
-
-          console.error(
-            error
-          );
-
-          showMessage(
-            error.message ||
-            "Could not update lead.",
-            true
-          );
-
-        } finally {
-
-          saveButton.disabled =
-            false;
-
-          saveButton.textContent =
-            "Save status";
-        }
-      };
-  }
-}
-
-
-/* =========================================================
-   EVENT LISTENERS
-========================================================= */
-
-
-/* Search */
-
-if ($("searchInput")) {
-
-  $("searchInput")
-    .addEventListener(
-      "input",
-      render
-    );
-}
-
-
-/* Status filter */
-
-if ($("statusFilter")) {
-
-  $("statusFilter")
-    .addEventListener(
-      "change",
-      render
-    );
-}
-
-
-/* Source filter */
-
-if ($("sourceFilter")) {
-
-  $("sourceFilter")
-    .addEventListener(
-      "change",
-      render
-    );
-}
-
-
-/* Refresh */
-
-if ($("refreshBtn")) {
-
-  $("refreshBtn").onclick =
+  $("saveDetail").onclick =
     async () => {
 
-      try {
+      const status =
+        $("detailStatus").value;
 
-        await loadLeads();
-
-        showMessage(
-          "Leads refreshed."
+      const {
+        error
+      } = await db
+        .from("leads")
+        .update({
+          status:
+            status
+        })
+        .eq(
+          "id",
+          id
+        )
+        .eq(
+          "client_id",
+          clientId
         );
 
-      } catch (error) {
-
-        console.error(error);
+      if (error) {
 
         showMessage(
-          error.message ||
-          "Could not refresh leads.",
+          error.message,
           true
         );
+
+        return;
       }
-    };
-}
 
 
-/* Add Lead */
+      const {
+        error: timelineError
+      } = await db
+        .from("lead_timeline")
+        .insert({
 
-if ($("addLeadBtn")) {
+          client_id:
+            clientId,
 
-  $("addLeadBtn").onclick =
-    () => {
+          lead_id:
+            id,
 
-      openModal(
-        "leadModal"
+          event_type:
+            "status_changed",
+
+          title:
+            `Status changed to ${status}`,
+
+          description:
+            "Status updated from the Leads dashboard.",
+
+          source:
+            "dashboard",
+
+          metadata: {
+            status:
+              status
+          }
+
+        });
+
+
+      if (timelineError) {
+
+        console.error(
+          timelineError
+        );
+      }
+
+
+      closeModal(
+        "detailModal"
+      );
+
+      await loadLeads();
+
+      showMessage(
+        "Lead updated."
       );
     };
 }
 
 
-/* Lead Form */
+/* =========================================================
+   EVENTS
+========================================================= */
 
-if ($("leadForm")) {
+$("searchInput")
+  ?.addEventListener(
+    "input",
+    render
+  );
 
-  $("leadForm")
-    .addEventListener(
-      "submit",
-      async (event) => {
 
-        try {
+$("statusFilter")
+  ?.addEventListener(
+    "change",
+    render
+  );
 
-          await createLead(
-            event
-          );
 
-        } catch (error) {
+$("sourceFilter")
+  ?.addEventListener(
+    "change",
+    render
+  );
 
-          console.error(error);
 
+$("refreshBtn")
+  ?.addEventListener(
+    "click",
+    () =>
+      loadLeads()
+        .catch(
+          (error) =>
+            showMessage(
+              error.message,
+              true
+            )
+        )
+  );
+
+
+$("addLeadBtn")
+  ?.addEventListener(
+    "click",
+    () =>
+      openModal(
+        "leadModal"
+      )
+  );
+
+
+$("manageFieldsBtn")
+  ?.addEventListener(
+    "click",
+    () =>
+      openModal(
+        "fieldsModal"
+      )
+  );
+
+
+$("leadForm")
+  ?.addEventListener(
+    "submit",
+    (event) =>
+      createLead(
+        event
+      ).catch(
+        (error) =>
           showMessage(
-            error.message ||
-            "Could not save lead.",
+            error.message,
             true
-          );
-        }
-      }
-    );
-}
+          )
+      )
+  );
+
+
+$("fieldForm")
+  ?.addEventListener(
+    "submit",
+    (event) =>
+      createCustomField(
+        event
+      ).catch(
+        (error) =>
+          showMessage(
+            error.message,
+            true
+          )
+      )
+  );
+
+
+$("fieldType")
+  ?.addEventListener(
+    "change",
+    () => {
+
+      const type =
+        $("fieldType").value;
+
+      $("optionsField")
+        .classList.toggle(
+          "hidden",
+          ![
+            "select",
+            "multiselect"
+          ].includes(type)
+        );
+    }
+  );
 
 
 /* =========================================================
@@ -1155,47 +2074,64 @@ document.addEventListener(
   "click",
   (event) => {
 
-    /* View Lead */
+    const openId =
+      event.target
+        .closest(
+          "[data-open]"
+        )
+        ?.dataset
+        .open;
 
-    const openButton =
-      event.target.closest(
-        "[data-open]"
-      );
+    if (openId) {
 
-    if (openButton) {
-
-      const id =
-        openButton.dataset.open;
-
-      openDetail(id)
-        .catch((error) => {
-
-          console.error(error);
-
+      openDetail(
+        openId
+      ).catch(
+        (error) =>
           showMessage(
-            error.message ||
-            "Could not open lead.",
+            error.message,
             true
-          );
-        });
-
-      return;
+          )
+      );
     }
 
 
-    /* Close Modal */
+    const closeId =
+      event.target
+        .closest(
+          "[data-close]"
+        )
+        ?.dataset
+        .close;
 
-    const closeButton =
-      event.target.closest(
-        "[data-close]"
-      );
-
-    if (closeButton) {
+    if (closeId) {
 
       closeModal(
-        closeButton.dataset.close
+        closeId
       );
     }
+
+
+    const toggle =
+      event.target.closest(
+        ".field-toggle"
+      );
+
+    if (toggle) {
+
+      toggleCustomField(
+        toggle.dataset.fieldId,
+        toggle.dataset.active ===
+          "true"
+      ).catch(
+        (error) =>
+          showMessage(
+            error.message,
+            true
+          )
+      );
+    }
+
   }
 );
 
@@ -1204,44 +2140,42 @@ document.addEventListener(
    LOGOUT
 ========================================================= */
 
-if ($("logoutBtn")) {
-
-  $("logoutBtn").onclick =
+$("logoutBtn")
+  ?.addEventListener(
+    "click",
     async () => {
 
-      try {
+      await db.auth.signOut();
 
-        await db.auth.signOut();
-
-      } finally {
-
-        window.location.href =
-          "login.html";
-      }
-    };
-}
+      window.location.href =
+        "login.html";
+    }
+  );
 
 
 /* =========================================================
-   INITIALIZATION
+   INITIAL LOAD
 ========================================================= */
 
-(async function initLeadsPage() {
+(async () => {
 
   try {
 
-    const authenticated =
+    const ready =
       await requireClient();
 
-    if (authenticated) {
+    if (ready) {
 
-      await loadLeads();
+      await Promise.all([
+        loadLeads(),
+        loadCustomFields()
+      ]);
+
     }
 
   } catch (error) {
 
     console.error(
-      "Leads initialization error:",
       error
     );
 
@@ -1253,15 +2187,14 @@ if ($("logoutBtn")) {
 
   } finally {
 
-    const loading =
-      $("loadingScreen");
+    $("loadingScreen")
+      ?.classList
+      .add("hidden");
 
-    if (loading) {
-
-      loading.classList.add(
-        "hidden"
+    $("fieldType")
+      ?.dispatchEvent(
+        new Event("change")
       );
-    }
   }
 
 })();
