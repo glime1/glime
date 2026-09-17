@@ -67,6 +67,17 @@
     </div>
   </section>
 
+  <section class="card custom-fields-card">
+    <div class="section-head">
+      <div>
+        <h2>Custom Lead Fields</h2>
+        <p class="section-note">Add business-specific fields that appear in the lead form.</p>
+      </div>
+      <button id="manageFieldsBtn" class="ghost-btn">Manage fields</button>
+    </div>
+    <div id="customFieldsSummary" class="custom-fields-summary">Loading custom fields…</div>
+  </section>
+
   <section class="card table-card">
     <div class="section-head">
       <h2>Lead Pipeline</h2>
@@ -104,8 +115,35 @@
       <label>Priority<select name="priority" class="input"><option>normal</option><option>low</option><option>high</option><option>urgent</option></select></label>
       <label>Next follow-up<input name="next_follow_up_at" class="input" type="datetime-local"></label>
       <label class="full">Notes<textarea name="notes" class="input" rows="4" maxlength="5000"></textarea></label>
+      <div id="dynamicLeadFields" class="dynamic-fields full"></div>
       <div class="form-actions full"><button type="button" class="ghost-btn" data-close="leadModal">Cancel</button><button class="primary-btn" type="submit">Save Lead</button></div>
     </form>
+  </div>
+</div>
+
+<div id="fieldsModal" class="modal hidden">
+  <div class="modal-panel">
+    <button class="modal-close" data-close="fieldsModal">×</button>
+    <h2>Manage Custom Fields</h2>
+    <p class="modal-subtitle">Create fields for this business. Changes apply only to your client account.</p>
+
+    <form id="fieldForm" class="form-grid">
+      <label>Field label<input name="field_label" class="input" required maxlength="120" placeholder="e.g. Property Type"></label>
+      <label>Field key<input name="field_key" class="input" required maxlength="80" placeholder="e.g. property_type"></label>
+      <label>Field type<select name="field_type" id="fieldType" class="input">
+        <option value="text">Text</option><option value="number">Number</option><option value="boolean">Yes / No</option>
+        <option value="date">Date</option><option value="select">Select</option><option value="multiselect">Multi-select</option>
+      </select></label>
+      <label>Sort order<input name="sort_order" class="input" type="number" min="0" step="1" value="0"></label>
+      <label id="optionsField" class="full">Options <textarea name="options" class="input" rows="3" placeholder="One option per line"></textarea></label>
+      <label class="checkbox-label full"><input name="is_required" type="checkbox"> Required field</label>
+      <div class="form-actions full"><button type="button" class="ghost-btn" data-close="fieldsModal">Close</button><button class="primary-btn" type="submit">Create field</button></div>
+    </form>
+
+    <div class="field-list-wrap">
+      <h3>Existing fields</h3>
+      <div id="fieldDefinitionsList" class="field-list">Loading…</div>
+    </div>
   </div>
 </div>
 
