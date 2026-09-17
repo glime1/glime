@@ -70,5 +70,65 @@
 </main>
 
 <script src="care.js"></script>
+
+<section class="card care-ai-entry">
+  <div class="cardHead">
+    <div>
+      <h2>🤖 Family AI Assistant</h2>
+      <span class="muted">Talk to your GLIME CARE AI</span>
+    </div>
+
+    <a class="care-ai-button" href="care-ai.html">
+      Open Family AI →
+    </a>
+  </div>
+
+  <p class="ai-entry-copy">
+    परिवार से जुड़े सवाल पूछें, plan बनवाएँ और CARE AI से सहायता लें।
+    हर request authenticated CARE runtime से होकर जाएगी।
+  </p>
+</section>
+
+<style>
+.care-ai-entry {
+  margin: 24px 0;
+}
+
+.care-ai-entry .cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.care-ai-button {
+  display: inline-block;
+  padding: 11px 18px;
+  border-radius: 10px;
+  background: #00ff88;
+  color: #05080c;
+  text-decoration: none;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ai-entry-copy {
+  margin-top: 12px;
+  color: #9ca3af;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .care-ai-entry .cardHead {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .care-ai-button {
+    text-align: center;
+  }
+}
+</style>
+</body>
 </body>
 </html>
