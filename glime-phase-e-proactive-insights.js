@@ -1,50 +1,77 @@
-/*
- * GLIME — Phase E
- * Proactive Business Insights Dashboard Add-on
- *
- * Purpose:
- * - Show open proactive business insights on the client dashboard
- * - Read-only UI
- * - Does NOT execute any action
- * - Does NOT modify GLIME CARE
- */
-
 (() => {
   "use strict";
 
-  const SUPABASE_URL = "https://qgztludrqsxvkxmyvfer.supabase.co";
+  /*
+   * GLIME Phase E
+   * Proactive Business Insights
+   *
+   * Production Secure RPC version
+   *
+   * READ ONLY:
+   * - No action execution
+   * - No fake data
+   * - No arbitrary client_id from browser
+   * - Client identity is resolved securely by Supabase RPC
+   */
 
-  const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4Z3RsZWRycnN4dmt4bXl2ZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU1NTU5OX0.example";
+  const SUPABASE_URL =
+    "https://ufoulgbiqgjriwapuopc.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+
+  const RPC_NAME =
+    "get_client_proactive_insights";
+
+  const CARD_ID =
+    "glime-proactive-insights-card";
+
+  const MAX_INSIGHTS = 5;
 
   let supabaseClient = null;
 
-  /*
-   * Wait until Supabase JS is available
-   */
-  function waitForSupabase(callback, attempts = 40) {
-    if (window.supabase) {
-      callback();
-      return;
+  // --------------------------------------------------
+  // SUPABASE CLIENT
+  // --------------------------------------------------
+
+  function getSupabaseClient() {
+
+    // Reuse dashboard's existing client if available
+    if (window.supabaseClient) {
+      supabaseClient = window.supabaseClient;
+      return supabaseClient;
     }
 
-    if (attempts <= 0) {
-      console.error("GLIME Phase E: Supabase JS not found.");
-      return;
+    if (
+      !window.supabase ||
+      typeof window.supabase.createClient !== "function"
+    ) {
+      console.error(
+        "GLIME Phase E: Supabase JS library unavailable."
+      );
+
+      return null;
     }
 
-    setTimeout(() => {
-      waitForSupabase(callback, attempts - 1);
-    }, 250);
+    supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
+
+    // Make it available to other dashboard add-ons
+    window.supabaseClient = supabaseClient;
+
+    return supabaseClient;
   }
 
-  /*
-   * Escape HTML before rendering database content
-   */
-  function escapeHtml(value) {
-    if (value === null || value === undefined) return "";
+  // --------------------------------------------------
+  // HTML ESCAPE
+  // --------------------------------------------------
 
-    return String(value)
+  function escapeHtml(value) {
+
+    return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -52,470 +79,686 @@
       .replace(/'/g, "&#039;");
   }
 
-  /*
-   * Priority styling
-   */
-  function priorityClass(priority) {
-    const value = String(priority || "").toLowerCase();
+  // --------------------------------------------------
+  // PRIORITY
+  // --------------------------------------------------
 
-    if (value === "critical") return "critical";
-    if (value === "high") return "high";
-    if (value === "medium") return "medium";
+  function priorityMeta(priority) {
 
-    return "low";
-  }
+    const p =
+      String(priority || "medium")
+        .toLowerCase();
 
-  /*
-   * Format date/time
-   */
-  function formatDate(dateValue) {
-    if (!dateValue) return "Recently detected";
-
-    const date = new Date(dateValue);
-
-    if (Number.isNaN(date.getTime())) {
-      return escapeHtml(dateValue);
+    if (p === "critical") {
+      return {
+        label: "Critical",
+        cls: "high",
+        icon: "🔴"
+      };
     }
 
-    return date.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+    if (p === "high") {
+      return {
+        label: "High",
+        cls: "high",
+        icon: "🔴"
+      };
+    }
+
+    if (p === "low") {
+      return {
+        label: "Low",
+        cls: "low",
+        icon: "🟢"
+      };
+    }
+
+    return {
+      label: "Medium",
+      cls: "medium",
+      icon: "🟡"
+    };
   }
 
-  /*
-   * Create UI styles
-   */
-  function injectStyles() {
-    if (document.getElementById("glime-phase-e-styles")) return;
+  // --------------------------------------------------
+  // STYLES
+  // --------------------------------------------------
 
-    const style = document.createElement("style");
+  function addStyles() {
 
-    style.id = "glime-phase-e-styles";
+    if (
+      document.getElementById(
+        "glime-proactive-insights-style"
+      )
+    ) {
+      return;
+    }
+
+    const style =
+      document.createElement("style");
+
+    style.id =
+      "glime-proactive-insights-style";
 
     style.textContent = `
-      .glime-phase-e-card {
-        width: 100%;
-        margin: 0 0 24px 0;
-        padding: 22px;
-        border-radius: 18px;
-        background: rgba(18, 18, 24, 0.96);
-        border: 1px solid rgba(255,255,255,0.08);
-        box-shadow: 0 12px 35px rgba(0,0,0,0.18);
-        color: #fff;
-        box-sizing: border-box;
+
+      #${CARD_ID} {
+        margin-bottom: 30px;
+        background: var(--card-bg, #111827);
+        border: 1px solid rgba(0,255,136,.14);
+        border-radius: 15px;
+        padding: 26px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.35);
       }
 
-      .glime-phase-e-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 18px;
+      #${CARD_ID} .gpi-head {
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:16px;
+        margin-bottom:18px;
       }
 
-      .glime-phase-e-title {
-        margin: 0;
-        font-size: 20px;
-        font-weight: 700;
+      #${CARD_ID} .gpi-title {
+        color: var(--neon-green,#00ff88);
+        font-size:1.18rem;
+        font-weight:700;
       }
 
-      .glime-phase-e-subtitle {
-        margin: 5px 0 0;
-        color: rgba(255,255,255,0.58);
-        font-size: 13px;
+      #${CARD_ID} .gpi-subtitle {
+        color:var(--text-muted,#9ca3af);
+        font-size:.82rem;
+        margin-top:5px;
+        line-height:1.55;
       }
 
-      .glime-phase-e-refresh {
-        border: 1px solid rgba(255,255,255,0.12);
-        background: rgba(255,255,255,0.06);
-        color: #fff;
-        padding: 9px 14px;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 13px;
+      #${CARD_ID} .gpi-refresh {
+        border:1px solid rgba(0,240,255,.25);
+        background:rgba(0,240,255,.06);
+        color:var(--cyan-blue,#00f0ff);
+        border-radius:9px;
+        padding:9px 12px;
+        font-weight:700;
+        cursor:pointer;
       }
 
-      .glime-phase-e-refresh:hover {
-        background: rgba(255,255,255,0.10);
+      #${CARD_ID} .gpi-refresh:disabled {
+        opacity:.55;
+        cursor:wait;
       }
 
-      .glime-phase-e-list {
-        display: grid;
-        gap: 12px;
+      #${CARD_ID} .gpi-list {
+        display:grid;
+        gap:12px;
       }
 
-      .glime-phase-e-insight {
-        padding: 16px;
-        border-radius: 14px;
-        background: rgba(255,255,255,0.035);
-        border: 1px solid rgba(255,255,255,0.07);
+      #${CARD_ID} .gpi-item {
+        border:1px solid rgba(255,255,255,.07);
+        background:rgba(255,255,255,.025);
+        border-radius:12px;
+        padding:16px;
       }
 
-      .glime-phase-e-insight-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 14px;
+      #${CARD_ID} .gpi-item-top {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        margin-bottom:8px;
       }
 
-      .glime-phase-e-insight-title {
-        margin: 0;
-        font-size: 15px;
-        font-weight: 650;
+      #${CARD_ID} .gpi-item-title {
+        color:#fff;
+        font-weight:700;
+        line-height:1.45;
       }
 
-      .glime-phase-e-priority {
-        flex-shrink: 0;
-        padding: 4px 8px;
-        border-radius: 999px;
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+      #${CARD_ID} .gpi-badge {
+        flex:0 0 auto;
+        border-radius:999px;
+        padding:5px 9px;
+        font-size:.68rem;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.4px;
       }
 
-      .glime-phase-e-priority.critical {
-        background: rgba(255, 70, 70, 0.14);
-        color: #ff7b7b;
+      #${CARD_ID} .gpi-badge.high {
+        color:#ff6b7a;
+        border:1px solid rgba(255,71,87,.25);
+        background:rgba(255,71,87,.08);
       }
 
-      .glime-phase-e-priority.high {
-        background: rgba(255, 160, 50, 0.14);
-        color: #ffb35c;
+      #${CARD_ID} .gpi-badge.medium {
+        color:#ffd166;
+        border:1px solid rgba(255,209,102,.22);
+        background:rgba(255,209,102,.07);
       }
 
-      .glime-phase-e-priority.medium {
-        background: rgba(255, 210, 70, 0.14);
-        color: #ffd966;
+      #${CARD_ID} .gpi-badge.low {
+        color:#00ff88;
+        border:1px solid rgba(0,255,136,.22);
+        background:rgba(0,255,136,.07);
       }
 
-      .glime-phase-e-priority.low {
-        background: rgba(100, 180, 255, 0.14);
-        color: #8fcaff;
+      #${CARD_ID} .gpi-summary {
+        color:#cbd5e1;
+        font-size:.84rem;
+        line-height:1.65;
       }
 
-      .glime-phase-e-summary {
-        margin: 10px 0 8px;
-        color: rgba(255,255,255,0.72);
-        font-size: 13px;
-        line-height: 1.55;
+      #${CARD_ID} .gpi-meta {
+        margin-top:10px;
+        color:var(--text-muted,#9ca3af);
+        font-size:.72rem;
       }
 
-      .glime-phase-e-time {
-        color: rgba(255,255,255,0.42);
-        font-size: 11px;
+      #${CARD_ID} .gpi-empty,
+      #${CARD_ID} .gpi-error {
+        color:var(--text-muted,#9ca3af);
+        padding:14px 0 4px;
+        line-height:1.6;
       }
 
-      .glime-phase-e-empty {
-        padding: 18px;
-        text-align: center;
-        color: rgba(255,255,255,0.48);
-        font-size: 13px;
-        border: 1px dashed rgba(255,255,255,0.10);
-        border-radius: 14px;
+      #${CARD_ID} .gpi-error {
+        color:#ff9aa5;
       }
 
-      .glime-phase-e-error {
-        padding: 14px;
-        border-radius: 12px;
-        background: rgba(255,70,70,0.08);
-        border: 1px solid rgba(255,70,70,0.15);
-        color: rgba(255,255,255,0.72);
-        font-size: 13px;
-      }
+      @media(max-width:700px) {
 
-      @media (max-width: 600px) {
-        .glime-phase-e-card {
-          padding: 17px;
+        #${CARD_ID} {
+          padding:20px;
         }
 
-        .glime-phase-e-header {
-          align-items: flex-start;
+        #${CARD_ID} .gpi-head {
+          flex-direction:column;
         }
 
-        .glime-phase-e-insight-top {
-          flex-direction: column;
-          gap: 8px;
+        #${CARD_ID} .gpi-refresh {
+          width:100%;
         }
 
-        .glime-phase-e-refresh {
-          padding: 8px 11px;
+        #${CARD_ID} .gpi-item-top {
+          align-items:flex-start;
+          flex-direction:column;
         }
+
       }
     `;
 
     document.head.appendChild(style);
   }
 
-  /*
-   * Find current client
-   */
-  async function getCurrentClient() {
+  // --------------------------------------------------
+  // AUTH CHECK
+  // --------------------------------------------------
+
+  async function ensureAuthenticated() {
+
+    const supabase =
+      getSupabaseClient();
+
+    if (!supabase) {
+      throw new Error(
+        "Supabase client unavailable."
+      );
+    }
+
     const {
-      data: { session },
-      error: sessionError
-    } = await supabaseClient.auth.getSession();
-
-    if (sessionError) {
-      throw sessionError;
-    }
-
-    if (!session || !session.user) {
-      throw new Error("User session not found.");
-    }
-
-    const { data, error } = await supabaseClient
-      .from("client_data")
-      .select("id")
-      .eq("auth_user_id", session.user.id)
-      .maybeSingle();
+      data,
+      error
+    } =
+      await supabase.auth.getSession();
 
     if (error) {
       throw error;
     }
 
-    if (!data) {
-      throw new Error("Client profile not found.");
+    const session =
+      data?.session;
+
+    if (!session?.user?.id) {
+
+      return false;
     }
 
-    return data;
+    return true;
   }
 
-  /*
-   * Fetch proactive insights
-   */
-  async function getInsights(clientId) {
-    const { data, error } = await supabaseClient
-      .from("client_proactive_insights")
-      .select(`
-        id,
-        title,
-        priority,
-        summary,
-        status,
-        last_seen_at,
-        created_at
-      `)
-      .eq("client_id", clientId)
-      .eq("status", "open")
-      .order("priority", { ascending: true })
-      .order("last_seen_at", { ascending: false })
-      .limit(5);
+  // --------------------------------------------------
+  // PRODUCTION RPC
+  // --------------------------------------------------
+
+  async function getInsights() {
+
+    const supabase =
+      getSupabaseClient();
+
+    if (!supabase) {
+      throw new Error(
+        "Supabase client unavailable."
+      );
+    }
+
+    const authenticated =
+      await ensureAuthenticated();
+
+    if (!authenticated) {
+
+      return [];
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * We DO NOT send client_id.
+     *
+     * The production RPC identifies the
+     * authenticated client's own business data.
+     */
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        RPC_NAME,
+        {
+          p_limit: MAX_INSIGHTS
+        }
+      );
 
     if (error) {
+
+      console.error(
+        "GLIME Phase E RPC error:",
+        error
+      );
+
       throw error;
     }
 
-    return data || [];
-  }
+    /*
+     * JSONB can arrive as an array or
+     * occasionally as a JSON string.
+     */
 
-  /*
-   * Render insights
-   */
-  function renderInsights(container, insights) {
-    if (!insights.length) {
-      container.innerHTML = `
-        <div class="glime-phase-e-empty">
-          No new business insights detected right now.
-        </div>
-      `;
+    let insights = data;
 
-      return;
+    if (typeof insights === "string") {
+
+      try {
+        insights =
+          JSON.parse(insights);
+      } catch (parseError) {
+
+        console.error(
+          "GLIME Phase E JSON parse error:",
+          parseError
+        );
+
+        insights = [];
+      }
     }
 
-    container.innerHTML = insights
-      .map((insight) => {
-        const priority = String(insight.priority || "low").toLowerCase();
+    /*
+     * Safety:
+     * never render unexpected object shapes.
+     */
 
-        return `
-          <div class="glime-phase-e-insight">
+    if (!Array.isArray(insights)) {
 
-            <div class="glime-phase-e-insight-top">
+      /*
+       * Some RPC implementations may
+       * return { insights: [...] }.
+       */
 
-              <h3 class="glime-phase-e-insight-title">
-                ${escapeHtml(insight.title || "Business Insight")}
-              </h3>
+      if (
+        insights &&
+        Array.isArray(insights.insights)
+      ) {
 
-              <span class="glime-phase-e-priority ${priorityClass(priority)}">
-                ${escapeHtml(priority)}
-              </span>
+        insights =
+          insights.insights;
 
-            </div>
+      } else {
 
-            <div class="glime-phase-e-summary">
-              ${escapeHtml(
-                insight.summary ||
-                "GLIME detected a business pattern that may require attention."
-              )}
-            </div>
+        insights = [];
+      }
+    }
 
-            <div class="glime-phase-e-time">
-              Last detected:
-              ${formatDate(insight.last_seen_at || insight.created_at)}
-            </div>
-
-          </div>
-        `;
-      })
-      .join("");
+    return insights;
   }
 
-  /*
-   * Create dashboard card
-   */
+  // --------------------------------------------------
+  // CARD
+  // --------------------------------------------------
+
   function createCard() {
-    const existing = document.getElementById(
-      "glime-phase-e-proactive-insights"
-    );
+
+    const existing =
+      document.getElementById(
+        CARD_ID
+      );
 
     if (existing) {
       return existing;
     }
 
-    const card = document.createElement("section");
+    const card =
+      document.createElement("section");
 
-    card.id = "glime-phase-e-proactive-insights";
-
-    card.className = "glime-phase-e-card";
+    card.id =
+      CARD_ID;
 
     card.innerHTML = `
-      <div class="glime-phase-e-header">
+
+      <div class="gpi-head">
 
         <div>
-          <h2 class="glime-phase-e-title">
-            Proactive Business Insights
-          </h2>
 
-          <p class="glime-phase-e-subtitle">
-            GLIME automatically detects important business patterns.
-          </p>
+          <div class="gpi-title">
+            🧠 GLIME Business Insights
+          </div>
+
+          <div class="gpi-subtitle">
+            Proactive signals detected from your authorized business data.
+          </div>
+
         </div>
 
         <button
           type="button"
-          class="glime-phase-e-refresh"
-          id="glime-phase-e-refresh"
+          class="gpi-refresh"
         >
-          Refresh
+          ↻ Refresh
         </button>
 
       </div>
 
-      <div
-        class="glime-phase-e-list"
-        id="glime-phase-e-list"
-      >
-        <div class="glime-phase-e-empty">
-          Loading insights...
+      <div class="gpi-list">
+
+        <div class="gpi-empty">
+          Checking your latest business insights…
         </div>
+
       </div>
+
     `;
+
+    const progressCard =
+      document.querySelector(
+        ".progress-card"
+      );
+
+    const main =
+      document.querySelector(
+        ".main-content"
+      );
+
+    if (
+      progressCard?.parentNode
+    ) {
+
+      progressCard.parentNode.insertBefore(
+        card,
+        progressCard
+      );
+
+    } else if (main) {
+
+      main.insertBefore(
+        card,
+        main.firstChild
+      );
+
+    } else {
+
+      document.body.prepend(card);
+    }
 
     return card;
   }
 
-  /*
-   * Insert card into dashboard
-   */
-  function insertCard(card) {
-    const progressCard = document.querySelector(".progress-card");
+  // --------------------------------------------------
+  // RENDER
+  // --------------------------------------------------
 
-    if (progressCard && progressCard.parentNode) {
-      progressCard.parentNode.insertBefore(card, progressCard);
+  function render(card, insights) {
+
+    const list =
+      card.querySelector(
+        ".gpi-list"
+      );
+
+    if (!list) {
       return;
     }
 
-    const mainContent = document.querySelector(".main-content");
+    if (!insights.length) {
 
-    if (mainContent) {
-      mainContent.prepend(card);
+      list.innerHTML = `
+
+        <div class="gpi-empty">
+
+          अभी कोई open proactive insight नहीं मिला।
+          GLIME नियमित monitoring के दौरान आपके
+          business signals check करता रहेगा।
+
+        </div>
+
+      `;
+
       return;
     }
 
-    document.body.prepend(card);
+    list.innerHTML =
+      insights
+        .map((item) => {
+
+          const meta =
+            priorityMeta(
+              item.priority
+            );
+
+          const seen =
+            item.last_seen_at
+              ? new Date(
+                  item.last_seen_at
+                ).toLocaleString(
+                  "en-IN"
+                )
+              : "—";
+
+          const title =
+            item.title ||
+            "Business insight";
+
+          const summary =
+            item.summary ||
+            item.description ||
+            item.message ||
+            "GLIME detected a business signal.";
+
+          return `
+
+            <article class="gpi-item">
+
+              <div class="gpi-item-top">
+
+                <div class="gpi-item-title">
+
+                  ${escapeHtml(meta.icon)}
+                  ${escapeHtml(title)}
+
+                </div>
+
+                <span class="gpi-badge ${meta.cls}">
+
+                  ${escapeHtml(meta.label)}
+
+                </span>
+
+              </div>
+
+              <div class="gpi-summary">
+
+                ${escapeHtml(summary)}
+
+              </div>
+
+              <div class="gpi-meta">
+
+                Last detected:
+                ${escapeHtml(seen)}
+
+              </div>
+
+            </article>
+
+          `;
+
+        })
+        .join("");
   }
 
-  /*
-   * Load and display insights
-   */
-  async function loadInsights() {
-    const list = document.getElementById("glime-phase-e-list");
+  // --------------------------------------------------
+  // LOAD
+  // --------------------------------------------------
 
-    if (!list) return;
+  async function load(card) {
 
-    list.innerHTML = `
-      <div class="glime-phase-e-empty">
-        Loading insights...
-      </div>
-    `;
+    const button =
+      card.querySelector(
+        ".gpi-refresh"
+      );
+
+    const list =
+      card.querySelector(
+        ".gpi-list"
+      );
+
+    if (button) {
+
+      button.disabled = true;
+      button.textContent =
+        "Checking…";
+    }
 
     try {
-      const client = await getCurrentClient();
 
-      const insights = await getInsights(client.id);
+      if (list) {
 
-      renderInsights(list, insights);
+        list.innerHTML = `
+
+          <div class="gpi-empty">
+
+            Checking production business insights…
+
+          </div>
+
+        `;
+      }
+
+      const insights =
+        await getInsights();
+
+      render(
+        card,
+        insights
+      );
 
     } catch (error) {
+
       console.error(
-        "GLIME Phase E: Unable to load proactive insights.",
+        "GLIME Phase E proactive insights:",
         error
       );
 
-      list.innerHTML = `
-        <div class="glime-phase-e-error">
-          Proactive insights are temporarily unavailable.
-        </div>
-      `;
+      if (list) {
+
+        list.innerHTML = `
+
+          <div class="gpi-error">
+
+            Proactive insights temporarily unavailable.
+            कृपया Refresh करें।
+
+          </div>
+
+        `;
+      }
+
+    } finally {
+
+      if (button) {
+
+        button.disabled = false;
+
+        button.textContent =
+          "↻ Refresh";
+      }
     }
   }
 
-  /*
-   * Initialize
-   */
-  function init() {
-    waitForSupabase(async () => {
-      try {
-        injectStyles();
+  // --------------------------------------------------
+  // INITIALIZE
+  // --------------------------------------------------
 
-        supabaseClient = window.supabase.createClient(
-          SUPABASE_URL,
-          SUPABASE_ANON_KEY
+  async function init() {
+
+    try {
+
+      addStyles();
+
+      const card =
+        createCard();
+
+      if (!card) {
+        return;
+      }
+
+      const button =
+        card.querySelector(
+          ".gpi-refresh"
         );
 
-        const card = createCard();
+      if (button) {
 
-        insertCard(card);
-
-        const refreshButton = document.getElementById(
-          "glime-phase-e-refresh"
-        );
-
-        if (refreshButton) {
-          refreshButton.addEventListener("click", loadInsights);
-        }
-
-        await loadInsights();
-
-      } catch (error) {
-        console.error(
-          "GLIME Phase E initialization error:",
-          error
+        button.addEventListener(
+          "click",
+          () => load(card)
         );
       }
-    });
+
+      await load(card);
+
+    } catch (error) {
+
+      console.error(
+        "GLIME Phase E dashboard add-on failed:",
+        error
+      );
+    }
   }
 
-  /*
-   * Start after DOM is ready
-   */
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+  // --------------------------------------------------
+  // START
+  // --------------------------------------------------
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      init,
+      { once: true }
+    );
+
   } else {
+
     init();
   }
 
