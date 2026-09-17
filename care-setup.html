@@ -1,1 +1,94 @@
-<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GLIME CARE Setup</title><link rel="icon" href="glime_logo_clean.svg"><link rel="stylesheet" href="care-setup.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body><header><a href="care.html">❤️ GLIME CARE</a><a href="care.html">← CARE</a></header><main><section class="hero"><small>GLIME CARE SETUP</small><h1>अपना Family Profile तैयार करें</h1><p>Family information CARE family scope में रखी जाएगी।</p><div id="badge">Checking login…</div></section><form id="setupForm" class="card"><h2>Family</h2><label>Family Name<input id="familyName" maxlength="120" required placeholder="Sharma Family"></label><label>Timezone<select id="timezone"><option>Asia/Kolkata</option><option>Asia/Dubai</option><option>Asia/Riyadh</option><option>UTC</option></select></label><h2>आपकी Profile</h2><div class="grid"><label>नाम<input id="name" maxlength="120" required></label><label>Relationship<input id="relationship" maxlength="80" placeholder="Self"></label><label>Role<select id="role"><option value="owner">Owner</option><option value="primary_caregiver">Primary Caregiver</option><option value="member">Member</option></select></label><label>Phone<input id="phone" maxlength="40"></label><label>Email<input id="email" type="email" maxlength="160"></label><label>Date of Birth<input id="dob" type="date"></label><label>Gender<input id="gender" maxlength="60" placeholder="Optional"></label></div><h2>Preferences</h2><div class="grid"><label>Language<select id="language"><option value="">Select</option><option>Hindi</option><option>Hinglish</option><option>English</option></select></label><label>Communication<select id="communication"><option value="">Select</option><option>Voice</option><option>WhatsApp</option><option>Chat</option></select></label><label>Preferred Time<input id="preferredTime" type="time"></label></div><div class="checks"><label><input id="caregiver" type="checkbox"> Primary caregiver</label><label><input id="emergency" type="checkbox"> Emergency contact</label></div><label>Emergency Priority<input id="priority" type="number" min="1" max="999" placeholder="1"></label><h2>Review</h2><div id="review" class="review"></div><button id="save" type="submit">Save Family Setup</button><div id="status"></div></form></main><script src="care-setup.js"></script></body></html>
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GLIME CARE Setup</title>
+<link rel="icon" href="glime_logo_clean.svg">
+<link rel="stylesheet" href="care-setup.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</script>
+</head>
+<body>
+<header>
+<a href="care.html">❤️ GLIME CARE</a>
+<a href="care.html">← CARE</a>
+</header>
+<main>
+<section class="hero">
+<small>GLIME CARE SETUP</small>
+<h1>अपना Family Profile तैयार करें</h1>
+<p>Family information CARE family scope में रखी जाएगी।</p>
+<div id="badge">Checking login…</div>
+</section>
+<form id="setupForm" class="card">
+<h2>Family</h2>
+<label>Family Name<input id="familyName" maxlength="120" required placeholder="Sharma Family">
+</label>
+<label>Timezone<select id="timezone">
+<option>Asia/Kolkata</option>
+<option>Asia/Dubai</option>
+<option>Asia/Riyadh</option>
+<option>UTC</option>
+</select>
+</label>
+<h2>आपकी Profile</h2>
+<div class="grid">
+<label>नाम<input id="name" maxlength="120" required>
+</label>
+<label>Relationship<input id="relationship" maxlength="80" placeholder="Self">
+</label>
+<label>Role<select id="role">
+<option value="owner">Owner</option>
+<option value="caregiver">Primary Caregiver</option>
+<option value="member">Member</option>
+</select>
+</label>
+<label>Phone<input id="phone" maxlength="40">
+</label>
+<label>Email<input id="email" type="email" maxlength="160">
+</label>
+<label>Date of Birth<input id="dob" type="date">
+</label>
+<label>Gender<input id="gender" maxlength="60" placeholder="Optional">
+</label>
+</div>
+<h2>Preferences</h2>
+<div class="grid">
+<label>Language<select id="language">
+<option value="">Select</option>
+<option>Hindi</option>
+<option>Hinglish</option>
+<option>English</option>
+</select>
+</label>
+<label>Communication<select id="communication">
+<option value="">Select</option>
+<option>Voice</option>
+<option>WhatsApp</option>
+<option>Chat</option>
+</select>
+</label>
+<label>Preferred Time<input id="preferredTime" type="time">
+</label>
+</div>
+<div class="checks">
+<label>
+<input id="caregiver" type="checkbox"> Primary caregiver</label>
+<label>
+<input id="emergency" type="checkbox"> Emergency contact</label>
+</div>
+<label>Emergency Priority<input id="priority" type="number" min="1" max="999" placeholder="1">
+</label>
+<h2>Review</h2>
+<div id="review" class="review">
+</div>
+<button id="save" type="submit">Save Family Setup</button>
+<div id="status">
+</div>
+</form>
+</main>
+<script src="care-setup.js">
+</script>
+</body>
+</html>
