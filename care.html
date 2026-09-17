@@ -8,127 +8,398 @@
 <link rel="stylesheet" href="care.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
+
 <header class="topbar">
   <a href="dashboard.html" class="brand">
     <img src="glime_logo_clean.svg" alt="GLIME">
     <span>CARE</span>
   </a>
-  <a href="dashboard.html" class="back">← Dashboard</a>
+
+  <a href="dashboard.html" class="back">
+    ← Dashboard
+  </a>
 </header>
 
+
 <main>
+
 <section class="hero">
   <div>
     <p class="eyebrow">GLIME CARE</p>
+
     <h1>Your AI Care Control Center</h1>
-    <p>Manage permissions, actions, tasks, notes and connected services from one secure place.</p>
+
+    <p>
+      Manage permissions, actions, tasks, notes and connected
+      services from one secure place.
+    </p>
   </div>
-  <div id="profileBadge" class="badge">Checking access…</div>
+
+  <div id="profileBadge" class="badge">
+    Checking access…
+  </div>
 </section>
+
 
 <div id="error" class="alert error hidden"></div>
 
+
 <section class="stats">
-  <article><span>Pending</span><strong id="pendingCount">0</strong></article>
-  <article><span>Permissions</span><strong id="permissionCount">0</strong></article>
-  <article><span>Integrations</span><strong id="integrationCount">0</strong></article>
-  <article><span>Tasks</span><strong id="taskCount">0</strong></article>
+
+  <article>
+    <span>Pending</span>
+    <strong id="pendingCount">0</strong>
+  </article>
+
+  <article>
+    <span>Permissions</span>
+    <strong id="permissionCount">0</strong>
+  </article>
+
+  <article>
+    <span>Integrations</span>
+    <strong id="integrationCount">0</strong>
+  </article>
+
+  <article>
+    <span>Tasks</span>
+    <strong id="taskCount">0</strong>
+  </article>
+
 </section>
+
 
 <section class="grid">
-  <article class="card">
-    <div class="cardHead"><h2>Permissions</h2><span class="muted">Your CARE controls</span></div>
-    <div id="permissions" class="list"><div class="empty">Loading…</div></div>
-  </article>
 
   <article class="card">
-    <div class="cardHead"><h2>Pending Actions</h2><span class="muted">Requires your attention</span></div>
-    <div id="pending" class="list"><div class="empty">Loading…</div></div>
+
+    <div class="cardHead">
+      <h2>Permissions</h2>
+      <span class="muted">
+        Your CARE controls
+      </span>
+    </div>
+
+    <div id="permissions" class="list">
+      <div class="empty">
+        Loading…
+      </div>
+    </div>
+
   </article>
 
-  <article class="card">
-    <div class="cardHead"><h2>Tasks</h2><span class="muted">Care coordination</span></div>
-    <div id="tasks" class="list"><div class="empty">Loading…</div></div>
-  </article>
 
   <article class="card">
-    <div class="cardHead"><h2>Notes</h2><span class="muted">Private CARE notes</span></div>
-    <div id="notes" class="list"><div class="empty">Loading…</div></div>
+
+    <div class="cardHead">
+      <h2>Pending Actions</h2>
+
+      <span class="muted">
+        Requires your attention
+      </span>
+    </div>
+
+    <div id="pending" class="list">
+      <div class="empty">
+        Loading…
+      </div>
+    </div>
+
   </article>
+
+
+  <article class="card">
+
+    <div class="cardHead">
+      <h2>Tasks</h2>
+
+      <span class="muted">
+        Care coordination
+      </span>
+    </div>
+
+    <div id="tasks" class="list">
+      <div class="empty">
+        Loading…
+      </div>
+    </div>
+
+  </article>
+
+
+  <article class="card">
+
+    <div class="cardHead">
+      <h2>Notes</h2>
+
+      <span class="muted">
+        Private CARE notes
+      </span>
+    </div>
+
+    <div id="notes" class="list">
+      <div class="empty">
+        Loading…
+      </div>
+    </div>
+
+  </article>
+
 
   <article class="card full">
-    <div class="cardHead"><h2>Recent Activity</h2><span class="muted">Latest CARE actions</span></div>
-    <div id="recent" class="list"><div class="empty">Loading…</div></div>
+
+    <div class="cardHead">
+      <h2>Recent Activity</h2>
+
+      <span class="muted">
+        Latest CARE actions
+      </span>
+    </div>
+
+    <div id="recent" class="list">
+      <div class="empty">
+        Loading…
+      </div>
+    </div>
+
   </article>
 
+
   <article class="card">
-    <div class="cardHead"><h2>Connected Services</h2><span class="muted">OAuth/device connections</span></div>
-    <div id="integrations" class="list"><div class="empty">Loading…</div></div>
+
+    <div class="cardHead">
+      <h2>Connected Services</h2>
+
+      <span class="muted">
+        OAuth/device connections
+      </span>
+    </div>
+
+    <div id="integrations" class="list">
+      <div class="empty">
+        Loading…
+      </div>
+    </div>
+
   </article>
+
 </section>
+
+
+<!-- =====================================================
+     FAMILY SETUP
+     ===================================================== -->
+
+<section class="card care-management-entry">
+
+  <div class="cardHead">
+
+    <div>
+
+      <h2>
+        👨‍👩‍👧‍👦 Family Setup
+      </h2>
+
+      <span class="muted">
+        Manage your family profile and members
+      </span>
+
+    </div>
+
+
+    <a
+      class="care-management-button"
+      href="care-setup.html"
+    >
+      Open Family Setup →
+    </a>
+
+  </div>
+
+
+  <p class="management-copy">
+
+    Family name, members, roles, DOB, gender,
+    emergency contacts and CARE preferences
+    एक ही secure family scope में manage करें।
+
+  </p>
+
+</section>
+
+
+<!-- =====================================================
+     FAMILY AI ASSISTANT
+     ===================================================== -->
+
+<section class="card care-ai-entry">
+
+  <div class="cardHead">
+
+    <div>
+
+      <h2>
+        🤖 Family AI Assistant
+      </h2>
+
+      <span class="muted">
+        Talk to your GLIME CARE AI
+      </span>
+
+    </div>
+
+
+    <a
+      class="care-ai-button"
+      href="care-ai.html"
+    >
+      Open Family AI →
+    </a>
+
+  </div>
+
+
+  <p class="ai-entry-copy">
+
+    परिवार से जुड़े सवाल पूछें, plan बनवाएँ और
+    CARE AI से सहायता लें।
+    हर request authenticated CARE runtime
+    से होकर जाएगी।
+
+  </p>
+
+</section>
+
+
 </main>
+
 
 <script src="care.js"></script>
 
-<section class="card care-ai-entry">
-  <div class="cardHead">
-    <div>
-      <h2>🤖 Family AI Assistant</h2>
-      <span class="muted">Talk to your GLIME CARE AI</span>
-    </div>
-
-    <a class="care-ai-button" href="care-ai.html">
-      Open Family AI →
-    </a>
-  </div>
-
-  <p class="ai-entry-copy">
-    परिवार से जुड़े सवाल पूछें, plan बनवाएँ और CARE AI से सहायता लें।
-    हर request authenticated CARE runtime से होकर जाएगी।
-  </p>
-</section>
 
 <style>
-.care-ai-entry {
+
+/* =====================================================
+   FAMILY SETUP
+   ===================================================== */
+
+.care-management-entry {
   margin: 24px 0;
 }
 
-.care-ai-entry .cardHead {
+
+.care-management-entry .cardHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
-.care-ai-button {
+
+.care-management-button {
   display: inline-block;
+
   padding: 11px 18px;
+
   border-radius: 10px;
+
   background: #00ff88;
+
   color: #05080c;
+
   text-decoration: none;
+
   font-weight: 700;
+
   white-space: nowrap;
 }
 
-.ai-entry-copy {
+
+.management-copy {
   margin-top: 12px;
+
   color: #9ca3af;
+
   line-height: 1.7;
 }
 
+
+/* =====================================================
+   FAMILY AI
+   ===================================================== */
+
+.care-ai-entry {
+  margin: 24px 0;
+}
+
+
+.care-ai-entry .cardHead {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+}
+
+
+.care-ai-button {
+  display: inline-block;
+
+  padding: 11px 18px;
+
+  border-radius: 10px;
+
+  background: #00ff88;
+
+  color: #05080c;
+
+  text-decoration: none;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+.ai-entry-copy {
+  margin-top: 12px;
+
+  color: #9ca3af;
+
+  line-height: 1.7;
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
 @media (max-width: 600px) {
+
+  .care-management-entry .cardHead,
   .care-ai-entry .cardHead {
+
     flex-direction: column;
+
     align-items: stretch;
+
   }
 
+
+  .care-management-button,
   .care-ai-button {
+
     text-align: center;
+
   }
+
 }
+
 </style>
-</body>
+
 </body>
 </html>
