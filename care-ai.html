@@ -1,0 +1,16 @@
+<!doctype html><html lang="hi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GLIME CARE AI</title>
+<link rel="icon" href="glime_logo_clean.svg"><link rel="stylesheet" href="care-ai.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<body>
+<header><a href="care.html">GLIME CARE AI</a><a href="care.html">← CARE</a></header>
+<main>
+<section class="hero"><small>GLIME CARE AI</small><h1>Family AI Assistant</h1>
+<p>आपका message पहले GLIME CARE runtime, agent routing, context और safety pipeline से होकर जाएगा।</p>
+<div id="badge">Checking login…</div></section>
+<section class="card"><div id="messages"><div class="welcome"><b>पहला test:</b><br>“मेरे परिवार के लिए आज का एक simple plan बताओ।”</div></div>
+<form id="form"><textarea id="input" maxlength="4000" placeholder="अपना सवाल लिखें…" required></textarea><button id="send">Send to CARE AI</button></form>
+<div id="status"></div></section>
+<section class="card"><h2>Runtime Trace</h2><pre id="trace">अभी कोई request नहीं चली है.</pre></section>
+</main><script src="care-ai.js"></script></body></html>
