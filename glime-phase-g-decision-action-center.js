@@ -1,5 +1,5 @@
-/* GLIME Phase G — Decision / Action Center
-   Additive dashboard module.
+/* GLIME Phase G — Decision / Action Center v2
+   Uses secure unified RPC for client-scoped lifecycle + impact.
    No GLIME CARE changes.
 */
 
@@ -12,9 +12,9 @@
   const SUPABASE_KEY =
     "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
-  // --------------------------------------------------
+  // ==================================================
   // SUPABASE CLIENT
-  // --------------------------------------------------
+  // ==================================================
 
   const sb =
     window.supabaseClient ||
@@ -37,32 +37,49 @@
     return;
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // HELPERS
-  // --------------------------------------------------
+  // ==================================================
 
-  const esc = (value) =>
-    String(value ?? "")
+  const esc = (value) => {
+    return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  };
 
   const pretty = (value) => {
-    if (value === null || value === undefined) {
+    if (
+      value === null ||
+      value === undefined
+    ) {
       return "—";
     }
 
-    if (typeof value === "object") {
-      return JSON.stringify(value, null, 2);
+    if (
+      typeof value === "object"
+    ) {
+      return JSON.stringify(
+        value,
+        null,
+        2
+      );
     }
 
     return String(value);
   };
 
-  const rpc = async (name, args = {}) => {
-    const { data, error } = await sb.rpc(
-      name,
+  const rpc = async (
+    functionName,
+    args = {}
+  ) => {
+
+    const {
+      data,
+      error
+    } = await sb.rpc(
+      functionName,
       args
     );
 
@@ -74,188 +91,336 @@
   };
 
   const badge = (status) => {
+
     const safeStatus =
-      String(status || "unknown")
+      String(
+        status ||
+        "unknown"
+      )
         .toLowerCase()
-        .replace(/\s+/g, "_");
+        .replace(
+          /\s+/g,
+          "_"
+        );
 
     return `
-      <span class="gG-badge gG-${esc(safeStatus)}">
-        ${esc(safeStatus.replace(/_/g, " "))}
+      <span
+        class="gG2-badge gG2-${esc(
+          safeStatus
+        )}"
+      >
+        ${esc(
+          safeStatus.replace(
+            /_/g,
+            " "
+          )
+        )}
       </span>
     `;
   };
 
-  // --------------------------------------------------
+  // ==================================================
   // STYLES
-  // --------------------------------------------------
+  // ==================================================
 
   function injectStyles() {
+
     if (
       document.getElementById(
-        "glime-phase-g-style"
+        "glime-phase-g2-style"
       )
     ) {
       return;
     }
 
     const style =
-      document.createElement("style");
+      document.createElement(
+        "style"
+      );
 
     style.id =
-      "glime-phase-g-style";
+      "glime-phase-g2-style";
 
     style.textContent = `
-      .gG-card {
+
+      .gG2-card {
         margin: 20px 0;
         padding: 22px;
-        border: 1px solid rgba(120,120,120,.18);
+        border: 1px solid
+          rgba(120,120,120,.18);
         border-radius: 18px;
-        background: var(--card-bg, #fff);
-        box-shadow: 0 8px 30px rgba(0,0,0,.06);
+        background:
+          var(--card-bg,#fff);
+        box-shadow:
+          0 8px 30px
+          rgba(0,0,0,.06);
       }
 
-      .gG-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
+      .gG2-head {
+        display:flex;
+        justify-content:
+          space-between;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
       }
 
-      .gG-title {
-        font-size: 20px;
-        font-weight: 700;
+      .gG2-title {
+        font-size:20px;
+        font-weight:700;
       }
 
-      .gG-sub {
-        margin-top: 4px;
-        font-size: 13px;
-        opacity: .68;
+      .gG2-sub {
+        margin-top:4px;
+        font-size:13px;
+        opacity:.68;
       }
 
-      .gG-list {
-        display: grid;
-        gap: 14px;
-        margin-top: 18px;
+      .gG2-list {
+        display:grid;
+        gap:14px;
+        margin-top:18px;
       }
 
-      .gG-item {
-        padding: 16px;
-        border: 1px solid rgba(120,120,120,.16);
-        border-radius: 15px;
+      .gG2-item {
+        padding:16px;
+        border:1px solid
+          rgba(120,120,120,.16);
+        border-radius:15px;
       }
 
-      .gG-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
+      .gG2-row {
+        display:flex;
+        justify-content:
+          space-between;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
       }
 
-      .gG-section {
-        margin-top: 11px;
+      .gG2-section {
+        margin-top:11px;
       }
 
-      .gG-label {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        opacity: .55;
+      .gG2-label {
+        font-size:11px;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+        opacity:.55;
       }
 
-      .gG-text {
-        margin-top: 3px;
-        line-height: 1.45;
+      .gG2-text {
+        margin-top:3px;
+        line-height:1.45;
       }
 
-      .gG-pre {
-        margin-top: 4px;
-        padding: 10px;
-        border-radius: 9px;
-        background: rgba(120,120,120,.07);
-        white-space: pre-wrap;
-        overflow: auto;
-        font-size: 12px;
+      .gG2-pre {
+        margin-top:4px;
+        padding:10px;
+        border-radius:9px;
+        background:
+          rgba(120,120,120,.07);
+        white-space:pre-wrap;
+        overflow:auto;
+        font-size:12px;
       }
 
-      .gG-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 14px;
+      .gG2-actions {
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        margin-top:14px;
       }
 
-      .gG-btn {
-        border: 0;
-        border-radius: 10px;
-        padding: 9px 13px;
-        cursor: pointer;
-        font-weight: 600;
+      .gG2-btn {
+        border:0;
+        border-radius:10px;
+        padding:9px 13px;
+        cursor:pointer;
+        font-weight:600;
       }
 
-      .gG-btn:disabled {
-        opacity: .55;
-        cursor: not-allowed;
+      .gG2-btn:disabled {
+        opacity:.55;
+        cursor:not-allowed;
       }
 
-      .gG-primary {
-        background: #111;
-        color: #fff;
+      .gG2-primary {
+        background:#111;
+        color:#fff;
       }
 
-      .gG-danger {
-        background: #eee;
-        color: #111;
+      .gG2-danger {
+        background:#eee;
+        color:#111;
       }
 
-      .gG-badge {
-        display: inline-block;
-        padding: 4px 8px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
-        background: rgba(120,120,120,.12);
+      .gG2-badge {
+        display:inline-block;
+        padding:4px 8px;
+        border-radius:999px;
+        font-size:11px;
+        font-weight:700;
+        background:
+          rgba(120,120,120,.12);
       }
 
-      .gG-proposed {
-        background: rgba(245,166,35,.15);
+      .gG2-proposed {
+        background:
+          rgba(245,166,35,.15);
       }
 
-      .gG-approved,
-      .gG-queued,
-      .gG-running {
-        background: rgba(52,152,219,.14);
+      .gG2-approved,
+      .gG2-queued,
+      .gG2-running {
+        background:
+          rgba(52,152,219,.14);
       }
 
-      .gG-completed {
-        background: rgba(46,204,113,.15);
+      .gG2-completed {
+        background:
+          rgba(46,204,113,.15);
       }
 
-      .gG-failed,
-      .gG-rejected {
-        background: rgba(231,76,60,.14);
+      .gG2-failed,
+      .gG2-rejected {
+        background:
+          rgba(231,76,60,.14);
       }
 
-      .gG-msg {
-        margin-top: 10px;
-        font-size: 13px;
-        opacity: .68;
+      .gG2-life {
+        display:flex;
+        gap:5px;
+        flex-wrap:wrap;
+        align-items:center;
+        margin-top:10px;
       }
+
+      .gG2-arrow {
+        opacity:.4;
+      }
+
+      .gG2-impact {
+        padding:10px;
+        border-radius:10px;
+        background:
+          rgba(120,120,120,.07);
+      }
+
+      .gG2-msg {
+        margin-top:10px;
+        font-size:13px;
+        opacity:.68;
+      }
+
     `;
 
-    document.head.appendChild(style);
+    document.head.appendChild(
+      style
+    );
   }
 
-  // --------------------------------------------------
-  // LOAD DECISIONS
-  // --------------------------------------------------
+  // ==================================================
+  // LIFECYCLE
+  // ==================================================
 
-  async function loadDecisions() {
+  function renderLifecycle(
+    row
+  ) {
+
+    const states = [
+
+      [
+        "proposal",
+        row.action_request_id
+          ? (
+              row.action_status ||
+              "created"
+            )
+          : "pending"
+      ],
+
+      [
+        "approval",
+        row.action_request_id
+          ? (
+              row.action_status ||
+              "pending"
+            )
+          : "pending"
+      ],
+
+      [
+        "execution",
+        row.execution_job_id
+          ? (
+              row.execution_status ||
+              "created"
+            )
+          : "pending"
+      ],
+
+      [
+        "impact",
+        row.impact_id
+          ? (
+              row.impact_status ||
+              "pending"
+            )
+          : "pending"
+      ]
+
+    ];
+
+    return `
+      <div class="gG2-life">
+
+        ${
+          states
+            .map(
+              (state, index) => {
+
+                return `
+                  ${
+                    index
+                      ? `
+                        <span
+                          class="gG2-arrow"
+                        >
+                          →
+                        </span>
+                      `
+                      : ""
+                  }
+
+                  <span>
+                    ${esc(
+                      state[0]
+                    )}:
+
+                    ${badge(
+                      state[1]
+                    )}
+                  </span>
+                `;
+              }
+            )
+            .join("")
+        }
+
+      </div>
+    `;
+  }
+
+  // ==================================================
+  // LOAD
+  // ==================================================
+
+  async function load() {
+
     const card =
       document.getElementById(
-        "glime-phase-g-card"
+        "glime-phase-g2-card"
       );
 
     if (!card) {
@@ -264,328 +429,425 @@
 
     const list =
       card.querySelector(
-        ".gG-list"
+        ".gG2-list"
       );
 
-    list.innerHTML =
-      `<div class="gG-msg">
-        Loading decisions…
-      </div>`;
+    list.innerHTML = `
+      <div class="gG2-msg">
+        Loading decision lifecycle…
+      </div>
+    `;
 
-    // ------------------------------------------------
-    // CLIENT-SCOPED DECISIONS
-    // RLS protects client isolation.
-    // ------------------------------------------------
-
-    const {
-      data: decisions,
-      error: decisionError
-    } = await sb
-      .from("client_business_decisions")
-      .select("*")
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      )
-      .limit(10);
-
-    if (decisionError) {
-      throw decisionError;
-    }
+    // -----------------------------------------------
+    // SECURE UNIFIED RPC
+    // -----------------------------------------------
 
     const rows =
-      decisions || [];
+      await rpc(
+        "get_client_decision_action_center"
+      );
 
-    if (!rows.length) {
-      list.innerHTML =
-        `<div class="gG-msg">
+    if (
+      !Array.isArray(rows) ||
+      !rows.length
+    ) {
+
+      list.innerHTML = `
+        <div class="gG2-msg">
           No business decisions available yet.
-        </div>`;
+        </div>
+      `;
 
       return;
     }
 
-    // ------------------------------------------------
-    // LOAD ACTION REQUESTS
-    // ------------------------------------------------
-
-    const {
-      data: requests,
-      error: requestError
-    } = await sb
-      .from("client_action_requests")
-      .select("*")
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      )
-      .limit(50);
-
-    if (requestError) {
-      throw requestError;
-    }
-
-    const requestRows =
-      requests || [];
-
-    // ------------------------------------------------
-    // FIND REQUEST LINKED TO DECISION
-    // ------------------------------------------------
-
-    const linkedRequest =
-      (decisionId) =>
-        requestRows.find(
-          (request) =>
-            request.action_payload &&
-            request.action_payload.decision_id ===
-              decisionId
-        );
-
-    // ------------------------------------------------
-    // RENDER
-    // ------------------------------------------------
+    // -----------------------------------------------
+    // RENDER DECISIONS
+    // -----------------------------------------------
 
     list.innerHTML =
       rows
-        .map((decision) => {
+        .map(
+          (row) => {
 
-          const request =
-            linkedRequest(
-              decision.id
-            );
+            const impact =
+              row.metric_deltas ||
+              null;
 
-          const nextBestAction =
-            decision.next_best_action ||
-            {};
+            const hasImpact =
+              row.impact_id ||
+              row.impact_status;
 
-          return `
-            <article
-              class="gG-item"
-              data-decision-id="${esc(
-                decision.id
-              )}"
-            >
+            return `
 
-              <div class="gG-row">
+              <article
+                class="gG2-item"
+                data-decision-id="${esc(
+                  row.decision_id
+                )}"
+              >
 
-                <div>
+                <!-- HEADER -->
 
-                  <div class="gG-title">
-                    ${esc(
-                      decision.title ||
-                      "Business Decision"
-                    )}
-                  </div>
+                <div class="gG2-row">
 
-                  <div class="gG-sub">
-                    Confidence:
-                    ${esc(
-                      decision.confidence ??
-                      "—"
-                    )}
+                  <div>
 
-                    · Source:
-                    ${esc(
-                      decision.source ||
-                      "—"
-                    )}
-                  </div>
+                    <div class="gG2-title">
+                      ${esc(
+                        row.title ||
+                        "Business Decision"
+                      )}
+                    </div>
 
-                </div>
+                    <div class="gG2-sub">
 
-                ${badge(
-                  decision.status
-                )}
+                      Confidence:
+                      ${esc(
+                        row.confidence ??
+                        "—"
+                      )}
 
-              </div>
+                      · Source:
 
-
-              <!-- PROBLEM -->
-
-              <div class="gG-section">
-
-                <div class="gG-label">
-                  Problem
-                </div>
-
-                <div class="gG-text">
-                  ${esc(
-                    decision.problem ||
-                    "—"
-                  )}
-                </div>
-
-              </div>
-
-
-              <!-- ROOT CAUSE -->
-
-              <div class="gG-section">
-
-                <div class="gG-label">
-                  Why / Root Cause
-                </div>
-
-                <div class="gG-text">
-                  ${esc(
-                    decision.root_cause ||
-                    "—"
-                  )}
-                </div>
-
-              </div>
-
-
-              <!-- RECOMMENDATION -->
-
-              <div class="gG-section">
-
-                <div class="gG-label">
-                  Recommendation
-                </div>
-
-                <div class="gG-text">
-                  ${esc(
-                    decision.recommendation ||
-                    "—"
-                  )}
-                </div>
-
-              </div>
-
-
-              <!-- NEXT BEST ACTION -->
-
-              <div class="gG-section">
-
-                <div class="gG-label">
-                  Next Best Action
-                </div>
-
-                <div class="gG-pre">
-                  ${esc(
-                    pretty(
-                      nextBestAction
-                    )
-                  )}
-                </div>
-
-              </div>
-
-
-              <!-- EXISTING ACTION PROPOSAL -->
-
-              ${
-                request
-                  ? `
-                    <div class="gG-section">
-
-                      <div class="gG-label">
-                        Action Proposal
-                      </div>
-
-                      <div class="gG-text">
-
-                        ${esc(
-                          request.module ||
-                          request.agent ||
-                          "Specialist"
-                        )}
-
-                        ·
-
-                        ${esc(
-                          request.action_type ||
-                          request.action ||
-                          "action"
-                        )}
-
-                        ${badge(
-                          request.status
-                        )}
-
-                      </div>
+                      ${esc(
+                        row.source ||
+                        "—"
+                      )}
 
                     </div>
-                  `
-                  : ""
-              }
+
+                  </div>
+
+                  ${badge(
+                    row.decision_status
+                  )}
+
+                </div>
 
 
-              <!-- ACTION BUTTONS -->
+                <!-- LIFECYCLE -->
 
-              <div class="gG-actions">
+                ${renderLifecycle(
+                  row
+                )}
+
+
+                <!-- PROBLEM -->
+
+                <div class="gG2-section">
+
+                  <div class="gG2-label">
+                    Problem
+                  </div>
+
+                  <div class="gG2-text">
+                    ${esc(
+                      row.problem ||
+                      "—"
+                    )}
+                  </div>
+
+                </div>
+
+
+                <!-- ROOT CAUSE -->
+
+                <div class="gG2-section">
+
+                  <div class="gG2-label">
+                    Root Cause
+                  </div>
+
+                  <div class="gG2-text">
+                    ${esc(
+                      row.root_cause ||
+                      "—"
+                    )}
+                  </div>
+
+                </div>
+
+
+                <!-- RECOMMENDATION -->
+
+                <div class="gG2-section">
+
+                  <div class="gG2-label">
+                    Recommendation
+                  </div>
+
+                  <div class="gG2-text">
+                    ${esc(
+                      row.recommendation ||
+                      "—"
+                    )}
+                  </div>
+
+                </div>
+
+
+                <!-- NEXT BEST ACTION -->
+
+                <div class="gG2-section">
+
+                  <div class="gG2-label">
+                    Next Best Action
+                  </div>
+
+                  <div class="gG2-pre">
+                    ${esc(
+                      pretty(
+                        row.next_best_action
+                      )
+                    )}
+                  </div>
+
+                </div>
+
+
+                <!-- ACTION -->
 
                 ${
-                  !request
+                  row.action_request_id
                     ? `
-                      <button
-                        class="gG-btn gG-primary gG-prepare"
+
+                      <div
+                        class="gG2-section"
                       >
-                        Prepare Action
-                      </button>
+
+                        <div
+                          class="gG2-label"
+                        >
+                          Action
+                        </div>
+
+                        <div
+                          class="gG2-text"
+                        >
+
+                          ${esc(
+                            row.target_module_slug ||
+                            "Specialist"
+                          )}
+
+                          ·
+
+                          ${esc(
+                            row.target_action ||
+                            "action"
+                          )}
+
+                          ${badge(
+                            row.action_status
+                          )}
+
+                          ${
+                            row.approval_required
+                              ? " · Approval required"
+                              : ""
+                          }
+
+                        </div>
+
+                      </div>
+
                     `
                     : ""
                 }
 
 
+                <!-- EXECUTION -->
+
                 ${
-                  request &&
-                  [
-                    "proposed",
-                    "awaiting_approval"
-                  ].includes(
-                    request.status
-                  )
+                  row.execution_job_id
                     ? `
 
-                      <button
-                        class="gG-btn gG-primary gG-approve"
-                        data-request-id="${esc(
-                          request.id
-                        )}"
+                      <div
+                        class="gG2-section"
                       >
-                        Approve & Queue
-                      </button>
 
-                      <button
-                        class="gG-btn gG-danger gG-reject"
-                        data-request-id="${esc(
-                          request.id
-                        )}"
-                      >
-                        Reject
-                      </button>
+                        <div
+                          class="gG2-label"
+                        >
+                          Execution
+                        </div>
+
+                        <div
+                          class="gG2-text"
+                        >
+
+                          ${badge(
+                            row.execution_status
+                          )}
+
+                          ${
+                            row.error_code
+                              ? `
+                                · ${esc(
+                                  row.error_code
+                                )}
+                              `
+                              : ""
+                          }
+
+                          ${
+                            row.error_message
+                              ? `
+                                · ${esc(
+                                  row.error_message
+                                )}
+                              `
+                              : ""
+                          }
+
+                        </div>
+
+                      </div>
 
                     `
                     : ""
                 }
 
-              </div>
+
+                <!-- IMPACT -->
+
+                ${
+                  hasImpact
+                    ? `
+
+                      <div
+                        class="gG2-section"
+                      >
+
+                        <div
+                          class="gG2-label"
+                        >
+                          Impact Analysis
+                        </div>
+
+                        <div
+                          class="gG2-impact"
+                        >
+
+                          ${badge(
+                            row.impact_status ||
+                            "pending"
+                          )}
+
+                          <div
+                            class="gG2-text"
+                          >
+                            ${esc(
+                              row.impact_summary ||
+                              "Impact measurement is pending."
+                            )}
+                          </div>
+
+                          ${
+                            impact
+                              ? `
+                                <div
+                                  class="gG2-pre"
+                                >
+                                  ${esc(
+                                    pretty(
+                                      impact
+                                    )
+                                  )}
+                                </div>
+                              `
+                              : ""
+                          }
+
+                        </div>
+
+                      </div>
+
+                    `
+                    : ""
+                }
 
 
-              <div class="gG-msg"></div>
+                <!-- BUTTONS -->
 
-            </article>
-          `;
-        })
+                <div
+                  class="gG2-actions"
+                >
+
+                  ${
+                    !row.action_request_id
+                      ? `
+
+                        <button
+                          class="gG2-btn gG2-primary gG2-prepare"
+                        >
+                          Prepare Action
+                        </button>
+
+                      `
+                      : ""
+                  }
+
+
+                  ${
+                    row.action_request_id &&
+                    [
+                      "proposed",
+                      "awaiting_approval"
+                    ].includes(
+                      row.action_status
+                    )
+                      ? `
+
+                        <button
+                          class="gG2-btn gG2-primary gG2-approve"
+                          data-request-id="${esc(
+                            row.action_request_id
+                          )}"
+                        >
+                          Approve & Queue
+                        </button>
+
+                        <button
+                          class="gG2-btn gG2-danger gG2-reject"
+                          data-request-id="${esc(
+                            row.action_request_id
+                          )}"
+                        >
+                          Reject
+                        </button>
+
+                      `
+                      : ""
+                  }
+
+                </div>
+
+
+                <div
+                  class="gG2-msg"
+                ></div>
+
+              </article>
+
+            `;
+          }
+        )
         .join("");
 
-    // ------------------------------------------------
+
+    // =================================================
     // BUTTON HANDLERS
-    // ------------------------------------------------
+    // =================================================
 
     rows.forEach(
-      (decision) => {
+      (row) => {
 
         const item =
           card.querySelector(
             `[data-decision-id="${CSS.escape(
-              decision.id
+              row.decision_id
             )}"]`
           );
 
@@ -595,25 +857,25 @@
 
         const message =
           item.querySelector(
-            ".gG-msg"
+            ".gG2-msg"
           );
 
 
-        // --------------------------------------------
+        // =============================================
         // PREPARE ACTION
-        // --------------------------------------------
+        // =============================================
 
-        const prepareButton =
+        const prepare =
           item.querySelector(
-            ".gG-prepare"
+            ".gG2-prepare"
           );
 
-        if (prepareButton) {
+        if (prepare) {
 
-          prepareButton.onclick =
+          prepare.onclick =
             async () => {
 
-              prepareButton.disabled =
+              prepare.disabled =
                 true;
 
               message.textContent =
@@ -626,7 +888,7 @@
                     "create_client_decision_action_proposal",
                     {
                       p_decision_id:
-                        decision.id
+                        row.decision_id
                     }
                   );
 
@@ -640,18 +902,18 @@
 
                 } else {
 
-                  const reason =
-                    result?.evaluation?.reason ||
-                    "No enabled specialist action is available.";
-
                   message.textContent =
-                    `No action proposal created: ${reason}`;
-
+                    `No action proposal created: ${
+                      result?.evaluation?.reason ||
+                      "No enabled specialist action is available."
+                    }`;
                 }
 
-                await loadDecisions();
+                await load();
 
-              } catch (error) {
+              } catch (
+                error
+              ) {
 
                 message.textContent =
                   `Could not prepare action: ${
@@ -659,28 +921,28 @@
                     error
                   }`;
 
-                prepareButton.disabled =
+                prepare.disabled =
                   false;
               }
             };
         }
 
 
-        // --------------------------------------------
+        // =============================================
         // APPROVE & QUEUE
-        // --------------------------------------------
+        // =============================================
 
-        const approveButton =
+        const approve =
           item.querySelector(
-            ".gG-approve"
+            ".gG2-approve"
           );
 
-        if (approveButton) {
+        if (approve) {
 
-          approveButton.onclick =
+          approve.onclick =
             async () => {
 
-              approveButton.disabled =
+              approve.disabled =
                 true;
 
               message.textContent =
@@ -693,7 +955,7 @@
                     "approve_client_business_action",
                     {
                       p_action_request_id:
-                        approveButton.dataset
+                        approve.dataset
                           .requestId
                     }
                   );
@@ -704,9 +966,11 @@
                     "created"
                   }`;
 
-                await loadDecisions();
+                await load();
 
-              } catch (error) {
+              } catch (
+                error
+              ) {
 
                 message.textContent =
                   `Approval failed: ${
@@ -714,28 +978,28 @@
                     error
                   }`;
 
-                approveButton.disabled =
+                approve.disabled =
                   false;
               }
             };
         }
 
 
-        // --------------------------------------------
+        // =============================================
         // REJECT
-        // --------------------------------------------
+        // =============================================
 
-        const rejectButton =
+        const reject =
           item.querySelector(
-            ".gG-reject"
+            ".gG2-reject"
           );
 
-        if (rejectButton) {
+        if (reject) {
 
-          rejectButton.onclick =
+          reject.onclick =
             async () => {
 
-              rejectButton.disabled =
+              reject.disabled =
                 true;
 
               message.textContent =
@@ -747,7 +1011,7 @@
                   "reject_client_business_action",
                   {
                     p_action_request_id:
-                      rejectButton.dataset
+                      reject.dataset
                         .requestId
                   }
                 );
@@ -755,9 +1019,11 @@
                 message.textContent =
                   "Action proposal rejected. No execution job was created.";
 
-                await loadDecisions();
+                await load();
 
-              } catch (error) {
+              } catch (
+                error
+              ) {
 
                 message.textContent =
                   `Reject failed: ${
@@ -765,7 +1031,7 @@
                     error
                   }`;
 
-                rejectButton.disabled =
+                reject.disabled =
                   false;
               }
             };
@@ -775,13 +1041,27 @@
     );
   }
 
-  // --------------------------------------------------
-  // INITIALIZE DASHBOARD CARD
-  // --------------------------------------------------
+  // ==================================================
+  // INITIALIZE
+  // ==================================================
 
   async function init() {
 
     injectStyles();
+
+    // Remove previous versions
+    document
+      .getElementById(
+        "glime-phase-g-card"
+      )
+      ?.remove();
+
+    document
+      .getElementById(
+        "glime-phase-g2-card"
+      )
+      ?.remove();
+
 
     const anchor =
       document.querySelector(
@@ -792,18 +1072,13 @@
       ) ||
       document.body;
 
-    if (!anchor) {
-      return;
-    }
-
-    // Prevent duplicate card
     if (
-      document.getElementById(
-        "glime-phase-g-card"
-      )
+      !anchor ||
+      !anchor.parentNode
     ) {
       return;
     }
+
 
     const card =
       document.createElement(
@@ -811,61 +1086,81 @@
       );
 
     card.id =
-      "glime-phase-g-card";
+      "glime-phase-g2-card";
 
     card.className =
-      "gG-card";
+      "gG2-card";
+
 
     card.innerHTML = `
 
-      <div class="gG-head">
+      <div
+        class="gG2-head"
+      >
 
         <div>
 
-          <div class="gG-title">
-            🧠 GLIME Decision / Action Center
+          <div
+            class="gG2-title"
+          >
+            🧠 GLIME Decision /
+            Action Center
           </div>
 
-          <div class="gG-sub">
-            Problem → Root Cause →
-            Recommendation →
-            Next Best Action →
-            Approval → Execution
+          <div
+            class="gG2-sub"
+          >
+            Decision →
+            Proposal →
+            Approval →
+            Execution →
+            Impact
           </div>
 
         </div>
 
+
         <button
-          class="gG-btn gG-primary gG-refresh"
+          class="gG2-btn gG2-primary gG2-refresh"
         >
           Refresh
         </button>
 
       </div>
 
-      <div class="gG-list"></div>
+
+      <div
+        class="gG2-list"
+      ></div>
 
     `;
+
 
     anchor.parentNode.insertBefore(
       card,
       anchor
     );
 
+
     card
       .querySelector(
-        ".gG-refresh"
+        ".gG2-refresh"
       )
-      .onclick = () =>
-        loadDecisions()
-          .catch(console.error);
+      .onclick =
+      () =>
+        load()
+          .catch(
+            console.error
+          );
 
-    await loadDecisions();
+
+    await load();
   }
 
-  // --------------------------------------------------
+
+  // ==================================================
   // START
-  // --------------------------------------------------
+  // ==================================================
 
   if (
     document.readyState ===
