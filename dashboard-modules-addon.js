@@ -49,12 +49,6 @@
             href: 'instagram-agent.html'
         },
 
-        salon_ai: {
-            name: 'Salon AI',
-            icon: '💇',
-            href: 'salon-ai.html'
-        },
-
         voice_ai: {
             name: 'Voice AI',
             icon: '🎙️',
