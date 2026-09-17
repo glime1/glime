@@ -1,15 +1,23 @@
 /* =========================================================
    GLIME CARE — CLIENT DASHBOARD ACCESS
    ---------------------------------------------------------
-   Additive addon for existing dashboard.html.
+   Secure client-side CARE access.
+
+   Flow:
+   Client Login
+        ↓
+   care_dashboard_snapshot RPC
+        ↓
+   CARE profile exists + Active
+        ↓
+   ❤️ GLIME CARE दिखाई देगा
 
    IMPORTANT:
-   - Does NOT replace dashboard.html.
-   - Does NOT modify dashboard-modules-addon.js.
-   - Does NOT use client_modules.
-   - CARE access comes from care_profiles.
-   - Only the authenticated client's own CARE profile
-     can activate the dashboard entry.
+   - dashboard.html को replace नहीं करता
+   - dashboard-modules-addon.js को नहीं छेड़ता
+   - client_modules का उपयोग नहीं करता
+   - care_profiles को सीधे read नहीं करता
+   - existing secure CARE RPC का उपयोग करता है
 ========================================================= */
 
 (() => {
@@ -79,19 +87,6 @@
                 position: relative;
             }
 
-            #${CARE_NAV_ID} .care-nav-badge {
-                display: inline-block;
-                margin-left: 6px;
-                padding: 2px 6px;
-                border-radius: 999px;
-                font-size: 9px;
-                font-weight: 700;
-                color: #00ff88;
-                background: rgba(0,255,136,.08);
-                border: 1px solid rgba(0,255,136,.20);
-                vertical-align: middle;
-            }
-
             #${CARE_NAV_ID}:hover {
                 color: #00ff88;
             }
@@ -103,297 +98,7 @@
 
 
     /* =====================================================
-       GET AUTHENTICATED USER
-    ====================================================== */
-
-    async function getSession() {
-
-        const {
-            data,
-            error
-        } =
-            await db.auth.getSession();
-
-        if (error) {
-            throw error;
-        }
-
-        return data?.session || null;
-    }
-
-
-    /* =====================================================
-       GET CLIENT DATA
-    ====================================================== */
-
-    async function getClient(session) {
-
-        if (
-            !session ||
-            !session.user
-        ) {
-            return null;
-        }
-
-        const user =
-            session.user;
-
-
-        /* -----------------------------------------------
-           FIRST: AUTH USER ID
-        ------------------------------------------------ */
-
-        let {
-            data: client,
-            error
-        } =
-            await db
-                .from('client_data')
-                .select(`
-                    id,
-                    client_id,
-                    email,
-                    auth_user_id,
-                    client_name,
-                    full_name,
-                    name
-                `)
-                .eq(
-                    'auth_user_id',
-                    user.id
-                )
-                .maybeSingle();
-
-
-        if (error) {
-            throw error;
-        }
-
-
-        /* -----------------------------------------------
-           FALLBACK: EMAIL
-        ------------------------------------------------ */
-
-        if (
-            !client &&
-            user.email
-        ) {
-
-            const fallback =
-                await db
-                    .from('client_data')
-                    .select(`
-                        id,
-                        client_id,
-                        email,
-                        auth_user_id,
-                        client_name,
-                        full_name,
-                        name
-                    `)
-                    .ilike(
-                        'email',
-                        user.email
-                            .trim()
-                            .toLowerCase()
-                    )
-                    .limit(1)
-                    .maybeSingle();
-
-
-            if (fallback.error) {
-                throw fallback.error;
-            }
-
-            client =
-                fallback.data;
-        }
-
-
-        return client || null;
-    }
-
-
-    /* =====================================================
-       CHECK CARE PROFILE
-    ====================================================== */
-
-    async function getCareProfile(client) {
-
-        if (
-            !client ||
-            !client.client_id
-        ) {
-            return null;
-        }
-
-
-        /*
-           CARE uses client_id as the product-level
-           client identity.
-        */
-
-        const {
-            data,
-            error
-        } =
-            await db
-                .from('care_profiles')
-                .select(`
-                    id,
-                    client_id,
-                    auth_user_id,
-                    status,
-                    display_name,
-                    family_id
-                `)
-                .eq(
-                    'client_id',
-                    client.client_id
-                )
-                .maybeSingle();
-
-
-        if (error) {
-            throw error;
-        }
-
-
-        return data || null;
-    }
-
-
-    /* =====================================================
-       VALID CARE ACCESS
-    ====================================================== */
-
-    function hasActiveCare(profile) {
-
-        if (!profile) {
-            return false;
-        }
-
-
-        /*
-           CARE must be active.
-        */
-
-        if (
-            String(
-                profile.status || ''
-            ).toLowerCase() !== 'active'
-        ) {
-            return false;
-        }
-
-
-        return true;
-    }
-
-
-    /* =====================================================
-       CREATE NAV
-    ====================================================== */
-
-    function addCareNavigation(profile) {
-
-        if (
-            document.getElementById(
-                CARE_NAV_ID
-            )
-        ) {
-            return;
-        }
-
-
-        const sidebar =
-            document.querySelector(
-                '.sidebar'
-            );
-
-
-        if (!sidebar) {
-
-            console.warn(
-                'GLIME CARE Dashboard: .sidebar not found.'
-            );
-
-            return;
-        }
-
-
-        addStyles();
-
-
-        const nav =
-            document.createElement('a');
-
-
-        nav.id =
-            CARE_NAV_ID;
-
-        nav.className =
-            'nav-item';
-
-        nav.href =
-            CARE_HREF;
-
-        nav.innerHTML =
-            `❤️ GLIME CARE`;
-
-
-        /*
-           If the dashboard has Billing,
-           place CARE before Billing.
-        */
-
-        const billing =
-            sidebar.querySelector(
-                'a[href="#billingSection"]'
-            );
-
-
-        if (billing) {
-
-            sidebar.insertBefore(
-                nav,
-                billing
-            );
-
-        } else {
-
-            const logout =
-                sidebar.querySelector(
-                    '.logout-btn'
-                );
-
-
-            if (logout) {
-
-                sidebar.insertBefore(
-                    nav,
-                    logout
-                );
-
-            } else {
-
-                sidebar.appendChild(
-                    nav
-                );
-
-            }
-        }
-
-
-        console.log(
-            'GLIME CARE Dashboard: CARE navigation added.',
-            profile?.display_name || ''
-        );
-    }
-
-
-    /* =====================================================
-       REMOVE CARE NAV
+       REMOVE CARE NAVIGATION
     ====================================================== */
 
     function removeCareNavigation() {
@@ -410,89 +115,253 @@
 
 
     /* =====================================================
-       LOAD CARE ACCESS
+       ADD CARE NAVIGATION
+    ====================================================== */
+
+    function addCareNavigation() {
+
+        if (
+            document.getElementById(
+                CARE_NAV_ID
+            )
+        ) {
+            return;
+        }
+
+        const sidebar =
+            document.querySelector(
+                '.sidebar'
+            );
+
+        if (!sidebar) {
+
+            console.warn(
+                'GLIME CARE Dashboard: sidebar not found.'
+            );
+
+            return;
+        }
+
+        addStyles();
+
+        const nav =
+            document.createElement('a');
+
+        nav.id =
+            CARE_NAV_ID;
+
+        nav.className =
+            'nav-item';
+
+        nav.href =
+            CARE_HREF;
+
+        nav.textContent =
+            '❤️ GLIME CARE';
+
+        nav.setAttribute(
+            'aria-label',
+            'Open GLIME CARE'
+        );
+
+
+        /* -----------------------------------------------
+           Put CARE before Billing if available
+        ------------------------------------------------ */
+
+        const billing =
+            sidebar.querySelector(
+                'a[href="#billingSection"]'
+            );
+
+        if (billing) {
+
+            sidebar.insertBefore(
+                nav,
+                billing
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------------
+           Otherwise put CARE before Logout
+        ------------------------------------------------ */
+
+        const logout =
+            sidebar.querySelector(
+                '.logout-btn'
+            );
+
+        if (logout) {
+
+            sidebar.insertBefore(
+                nav,
+                logout
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------------
+           Final fallback
+        ------------------------------------------------ */
+
+        sidebar.appendChild(
+            nav
+        );
+
+        console.log(
+            'GLIME CARE Dashboard: CARE navigation added.'
+        );
+    }
+
+
+    /* =====================================================
+       CHECK CARE ACCESS
+       -----------------------------------------------------
+       Uses the same secure RPC already used by care.html.
+    ====================================================== */
+
+    async function checkCareAccess() {
+
+        /* -----------------------------------------------
+           Get authenticated session
+        ------------------------------------------------ */
+
+        const {
+            data: sessionData,
+            error: sessionError
+        } =
+            await db.auth.getSession();
+
+        if (sessionError) {
+            throw sessionError;
+        }
+
+        const session =
+            sessionData?.session;
+
+
+        /* -----------------------------------------------
+           No login = no CARE
+        ------------------------------------------------ */
+
+        if (!session?.user) {
+
+            removeCareNavigation();
+
+            return false;
+        }
+
+
+        /* -----------------------------------------------
+           SECURE CARE SNAPSHOT
+        ------------------------------------------------ */
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                'care_dashboard_snapshot'
+            );
+
+        if (error) {
+
+            console.error(
+                'GLIME CARE snapshot error:',
+                error
+            );
+
+            throw error;
+        }
+
+
+        console.log(
+            'GLIME CARE snapshot:',
+            data
+        );
+
+
+        /* -----------------------------------------------
+           CARE profile must exist
+        ------------------------------------------------ */
+
+        if (!data?.profile) {
+
+            console.log(
+                'GLIME CARE: profile not found / disabled.'
+            );
+
+            removeCareNavigation();
+
+            return false;
+        }
+
+
+        /* -----------------------------------------------
+           CARE must be ACTIVE
+        ------------------------------------------------ */
+
+        const status =
+            String(
+                data.profile.status || ''
+            ).toLowerCase();
+
+        if (
+            status !== 'active'
+        ) {
+
+            console.log(
+                'GLIME CARE: profile is not active.',
+                status
+            );
+
+            removeCareNavigation();
+
+            return false;
+        }
+
+
+        /* -----------------------------------------------
+           ACTIVE CARE
+        ------------------------------------------------ */
+
+        console.log(
+            'GLIME CARE: ACTIVE',
+            data.profile.display_name || ''
+        );
+
+        addCareNavigation();
+
+        return true;
+    }
+
+
+    /* =====================================================
+       INITIALIZE
     ====================================================== */
 
     async function initializeCareAccess() {
 
         try {
 
-            const session =
-                await getSession();
-
-
-            /*
-               Not logged in:
-               do not show CARE.
-            */
-
-            if (!session) {
-
-                removeCareNavigation();
-
-                return;
-            }
-
-
-            const client =
-                await getClient(
-                    session
-                );
-
-
-            /*
-               No client record:
-               do not show CARE.
-            */
-
-            if (
-                !client ||
-                !client.client_id
-            ) {
-
-                removeCareNavigation();
-
-                return;
-            }
-
-
-            const profile =
-                await getCareProfile(
-                    client
-                );
-
-
-            /*
-               Only ACTIVE CARE profiles
-               get the dashboard entry.
-            */
-
-            if (
-                hasActiveCare(profile)
-            ) {
-
-                addCareNavigation(
-                    profile
-                );
-
-            } else {
-
-                removeCareNavigation();
-
-            }
-
+            await checkCareAccess();
 
         } catch (error) {
 
             console.error(
-                'GLIME CARE Dashboard Error:',
+                'GLIME CARE Dashboard Access Error:',
                 error
             );
 
             /*
-               Fail closed:
-               if access cannot be verified,
-               do not display CARE.
+               Fail closed.
+               If access cannot be verified,
+               CARE stays hidden.
             */
 
             removeCareNavigation();
@@ -501,27 +370,19 @@
 
 
     /* =====================================================
-       WAIT FOR DASHBOARD
+       WAIT FOR DASHBOARD DOM
     ====================================================== */
 
-    function waitForDashboard() {
+    function waitForDashboard(
+        attempt = 0
+    ) {
 
         const sidebar =
             document.querySelector(
                 '.sidebar'
             );
 
-
-        const clientBadge =
-            document.querySelector(
-                '.client-badge'
-            );
-
-
-        if (
-            sidebar &&
-            clientBadge
-        ) {
+        if (sidebar) {
 
             initializeCareAccess();
 
@@ -530,18 +391,34 @@
 
 
         /*
-           dashboard.html may still be initializing.
+           Maximum 20 seconds.
         */
 
+        if (
+            attempt >= 80
+        ) {
+
+            console.warn(
+                'GLIME CARE Dashboard: sidebar not found.'
+            );
+
+            return;
+        }
+
+
         setTimeout(
-            waitForDashboard,
+            () => {
+                waitForDashboard(
+                    attempt + 1
+                );
+            },
             250
         );
     }
 
 
     /* =====================================================
-       AUTH STATE CHANGE
+       AUTH STATE WATCH
     ====================================================== */
 
     function watchAuth() {
@@ -558,12 +435,12 @@
 
 
                 /*
-                   Give dashboard DOM time to settle.
+                   Wait for dashboard DOM.
                 */
 
                 setTimeout(
                     initializeCareAccess,
-                    100
+                    300
                 );
             }
         );
@@ -583,6 +460,10 @@
         watchAuth();
     }
 
+
+    /* =====================================================
+       BOOT
+    ====================================================== */
 
     if (
         document.readyState ===
