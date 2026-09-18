@@ -9,13 +9,17 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY =
   "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
-
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* =========================================================
+   STATE
+   ========================================================= */
 
 let currentUser = null;
 let currentClient = null;
 let settings = null;
+
 let leads = [];
 let followUpLeads = [];
 let channelConnections = [];
@@ -56,15 +60,23 @@ const CHANNELS = [
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
+  bindEvents();
+
   try {
-    bindEvents();
     await initialize();
   } catch (error) {
-    console.error("Follow-up Specialist initialization error:", error);
-    showToast(
-      error?.message || "Follow-up Specialist load nahi ho saka.",
+    console.error(
+      "Follow-up Specialist initialization error:",
+      error
+    );
+
+    setPageMessage(
+      error?.message ||
+        "Follow-up Specialist load nahi ho saka.",
       "error"
     );
+
+    setAuthStatus("Access error");
   }
 });
 
@@ -73,6 +85,8 @@ document.addEventListener("DOMContentLoaded", async () => {
    ========================================================= */
 
 async function initialize() {
+  setAuthStatus("Checking access…");
+
   const {
     data: { session },
     error: sessionError,
@@ -83,6 +97,8 @@ async function initialize() {
   }
 
   if (!session?.user) {
+    currentUser = null;
+    setAuthStatus("Login required");
     showAuthRequired();
     return;
   }
@@ -90,6 +106,9 @@ async function initialize() {
   currentUser = session.user;
 
   await loadClient();
+
+  setAuthStatus("Authenticated");
+
   await loadSettings();
   await loadChannelConnections();
   await loadLeads();
@@ -103,8 +122,12 @@ async function initialize() {
 }
 
 async function loadClient() {
-  const userId = currentUser.id;
-  const email = currentUser.email || "";
+  const userId = currentUser?.id;
+  const email = currentUser?.email || "";
+
+  if (!userId) {
+    throw new Error("Authenticated user ID nahi mila.");
+  }
 
   let result = await db
     .from("client_data")
@@ -113,7 +136,10 @@ async function loadClient() {
     .maybeSingle();
 
   if (result.error) {
-    console.warn("Client lookup by auth_user_id failed:", result.error);
+    console.warn(
+      "Client lookup by auth_user_id failed:",
+      result.error
+    );
   }
 
   if (!result.data && email) {
@@ -129,7 +155,9 @@ async function loadClient() {
   }
 
   if (!result.data) {
-    throw new Error("Aapka client profile nahi mila.");
+    throw new Error(
+      "Aapka client profile nahi mila."
+    );
   }
 
   currentClient = result.data;
@@ -170,15 +198,16 @@ async function loadSettings() {
     return;
   }
 
-  const { data: inserted, error: insertError } = await db
-    .from("client_followup_settings")
-    .insert({
-      client_id: clientId,
-      enabled: false,
-      sending_mode: "manual_approval",
-    })
-    .select()
-    .single();
+  const { data: inserted, error: insertError } =
+    await db
+      .from("client_followup_settings")
+      .insert({
+        client_id: clientId,
+        enabled: false,
+        sending_mode: "manual_approval",
+      })
+      .select()
+      .single();
 
   if (insertError) {
     throw insertError;
@@ -187,13 +216,31 @@ async function loadSettings() {
   settings = inserted;
 }
 
-async function saveSettings(changes) {
+async function saveSettings() {
   const clientId = getClientId();
+
+  if (!clientId) {
+    throw new Error("Client ID nahi mila.");
+  }
+
+  const enabled =
+    Boolean(
+      document.getElementById(
+        "followupEnabled"
+      )?.checked
+    );
+
+  const mode =
+    document.querySelector(
+      'input[name="sendingMode"]:checked'
+    )?.value ||
+    "manual_approval";
 
   const { data, error } = await db
     .from("client_followup_settings")
     .update({
-      ...changes,
+      enabled,
+      sending_mode: mode,
       updated_at: new Date().toISOString(),
     })
     .eq("client_id", clientId)
@@ -201,12 +248,19 @@ async function saveSettings(changes) {
     .single();
 
   if (error) {
-    console.error("Settings update error:", error);
     throw error;
   }
 
   settings = data;
+
   renderSettings();
+  renderLeads();
+  renderStats();
+
+  showToast(
+    "Follow-up settings save ho gayi.",
+    "success"
+  );
 }
 
 /* =========================================================
@@ -216,14 +270,24 @@ async function saveSettings(changes) {
 async function loadChannelConnections() {
   const clientId = getClientId();
 
+  if (!clientId) {
+    return;
+  }
+
   const { data, error } = await db
     .from("client_channel_connections")
     .select("*")
     .eq("client_id", clientId)
-    .order("channel", { ascending: true });
+    .order("channel", {
+      ascending: true,
+    });
 
   if (error) {
-    console.error("Channel connection load error:", error);
+    console.error(
+      "Channel connection load error:",
+      error
+    );
+
     channelConnections = [];
     return;
   }
@@ -233,16 +297,24 @@ async function loadChannelConnections() {
 
 function getChannelConnection(channel) {
   return (
-    channelConnections.find((item) => item.channel === channel) || null
+    channelConnections.find(
+      (item) =>
+        String(item.channel).toLowerCase() ===
+        String(channel).toLowerCase()
+    ) || null
   );
 }
 
 function isChannelConnected(channel) {
-  const connection = getChannelConnection(channel);
+  const connection =
+    getChannelConnection(channel);
+
+  if (!connection) {
+    return false;
+  }
 
   return Boolean(
-    connection &&
-      connection.status === "connected" &&
+    connection.status === "connected" &&
       connection.customer_reachable !== false &&
       connection.can_send === true
   );
@@ -255,14 +327,24 @@ function isChannelConnected(channel) {
 async function loadLeads() {
   const clientId = getClientId();
 
+  if (!clientId) {
+    return;
+  }
+
   const { data, error } = await db
     .from("leads")
     .select("*")
     .eq("client_id", clientId)
-    .order("created_at", { ascending: false });
+    .order("created_at", {
+      ascending: false,
+    });
 
   if (error) {
-    console.error("Leads load error:", error);
+    console.error(
+      "Leads load error:",
+      error
+    );
+
     leads = [];
     return;
   }
@@ -273,13 +355,21 @@ async function loadLeads() {
 async function loadFollowUpLeads() {
   const clientId = getClientId();
 
+  if (!clientId) {
+    return;
+  }
+
   const { data, error } = await db
     .from("client_followup_leads")
     .select("*")
     .eq("client_id", clientId);
 
   if (error) {
-    console.error("Follow-up leads load error:", error);
+    console.error(
+      "Follow-up leads load error:",
+      error
+    );
+
     followUpLeads = [];
     return;
   }
@@ -289,25 +379,44 @@ async function loadFollowUpLeads() {
 
 function isLeadFollowUpEnabled(leadId) {
   const item = followUpLeads.find(
-    (row) => String(row.lead_id) === String(leadId)
+    (row) =>
+      String(row.lead_id) ===
+      String(leadId)
   );
 
-  return item ? item.enabled !== false : true;
+  /*
+   * Agar per-lead row exist nahi karti,
+   * default ON maana ja raha hai.
+   */
+  return item
+    ? item.enabled !== false
+    : true;
 }
 
-async function toggleLeadFollowUp(leadId, enabled) {
+async function toggleLeadFollowUp(
+  leadId,
+  enabled
+) {
   const clientId = getClientId();
 
-  const existing = followUpLeads.find(
-    (row) => String(row.lead_id) === String(leadId)
-  );
+  if (!clientId) {
+    throw new Error("Client ID nahi mila.");
+  }
+
+  const existing =
+    followUpLeads.find(
+      (row) =>
+        String(row.lead_id) ===
+        String(leadId)
+    );
 
   if (existing) {
     const { error } = await db
       .from("client_followup_leads")
       .update({
         enabled,
-        updated_at: new Date().toISOString(),
+        updated_at:
+          new Date().toISOString(),
       })
       .eq("client_id", clientId)
       .eq("lead_id", leadId);
@@ -318,7 +427,10 @@ async function toggleLeadFollowUp(leadId, enabled) {
 
     existing.enabled = enabled;
   } else {
-    const { data, error } = await db
+    const {
+      data,
+      error,
+    } = await db
       .from("client_followup_leads")
       .insert({
         client_id: clientId,
@@ -332,14 +444,18 @@ async function toggleLeadFollowUp(leadId, enabled) {
       throw error;
     }
 
-    followUpLeads.push(data);
+    if (data) {
+      followUpLeads.push(data);
+    }
   }
 
   renderLeads();
+  renderStats();
+
   showToast(
     enabled
-      ? "Follow-up is lead ke liye ON kar diya gaya."
-      : "Follow-up is lead ke liye OFF kar diya gaya.",
+      ? "Is lead ke liye Follow-up ON hai."
+      : "Is lead ke liye Follow-up OFF hai.",
     "success"
   );
 }
@@ -351,16 +467,26 @@ async function toggleLeadFollowUp(leadId, enabled) {
 async function loadActionRequests() {
   const clientId = getClientId();
 
+  if (!clientId) {
+    return;
+  }
+
   const { data, error } = await db
     .from("client_action_requests")
     .select("*")
     .eq("client_id", clientId)
     .eq("intent", "lead_follow_up")
-    .order("created_at", { ascending: false })
+    .order("created_at", {
+      ascending: false,
+    })
     .limit(50);
 
   if (error) {
-    console.error("Action request load error:", error);
+    console.error(
+      "Action request load error:",
+      error
+    );
+
     actionRequests = [];
     return;
   }
@@ -375,15 +501,25 @@ async function loadActionRequests() {
 async function loadCases() {
   const clientId = getClientId();
 
+  if (!clientId) {
+    return;
+  }
+
   const { data, error } = await db
     .from("follow_up_cases")
     .select("*")
     .eq("client_id", clientId)
-    .order("created_at", { ascending: false })
+    .order("created_at", {
+      ascending: false,
+    })
     .limit(50);
 
   if (error) {
-    console.error("Follow-up cases load error:", error);
+    console.error(
+      "Follow-up cases load error:",
+      error
+    );
+
     cases = [];
     return;
   }
@@ -398,15 +534,25 @@ async function loadCases() {
 async function loadConclusions() {
   const clientId = getClientId();
 
+  if (!clientId) {
+    return;
+  }
+
   const { data, error } = await db
     .from("follow_up_conclusions")
     .select("*")
     .eq("client_id", clientId)
-    .order("created_at", { ascending: false })
+    .order("created_at", {
+      ascending: false,
+    })
     .limit(50);
 
   if (error) {
-    console.error("Conclusions load error:", error);
+    console.error(
+      "Conclusions load error:",
+      error
+    );
+
     conclusions = [];
     return;
   }
@@ -415,21 +561,32 @@ async function loadConclusions() {
 }
 
 /* =========================================================
-   PROPOSED LEAD CHANGES
+   PROPOSED CHANGES
    ========================================================= */
 
 async function loadProposedChanges() {
   const clientId = getClientId();
 
-  const { data, error } = await db
-    .from("follow_up_proposed_changes")
-    .select("*")
-    .eq("client_id", clientId)
-    .order("created_at", { ascending: false })
-    .limit(100);
+  if (!clientId) {
+    return;
+  }
+
+  const { data, error } =
+    await db
+      .from("follow_up_proposed_changes")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(100);
 
   if (error) {
-    console.error("Proposed changes load error:", error);
+    console.error(
+      "Proposed changes load error:",
+      error
+    );
+
     proposedChanges = [];
     return;
   }
@@ -442,118 +599,247 @@ async function loadProposedChanges() {
    ========================================================= */
 
 function bindEvents() {
-  document.addEventListener("click", async (event) => {
-    const actionElement = event.target.closest("[data-action]");
-
-    if (!actionElement) {
-      return;
-    }
-
-    const action = actionElement.dataset.action;
-
-    try {
-      if (action === "toggle-specialist") {
-        await toggleSpecialist();
-      }
-
-      if (action === "set-manual") {
-        await saveSettings({
-          sending_mode: "manual_approval",
-        });
-        showToast("Manual Approval mode active.", "success");
-      }
-
-      if (action === "set-automatic") {
-        await saveSettings({
-          sending_mode: "automatic_sending",
-        });
-        showToast("Automatic Sending mode active.", "success");
-      }
-
-      if (action === "connect-instagram") {
-        await connectInstagram();
-      }
-
-      if (action === "manage-voice") {
-        window.location.href = "voice-ai.html";
-      }
-
-      if (action === "request-followup") {
-        const leadId = actionElement.dataset.leadId;
-        await requestFollowUp(leadId);
-      }
-
-      if (action === "edit-draft") {
-        const requestId = actionElement.dataset.requestId;
-        openDraftEditor(requestId);
-      }
-
-      if (action === "save-draft") {
-        const requestId = actionElement.dataset.requestId;
-        await saveDraftFromModal(requestId);
-      }
-
-      if (action === "approve-send") {
-        const requestId = actionElement.dataset.requestId;
-        await approveAndSend(requestId);
-      }
-
-      if (action === "close-modal") {
-        closeDraftModal();
-      }
-    } catch (error) {
-      console.error(error);
-      showToast(
-        error?.message || "Action complete nahi ho saka.",
-        "error"
-      );
-    }
-  });
-
-  document.addEventListener("change", async (event) => {
-    const checkbox = event.target.closest(
-      '[data-action="toggle-lead"]'
+  const refreshBtn =
+    document.getElementById(
+      "refreshBtn"
     );
 
-    if (!checkbox) {
-      return;
+  if (refreshBtn) {
+    refreshBtn.addEventListener(
+      "click",
+      async () => {
+        try {
+          refreshBtn.disabled = true;
+          refreshBtn.textContent =
+            "Refreshing…";
+
+          await initialize();
+
+          showToast(
+            "Follow-up data refresh ho gaya.",
+            "success"
+          );
+        } catch (error) {
+          console.error(error);
+
+          showToast(
+            error?.message ||
+              "Refresh failed.",
+            "error"
+          );
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent =
+            "Refresh";
+        }
+      }
+    );
+  }
+
+  const saveSettingsBtn =
+    document.getElementById(
+      "saveSettingsBtn"
+    );
+
+  if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener(
+      "click",
+      async () => {
+        try {
+          saveSettingsBtn.disabled =
+            true;
+          saveSettingsBtn.textContent =
+            "Saving…";
+
+          await saveSettings();
+        } catch (error) {
+          console.error(error);
+
+          showToast(
+            error?.message ||
+              "Settings save nahi hui.",
+            "error"
+          );
+        } finally {
+          saveSettingsBtn.disabled =
+            false;
+          saveSettingsBtn.textContent =
+            "Save Settings";
+        }
+      }
+    );
+  }
+
+  const followupEnabled =
+    document.getElementById(
+      "followupEnabled"
+    );
+
+  if (followupEnabled) {
+    followupEnabled.addEventListener(
+      "change",
+      () => {
+        renderStats();
+        renderLeads();
+      }
+    );
+  }
+
+  const modalClose =
+    document.getElementById(
+      "modalClose"
+    );
+
+  if (modalClose) {
+    modalClose.addEventListener(
+      "click",
+      closeModal
+    );
+  }
+
+  const modal =
+    document.getElementById("modal");
+
+  if (modal) {
+    modal.addEventListener(
+      "click",
+      (event) => {
+        if (
+          event.target === modal
+        ) {
+          closeModal();
+        }
+      }
+    );
+  }
+
+  document.addEventListener(
+    "click",
+    async (event) => {
+      const element =
+        event.target.closest(
+          "[data-action]"
+        );
+
+      if (!element) {
+        return;
+      }
+
+      const action =
+        element.dataset.action;
+
+      try {
+        switch (action) {
+          case "connect-instagram":
+            await connectInstagram();
+            break;
+
+          case "manage-voice":
+            window.location.href =
+              "voice-ai.html";
+            break;
+
+          case "request-followup":
+            await requestFollowUp(
+              element.dataset.leadId
+            );
+            break;
+
+          case "edit-draft":
+            openDraftEditor(
+              element.dataset.requestId
+            );
+            break;
+
+          case "save-draft":
+            await saveDraftFromModal();
+            break;
+
+          case "approve-send":
+            await approveAndSend(
+              element.dataset.requestId
+            );
+            break;
+
+          case "analyze-case":
+            await analyzeCase(
+              element.dataset.caseId
+            );
+            break;
+
+          case "edit-change":
+            openChangeEditor(
+              element.dataset.changeId
+            );
+            break;
+
+          case "approve-change":
+            await approveProposedChange(
+              element.dataset.changeId
+            );
+            break;
+
+          case "apply-change":
+            await applyProposedChange(
+              element.dataset.changeId
+            );
+            break;
+
+          case "close-modal":
+            closeModal();
+            break;
+
+          default:
+            break;
+        }
+      } catch (error) {
+        console.error(
+          `Follow-up action "${action}" failed:`,
+          error
+        );
+
+        showToast(
+          error?.message ||
+            "Action complete nahi ho saka.",
+          "error"
+        );
+      }
     }
+  );
 
-    try {
-      const leadId = checkbox.dataset.leadId;
-      await toggleLeadFollowUp(leadId, checkbox.checked);
-    } catch (error) {
-      checkbox.checked = !checkbox.checked;
+  document.addEventListener(
+    "change",
+    async (event) => {
+      const checkbox =
+        event.target.closest(
+          '[data-action="toggle-lead"]'
+        );
 
-      showToast(
-        error?.message || "Lead setting update nahi hui.",
-        "error"
-      );
+      if (!checkbox) {
+        return;
+      }
+
+      try {
+        await toggleLeadFollowUp(
+          checkbox.dataset.leadId,
+          checkbox.checked
+        );
+      } catch (error) {
+        checkbox.checked =
+          !checkbox.checked;
+
+        showToast(
+          error?.message ||
+            "Lead setting update nahi hui.",
+          "error"
+        );
+      }
     }
-  });
-}
-
-/* =========================================================
-   SPECIALIST TOGGLE
-   ========================================================= */
-
-async function toggleSpecialist() {
-  const nextState = !Boolean(settings?.enabled);
-
-  await saveSettings({
-    enabled: nextState,
-  });
-
-  showToast(
-    nextState
-      ? "Follow-up Specialist ON ho gaya."
-      : "Follow-up Specialist OFF ho gaya.",
-    "success"
   );
 }
 
 /* =========================================================
-   INSTAGRAM CONNECTION
+   INSTAGRAM
    ========================================================= */
 
 async function connectInstagram() {
@@ -562,21 +848,36 @@ async function connectInstagram() {
     return;
   }
 
-  const functionUrl =
-    `${SUPABASE_URL}/functions/v1/instagram-oauth-start`;
+  const {
+    data: { session },
+  } = await db.auth.getSession();
 
-  const response = await fetch(functionUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${currentUser.access_token || ""}`,
-    },
-    body: JSON.stringify({
-      client_id: getClientId(),
-    }),
-  });
+  if (!session?.access_token) {
+    throw new Error(
+      "Session expired. Dobara login karein."
+    );
+  }
 
-  const result = await response.json().catch(() => ({}));
+  const response = await fetch(
+    `${SUPABASE_URL}/functions/v1/instagram-oauth-start`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+        Authorization:
+          `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        client_id: getClientId(),
+      }),
+    }
+  );
+
+  const result =
+    await response
+      .json()
+      .catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(
@@ -586,27 +887,27 @@ async function connectInstagram() {
     );
   }
 
-  if (result?.url) {
-    window.location.href = result.url;
-    return;
+  const url =
+    result?.url ||
+    result?.authorization_url ||
+    null;
+
+  if (!url) {
+    throw new Error(
+      "Instagram authorization URL nahi mila."
+    );
   }
 
-  if (result?.authorization_url) {
-    window.location.href = result.authorization_url;
-    return;
-  }
-
-  showToast(
-    "Instagram connection response mila, lekin authorization URL nahi mila.",
-    "error"
-  );
+  window.location.href = url;
 }
 
 /* =========================================================
    REQUEST FOLLOW-UP
    ========================================================= */
 
-async function requestFollowUp(leadId) {
+async function requestFollowUp(
+  leadId
+) {
   if (!settings?.enabled) {
     throw new Error(
       "Pehle Follow-up Specialist ko ON karein."
@@ -619,36 +920,47 @@ async function requestFollowUp(leadId) {
     );
   }
 
+  const lead = leads.find(
+    (item) =>
+      String(item.id) ===
+      String(leadId)
+  );
+
+  if (!lead) {
+    throw new Error(
+      "Lead nahi mila."
+    );
+  }
+
+  /*
+   * Current production-supported channel:
+   * Instagram.
+   *
+   * WhatsApp/Email ko fake connected
+   * assume nahi kiya ja raha.
+   */
   const channel = "instagram";
 
   if (!isChannelConnected(channel)) {
     throw new Error(
-      "Instagram connected aur send-enabled nahi hai."
+      "Instagram connected, authenticated aur send-enabled nahi hai."
     );
   }
 
-  const lead = leads.find(
-    (item) => String(item.id) === String(leadId)
-  );
-
-  if (!lead) {
-    throw new Error("Lead nahi mila.");
-  }
-
-  const response = await callFollowUpFunction({
-    action: "create_draft",
-    lead_id: leadId,
-    channel,
-  });
+  const response =
+    await callFollowUpFunction({
+      action: "create_draft",
+      lead_id: leadId,
+      channel,
+    });
 
   if (response?.error) {
-    throw new Error(response.error);
+    throw new Error(
+      response.error
+    );
   }
 
-  await loadActionRequests();
-  await loadCases();
-  await loadConclusions();
-  await loadProposedChanges();
+  await reloadOperationalData();
 
   renderEverything();
 
@@ -659,16 +971,20 @@ async function requestFollowUp(leadId) {
 }
 
 /* =========================================================
-   EDGE FUNCTION CALL
+   EXISTING FOLLOW-UP EDGE FUNCTION
    ========================================================= */
 
-async function callFollowUpFunction(payload) {
+async function callFollowUpFunction(
+  payload
+) {
   const {
     data: { session },
   } = await db.auth.getSession();
 
   if (!session?.access_token) {
-    throw new Error("Session expired. Dobara login karein.");
+    throw new Error(
+      "Session expired. Dobara login karein."
+    );
   }
 
   const response = await fetch(
@@ -676,14 +992,21 @@ async function callFollowUpFunction(payload) {
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type":
+          "application/json",
+        Authorization:
+          `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(
+        payload
+      ),
     }
   );
 
-  const data = await response.json().catch(() => ({}));
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(
@@ -700,79 +1023,144 @@ async function callFollowUpFunction(payload) {
    DRAFT EDITOR
    ========================================================= */
 
-function openDraftEditor(requestId) {
-  const request = actionRequests.find(
-    (item) => String(item.id) === String(requestId)
+function getRequestPayload(
+  request
+) {
+  return (
+    request?.action_payload ||
+    request?.payload ||
+    {}
   );
+}
 
-  if (!request) {
-    showToast("Draft request nahi mila.", "error");
-    return;
-  }
-
+function getRequestMessage(
+  request
+) {
   const payload =
-    request.action_payload ||
-    request.payload ||
-    {};
+    getRequestPayload(request);
 
-  const message =
+  return (
     payload.message ||
     payload.body ||
     payload.text ||
-    "";
-
-  const modal = document.getElementById("draftModal");
-
-  if (!modal) {
-    createDraftModal();
-  }
-
-  const textarea =
-    document.getElementById("draftMessage");
-
-  const requestInput =
-    document.getElementById("draftRequestId");
-
-  if (textarea) {
-    textarea.value = message;
-  }
-
-  if (requestInput) {
-    requestInput.value = requestId;
-  }
-
-  const actualModal =
-    document.getElementById("draftModal");
-
-  if (actualModal) {
-    actualModal.classList.add("active");
-    actualModal.style.display = "flex";
-  }
+    ""
+  );
 }
 
-function closeDraftModal() {
-  const modal = document.getElementById("draftModal");
+function openDraftEditor(
+  requestId
+) {
+  const request =
+    actionRequests.find(
+      (item) =>
+        String(item.id) ===
+        String(requestId)
+    );
+
+  if (!request) {
+    showToast(
+      "Draft request nahi mila.",
+      "error"
+    );
+    return;
+  }
+
+  const message =
+    getRequestMessage(request);
+
+  openModal(
+    "Edit Follow-up Draft",
+    `
+      <div class="modal-form">
+        <input
+          type="hidden"
+          id="draftRequestId"
+          value="${escapeHtml(
+            String(requestId)
+          )}"
+        >
+
+        <label
+          for="draftMessage"
+          class="form-label"
+        >
+          Message
+        </label>
+
+        <textarea
+          id="draftMessage"
+          rows="8"
+          maxlength="2000"
+          placeholder="Follow-up message..."
+        >${escapeHtml(
+          message
+        )}</textarea>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn ghost"
+            data-action="close-modal"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            class="btn primary"
+            data-action="save-draft"
+          >
+            Save Draft
+          </button>
+        </div>
+      </div>
+    `
+  );
+}
+
+function closeModal() {
+  const modal =
+    document.getElementById(
+      "modal"
+    );
 
   if (!modal) {
     return;
   }
 
-  modal.classList.remove("active");
-  modal.style.display = "none";
+  modal.hidden = true;
 }
 
-async function saveDraftFromModal(requestId) {
-  const textarea =
-    document.getElementById("draftMessage");
+async function saveDraftFromModal() {
+  const requestId =
+    document.getElementById(
+      "draftRequestId"
+    )?.value;
 
-  if (!textarea) {
-    throw new Error("Draft editor nahi mila.");
+  const textarea =
+    document.getElementById(
+      "draftMessage"
+    );
+
+  if (!requestId) {
+    throw new Error(
+      "Draft request ID nahi mila."
+    );
   }
 
-  const message = textarea.value.trim();
+  if (!textarea) {
+    throw new Error(
+      "Draft editor nahi mila."
+    );
+  }
+
+  const message =
+    textarea.value.trim();
 
   if (!message) {
-    throw new Error("Message empty nahi ho sakta.");
+    throw new Error(
+      "Message empty nahi ho sakta."
+    );
   }
 
   if (message.length > 2000) {
@@ -782,27 +1170,31 @@ async function saveDraftFromModal(requestId) {
   }
 
   /*
-   * Existing lead-followup-handoff-v2 ka save_draft
-   * workflow reuse kiya ja raha hai.
-   *
    * IMPORTANT:
-   * Direct client_action_requests UPDATE avoid kiya gaya hai.
+   * Existing v2 function currently uses
+   * request_id for save/send.
+   *
+   * Isliye yahan action_request_id
+   * nahi bhejna hai.
    */
-
-  const response = await callFollowUpFunction({
-    action: "save_draft",
-    action_request_id: requestId,
-    message,
-  });
+  const response =
+    await callFollowUpFunction({
+      action: "save_draft",
+      request_id: requestId,
+      message,
+    });
 
   if (response?.error) {
-    throw new Error(response.error);
+    throw new Error(
+      response.error
+    );
   }
 
-  await loadActionRequests();
-  renderApprovals();
+  closeModal();
 
-  closeDraftModal();
+  await reloadOperationalData();
+
+  renderEverything();
 
   showToast(
     "Follow-up draft update ho gaya.",
@@ -811,22 +1203,29 @@ async function saveDraftFromModal(requestId) {
 }
 
 /* =========================================================
-   APPROVE AND SEND
+   APPROVE + SEND
    ========================================================= */
 
-async function approveAndSend(requestId) {
+async function approveAndSend(
+  requestId
+) {
   if (!settings?.enabled) {
     throw new Error(
       "Follow-up Specialist OFF hai."
     );
   }
 
-  const request = actionRequests.find(
-    (item) => String(item.id) === String(requestId)
-  );
+  const request =
+    actionRequests.find(
+      (item) =>
+        String(item.id) ===
+        String(requestId)
+    );
 
   if (!request) {
-    throw new Error("Action request nahi mila.");
+    throw new Error(
+      "Action request nahi mila."
+    );
   }
 
   if (
@@ -834,49 +1233,245 @@ async function approveAndSend(requestId) {
     request.status !== "proposed"
   ) {
     throw new Error(
-      `Ye request approve karne ke liye available nahi hai. Current status: ${request.status}`
+      `Request approve karne ke liye available nahi hai. Current status: ${request.status}`
     );
   }
+
+  const payload =
+    getRequestPayload(request);
 
   const channel =
     request.channel ||
     request.target_channel ||
+    payload.channel ||
     "instagram";
 
   if (!isChannelConnected(channel)) {
     throw new Error(
-      `${channel} connected aur send-enabled nahi hai.`
+      `${capitalize(
+        channel
+      )} connected aur send-enabled nahi hai.`
     );
   }
 
-  const confirmed = window.confirm(
-    "Kya aap is Follow-up ko send karna chahte hain?"
-  );
+  const confirmed =
+    window.confirm(
+      "Kya aap is Follow-up ko send karna chahte hain?"
+    );
 
   if (!confirmed) {
     return;
   }
 
-  const response = await callFollowUpFunction({
-    action: "approve_and_send",
-    action_request_id: requestId,
-  });
+  const response =
+    await callFollowUpFunction({
+      action: "approve_and_send",
+      request_id: requestId,
+    });
 
   if (response?.error) {
-    throw new Error(response.error);
+    throw new Error(
+      response.error
+    );
   }
 
-  await loadActionRequests();
-  await loadCases();
-  await loadConclusions();
-  await loadProposedChanges();
+  await reloadOperationalData();
 
   renderEverything();
 
   showToast(
-    "Follow-up approved aur send workflow mein chala gaya.",
+    "Follow-up approve karke send kar diya gaya.",
     "success"
   );
+}
+
+/* =========================================================
+   CASE ANALYSIS
+   ========================================================= */
+
+async function analyzeCase(
+  caseId
+) {
+  /*
+   * Backend analysis endpoint abhi
+   * separate implementation phase mein hai.
+   *
+   * Client-side fake conclusion create
+   * nahi kiya ja raha.
+   */
+  const caseItem =
+    cases.find(
+      (item) =>
+        String(item.id) ===
+        String(caseId)
+    );
+
+  if (!caseItem) {
+    throw new Error(
+      "Follow-up case nahi mila."
+    );
+  }
+
+  showToast(
+    "Conversation Analysis backend specialist workflow mein process hoga.",
+    "info"
+  );
+}
+
+/* =========================================================
+   PROPOSED CHANGE EDITOR
+   ========================================================= */
+
+function openChangeEditor(
+  changeId
+) {
+  const change =
+    proposedChanges.find(
+      (item) =>
+        String(item.id) ===
+        String(changeId)
+    );
+
+  if (!change) {
+    throw new Error(
+      "Proposed change nahi mila."
+    );
+  }
+
+  const field =
+    change.field_name ||
+    change.field ||
+    "";
+
+  const currentValue =
+    formatJsonValue(
+      change.old_value
+    );
+
+  const proposedValue =
+    formatJsonValue(
+      change.proposed_value
+    );
+
+  openModal(
+    "Edit Proposed Lead Change",
+    `
+      <div class="modal-form">
+
+        <p class="muted">
+          Field:
+          <strong>
+            ${escapeHtml(field)}
+          </strong>
+        </p>
+
+        <label
+          for="changeValue"
+          class="form-label"
+        >
+          Proposed Value
+        </label>
+
+        <textarea
+          id="changeValue"
+          rows="5"
+        >${escapeHtml(
+          proposedValue
+        )}</textarea>
+
+        <p class="muted">
+          Current value:
+          ${escapeHtml(
+            currentValue
+          )}
+        </p>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn ghost"
+            data-action="close-modal"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            class="btn primary"
+            disabled
+            title="Backend edit endpoint next implementation phase mein enable hoga."
+          >
+            Save Edit
+          </button>
+        </div>
+
+        <div class="page-message info">
+          Edit UI prepared hai. Actual database mutation
+          approval-safe backend endpoint ke through hogi.
+        </div>
+
+      </div>
+    `
+  );
+}
+
+async function approveProposedChange(
+  changeId
+) {
+  const change =
+    proposedChanges.find(
+      (item) =>
+        String(item.id) ===
+        String(changeId)
+    );
+
+  if (!change) {
+    throw new Error(
+      "Proposed change nahi mila."
+    );
+  }
+
+  showToast(
+    "Proposed Lead Change approval backend workflow next implementation phase mein enable hoga.",
+    "info"
+  );
+}
+
+async function applyProposedChange(
+  changeId
+) {
+  const change =
+    proposedChanges.find(
+      (item) =>
+        String(item.id) ===
+        String(changeId)
+    );
+
+  if (!change) {
+    throw new Error(
+      "Proposed change nahi mila."
+    );
+  }
+
+  showToast(
+    "Lead update sirf approved backend workflow ke through apply hoga.",
+    "info"
+  );
+}
+
+/* =========================================================
+   RELOAD
+   ========================================================= */
+
+async function reloadOperationalData() {
+  await loadSettings();
+  await loadChannelConnections();
+  await loadLeads();
+  await loadFollowUpLeads();
+  await loadActionRequests();
+  await loadCases();
+  await loadConclusions();
+  await loadProposedChanges();
 }
 
 /* =========================================================
@@ -898,52 +1493,29 @@ function renderEverything() {
    ========================================================= */
 
 function renderSettings() {
-  const enabled = Boolean(settings?.enabled);
+  const enabledInput =
+    document.getElementById(
+      "followupEnabled"
+    );
+
+  if (enabledInput) {
+    enabledInput.checked =
+      Boolean(settings?.enabled);
+  }
+
   const mode =
-    settings?.sending_mode || "manual_approval";
+    settings?.sending_mode ||
+    "manual_approval";
 
-  const statusElements = document.querySelectorAll(
-    "[data-followup-status]"
-  );
-
-  statusElements.forEach((element) => {
-    element.textContent = enabled ? "ON" : "OFF";
-    element.classList.toggle("active", enabled);
-  });
-
-  const toggle = document.querySelector(
-    '[data-action="toggle-specialist"]'
-  );
-
-  if (toggle) {
-    toggle.setAttribute(
-      "aria-pressed",
-      String(enabled)
+  const modeInput =
+    document.querySelector(
+      `input[name="sendingMode"][value="${CSS.escape(
+        mode
+      )}"]`
     );
 
-    toggle.classList.toggle("active", enabled);
-  }
-
-  const manualButton = document.querySelector(
-    '[data-action="set-manual"]'
-  );
-
-  const automaticButton = document.querySelector(
-    '[data-action="set-automatic"]'
-  );
-
-  if (manualButton) {
-    manualButton.classList.toggle(
-      "active",
-      mode === "manual_approval"
-    );
-  }
-
-  if (automaticButton) {
-    automaticButton.classList.toggle(
-      "active",
-      mode === "automatic_sending"
-    );
+  if (modeInput) {
+    modeInput.checked = true;
   }
 }
 
@@ -953,103 +1525,144 @@ function renderSettings() {
 
 function renderChannels() {
   const container =
-    document.getElementById("channelConnections");
+    document.getElementById(
+      "channels"
+    );
 
   if (!container) {
     return;
   }
 
-  container.innerHTML = CHANNELS.map(
-    (channel) => {
-      const connection =
-        getChannelConnection(channel.id);
+  container.innerHTML =
+    CHANNELS.map(
+      (channel) => {
+        const connection =
+          getChannelConnection(
+            channel.id
+          );
 
-      const connected =
-        connection?.status === "connected";
+        const connected =
+          connection?.status ===
+          "connected";
 
-      const canSend =
-        connected &&
-        connection?.can_send === true;
+        const canSend =
+          connected &&
+          connection?.can_send === true;
 
-      const reachable =
-        connection?.customer_reachable !== false;
+        const reachable =
+          connection?.customer_reachable !==
+          false;
 
-      let statusText = "Not connected";
+        let statusText =
+          "Not connected";
 
-      if (connected && canSend && reachable) {
-        statusText = "Connected & Send Ready";
-      } else if (connected) {
-        statusText = "Connected — Not Send Ready";
-      } else if (connection?.status) {
-        statusText =
-          capitalize(connection.status);
-      }
+        if (
+          connected &&
+          canSend &&
+          reachable
+        ) {
+          statusText =
+            "Connected & Send Ready";
+        } else if (connected) {
+          statusText =
+            "Connected — Not Send Ready";
+        } else if (
+          connection?.status
+        ) {
+          statusText =
+            capitalize(
+              connection.status
+            );
+        }
 
-      let button = "";
+        let actionHtml = "";
 
-      if (channel.id === "instagram") {
-        button = `
-          <button
-            class="btn btn-primary"
-            data-action="connect-instagram"
-          >
-            ${connected ? "Reconnect" : "Connect"}
-          </button>
+        if (
+          channel.id ===
+          "instagram"
+        ) {
+          actionHtml = `
+            <button
+              class="btn primary"
+              type="button"
+              data-action="connect-instagram"
+            >
+              ${
+                connected
+                  ? "Reconnect"
+                  : "Connect"
+              }
+            </button>
+          `;
+        } else if (
+          channel.id === "voice"
+        ) {
+          actionHtml = `
+            <button
+              class="btn ghost"
+              type="button"
+              data-action="manage-voice"
+            >
+              Manage Voice
+            </button>
+          `;
+        } else {
+          actionHtml = `
+            <button
+              class="btn ghost"
+              type="button"
+              disabled
+            >
+              Provider Not Enabled
+            </button>
+          `;
+        }
+
+        return `
+          <div class="channel-card">
+
+            <div class="channel-icon">
+              ${channel.icon}
+            </div>
+
+            <div class="channel-content">
+
+              <h3>
+                ${escapeHtml(
+                  channel.name
+                )}
+              </h3>
+
+              <p>
+                ${escapeHtml(
+                  channel.description
+                )}
+              </p>
+
+              <span
+                class="channel-status ${
+                  connected &&
+                  canSend &&
+                  reachable
+                    ? "connected"
+                    : ""
+                }"
+              >
+                ${escapeHtml(
+                  statusText
+                )}
+              </span>
+
+            </div>
+
+            <div class="channel-actions">
+              ${actionHtml}
+            </div>
+
+          </div>
         `;
       }
-
-      if (channel.id === "voice") {
-        button = `
-          <button
-            class="btn btn-secondary"
-            data-action="manage-voice"
-          >
-            Manage Voice
-          </button>
-        `;
-      }
-
-      if (
-        channel.id === "whatsapp" ||
-        channel.id === "email"
-      ) {
-        button = `
-          <button
-            class="btn btn-secondary"
-            type="button"
-            onclick="showToast('Provider integration abhi enabled nahi hai.', 'info')"
-          >
-            Provider Not Enabled
-          </button>
-        `;
-      }
-
-      return `
-        <div class="channel-card">
-          <div class="channel-icon">
-            ${channel.icon}
-          </div>
-
-          <div class="channel-content">
-            <h3>${escapeHtml(channel.name)}</h3>
-            <p>${escapeHtml(channel.description)}</p>
-
-            <span class="channel-status ${
-              connected && canSend
-                ? "connected"
-                : ""
-            }">
-              ${escapeHtml(statusText)}
-            </span>
-          </div>
-
-          <div class="channel-actions">
-            ${button}
-          </div>
-        </div>
-      `;
-    }
-  ).join("");
+    ).join("");
 }
 
 /* =========================================================
@@ -1057,104 +1670,158 @@ function renderChannels() {
    ========================================================= */
 
 function renderLeads() {
-  const container =
-    document.getElementById("followUpLeads");
+  const tbody =
+    document.getElementById(
+      "leadsBody"
+    );
 
-  if (!container) {
+  if (!tbody) {
     return;
   }
 
   if (!leads.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">👥</div>
-        <h3>No leads found</h3>
-        <p>
-          Follow-up Specialist ko leads milne ke baad
-          yahan dikhaya jayega.
-        </p>
-      </div>
+    tbody.innerHTML = `
+      <tr>
+        <td
+          colspan="6"
+          class="empty"
+        >
+          No leads found.
+        </td>
+      </tr>
     `;
 
     return;
   }
 
-  container.innerHTML = leads
-    .map((lead) => {
-      const enabled =
-        isLeadFollowUpEnabled(lead.id);
+  tbody.innerHTML =
+    leads.map(
+      (lead) => {
+        const enabled =
+          isLeadFollowUpEnabled(
+            lead.id
+          );
 
-      const name =
-        lead.name ||
-        lead.full_name ||
-        lead.customer_name ||
-        "Unnamed Lead";
+        const name =
+          lead.name ||
+          lead.full_name ||
+          lead.customer_name ||
+          "Unnamed Lead";
 
-      const phone =
-        lead.phone ||
-        lead.mobile ||
-        lead.whatsapp ||
-        "";
+        const phone =
+          lead.mobile ||
+          lead.phone ||
+          lead.whatsapp ||
+          "";
 
-      const status =
-        lead.status ||
-        lead.stage ||
-        "New";
+        const status =
+          lead.status ||
+          lead.stage ||
+          "new";
 
-      return `
-        <div class="lead-row">
-          <div class="lead-main">
-            <strong>
-              ${escapeHtml(name)}
-            </strong>
+        const channel =
+          lead.instagram_thread_id
+            ? "Instagram"
+            : "Not detected";
 
-            <span>
-              ${escapeHtml(phone)}
-            </span>
-          </div>
+        const lastActivity =
+          lead.last_contacted_at ||
+          lead.updated_at ||
+          lead.created_at ||
+          "";
 
-          <div class="lead-status">
-            ${escapeHtml(status)}
-          </div>
+        return `
+          <tr>
 
-          <div class="lead-followup-toggle">
-            <label class="switch">
-              <input
-                type="checkbox"
-                data-action="toggle-lead"
-                data-lead-id="${escapeHtml(
-                  String(lead.id)
-                )}"
-                ${enabled ? "checked" : ""}
-              />
-              <span class="slider"></span>
-            </label>
+            <td>
+              <strong>
+                ${escapeHtml(
+                  name
+                )}
+              </strong>
 
-            <span>
-              ${enabled ? "ON" : "OFF"}
-            </span>
-          </div>
-
-          <div class="lead-actions">
-            <button
-              class="btn btn-primary btn-sm"
-              data-action="request-followup"
-              data-lead-id="${escapeHtml(
-                String(lead.id)
-              )}"
               ${
-                !settings?.enabled || !enabled
-                  ? "disabled"
+                phone
+                  ? `
+                    <div class="muted">
+                      ${escapeHtml(
+                        phone
+                      )}
+                    </div>
+                  `
                   : ""
               }
-            >
-              Request Follow-up
-            </button>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+            </td>
+
+            <td>
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  data-action="toggle-lead"
+                  data-lead-id="${escapeHtml(
+                    String(
+                      lead.id
+                    )
+                  )}"
+                  ${
+                    enabled
+                      ? "checked"
+                      : ""
+                  }
+                >
+                <span class="slider"></span>
+              </label>
+            </td>
+
+            <td>
+              ${escapeHtml(
+                channel
+              )}
+            </td>
+
+            <td>
+              <span class="status-pill">
+                ${escapeHtml(
+                  capitalize(
+                    status
+                  )
+                )}
+              </span>
+            </td>
+
+            <td>
+              ${escapeHtml(
+                formatDate(
+                  lastActivity
+                )
+              )}
+            </td>
+
+            <td>
+              <button
+                class="btn primary"
+                type="button"
+                data-action="request-followup"
+                data-lead-id="${escapeHtml(
+                  String(
+                    lead.id
+                  )
+                )}"
+                ${
+                  !settings?.enabled ||
+                  !enabled
+                    ? "disabled"
+                    : ""
+                }
+              >
+                Request Follow-up
+              </button>
+            </td>
+
+          </tr>
+        `;
+      }
+    ).join("");
 }
 
 /* =========================================================
@@ -1163,110 +1830,145 @@ function renderLeads() {
 
 function renderApprovals() {
   const container =
-    document.getElementById("followUpApprovals");
+    document.getElementById(
+      "approvalsList"
+    );
 
   if (!container) {
     return;
   }
 
-  const requests = actionRequests.filter(
-    (request) =>
-      request.status === "proposed" ||
-      request.status === "drafted"
-  );
+  const pending =
+    actionRequests.filter(
+      (request) =>
+        request.status ===
+          "proposed" ||
+        request.status ===
+          "drafted"
+    );
 
-  if (!requests.length) {
+  if (!pending.length) {
     container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">✅</div>
-        <h3>No pending approvals</h3>
-        <p>
-          New Follow-up drafts approval ke liye yahan aayenge.
-        </p>
+      <div class="empty">
+        No pending approvals.
       </div>
     `;
 
     return;
   }
 
-  container.innerHTML = requests
-    .map((request) => {
-      const payload =
-        request.action_payload ||
-        request.payload ||
-        {};
+  container.innerHTML =
+    pending.map(
+      (request) => {
+        const payload =
+          getRequestPayload(
+            request
+          );
 
-      const message =
-        payload.message ||
-        payload.body ||
-        payload.text ||
-        "Message unavailable";
+        const message =
+          getRequestMessage(
+            request
+          ) ||
+          "Message unavailable";
 
-      const leadId =
-        request.lead_id ||
-        request.target_id ||
-        "";
+        const leadId =
+          request.lead_id ||
+          request.target_id ||
+          payload.lead_id ||
+          "";
 
-      const lead = leads.find(
-        (item) =>
-          String(item.id) === String(leadId)
-      );
+        const lead =
+          leads.find(
+            (item) =>
+              String(item.id) ===
+              String(leadId)
+          );
 
-      const leadName =
-        lead?.name ||
-        lead?.full_name ||
-        lead?.customer_name ||
-        "Lead";
+        const leadName =
+          lead?.name ||
+          lead?.full_name ||
+          lead?.customer_name ||
+          "Lead";
 
-      return `
-        <div class="approval-card">
-          <div class="approval-header">
-            <div>
-              <span class="eyebrow">
-                FOLLOW-UP DRAFT
+        const channel =
+          request.channel ||
+          request.target_channel ||
+          payload.channel ||
+          "instagram";
+
+        return `
+          <div class="approval-card">
+
+            <div class="approval-header">
+              <div>
+                <span class="label">
+                  FOLLOW-UP DRAFT
+                </span>
+
+                <h3>
+                  ${escapeHtml(
+                    leadName
+                  )}
+                </h3>
+              </div>
+
+              <span class="status-pill">
+                ${escapeHtml(
+                  request.status ||
+                    "proposed"
+                )}
               </span>
-
-              <h3>
-                ${escapeHtml(leadName)}
-              </h3>
             </div>
 
-            <span class="status-badge">
+            <div class="muted">
+              Channel:
               ${escapeHtml(
-                request.status || "proposed"
+                capitalize(
+                  channel
+                )
               )}
-            </span>
-          </div>
+            </div>
 
-          <div class="draft-message">
-            ${escapeHtml(message)}
-          </div>
+            <div class="draft-message">
+              ${escapeHtml(
+                message
+              )}
+            </div>
 
-          <div class="approval-actions">
-            <button
-              class="btn btn-secondary"
-              data-action="edit-draft"
-              data-request-id="${escapeHtml(
-                String(request.id)
-              )}"
-            >
-              Edit
-            </button>
+            <div class="approval-actions">
 
-            <button
-              class="btn btn-primary"
-              data-action="approve-send"
-              data-request-id="${escapeHtml(
-                String(request.id)
-              )}"
-            >
-              Approve & Send
-            </button>
+              <button
+                class="btn ghost"
+                type="button"
+                data-action="edit-draft"
+                data-request-id="${escapeHtml(
+                  String(
+                    request.id
+                  )
+                )}"
+              >
+                Edit
+              </button>
+
+              <button
+                class="btn primary"
+                type="button"
+                data-action="approve-send"
+                data-request-id="${escapeHtml(
+                  String(
+                    request.id
+                  )
+                )}"
+              >
+                Approve & Send
+              </button>
+
+            </div>
+
           </div>
-        </div>
-      `;
-    })
-    .join("");
+        `;
+      }
+    ).join("");
 }
 
 /* =========================================================
@@ -1275,106 +1977,164 @@ function renderApprovals() {
 
 function renderProposedChanges() {
   const container =
-    document.getElementById("proposedChanges");
+    document.getElementById(
+      "changesList"
+    );
 
   if (!container) {
     return;
   }
 
-  const pending = proposedChanges.filter(
-    (change) =>
-      change.status === "proposed" ||
-      change.status === "edited"
-  );
+  const pending =
+    proposedChanges.filter(
+      (change) =>
+        change.status ===
+          "proposed" ||
+        change.status ===
+          "edited" ||
+        change.status ===
+          "pending"
+    );
 
   if (!pending.length) {
     container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🧠</div>
-        <h3>No proposed lead changes</h3>
-        <p>
-          Follow-up analysis ke baad suggested changes yahan aayenge.
-        </p>
+      <div class="empty">
+        No proposed lead changes.
       </div>
     `;
 
     return;
   }
 
-  container.innerHTML = pending
-    .map((change) => {
-      return `
-        <div class="change-card">
-          <div class="change-header">
-            <strong>
-              ${escapeHtml(
-                change.field_name || "Lead field"
-              )}
-            </strong>
+  container.innerHTML =
+    pending.map(
+      (change) => {
+        const field =
+          change.field_name ||
+          change.field ||
+          "Lead field";
 
-            <span class="status-badge">
-              ${escapeHtml(
-                change.status || "proposed"
-              )}
-            </span>
-          </div>
+        return `
+          <div class="change-card">
 
-          <div class="change-values">
-            <div>
-              <small>Current</small>
-              <div>
+            <div class="change-header">
+
+              <strong>
                 ${escapeHtml(
-                  formatJsonValue(
-                    change.old_value
-                  )
+                  field
                 )}
-              </div>
-            </div>
+              </strong>
 
-            <div class="change-arrow">
-              →
-            </div>
-
-            <div>
-              <small>Proposed</small>
-              <div>
+              <span class="status-pill">
                 ${escapeHtml(
-                  formatJsonValue(
-                    change.proposed_value
-                  )
+                  change.status ||
+                    "proposed"
                 )}
-              </div>
+              </span>
+
             </div>
-          </div>
 
-          <div class="change-reason">
-            <strong>Reason:</strong>
-            ${escapeHtml(
-              change.reason || "No reason provided"
-            )}
-          </div>
+            <div class="change-values">
 
-          <div class="change-actions">
-            <button
-              class="btn btn-secondary btn-sm"
-              type="button"
-              onclick="showToast('Edit workflow backend approval layer mein connect kiya jayega.', 'info')"
-            >
-              Edit
-            </button>
+              <div>
+                <small>
+                  Current
+                </small>
 
-            <button
-              class="btn btn-primary btn-sm"
-              type="button"
-              onclick="showToast('Proposed change approval workflow next backend phase mein enable hoga.', 'info')"
-            >
-              Review & Approve
-            </button>
+                <div>
+                  ${escapeHtml(
+                    formatJsonValue(
+                      change.old_value
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div>
+                →
+              </div>
+
+              <div>
+                <small>
+                  Proposed
+                </small>
+
+                <div>
+                  ${escapeHtml(
+                    formatJsonValue(
+                      change.proposed_value
+                    )
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            <div class="change-reason">
+              <strong>
+                Reason:
+              </strong>
+
+              ${escapeHtml(
+                change.reason ||
+                  "No reason provided."
+              )}
+            </div>
+
+            <div class="change-actions">
+
+              <button
+                class="btn ghost"
+                type="button"
+                data-action="edit-change"
+                data-change-id="${escapeHtml(
+                  String(
+                    change.id
+                  )
+                )}"
+              >
+                Edit
+              </button>
+
+              ${
+                change.status ===
+                  "approved"
+                  ? `
+                    <button
+                      class="btn primary"
+                      type="button"
+                      data-action="apply-change"
+                      data-change-id="${escapeHtml(
+                        String(
+                          change.id
+                        )
+                      )}"
+                    >
+                      Apply
+                    </button>
+                  `
+                  : `
+                    <button
+                      class="btn primary"
+                      type="button"
+                      data-action="approve-change"
+                      data-change-id="${escapeHtml(
+                        String(
+                          change.id
+                        )
+                      )}"
+                    >
+                      Review & Approve
+                    </button>
+                  `
+              }
+
+            </div>
+
           </div>
-        </div>
-      `;
-    })
-    .join("");
+        `;
+      }
+    ).join("");
 }
 
 /* =========================================================
@@ -1383,7 +2143,9 @@ function renderProposedChanges() {
 
 function renderConclusions() {
   const container =
-    document.getElementById("recentConclusions");
+    document.getElementById(
+      "conclusionsList"
+    );
 
   if (!container) {
     return;
@@ -1391,100 +2153,130 @@ function renderConclusions() {
 
   if (!conclusions.length) {
     container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📊</div>
-        <h3>No conclusions yet</h3>
-        <p>
-          Follow-up conversation analysis ke baad
-          conclusions yahan appear hongi.
-        </p>
+      <div class="empty">
+        No conclusions yet.
       </div>
     `;
 
     return;
   }
 
-  container.innerHTML = conclusions
-    .map((conclusion) => {
-      return `
-        <div class="conclusion-card">
-          <div class="conclusion-header">
-            <strong>
+  container.innerHTML =
+    conclusions.map(
+      (conclusion) => {
+        const confidence =
+          Number(
+            conclusion.confidence
+          );
+
+        const confidenceText =
+          Number.isFinite(
+            confidence
+          )
+            ? `${Math.round(
+                confidence * 100
+              )}%`
+            : "—";
+
+        return `
+          <div class="conclusion-card">
+
+            <div class="conclusion-header">
+
+              <strong>
+                ${escapeHtml(
+                  conclusion.intent ||
+                    "Follow-up conclusion"
+                )}
+              </strong>
+
+              <span>
+                Confidence:
+                ${confidenceText}
+              </span>
+
+            </div>
+
+            <p>
               ${escapeHtml(
-                conclusion.intent ||
-                  "Follow-up conclusion"
+                conclusion.summary ||
+                  "No summary available."
               )}
-            </strong>
+            </p>
 
-            <span>
-              ${
-                conclusion.confidence != null
-                  ? Math.round(
-                      Number(
-                        conclusion.confidence
-                      ) * 100
-                    ) + "%"
-                  : "—"
-              }
-            </span>
+            <div class="conclusion-grid">
+
+              <div>
+                <small>
+                  Interest
+                </small>
+
+                <strong>
+                  ${escapeHtml(
+                    conclusion.interest ||
+                      "—"
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <small>
+                  Stage
+                </small>
+
+                <strong>
+                  ${escapeHtml(
+                    conclusion.stage ||
+                      "—"
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <small>
+                  Sentiment
+                </small>
+
+                <strong>
+                  ${escapeHtml(
+                    conclusion.sentiment ||
+                      "—"
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <small>
+                  Buying Signal
+                </small>
+
+                <strong>
+                  ${escapeHtml(
+                    conclusion.buying_signal ||
+                      "—"
+                  )}
+                </strong>
+              </div>
+
+            </div>
+
+            <div class="next-action">
+
+              <strong>
+                Next Action:
+              </strong>
+
+              ${escapeHtml(
+                conclusion.next_action ||
+                  "—"
+              )}
+
+            </div>
+
           </div>
-
-          <p>
-            ${escapeHtml(
-              conclusion.summary ||
-                "No summary available."
-            )}
-          </p>
-
-          <div class="conclusion-grid">
-            <div>
-              <small>Interest</small>
-              <strong>
-                ${escapeHtml(
-                  conclusion.interest || "—"
-                )}
-              </strong>
-            </div>
-
-            <div>
-              <small>Stage</small>
-              <strong>
-                ${escapeHtml(
-                  conclusion.stage || "—"
-                )}
-              </strong>
-            </div>
-
-            <div>
-              <small>Sentiment</small>
-              <strong>
-                ${escapeHtml(
-                  conclusion.sentiment || "—"
-                )}
-              </strong>
-            </div>
-
-            <div>
-              <small>Buying Signal</small>
-              <strong>
-                ${escapeHtml(
-                  conclusion.buying_signal ||
-                    "—"
-                )}
-              </strong>
-            </div>
-          </div>
-
-          <div class="next-action">
-            <strong>Next Action:</strong>
-            ${escapeHtml(
-              conclusion.next_action || "—"
-            )}
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+        `;
+      }
+    ).join("");
 }
 
 /* =========================================================
@@ -1492,172 +2284,126 @@ function renderConclusions() {
    ========================================================= */
 
 function renderStats() {
-  const pendingApprovals =
+  const activeCount =
+    document.getElementById(
+      "activeCount"
+    );
+
+  const approvalCount =
+    document.getElementById(
+      "approvalCount"
+    );
+
+  const analysisCount =
+    document.getElementById(
+      "analysisCount"
+    );
+
+  const changesCount =
+    document.getElementById(
+      "changesCount"
+    );
+
+  const active =
+    leads.filter(
+      (lead) =>
+        isLeadFollowUpEnabled(
+          lead.id
+        )
+    ).length;
+
+  const approvals =
     actionRequests.filter(
       (item) =>
-        item.status === "proposed" ||
-        item.status === "drafted"
+        item.status ===
+          "proposed" ||
+        item.status ===
+          "drafted"
     ).length;
 
-  const pendingChanges =
+  const analysis =
+    cases.filter(
+      (item) =>
+        item.status ===
+          "sent" ||
+        item.status ===
+          "handed_off" ||
+        item.status ===
+          "analyzing"
+    ).length;
+
+  const changes =
     proposedChanges.filter(
       (item) =>
-        item.status === "proposed" ||
-        item.status === "edited"
+        item.status ===
+          "proposed" ||
+        item.status ===
+          "edited" ||
+        item.status ===
+          "pending"
     ).length;
 
-  const connectedChannels =
-    channelConnections.filter(
-      (item) =>
-        item.status === "connected"
-    ).length;
+  if (activeCount) {
+    activeCount.textContent =
+      String(active);
+  }
 
-  const stats = {
-    totalLeads: leads.length,
-    enabledLeads: leads.filter((lead) =>
-      isLeadFollowUpEnabled(lead.id)
-    ).length,
-    pendingApprovals,
-    pendingChanges,
-    connectedChannels,
-    conclusions: conclusions.length,
-  };
+  if (approvalCount) {
+    approvalCount.textContent =
+      String(approvals);
+  }
 
-  Object.entries(stats).forEach(
-    ([key, value]) => {
-      const element = document.querySelector(
-        `[data-stat="${key}"]`
-      );
+  if (analysisCount) {
+    analysisCount.textContent =
+      String(analysis);
+  }
 
-      if (element) {
-        element.textContent = String(value);
-      }
-    }
-  );
+  if (changesCount) {
+    changesCount.textContent =
+      String(changes);
+  }
 }
 
 /* =========================================================
    MODAL
    ========================================================= */
 
-function createDraftModal() {
-  if (document.getElementById("draftModal")) {
-    return;
-  }
-
-  const modal = document.createElement("div");
-
-  modal.id = "draftModal";
-  modal.className = "modal";
-  modal.style.display = "none";
-
-  modal.innerHTML = `
-    <div class="modal-backdrop"></div>
-
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <div>
-          <span class="eyebrow">
-            FOLLOW-UP SPECIALIST
-          </span>
-
-          <h2>Edit Follow-up Draft</h2>
-        </div>
-
-        <button
-          type="button"
-          class="modal-close"
-          data-action="close-modal"
-        >
-          ×
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <input
-          type="hidden"
-          id="draftRequestId"
-        />
-
-        <label
-          for="draftMessage"
-          class="form-label"
-        >
-          Message
-        </label>
-
-        <textarea
-          id="draftMessage"
-          rows="8"
-          maxlength="2000"
-          placeholder="Follow-up message..."
-        ></textarea>
-      </div>
-
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-action="close-modal"
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-primary"
-          data-action="save-draft"
-          data-request-id=""
-          id="saveDraftButton"
-        >
-          Save Draft
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const saveButton =
+function openModal(
+  title,
+  body
+) {
+  const modal =
     document.getElementById(
-      "saveDraftButton"
+      "modal"
     );
 
-  if (saveButton) {
-    saveButton.addEventListener(
-      "click",
-      async () => {
-        const requestId =
-          document.getElementById(
-            "draftRequestId"
-          )?.value;
+  const modalTitle =
+    document.getElementById(
+      "modalTitle"
+    );
 
-        if (!requestId) {
-          return;
-        }
+  const modalBody =
+    document.getElementById(
+      "modalBody"
+    );
 
-        try {
-          await saveDraftFromModal(requestId);
-        } catch (error) {
-          showToast(
-            error?.message ||
-              "Draft save nahi hua.",
-            "error"
-          );
-        }
-      }
+  if (
+    !modal ||
+    !modalTitle ||
+    !modalBody
+  ) {
+    throw new Error(
+      "Modal structure nahi mila."
     );
   }
 
-  const backdrop =
-    modal.querySelector(".modal-backdrop");
+  modalTitle.textContent =
+    title;
 
-  if (backdrop) {
-    backdrop.addEventListener(
-      "click",
-      closeDraftModal
-    );
-  }
+  modalBody.innerHTML =
+    body;
+
+  modal.hidden = false;
 }
 
 /* =========================================================
@@ -1665,74 +2411,154 @@ function createDraftModal() {
    ========================================================= */
 
 function showAuthRequired() {
-  const container =
-    document.querySelector("main") ||
-    document.body;
+  const pageMessage =
+    document.getElementById(
+      "pageMessage"
+    );
 
-  const box = document.createElement("div");
+  if (!pageMessage) {
+    return;
+  }
 
-  box.className = "auth-required";
+  pageMessage.hidden = false;
 
-  box.innerHTML = `
-    <div class="empty-state">
-      <div class="empty-icon">🔐</div>
-      <h2>Login Required</h2>
-      <p>
-        Follow-up Specialist use karne ke liye
-        pehle client dashboard mein login karein.
-      </p>
+  pageMessage.innerHTML = `
+    <strong>
+      Login Required
+    </strong>
 
-      <a
-        href="login.html"
-        class="btn btn-primary"
-      >
-        Login
-      </a>
-    </div>
+    <p>
+      Follow-up Specialist use karne ke liye
+      pehle client dashboard mein login karein.
+    </p>
+
+    <a
+      href="login.html"
+      class="btn primary"
+    >
+      Login
+    </a>
   `;
+}
 
-  container.prepend(box);
+/* =========================================================
+   PAGE MESSAGE
+   ========================================================= */
+
+function setPageMessage(
+  message,
+  type = "info"
+) {
+  const element =
+    document.getElementById(
+      "pageMessage"
+    );
+
+  if (!element) {
+    return;
+  }
+
+  element.hidden = false;
+
+  element.className =
+    `page-message ${type}`;
+
+  element.textContent =
+    message;
+}
+
+/* =========================================================
+   AUTH STATUS
+   ========================================================= */
+
+function setAuthStatus(
+  text
+) {
+  const element =
+    document.getElementById(
+      "authStatus"
+    );
+
+  if (element) {
+    element.textContent =
+      text;
+  }
 }
 
 /* =========================================================
    TOAST
    ========================================================= */
 
-function showToast(message, type = "info") {
+function showToast(
+  message,
+  type = "info"
+) {
   let container =
-    document.getElementById("toastContainer");
+    document.getElementById(
+      "toastContainer"
+    );
 
   if (!container) {
-    container = document.createElement("div");
+    container =
+      document.createElement(
+        "div"
+      );
 
-    container.id = "toastContainer";
+    container.id =
+      "toastContainer";
 
-    container.style.position = "fixed";
-    container.style.right = "20px";
-    container.style.bottom = "20px";
-    container.style.zIndex = "99999";
+    container.style.position =
+      "fixed";
 
-    document.body.appendChild(container);
+    container.style.right =
+      "20px";
+
+    container.style.bottom =
+      "20px";
+
+    container.style.zIndex =
+      "99999";
+
+    document.body.appendChild(
+      container
+    );
   }
 
   const toast =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   toast.className =
     `toast toast-${type}`;
 
-  toast.textContent = message;
+  toast.textContent =
+    message;
 
-  toast.style.marginTop = "10px";
-  toast.style.padding = "12px 16px";
-  toast.style.borderRadius = "10px";
-  toast.style.background = "#111827";
-  toast.style.color = "#fff";
+  toast.style.marginTop =
+    "10px";
+
+  toast.style.padding =
+    "12px 16px";
+
+  toast.style.borderRadius =
+    "10px";
+
+  toast.style.background =
+    "#111827";
+
+  toast.style.color =
+    "#fff";
+
   toast.style.boxShadow =
     "0 10px 30px rgba(0,0,0,.2)";
-  toast.style.maxWidth = "360px";
 
-  container.appendChild(toast);
+  toast.style.maxWidth =
+    "360px";
+
+  container.appendChild(
+    toast
+  );
 
   setTimeout(() => {
     toast.remove();
@@ -1743,31 +2569,60 @@ function showToast(message, type = "info") {
    HELPERS
    ========================================================= */
 
-function escapeHtml(value) {
-  if (value === null || value === undefined) {
+function escapeHtml(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return "";
   }
 
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 }
 
-function capitalize(value) {
+function capitalize(
+  value
+) {
   if (!value) {
     return "";
   }
 
+  const text =
+    String(value);
+
   return (
-    String(value).charAt(0).toUpperCase() +
-    String(value).slice(1)
+    text
+      .charAt(0)
+      .toUpperCase() +
+    text.slice(1)
   );
 }
 
-function formatJsonValue(value) {
+function formatJsonValue(
+  value
+) {
   if (
     value === null ||
     value === undefined
@@ -1775,20 +2630,55 @@ function formatJsonValue(value) {
     return "—";
   }
 
-  if (typeof value === "string") {
+  if (
+    typeof value ===
+    "string"
+  ) {
     return value;
   }
 
   try {
-    return JSON.stringify(value);
+    return JSON.stringify(
+      value
+    );
   } catch {
     return String(value);
   }
+}
+
+function formatDate(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return String(value);
+  }
+
+  return date.toLocaleString(
+    "en-IN",
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }
+  );
 }
 
 /* =========================================================
    GLOBAL HELPERS
    ========================================================= */
 
-window.showToast = showToast;
-window.loadFollowUpSpecialist = initialize;
+window.showToast =
+  showToast;
+
+window.loadFollowUpSpecialist =
+  initialize;
