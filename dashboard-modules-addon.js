@@ -86,7 +86,7 @@
         },
 
         follow_up_ai: {
-            name: 'Follow-up AI Employee',
+            name: 'Follow-up Specialist',
             icon: '🔄',
             href: 'follow-up.html'
         },
