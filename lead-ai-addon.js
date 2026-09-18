@@ -1,12 +1,11 @@
 /* =========================================================
-   GLIME LEAD AI EMPLOYEE
-   Phase 4 — Lead Intelligence UI Add-on
+   GLIME — LEAD AI EMPLOYEE
+   Lead Intelligence UI Add-on
    ---------------------------------------------------------
-   IMPORTANT:
    - Does NOT modify leads.js
    - Uses its own Supabase client
-   - Uses authenticated user's session
-   - Calls lead-intelligence Edge Function
+   - Loads existing lead intelligence
+   - Keeps technical/internal workflow details hidden
 ========================================================= */
 
 (() => {
@@ -33,7 +32,6 @@
   let activeLeadId = null;
   let panelObserver = null;
 
-
   /* =========================================================
      HELPERS
   ========================================================= */
@@ -51,10 +49,8 @@
         })[char]
     );
 
-
   const safeArray = (value) =>
     Array.isArray(value) ? value : [];
-
 
   const pretty = (value) => {
     if (!value) return "Unknown";
@@ -65,7 +61,6 @@
         char.toUpperCase()
       );
   };
-
 
   const formatDate = (value) => {
     if (!value) return "—";
@@ -81,7 +76,6 @@
       timeStyle: "short"
     });
   };
-
 
   /* =========================================================
      STATUS
@@ -99,7 +93,6 @@
       ? "#ffb4bc"
       : "";
   }
-
 
   /* =========================================================
      CREATE PANEL
@@ -123,7 +116,6 @@
     panel = document.createElement("section");
 
     panel.id = "leadAiPanel";
-
     panel.className = "lead-ai-panel";
 
     panel.innerHTML = `
@@ -161,11 +153,6 @@
       ></div>
     `;
 
-    /*
-      Put the AI panel at the top of the lead detail.
-      It remains separate from leads.js.
-    */
-
     detail.prepend(panel);
 
     const analyzeButton =
@@ -176,11 +163,14 @@
     analyzeButton?.addEventListener(
       "click",
       () => {
+
         if (!activeLeadId) {
+
           setStatus(
             "No lead selected.",
             true
           );
+
           return;
         }
 
@@ -191,12 +181,12 @@
     return panel;
   }
 
-
   /* =========================================================
-     RENDER EMPTY / READY STATE
+     READY STATE
   ========================================================= */
 
   function renderReadyState() {
+
     const content =
       document.getElementById(
         "leadAiContent"
@@ -208,74 +198,25 @@
       <div class="lead-ai-section">
 
         <div class="lead-ai-section-title">
-          AI Lead Analysis
+          Lead Analysis
         </div>
 
         <div class="lead-ai-summary">
-          Analyze this lead to generate intent,
-          urgency, buying signals, risk signals,
-          and decision evidence.
-        </div>
-
-      </div>
-
-      <div class="lead-ai-future-grid">
-
-        <div class="lead-ai-future-card">
-          <strong>
-            Next Best Action
-          </strong>
-
-          <span>
-            Phase 7
-          </span>
-
-          <small>
-            Recommend the next appropriate
-            business action.
-          </small>
-        </div>
-
-        <div class="lead-ai-future-card">
-          <strong>
-            Duplicate Detection
-          </strong>
-
-          <span>
-            Phase 6
-          </span>
-
-          <small>
-            Identify possible duplicate leads
-            before merging.
-          </small>
-        </div>
-
-        <div class="lead-ai-future-card">
-          <strong>
-            Agent Handoff
-          </strong>
-
-          <span>
-            Phase 8
-          </span>
-
-          <small>
-            Connect the lead decision layer
-            with existing GLIME agents.
-          </small>
+          Analyze this lead to understand
+          intent, urgency, buying signals,
+          risk signals and supporting evidence.
         </div>
 
       </div>
     `;
   }
 
-
   /* =========================================================
      RENDER ANALYSIS
   ========================================================= */
 
   function renderAnalysis(result) {
+
     const content =
       document.getElementById(
         "leadAiContent"
@@ -318,13 +259,13 @@
       profile.ai_summary ||
       "No AI summary available.";
 
-
     content.innerHTML = `
 
       <div class="lead-ai-grid">
 
         <div class="lead-ai-metric">
           <span>Intent</span>
+
           <strong>
             ${esc(pretty(intent))}
           </strong>
@@ -332,6 +273,7 @@
 
         <div class="lead-ai-metric">
           <span>Urgency</span>
+
           <strong>
             ${esc(pretty(urgency))}
           </strong>
@@ -339,6 +281,7 @@
 
         <div class="lead-ai-metric">
           <span>Estimated Value</span>
+
           <strong>
             ${
               profile.estimated_value
@@ -352,7 +295,6 @@
 
       </div>
 
-
       <div class="lead-ai-section">
 
         <div class="lead-ai-section-title">
@@ -364,7 +306,6 @@
         </div>
 
       </div>
-
 
       <div class="lead-ai-two-column">
 
@@ -401,7 +342,6 @@
 
         </div>
 
-
         <div class="lead-ai-section">
 
           <div class="lead-ai-section-title">
@@ -436,7 +376,6 @@
         </div>
 
       </div>
-
 
       <div class="lead-ai-section">
 
@@ -503,7 +442,6 @@
 
       </div>
 
-
       <div class="lead-ai-section">
 
         <div class="lead-ai-section-title">
@@ -522,58 +460,8 @@
 
       </div>
 
-
-      <div class="lead-ai-future-grid">
-
-        <div class="lead-ai-future-card">
-          <strong>
-            Next Best Action
-          </strong>
-
-          <span>
-            Coming in Phase 7
-          </span>
-
-          <small>
-            The intelligence layer will later
-            recommend the next appropriate action.
-          </small>
-        </div>
-
-        <div class="lead-ai-future-card">
-          <strong>
-            Duplicate Detection
-          </strong>
-
-          <span>
-            Coming in Phase 6
-          </span>
-
-          <small>
-            Possible duplicate leads will be
-            surfaced for human approval.
-          </small>
-        </div>
-
-        <div class="lead-ai-future-card">
-          <strong>
-            Existing Agent Handoff
-          </strong>
-
-          <span>
-            Coming in Phase 8
-          </span>
-
-          <small>
-            Communication will remain with the
-            appropriate existing GLIME agent.
-          </small>
-        </div>
-
-      </div>
     `;
   }
-
 
   /* =========================================================
      LOAD EXISTING ANALYSIS
@@ -582,7 +470,9 @@
   async function loadExistingAnalysis(
     leadId
   ) {
+
     try {
+
       const [
         profileResult,
         evidenceResult
@@ -608,8 +498,8 @@
               ascending: false
             }
           )
-      ]);
 
+      ]);
 
       if (profileResult.error) {
         throw profileResult.error;
@@ -619,15 +509,14 @@
         throw evidenceResult.error;
       }
 
-
       const profile =
         profileResult.data;
 
       const evidence =
         evidenceResult.data || [];
 
-
       if (!profile) {
+
         renderReadyState();
 
         setStatus(
@@ -637,20 +526,30 @@
         return;
       }
 
-
       renderAnalysis({
+
         profile,
+
         evidence,
-        intent: profile.intent,
-        urgency: profile.urgency,
+
+        intent:
+          profile.intent,
+
+        urgency:
+          profile.urgency,
+
         ai_summary:
           profile.ai_summary,
+
         buying_signals:
           profile.buying_signals,
+
         risk_signals:
           profile.risk_signals,
+
         analyzed_at:
           profile.updated_at
+
       });
 
       setStatus(
@@ -673,7 +572,6 @@
     }
   }
 
-
   /* =========================================================
      ANALYZE LEAD
   ========================================================= */
@@ -681,13 +579,16 @@
   async function analyzeLead(
     leadId
   ) {
+
     const button =
       document.getElementById(
         "analyzeLeadBtn"
       );
 
     if (button) {
+
       button.disabled = true;
+
       button.textContent =
         "Analyzing…";
     }
@@ -695,7 +596,6 @@
     setStatus(
       "Lead AI is analyzing this lead…"
     );
-
 
     try {
 
@@ -711,47 +611,44 @@
         }
       );
 
-
       if (error) {
         throw error;
       }
 
-
       if (!data) {
+
         throw new Error(
           "No analysis response received."
         );
       }
 
-
       const analysisResult =
-  Array.isArray(data?.results)
-    ? data.results.find(
-        (item) => item?.lead_id === leadId
-      ) || data.results[0]
-    : data;
+        Array.isArray(data?.results)
+          ? data.results.find(
+              (item) =>
+                item?.lead_id === leadId
+            ) ||
+            data.results[0]
+          : data;
 
-if (!analysisResult) {
-  throw new Error(
-    "Lead analysis response did not contain a result for this lead."
-  );
-}
+      if (!analysisResult) {
 
-/*
-  Edge Function returns the analyzed lead
-  inside data.results[].
+        throw new Error(
+          "Lead analysis response did not contain a result for this lead."
+        );
+      }
 
-  First render the returned analysis,
-  then reload the persisted profile + evidence
-  so the UI always shows the complete Phase 4 data.
-*/
-renderAnalysis(analysisResult);
+      renderAnalysis(
+        analysisResult
+      );
 
-await loadExistingAnalysis(leadId);
+      await loadExistingAnalysis(
+        leadId
+      );
 
-setStatus(
-  "Lead analysis completed successfully."
-);
+      setStatus(
+        "Lead analysis completed successfully."
+      );
 
     } catch (error) {
 
@@ -769,20 +666,22 @@ setStatus(
     } finally {
 
       if (button) {
+
         button.disabled = false;
+
         button.textContent =
           "Analyze Lead";
       }
-
     }
   }
-
 
   /* =========================================================
      DETECT LEAD OPEN
   ========================================================= */
 
-  function handleDocumentClick(event) {
+  function handleDocumentClick(
+    event
+  ) {
 
     const button =
       event.target.closest(
@@ -800,13 +699,8 @@ setStatus(
       return;
     }
 
-    activeLeadId = leadId;
-
-    /*
-      leads.js replaces detailContent.innerHTML
-      asynchronously during openDetail().
-      Give it a moment, then attach our panel.
-    */
+    activeLeadId =
+      leadId;
 
     setTimeout(() => {
 
@@ -818,7 +712,7 @@ setStatus(
       }
 
       setStatus(
-        "Loading Lead AI intelligence…"
+        "Loading lead intelligence…"
       );
 
       loadExistingAnalysis(
@@ -827,7 +721,6 @@ setStatus(
 
     }, 100);
   }
-
 
   /* =========================================================
      OBSERVE DETAIL MODAL
@@ -875,23 +768,26 @@ setStatus(
     );
   }
 
-
   /* =========================================================
      PUBLIC API
   ========================================================= */
 
   window.GLIMELeadAI = {
-    analyze: analyzeLead,
+
+    analyze:
+      analyzeLead,
 
     refresh: () => {
+
       if (activeLeadId) {
-        loadExistingAnalysis(
+
+        return loadExistingAnalysis(
           activeLeadId
         );
       }
     }
-  };
 
+  };
 
   /* =========================================================
      INIT
