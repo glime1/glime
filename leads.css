@@ -42,3 +42,206 @@ body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100
   opacity:.6;
   cursor:not-allowed;
 }
+
+/* =========================================================
+   LEAD AI EMPLOYEE — PHASE 4
+========================================================= */
+
+.lead-ai-panel{
+  margin-bottom:20px;
+  padding:20px;
+  background:rgba(0,240,255,.035);
+  border:1px solid rgba(0,240,255,.14);
+  border-radius:14px;
+}
+
+.lead-ai-panel-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:15px;
+  margin-bottom:14px;
+}
+
+.lead-ai-panel-header h3{
+  margin:3px 0 0;
+  font-size:1.15rem;
+  color:var(--cyan);
+}
+
+.lead-ai-eyebrow{
+  color:var(--green);
+  font-size:.65rem;
+  font-weight:700;
+  letter-spacing:1.4px;
+}
+
+.lead-ai-status{
+  padding:10px 12px;
+  margin-bottom:15px;
+  border-radius:9px;
+  background:rgba(255,255,255,.035);
+  color:var(--muted);
+  font-size:.75rem;
+}
+
+.lead-ai-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.lead-ai-metric{
+  padding:13px;
+  background:rgba(255,255,255,.035);
+  border:1px solid var(--border);
+  border-radius:9px;
+}
+
+.lead-ai-metric span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+}
+
+.lead-ai-metric strong{
+  display:block;
+  margin-top:4px;
+  font-size:.95rem;
+  text-transform:capitalize;
+}
+
+.lead-ai-section{
+  padding:14px;
+  margin-top:12px;
+  background:rgba(255,255,255,.025);
+  border:1px solid var(--border);
+  border-radius:9px;
+}
+
+.lead-ai-section-title{
+  margin-bottom:8px;
+  color:var(--cyan);
+  font-size:.75rem;
+  font-weight:700;
+}
+
+.lead-ai-summary{
+  color:#e5e7eb;
+  font-size:.8rem;
+  line-height:1.6;
+}
+
+.lead-ai-two-column{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.lead-ai-list{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.lead-ai-list-item{
+  padding:8px 10px;
+  background:rgba(0,255,136,.035);
+  border:1px solid rgba(0,255,136,.1);
+  border-radius:7px;
+  color:#d9fbe9;
+  font-size:.75rem;
+}
+
+.lead-ai-evidence{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.lead-ai-evidence-item{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:10px;
+  border-radius:8px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border);
+}
+
+.lead-ai-evidence-item strong{
+  color:#fff;
+  font-size:.75rem;
+}
+
+.lead-ai-evidence-item span{
+  color:#d1d5db;
+  font-size:.74rem;
+  line-height:1.5;
+  word-break:break-word;
+}
+
+.lead-ai-evidence-item small{
+  color:var(--muted);
+  font-size:.65rem;
+}
+
+.lead-ai-future-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:12px;
+}
+
+.lead-ai-future-card{
+  padding:12px;
+  border:1px dashed rgba(255,255,255,.12);
+  border-radius:9px;
+  background:rgba(255,255,255,.018);
+}
+
+.lead-ai-future-card strong{
+  display:block;
+  font-size:.76rem;
+}
+
+.lead-ai-future-card span{
+  display:inline-block;
+  margin-top:4px;
+  color:var(--cyan);
+  font-size:.65rem;
+}
+
+.lead-ai-future-card small{
+  display:block;
+  margin-top:7px;
+  color:var(--muted);
+  font-size:.66rem;
+  line-height:1.5;
+}
+
+#analyzeLeadBtn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+@media(max-width:700px){
+
+  .lead-ai-panel-header{
+    flex-direction:column;
+  }
+
+  .lead-ai-grid{
+    grid-template-columns:1fr;
+  }
+
+  .lead-ai-two-column{
+    grid-template-columns:1fr;
+  }
+
+  .lead-ai-future-grid{
+    grid-template-columns:1fr;
+  }
+
+}
