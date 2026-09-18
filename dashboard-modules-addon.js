@@ -85,6 +85,12 @@
             href: 'leads.html'
         },
 
+        follow_up_ai: {
+            name: 'Follow-up AI Employee',
+            icon: '🔄',
+            href: 'follow-up.html'
+        },
+
         client_data_assistant: {
             name: 'Client Data Assistant',
             icon: '🧠',
