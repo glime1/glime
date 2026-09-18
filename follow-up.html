@@ -3,17 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="GLIME Follow-up Specialist">
+  <meta name="description" content="GLIME Follow-up Specialist for AI-powered follow-up, conversation analysis and controlled lead updates.">
+  <meta name="theme-color" content="#071016">
   <title>GLIME — Follow-up Specialist</title>
+  <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="follow-up.css">
 </head>
 <body>
   <main class="followup-app">
     <header class="topbar">
-      <div>
+      <a href="index.html" class="brand" aria-label="GLIME Home"><img src="glime_logo_clean.svg" alt="GLIME"></a>
+      <div class="topbar-content">
         <div class="eyebrow">GLIME SPECIALIST</div>
         <h1>Follow-up Specialist</h1>
-        <p class="subtitle">Initial follow-up, conversation analysis and proposed lead changes.</p>
+        <p class="subtitle">Initial follow-up, conversation analysis and controlled lead changes.</p>
       </div>
       <div class="top-actions">
         <span id="authStatus" class="status-pill">Checking access…</span>
@@ -26,28 +32,15 @@
     <section class="hero-grid">
       <article class="card control-card">
         <div class="card-head">
-          <div>
-            <span class="label">FOLLOW-UP</span>
-            <h2>Specialist Control</h2>
-          </div>
-          <label class="switch">
-            <input id="followupEnabled" type="checkbox">
-            <span class="slider"></span>
-          </label>
+          <div><span class="label">FOLLOW-UP</span><h2>Specialist Control</h2></div>
+          <label class="switch"><input id="followupEnabled" type="checkbox"><span class="slider"></span></label>
         </div>
-        <p class="muted">Follow-up only starts from an approved trigger: Lead AI recommendation, client request, or conversation need.</p>
-
+        <p class="muted">Follow-up starts only from an approved trigger: Lead AI recommendation, client request, or conversation need.</p>
         <div class="mode-box">
           <span class="label">SENDING MODE</span>
           <div class="segmented">
-            <label>
-              <input type="radio" name="sendingMode" value="manual_approval">
-              <span>Manual Approval</span>
-            </label>
-            <label>
-              <input type="radio" name="sendingMode" value="automatic_sending">
-              <span>Automatic Sending</span>
-            </label>
+            <label><input type="radio" name="sendingMode" value="manual_approval"><span>Manual Approval</span></label>
+            <label><input type="radio" name="sendingMode" value="automatic_sending"><span>Automatic Sending</span></label>
           </div>
           <small>Automatic Sending never creates its own trigger; it only changes approval behavior after a valid trigger.</small>
         </div>
@@ -64,32 +57,18 @@
 
     <section class="card">
       <div class="card-head">
-        <div>
-          <span class="label">CHANNEL CONNECTION CENTER</span>
-          <h2>Connect your communication channels</h2>
-        </div>
+        <div><span class="label">CHANNEL CONNECTION CENTER</span><h2>Connect your communication channels</h2></div>
         <span class="muted">One channel per action</span>
       </div>
       <div id="channels" class="channel-grid"></div>
     </section>
 
     <section class="card">
-      <div class="card-head">
-        <div>
-          <span class="label">FOLLOW-UP LEADS</span>
-          <h2>Lead-wise control</h2>
-        </div>
-      </div>
+      <div class="card-head"><div><span class="label">FOLLOW-UP LEADS</span><h2>Lead-wise control</h2></div></div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Lead</th><th>Follow-up</th><th>Channel</th><th>Status</th><th>Last activity</th><th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="leadsBody">
-            <tr><td colspan="6" class="empty">Loading leads…</td></tr>
-          </tbody>
+          <thead><tr><th>Lead</th><th>Follow-up</th><th>Channel</th><th>Status</th><th>Last activity</th><th>Action</th></tr></thead>
+          <tbody id="leadsBody"><tr><td colspan="6" class="empty">Loading leads…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -99,7 +78,6 @@
         <div class="card-head"><div><span class="label">APPROVALS</span><h2>Follow-up drafts</h2></div></div>
         <div id="approvalsList" class="stack"><div class="empty">Loading…</div></div>
       </article>
-
       <article class="card">
         <div class="card-head"><div><span class="label">PROPOSED LEAD CHANGES</span><h2>Review before Lead update</h2></div></div>
         <div id="changesList" class="stack"><div class="empty">Loading…</div></div>
