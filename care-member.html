@@ -1,1 +1,53 @@
-<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GLIME CARE Member</title><link rel="icon" href="glime_logo_clean.svg"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><link rel="stylesheet" href="care-setup.css"></head><body><header><a href="care.html">❤️ GLIME CARE</a><a href="care.html">← CARE</a></header><main><section class="hero"><small>CARE MEMBER</small><h1>Family Members</h1><p>Existing member profiles देखें.</p><div id="badge">Checking login…</div></section><section class="card"><div id="status"></div><div id="memberList"></div></section></main><script src="care-member.js"></script></body></html>
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GLIME CARE Member Center</title>
+  <link rel="icon" href="glime_logo_clean.svg">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="care-setup.css">
+  <style>
+    .member-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+    .member-card{padding:20px;border:1px solid #e5e9f0;border-radius:16px;background:#fff}
+    .member-card h2{margin:0 0 6px}.member-meta{color:#667085;font-size:14px;line-height:1.7}
+    .privacy-badge{display:inline-block;margin-top:10px;padding:5px 9px;border-radius:999px;background:#f1f5f9;font-size:12px}
+    .privacy-badge.locked{background:#fff1f2}.member-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+    .member-actions button{border:0;border-radius:10px;padding:10px 12px;cursor:pointer;font:inherit;background:#f1f5f9;color:#172033}
+    .member-actions button.primary{background:#172033;color:#fff}.member-actions button.danger{background:#fff1f2;color:#991b1b}
+    .empty{padding:20px;border:1px dashed #cbd5e1;border-radius:14px;color:#667085}.privacy-note{margin-top:14px;font-size:13px;color:#667085}
+    .modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
+    .modal.show{display:flex}.modal-box{width:min(420px,100%);background:#fff;border-radius:18px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
+    .modal-box h2{margin-top:0}.modal-box label{display:block;margin:12px 0 6px;font-weight:600}
+    .modal-box input{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font-size:18px;letter-spacing:5px;box-sizing:border-box}
+    .modal-actions{display:flex;gap:10px;margin-top:18px}.modal-actions button{flex:1;border:0;border-radius:10px;padding:11px;cursor:pointer}
+    .modal-actions .confirm{background:#172033;color:#fff}.modal-actions .cancel{background:#f1f5f9}
+    #modalStatus{font-size:13px;color:#b42318;margin-top:10px;min-height:18px}
+  </style>
+</head>
+<body>
+  <header><a href="care.html">❤️ GLIME CARE</a><a href="care.html">← CARE</a></header>
+  <main>
+    <section class="hero">
+      <small>CARE MEMBER CENTER</small>
+      <h1>Family Members</h1>
+      <p>हर सदस्य का अपना अलग private CARE control area.</p>
+      <div id="badge">Checking login…</div>
+    </section>
+    <section class="card">
+      <h2>Members</h2><div id="status"></div><div id="memberList" class="member-grid"></div>
+      <p class="privacy-note">Privacy Lock enabled होने पर Member Center खोलने के लिए 6-digit PIN verification जरूरी होगी। PIN plaintext में store नहीं होता।</p>
+    </section>
+  </main>
+  <div id="lockModal" class="modal" aria-hidden="true">
+    <div class="modal-box">
+      <h2 id="modalTitle">Privacy Lock</h2><p id="modalDescription"></p>
+      <label for="pinInput">6-digit PIN</label><input id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••••">
+      <div id="confirmPinWrap"><label for="confirmPinInput">Confirm PIN</label><input id="confirmPinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••••"></div>
+      <div id="modalStatus"></div>
+      <div class="modal-actions"><button id="cancelModal" class="cancel" type="button">Cancel</button><button id="confirmModal" class="confirm" type="button">Save</button></div>
+    </div>
+  </div>
+  <script src="care-member.js"></script>
+</body>
+</html>
