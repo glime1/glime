@@ -1,7 +1,4 @@
-/* =========================================================
-   GLIME — Lead Timeline & Source History
-   Phase 5 Add-on
-   ========================================================= */
+/* GLIME — Lead Timeline & Source History — Phase 5 Add-on */
 
 .lead-phase5-section {
   margin: 24px 0;
@@ -9,6 +6,13 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
   background: #ffffff;
+  color: #111827 !important;
+}
+
+/* Source History contrast fix: prevents inherited dark-theme/white text */
+.lead-phase5-section,
+.lead-phase5-section * {
+  color: #111827 !important;
 }
 
 .lead-phase5-section-header {
@@ -45,10 +49,6 @@
   font-weight: 700;
 }
 
-/* ---------------------------------------------------------
-   Source cards
-   --------------------------------------------------------- */
-
 .lead-source-list {
   display: grid;
   gap: 10px;
@@ -58,7 +58,8 @@
   padding: 14px;
   border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.018);
+  background: #f8fafc;
+  color: #111827 !important;
 }
 
 .lead-source-card-top {
@@ -75,7 +76,8 @@
   width: fit-content;
   padding: 4px 9px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.07);
+  background: #e5e7eb;
+  color: #111827 !important;
   font-size: 11px;
   font-weight: 700;
   line-height: 1.2;
@@ -86,7 +88,8 @@
   align-items: center;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.04);
+  background: #eef0f3;
+  color: #111827 !important;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -101,24 +104,23 @@
 }
 
 .lead-source-ref span {
+  color: #4b5563 !important;
   font-size: 11px;
-  opacity: 0.55;
+  opacity: 0.85;
 }
 
 .lead-source-ref strong {
+  color: #111827 !important;
   font-size: 13px;
   word-break: break-word;
 }
 
 .lead-source-date {
   margin-top: 9px;
+  color: #4b5563 !important;
   font-size: 11px;
-  opacity: 0.55;
+  opacity: 0.9;
 }
-
-/* ---------------------------------------------------------
-   Timeline
-   --------------------------------------------------------- */
 
 .lead-phase5-timeline-box {
   margin-top: 10px;
@@ -154,8 +156,7 @@
   opacity: 0.55;
 }
 
-.lead-timeline-event:not(:last-child)
-  .lead-timeline-marker::after {
+.lead-timeline-event:not(:last-child) .lead-timeline-marker::after {
   content: "";
   position: absolute;
   top: 10px;
@@ -222,10 +223,6 @@
   word-break: break-word;
 }
 
-/* ---------------------------------------------------------
-   Details / metadata
-   --------------------------------------------------------- */
-
 .lead-phase5-details {
   margin-top: 11px;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
@@ -246,17 +243,13 @@
   overflow-x: auto;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.045);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", monospace;
+  color: #111827 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 10px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
 }
-
-/* ---------------------------------------------------------
-   Empty states
-   --------------------------------------------------------- */
 
 .lead-phase5-empty {
   display: flex;
@@ -266,6 +259,7 @@
   border: 1px dashed rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   text-align: center;
+  color: #111827 !important;
 }
 
 .lead-phase5-empty strong {
@@ -280,10 +274,6 @@
 .lead-phase5-timeline-empty {
   margin-top: 8px;
 }
-
-/* ---------------------------------------------------------
-   Responsive
-   --------------------------------------------------------- */
 
 @media (max-width: 640px) {
   .lead-phase5-section {
