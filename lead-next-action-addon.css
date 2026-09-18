@@ -1,0 +1,29 @@
+/* GLIME — Lead Next Best Action — Phase 7 */
+.lead-phase7-section{margin:24px 0;padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:16px;background:#fff;color:#111827!important}
+.lead-phase7-section *{color:#111827!important}
+.lead-phase7-header h3{margin:0 0 5px;font-size:18px}
+.lead-phase7-header p{margin:0;font-size:13px;line-height:1.5;opacity:.68}
+.lead-phase7-current{margin-top:15px;padding:16px;border:1px solid rgba(0,0,0,.08);border-radius:13px;background:#f8fafc}
+.lead-phase7-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.lead-phase7-top strong{display:block;font-size:16px;margin-top:3px}
+.lead-phase7-label{font-size:10px;text-transform:uppercase;letter-spacing:.04em;opacity:.6}
+.lead-phase7-status{padding:4px 8px;border-radius:999px;background:#eef0f3;font-size:10px;font-weight:700;text-transform:uppercase}
+.lead-phase7-status-approved{background:#e7f0ff}
+.lead-phase7-status-in_progress{background:#fff1d8}
+.lead-phase7-status-completed{background:#dff7ea}
+.lead-phase7-status-dismissed{background:#fee2e2}
+.lead-phase7-reason{margin:12px 0;font-size:13px;line-height:1.55}
+.lead-phase7-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;opacity:.72}
+.lead-phase7-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.lead-phase7-run{margin-top:12px}
+.lead-phase7-empty{text-align:center;padding:12px}
+.lead-phase7-empty strong{display:block}
+.lead-phase7-empty span{font-size:12px;opacity:.65}
+.lead-phase7-history{margin-top:14px;font-size:12px}
+.lead-phase7-history-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:9px 0;border-top:1px solid rgba(0,0,0,.06)}
+@media(max-width:640px){
+  .lead-phase7-section{padding:15px}
+  .lead-phase7-actions{flex-direction:column}
+  .lead-phase7-actions button{width:100%}
+  .lead-phase7-history-row{grid-template-columns:1fr auto}
+}
