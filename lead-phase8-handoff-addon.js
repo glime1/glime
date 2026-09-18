@@ -8,9 +8,10 @@
    Client explicitly approves
    Existing specialist sends the approved message
 
-   Does NOT modify:
-   - leads.js
-   - GLIME CARE
+   IMPORTANT:
+   - Existing CSS class names are preserved.
+   - Does NOT modify leads.js.
+   - Does NOT modify GLIME CARE.
 ========================================================= */
 
 (() => {
@@ -83,7 +84,7 @@
   }
 
   /* =========================================================
-     LOAD FOLLOW-UP REQUESTS
+     LOAD EXISTING FOLLOW-UP REQUESTS
   ========================================================= */
 
   async function loadRequests(leadId) {
@@ -95,12 +96,14 @@
       return [];
     }
 
-    const { data: clientData, error: clientError } =
-      await db
-        .from("client_data")
-        .select("client_id")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
+    const {
+      data: clientData,
+      error: clientError,
+    } = await db
+      .from("client_data")
+      .select("client_id")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
 
     if (clientError) {
       console.error(
@@ -115,22 +118,24 @@
       return [];
     }
 
-    const { data, error } =
-      await db
-        .from("client_action_requests")
-        .select(
-          "id,status,target_module_slug,target_action,action_payload,created_at,updated_at,result_payload,error_message"
-        )
-        .eq(
-          "client_id",
-          clientData.client_id
-        )
-        .eq("target_type", "lead")
-        .eq("target_id", leadId)
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(8);
+    const {
+      data,
+      error,
+    } = await db
+      .from("client_action_requests")
+      .select(
+        "id,status,target_module_slug,target_action,action_payload,created_at,updated_at,result_payload,error_message"
+      )
+      .eq(
+        "client_id",
+        clientData.client_id
+      )
+      .eq("target_type", "lead")
+      .eq("target_id", leadId)
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(8);
 
     if (error) {
       console.error(
@@ -145,7 +150,7 @@
   }
 
   /* =========================================================
-     RENDER
+     RENDER FOLLOW-UP SECTION
   ========================================================= */
 
   function renderSection(
@@ -155,15 +160,19 @@
     const section =
       document.createElement("section");
 
+    /*
+     * IMPORTANT:
+     * Keep the original ID and CSS class names
+     * so existing CSS continues to work.
+     */
     section.id =
-      "leadFollowup";
+      "leadPhase8Handoff";
 
     section.className =
-      "lead-followup-section";
+      "lead-phase8-section";
 
     /*
-     * Always prefer the currently proposed
-     * request.
+     * Prefer currently proposed request.
      */
     const current =
       rows.find(
@@ -178,9 +187,10 @@
       current?.id || null;
 
     section.innerHTML = `
-      <div class="lead-followup-head">
+      <div class="lead-phase8-head">
 
         <div>
+
           <h3>
             Follow-up Message
           </h3>
@@ -189,6 +199,7 @@
             AI prepares a follow-up message.
             You can edit it before sending.
           </p>
+
         </div>
 
       </div>
@@ -196,9 +207,10 @@
       ${
         current
           ? `
-            <div class="lead-followup-card">
+            <div class="lead-phase8-card">
 
-              <div class="lead-followup-row">
+              <div class="lead-phase8-row">
+
                 <span>
                   Channel
                 </span>
@@ -209,9 +221,11 @@
                       "—"
                   )}
                 </strong>
+
               </div>
 
-              <div class="lead-followup-row">
+              <div class="lead-phase8-row">
+
                 <span>
                   Status
                 </span>
@@ -222,6 +236,7 @@
                       "—"
                   )}
                 </strong>
+
               </div>
 
               ${
@@ -229,14 +244,14 @@
                 "proposed"
                   ? `
                     <label
-                      class="lead-followup-label"
+                      class="lead-phase8-label"
                     >
                       Follow-up message
                     </label>
 
                     <textarea
-                      id="followupMessage"
-                      class="lead-followup-textarea"
+                      id="phase8Message"
+                      class="lead-phase8-textarea"
                       maxlength="2000"
                     >${escapeHtml(
                       payload.message ||
@@ -244,7 +259,7 @@
                     )}</textarea>
 
                     <div
-                      class="lead-followup-note"
+                      class="lead-phase8-note"
                     >
                       You can edit this message
                       before sending. Approve & Send
@@ -253,12 +268,12 @@
                     </div>
 
                     <div
-                      class="lead-followup-actions"
+                      class="lead-phase8-actions"
                     >
 
                       <button
                         class="ghost-btn"
-                        data-followup="save"
+                        data-phase8="save"
                         type="button"
                       >
                         Save edit
@@ -266,7 +281,7 @@
 
                       <button
                         class="ghost-btn"
-                        data-followup="regen"
+                        data-phase8="regen"
                         type="button"
                       >
                         Regenerate
@@ -274,7 +289,7 @@
 
                       <button
                         class="primary-btn"
-                        data-followup="send"
+                        data-phase8="send"
                         type="button"
                       >
                         Approve & Send
@@ -284,7 +299,7 @@
                   `
                   : `
                     <div
-                      class="lead-followup-final"
+                      class="lead-phase8-final"
                     >
 
                       <b>
@@ -306,7 +321,7 @@
           `
           : `
             <div
-              class="lead-followup-empty"
+              class="lead-phase8-empty"
             >
 
               <b>
@@ -320,7 +335,7 @@
 
               <button
                 class="primary-btn"
-                data-followup="create"
+                data-phase8="create"
                 type="button"
               >
                 Prepare Follow-up Message
@@ -335,7 +350,7 @@
   }
 
   /* =========================================================
-     RENDER INTO LEAD DETAIL
+     RENDER
   ========================================================= */
 
   async function render(
@@ -360,6 +375,7 @@
     rendering = true;
 
     try {
+
       const rows =
         await loadRequests(
           leadId
@@ -374,7 +390,7 @@
 
       const existing =
         document.getElementById(
-          "leadFollowup"
+          "leadPhase8Handoff"
         );
 
       if (existing) {
@@ -388,26 +404,30 @@
         );
 
       /*
-       * Put follow-up section after
-       * the existing next-action section.
+       * Keep the section after
+       * the existing Next Best Action card.
        */
-      const nextAction =
+      const phase7 =
         document.getElementById(
           "leadNextActionPhase7"
         );
 
       if (
-        nextAction &&
-        nextAction.parentNode
+        phase7 &&
+        phase7.parentNode
       ) {
-        nextAction.parentNode.insertBefore(
+
+        phase7.parentNode.insertBefore(
           section,
-          nextAction.nextSibling
+          phase7.nextSibling
         );
+
       } else {
+
         detail.appendChild(
           section
         );
+
       }
 
       bindActions(
@@ -416,7 +436,9 @@
       );
 
     } finally {
+
       rendering = false;
+
     }
   }
 
@@ -428,9 +450,10 @@
     section,
     leadId
   ) {
+
     section
       .querySelectorAll(
-        "[data-followup]"
+        "[data-phase8]"
       )
       .forEach(
         (button) => {
@@ -441,7 +464,7 @@
 
               const type =
                 button.dataset
-                  .followup;
+                  .phase8;
 
               button.disabled =
                 true;
@@ -449,7 +472,7 @@
               try {
 
                 /* =====================================
-                   CREATE
+                   CREATE DRAFT
                 ===================================== */
 
                 if (
@@ -481,31 +504,37 @@
 
                   const textarea =
                     section.querySelector(
-                      "#followupMessage"
+                      "#phase8Message"
                     );
 
                   const message =
                     textarea?.value.trim();
 
                   if (!message) {
+
                     throw new Error(
                       "Message cannot be empty."
                     );
+
                   }
 
                   if (
                     message.length >
                     2000
                   ) {
+
                     throw new Error(
                       "Message must be 2000 characters or less."
                     );
+
                   }
 
                   if (!requestId) {
+
                     throw new Error(
                       "Draft not found."
                     );
+
                   }
 
                   await invoke(
@@ -522,7 +551,7 @@
                 }
 
                 /* =====================================
-                   REGENERATE
+                   REGENERATE DRAFT
                 ===================================== */
 
                 else if (
@@ -531,15 +560,18 @@
                 ) {
 
                   if (!requestId) {
+
                     throw new Error(
                       "Draft not found."
                     );
+
                   }
 
                   /*
-                   * The backend keeps the old
-                   * draft in history and creates
-                   * a new AI draft.
+                   * Backend creates a new AI draft.
+                   *
+                   * Previous draft remains stored
+                   * inside draft_history.
                    */
                   await invoke(
                     "regenerate_draft",
@@ -561,37 +593,43 @@
                 ) {
 
                   if (!requestId) {
+
                     throw new Error(
                       "Draft not found."
                     );
+
                   }
 
                   const textarea =
                     section.querySelector(
-                      "#followupMessage"
+                      "#phase8Message"
                     );
 
                   const message =
                     textarea?.value.trim();
 
                   if (!message) {
+
                     throw new Error(
                       "Message cannot be empty."
                     );
+
                   }
 
                   if (
                     message.length >
                     2000
                   ) {
+
                     throw new Error(
                       "Message must be 2000 characters or less."
                     );
+
                   }
 
                   /*
-                   * Save exactly what the
-                   * client currently sees.
+                   * Save the exact text
+                   * currently visible to client.
                    */
                   await invoke(
                     "save_draft",
@@ -605,7 +643,7 @@
                   );
 
                   /*
-                   * Final human approval.
+                   * Explicit human approval.
                    */
                   const confirmed =
                     window.confirm(
@@ -615,9 +653,19 @@
                   if (
                     !confirmed
                   ) {
+
                     return;
+
                   }
 
+                  /*
+                   * Backend performs:
+                   *
+                   * approval
+                   * → execution job
+                   * → specialist gateway
+                   * → existing provider
+                   */
                   await invoke(
                     "approve_and_send",
                     {
@@ -625,8 +673,13 @@
                         requestId,
                     }
                   );
+
                 }
 
+                /*
+                 * Reload the section after
+                 * successful operation.
+                 */
                 await render(
                   leadId
                 );
@@ -681,12 +734,15 @@
 
         setTimeout(
           () => {
+
             render(
               activeLeadId
             );
+
           },
           220
         );
+
       }
 
       const closeButton =
@@ -701,6 +757,7 @@
 
         requestId =
           null;
+
       }
 
     },
@@ -708,7 +765,7 @@
   );
 
   /* =========================================================
-     OBSERVE DETAIL PANEL
+     WATCH LEAD DETAIL PANEL
   ========================================================= */
 
   const observer =
@@ -718,15 +775,17 @@
         if (
           activeLeadId &&
           !document.getElementById(
-            "leadFollowup"
+            "leadPhase8Handoff"
           )
         ) {
 
           setTimeout(
             () => {
+
               render(
                 activeLeadId
               );
+
             },
             100
           );
@@ -751,6 +810,7 @@
       );
 
       return;
+
     }
 
     observer.observe(
@@ -760,6 +820,7 @@
         subtree: true,
       }
     );
+
   }
 
   /* =========================================================
@@ -773,9 +834,11 @@
       if (
         activeLeadId
       ) {
+
         return render(
           activeLeadId
         );
+
       }
 
     },
