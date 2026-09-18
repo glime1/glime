@@ -724,11 +724,34 @@
       }
 
 
-      renderAnalysis(data);
+      const analysisResult =
+  Array.isArray(data?.results)
+    ? data.results.find(
+        (item) => item?.lead_id === leadId
+      ) || data.results[0]
+    : data;
 
-      setStatus(
-        "Lead analysis completed successfully."
-      );
+if (!analysisResult) {
+  throw new Error(
+    "Lead analysis response did not contain a result for this lead."
+  );
+}
+
+/*
+  Edge Function returns the analyzed lead
+  inside data.results[].
+
+  First render the returned analysis,
+  then reload the persisted profile + evidence
+  so the UI always shows the complete Phase 4 data.
+*/
+renderAnalysis(analysisResult);
+
+await loadExistingAnalysis(leadId);
+
+setStatus(
+  "Lead analysis completed successfully."
+);
 
     } catch (error) {
 
