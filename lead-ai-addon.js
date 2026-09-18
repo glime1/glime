@@ -1,39 +1,45 @@
 /* =========================================================
-   GLIME — LEAD AI EMPLOYEE ADDON
-   Phase 4: Lead Intelligence
-
+   GLIME LEAD AI EMPLOYEE
+   Phase 4 — Lead Intelligence UI Add-on
+   ---------------------------------------------------------
    IMPORTANT:
-   - This file extends leads.js.
-   - Do NOT duplicate Supabase client creation here.
-   - Do NOT modify leads.js for AI logic.
-   - Existing Lead CRUD remains owned by leads.js.
+   - Does NOT modify leads.js
+   - Uses its own Supabase client
+   - Uses authenticated user's session
+   - Calls lead-intelligence Edge Function
 ========================================================= */
 
 (() => {
   "use strict";
 
-  /* =======================================================
-     STATE
-  ======================================================= */
+  const SUPABASE_URL =
+    "https://ufoulgbiqgjriwapuopc.supabase.co";
 
-  let intelligenceLeadId = null;
-  let intelligenceInProgress = false;
+  const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+
+  if (!window.supabase) {
+    console.error(
+      "GLIME Lead AI: Supabase library not available."
+    );
+    return;
+  }
+
+  const aiDb = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+  let activeLeadId = null;
+  let panelObserver = null;
 
 
-  /* =======================================================
+  /* =========================================================
      HELPERS
-  ======================================================= */
+  ========================================================= */
 
-  const addon$ = (id) =>
-    document.getElementById(id);
-
-
-  const addonEsc = (value) => {
-    if (typeof window.esc === "function") {
-      return window.esc(value);
-    }
-
-    return String(value ?? "").replace(
+  const esc = (value) =>
+    String(value ?? "").replace(
       /[&<>"']/g,
       (char) =>
         ({
@@ -42,35 +48,73 @@
           ">": "&gt;",
           '"': "&quot;",
           "'": "&#039;"
-        }[char])
+        })[char]
     );
+
+
+  const safeArray = (value) =>
+    Array.isArray(value) ? value : [];
+
+
+  const pretty = (value) => {
+    if (!value) return "Unknown";
+
+    return String(value)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) =>
+        char.toUpperCase()
+      );
   };
 
 
-  const showAddonMessage = (message, error = false) => {
-    if (typeof window.showMessage === "function") {
-      window.showMessage(message, error);
+  const formatDate = (value) => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "—";
     }
+
+    return date.toLocaleString([], {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
   };
 
 
-  /* =======================================================
-     ENSURE AI UI EXISTS
-     
-     We create the AI panel dynamically so leads.html
-     does not need a large rewrite just for Phase 4.
-  ======================================================= */
+  /* =========================================================
+     STATUS
+  ========================================================= */
 
-  function ensureIntelligencePanel() {
-    const detailContent =
-      addon$("detailContent");
+  function setStatus(message, error = false) {
+    const element =
+      document.getElementById("leadAiStatus");
 
-    if (!detailContent) {
+    if (!element) return;
+
+    element.textContent = message;
+
+    element.style.color = error
+      ? "#ffb4bc"
+      : "";
+  }
+
+
+  /* =========================================================
+     CREATE PANEL
+  ========================================================= */
+
+  function ensurePanel() {
+    const detail =
+      document.getElementById("detailContent");
+
+    if (!detail) {
       return null;
     }
 
     let panel =
-      addon$("leadAIIntelligencePanel");
+      document.getElementById("leadAiPanel");
 
     if (panel) {
       return panel;
@@ -78,71 +122,231 @@
 
     panel = document.createElement("section");
 
-    panel.id =
-      "leadAIIntelligencePanel";
+    panel.id = "leadAiPanel";
 
-    panel.className =
-      "lead-ai-panel";
+    panel.className = "lead-ai-panel";
 
     panel.innerHTML = `
       <div class="lead-ai-panel-header">
 
         <div>
           <div class="lead-ai-eyebrow">
-            LEAD AI EMPLOYEE
+            GLIME LEAD INTELLIGENCE
           </div>
 
           <h3>
-            AI Intelligence
+            Lead AI Employee
           </h3>
-
-          <p class="sub">
-            AI-assisted understanding of this lead.
-          </p>
         </div>
 
         <button
           type="button"
-          class="row-action"
           id="analyzeLeadBtn"
+          class="primary-btn"
         >
           Analyze Lead
         </button>
 
       </div>
 
-
       <div
-        id="intelligenceStatus"
+        id="leadAiStatus"
         class="lead-ai-status"
       >
-        Not analyzed yet.
+        Ready to analyze this lead.
       </div>
 
-
       <div
-        id="intelligenceGrid"
-        class="lead-ai-grid"
-      >
+        id="leadAiContent"
+      ></div>
+    `;
+
+    /*
+      Put the AI panel at the top of the lead detail.
+      It remains separate from leads.js.
+    */
+
+    detail.prepend(panel);
+
+    const analyzeButton =
+      document.getElementById(
+        "analyzeLeadBtn"
+      );
+
+    analyzeButton?.addEventListener(
+      "click",
+      () => {
+        if (!activeLeadId) {
+          setStatus(
+            "No lead selected.",
+            true
+          );
+          return;
+        }
+
+        analyzeLead(activeLeadId);
+      }
+    );
+
+    return panel;
+  }
+
+
+  /* =========================================================
+     RENDER EMPTY / READY STATE
+  ========================================================= */
+
+  function renderReadyState() {
+    const content =
+      document.getElementById(
+        "leadAiContent"
+      );
+
+    if (!content) return;
+
+    content.innerHTML = `
+      <div class="lead-ai-section">
+
+        <div class="lead-ai-section-title">
+          AI Lead Analysis
+        </div>
+
+        <div class="lead-ai-summary">
+          Analyze this lead to generate intent,
+          urgency, buying signals, risk signals,
+          and decision evidence.
+        </div>
+
+      </div>
+
+      <div class="lead-ai-future-grid">
+
+        <div class="lead-ai-future-card">
+          <strong>
+            Next Best Action
+          </strong>
+
+          <span>
+            Phase 7
+          </span>
+
+          <small>
+            Recommend the next appropriate
+            business action.
+          </small>
+        </div>
+
+        <div class="lead-ai-future-card">
+          <strong>
+            Duplicate Detection
+          </strong>
+
+          <span>
+            Phase 6
+          </span>
+
+          <small>
+            Identify possible duplicate leads
+            before merging.
+          </small>
+        </div>
+
+        <div class="lead-ai-future-card">
+          <strong>
+            Agent Handoff
+          </strong>
+
+          <span>
+            Phase 8
+          </span>
+
+          <small>
+            Connect the lead decision layer
+            with existing GLIME agents.
+          </small>
+        </div>
+
+      </div>
+    `;
+  }
+
+
+  /* =========================================================
+     RENDER ANALYSIS
+  ========================================================= */
+
+  function renderAnalysis(result) {
+    const content =
+      document.getElementById(
+        "leadAiContent"
+      );
+
+    if (!content) return;
+
+    const profile =
+      result?.profile || {};
+
+    const buyingSignals =
+      safeArray(
+        result?.buying_signals ||
+        profile.buying_signals
+      );
+
+    const riskSignals =
+      safeArray(
+        result?.risk_signals ||
+        profile.risk_signals
+      );
+
+    const evidence =
+      safeArray(
+        result?.evidence
+      );
+
+    const intent =
+      result?.intent ||
+      profile.intent ||
+      "unknown";
+
+    const urgency =
+      result?.urgency ||
+      profile.urgency ||
+      "unknown";
+
+    const summary =
+      result?.ai_summary ||
+      profile.ai_summary ||
+      "No AI summary available.";
+
+
+    content.innerHTML = `
+
+      <div class="lead-ai-grid">
 
         <div class="lead-ai-metric">
           <span>Intent</span>
-          <strong id="intelligenceIntent">
-            —
+          <strong>
+            ${esc(pretty(intent))}
           </strong>
         </div>
 
         <div class="lead-ai-metric">
           <span>Urgency</span>
-          <strong id="intelligenceUrgency">
-            —
+          <strong>
+            ${esc(pretty(urgency))}
           </strong>
         </div>
 
         <div class="lead-ai-metric">
           <span>Estimated Value</span>
-          <strong id="intelligenceValue">
-            —
+          <strong>
+            ${
+              profile.estimated_value
+                ? esc(
+                    profile.estimated_value
+                  )
+                : "—"
+            }
           </strong>
         </div>
 
@@ -155,11 +359,8 @@
           AI Summary
         </div>
 
-        <div
-          id="intelligenceSummary"
-          class="lead-ai-summary"
-        >
-          No analysis available yet.
+        <div class="lead-ai-summary">
+          ${esc(summary)}
         </div>
 
       </div>
@@ -173,13 +374,29 @@
             Buying Signals
           </div>
 
-          <div
-            id="intelligenceBuyingSignals"
-            class="lead-ai-list"
-          >
-            <span class="sub">
-              No signals yet.
-            </span>
+          <div class="lead-ai-list">
+
+            ${
+              buyingSignals.length
+                ? buyingSignals
+                    .map(
+                      (signal) => `
+                        <div
+                          class="lead-ai-list-item"
+                        >
+                          ${esc(signal)}
+                        </div>
+                      `
+                    )
+                    .join("")
+                : `
+                    <div class="sub">
+                      No strong buying signals
+                      detected.
+                    </div>
+                  `
+            }
+
           </div>
 
         </div>
@@ -191,13 +408,29 @@
             Risk Signals
           </div>
 
-          <div
-            id="intelligenceRiskSignals"
-            class="lead-ai-list"
-          >
-            <span class="sub">
-              No signals yet.
-            </span>
+          <div class="lead-ai-list">
+
+            ${
+              riskSignals.length
+                ? riskSignals
+                    .map(
+                      (signal) => `
+                        <div
+                          class="lead-ai-list-item"
+                        >
+                          ${esc(signal)}
+                        </div>
+                      `
+                    )
+                    .join("")
+                : `
+                    <div class="sub">
+                      No significant risk signals
+                      detected.
+                    </div>
+                  `
+            }
+
           </div>
 
         </div>
@@ -211,13 +444,80 @@
           Decision Evidence
         </div>
 
-        <div
-          id="intelligenceEvidence"
-          class="lead-ai-evidence"
-        >
-          <span class="sub">
-            Evidence will appear after analysis.
-          </span>
+        <div class="lead-ai-evidence">
+
+          ${
+            evidence.length
+              ? evidence
+                  .map(
+                    (item) => `
+                      <div
+                        class="lead-ai-evidence-item"
+                      >
+
+                        <strong>
+                          ${esc(
+                            item.label ||
+                            item.evidence_type ||
+                            "Evidence"
+                          )}
+                        </strong>
+
+                        <span>
+                          ${esc(
+                            typeof item.value ===
+                            "object"
+                              ? JSON.stringify(
+                                  item.value
+                                )
+                              : item.value
+                          )}
+                        </span>
+
+                        ${
+                          item.source
+                            ? `
+                              <small>
+                                Source:
+                                ${esc(
+                                  item.source
+                                )}
+                              </small>
+                            `
+                            : ""
+                        }
+
+                      </div>
+                    `
+                  )
+                  .join("")
+              : `
+                  <div class="sub">
+                    No evidence records available
+                    yet.
+                  </div>
+                `
+          }
+
+        </div>
+
+      </div>
+
+
+      <div class="lead-ai-section">
+
+        <div class="lead-ai-section-title">
+          Analysis Metadata
+        </div>
+
+        <div class="lead-ai-summary">
+          Last analyzed:
+          ${esc(
+            formatDate(
+              result?.analyzed_at ||
+              profile.updated_at
+            )
+          )}
         </div>
 
       </div>
@@ -226,650 +526,190 @@
       <div class="lead-ai-future-grid">
 
         <div class="lead-ai-future-card">
-
           <strong>
             Next Best Action
           </strong>
 
           <span>
-            Phase 7
+            Coming in Phase 7
           </span>
 
           <small>
-            Will recommend the next appropriate
-            action from the lead's current state.
+            The intelligence layer will later
+            recommend the next appropriate action.
           </small>
-
         </div>
 
-
         <div class="lead-ai-future-card">
-
           <strong>
-            Duplicate Check
+            Duplicate Detection
           </strong>
 
           <span>
-            Phase 6
+            Coming in Phase 6
           </span>
 
           <small>
-            Duplicate detection and merge suggestions
-            will be connected here.
+            Possible duplicate leads will be
+            surfaced for human approval.
           </small>
-
         </div>
 
-
         <div class="lead-ai-future-card">
-
           <strong>
-            Connected Agents
+            Existing Agent Handoff
           </strong>
 
           <span>
-            Phase 8
+            Coming in Phase 8
           </span>
 
           <small>
-            Existing communication agents will connect
-            here without duplicating their responsibilities.
+            Communication will remain with the
+            appropriate existing GLIME agent.
           </small>
-
         </div>
 
       </div>
-
     `;
-
-    /*
-      Put AI panel at the top of the detail view.
-      This keeps the Lead Command Center structure
-      ready for later phases.
-    */
-
-    detailContent.prepend(panel);
-
-    const analyzeButton =
-      addon$("analyzeLeadBtn");
-
-    if (analyzeButton) {
-      analyzeButton.addEventListener(
-        "click",
-        () => {
-
-          if (!intelligenceLeadId) {
-            showAddonMessage(
-              "No lead selected.",
-              true
-            );
-
-            return;
-          }
-
-          analyzeLead(
-            intelligenceLeadId
-          );
-
-        }
-      );
-    }
-
-    return panel;
   }
 
 
-  /* =======================================================
-     RESET UI
-  ======================================================= */
-
-  function resetIntelligenceUI() {
-
-    if (addon$("intelligenceStatus")) {
-      addon$("intelligenceStatus")
-        .textContent =
-        "Not analyzed yet.";
-    }
-
-    if (addon$("intelligenceIntent")) {
-      addon$("intelligenceIntent")
-        .textContent = "—";
-    }
-
-    if (addon$("intelligenceUrgency")) {
-      addon$("intelligenceUrgency")
-        .textContent = "—";
-    }
-
-    if (addon$("intelligenceValue")) {
-      addon$("intelligenceValue")
-        .textContent = "—";
-    }
-
-    if (addon$("intelligenceSummary")) {
-      addon$("intelligenceSummary")
-        .textContent =
-        "No analysis available yet.";
-    }
-
-    if (addon$("intelligenceBuyingSignals")) {
-      addon$("intelligenceBuyingSignals")
-        .innerHTML = `
-          <span class="sub">
-            No signals yet.
-          </span>
-        `;
-    }
-
-    if (addon$("intelligenceRiskSignals")) {
-      addon$("intelligenceRiskSignals")
-        .innerHTML = `
-          <span class="sub">
-            No signals yet.
-          </span>
-        `;
-    }
-
-    if (addon$("intelligenceEvidence")) {
-      addon$("intelligenceEvidence")
-        .innerHTML = `
-          <span class="sub">
-            Evidence will appear after analysis.
-          </span>
-        `;
-    }
-
-  }
-
-
-  /* =======================================================
-     FORMAT VALUE
-  ======================================================= */
-
-  function formatEstimatedValue(value) {
-
-    if (
-      value === null ||
-      value === undefined ||
-      value === ""
-    ) {
-      return "—";
-    }
-
-    const number =
-      Number(value);
-
-    if (
-      !Number.isFinite(number)
-    ) {
-      return addonEsc(value);
-    }
-
-    try {
-      return new Intl.NumberFormat(
-        "en-IN",
-        {
-          style: "currency",
-          currency: "INR",
-          maximumFractionDigits: 0
-        }
-      ).format(number);
-
-    } catch {
-      return `₹${number.toLocaleString("en-IN")}`;
-    }
-  }
-
-
-  /* =======================================================
-     NORMALIZE SIGNAL
-  ======================================================= */
-
-  function normalizeSignal(signal) {
-
-    if (
-      signal === null ||
-      signal === undefined
-    ) {
-      return "";
-    }
-
-    if (
-      typeof signal === "string"
-    ) {
-      return signal;
-    }
-
-    if (
-      typeof signal === "object"
-    ) {
-
-      return (
-        signal.label ||
-        signal.reason ||
-        signal.signal ||
-        signal.description ||
-        JSON.stringify(signal)
-      );
-
-    }
-
-    return String(signal);
-  }
-
-
-  /* =======================================================
-     RENDER SIGNAL LIST
-  ======================================================= */
-
-  function renderSignalList(
-    elementId,
-    signals,
-    emptyText
-  ) {
-
-    const element =
-      addon$(elementId);
-
-    if (!element) {
-      return;
-    }
-
-    if (
-      !Array.isArray(signals) ||
-      !signals.length
-    ) {
-
-      element.innerHTML = `
-        <span class="sub">
-          ${addonEsc(emptyText)}
-        </span>
-      `;
-
-      return;
-    }
-
-    element.innerHTML =
-      signals
-        .map(normalizeSignal)
-        .filter(Boolean)
-        .map(
-          (signal) => `
-            <div class="lead-ai-list-item">
-              ${addonEsc(signal)}
-            </div>
-          `
-        )
-        .join("");
-
-  }
-
-
-  /* =======================================================
-     RENDER EVIDENCE
-  ======================================================= */
-
-  function renderEvidence(
-    evidence
-  ) {
-
-    const element =
-      addon$("intelligenceEvidence");
-
-    if (!element) {
-      return;
-    }
-
-    if (
-      !Array.isArray(evidence) ||
-      !evidence.length
-    ) {
-
-      element.innerHTML = `
-        <span class="sub">
-          No factual evidence recorded yet.
-        </span>
-      `;
-
-      return;
-    }
-
-    element.innerHTML =
-      evidence
-        .map((item) => {
-
-          const label =
-            item.label ||
-            "Evidence";
-
-          let value =
-            item.value;
-
-          if (
-            typeof value === "object" &&
-            value !== null
-          ) {
-            value =
-              JSON.stringify(value);
-          }
-
-          return `
-            <div class="lead-ai-evidence-item">
-
-              <strong>
-                ${addonEsc(label)}
-              </strong>
-
-              <span>
-                ${addonEsc(value)}
-              </span>
-
-              ${
-                item.source
-                  ? `
-                    <small>
-                      Source:
-                      ${addonEsc(item.source)}
-                    </small>
-                  `
-                  : ""
-              }
-
-            </div>
-          `;
-
-        })
-        .join("");
-
-  }
-
-
-  /* =======================================================
-     RENDER PROFILE
-  ======================================================= */
-
-  function renderProfile(
-    profile,
-    evidence
-  ) {
-
-    if (!profile) {
-      resetIntelligenceUI();
-      return;
-    }
-
-    if (addon$("intelligenceStatus")) {
-
-      const updated =
-        profile.updated_at;
-
-      addon$("intelligenceStatus")
-        .textContent =
-        updated
-          ? `Last analyzed: ${formatDateSafe(updated)}`
-          : "Analysis available.";
-
-    }
-
-
-    if (addon$("intelligenceIntent")) {
-
-      addon$("intelligenceIntent")
-        .textContent =
-        profile.intent || "unknown";
-
-    }
-
-
-    if (addon$("intelligenceUrgency")) {
-
-      addon$("intelligenceUrgency")
-        .textContent =
-        profile.urgency || "unknown";
-
-    }
-
-
-    if (addon$("intelligenceValue")) {
-
-      addon$("intelligenceValue")
-        .textContent =
-        formatEstimatedValue(
-          profile.estimated_value
-        );
-
-    }
-
-
-    if (addon$("intelligenceSummary")) {
-
-      addon$("intelligenceSummary")
-        .textContent =
-        profile.ai_summary ||
-        "No AI summary was generated.";
-
-    }
-
-
-    renderSignalList(
-      "intelligenceBuyingSignals",
-      profile.buying_signals,
-      "No buying signals detected."
-    );
-
-
-    renderSignalList(
-      "intelligenceRiskSignals",
-      profile.risk_signals,
-      "No risk signals detected."
-    );
-
-
-    renderEvidence(
-      evidence
-    );
-
-  }
-
-
-  /* =======================================================
-     SAFE DATE
-  ======================================================= */
-
-  function formatDateSafe(value) {
-
-    if (
-      typeof window.fmtDate ===
-      "function"
-    ) {
-      return window.fmtDate(value);
-    }
-
-    const date =
-      new Date(value);
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-      return "—";
-    }
-
-    return date.toLocaleString(
-      [],
-      {
-        dateStyle: "medium",
-        timeStyle: "short"
-      }
-    );
-  }
-
-
-  /* =======================================================
-     LOAD SAVED INTELLIGENCE
-  ======================================================= */
-
-  async function loadLeadIntelligence(
+  /* =========================================================
+     LOAD EXISTING ANALYSIS
+  ========================================================= */
+
+  async function loadExistingAnalysis(
     leadId
   ) {
+    try {
+      const [
+        profileResult,
+        evidenceResult
+      ] = await Promise.all([
 
-    if (
-      !window.db ||
-      !window.db.from
-    ) {
-      throw new Error(
-        "Supabase client is not available."
+        aiDb
+          .from("lead_profiles")
+          .select("*")
+          .eq("lead_id", leadId)
+          .maybeSingle(),
+
+        aiDb
+          .from("lead_evidence")
+          .select("*")
+          .eq("lead_id", leadId)
+          .eq(
+            "evidence_type",
+            "intelligence"
+          )
+          .order(
+            "created_at",
+            {
+              ascending: false
+            }
+          )
+      ]);
+
+
+      if (profileResult.error) {
+        throw profileResult.error;
+      }
+
+      if (evidenceResult.error) {
+        throw evidenceResult.error;
+      }
+
+
+      const profile =
+        profileResult.data;
+
+      const evidence =
+        evidenceResult.data || [];
+
+
+      if (!profile) {
+        renderReadyState();
+
+        setStatus(
+          "No AI analysis yet. Click Analyze Lead."
+        );
+
+        return;
+      }
+
+
+      renderAnalysis({
+        profile,
+        evidence,
+        intent: profile.intent,
+        urgency: profile.urgency,
+        ai_summary:
+          profile.ai_summary,
+        buying_signals:
+          profile.buying_signals,
+        risk_signals:
+          profile.risk_signals,
+        analyzed_at:
+          profile.updated_at
+      });
+
+      setStatus(
+        "Existing AI analysis loaded."
+      );
+
+    } catch (error) {
+
+      console.error(
+        "GLIME Lead AI load error:",
+        error
+      );
+
+      renderReadyState();
+
+      setStatus(
+        "Could not load existing AI analysis.",
+        true
       );
     }
-
-    const [
-      profileResult,
-      evidenceResult
-    ] = await Promise.all([
-
-      window.db
-        .from("lead_profiles")
-        .select("*")
-        .eq(
-          "lead_id",
-          leadId
-        )
-        .maybeSingle(),
-
-      window.db
-        .from("lead_evidence")
-        .select("*")
-        .eq(
-          "lead_id",
-          leadId
-        )
-        .eq(
-          "evidence_type",
-          "intelligence"
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        )
-
-    ]);
-
-
-    if (
-      profileResult.error
-    ) {
-      throw profileResult.error;
-    }
-
-
-    if (
-      evidenceResult.error
-    ) {
-      throw evidenceResult.error;
-    }
-
-
-    renderProfile(
-      profileResult.data,
-      evidenceResult.data || []
-    );
-
   }
 
 
-  /* =======================================================
+  /* =========================================================
      ANALYZE LEAD
-  ======================================================= */
+  ========================================================= */
 
   async function analyzeLead(
     leadId
   ) {
-
-    if (
-      intelligenceInProgress
-    ) {
-      return;
-    }
-
-    if (
-      !leadId
-    ) {
-      return;
-    }
-
-    if (
-      !window.db ||
-      !window.db.functions
-    ) {
-
-      showAddonMessage(
-        "Supabase client is not ready.",
-        true
+    const button =
+      document.getElementById(
+        "analyzeLeadBtn"
       );
 
-      return;
-    }
-
-
-    intelligenceInProgress =
-      true;
-
-    intelligenceLeadId =
-      leadId;
-
-
-    const button =
-      addon$("analyzeLeadBtn");
-
-    const originalText =
-      button?.textContent ||
-      "Analyze Lead";
-
-
     if (button) {
-
       button.disabled = true;
-
       button.textContent =
         "Analyzing…";
-
     }
 
-
-    if (
-      addon$("intelligenceStatus")
-    ) {
-
-      addon$("intelligenceStatus")
-        .textContent =
-        "Lead AI is analyzing this lead…";
-
-    }
+    setStatus(
+      "Lead AI is analyzing this lead…"
+    );
 
 
     try {
 
-      /*
-        Supabase's current JavaScript client
-        supports functions.invoke() with a JSON body.
-      */
-
       const {
         data,
         error
-      } = await window.db
-        .functions
-        .invoke(
-          "lead-intelligence",
-          {
-            body: {
-              lead_id: leadId
-            }
+      } = await aiDb.functions.invoke(
+        "lead-intelligence",
+        {
+          body: {
+            lead_id: leadId
           }
-        );
+        }
+      );
 
 
       if (error) {
@@ -877,304 +717,172 @@
       }
 
 
-      /*
-        Reload persisted profile/evidence.
-        This means the UI reflects the database,
-        not only the function response.
-      */
-
-      await loadLeadIntelligence(
-        leadId
-      );
-
-
-      showAddonMessage(
-        "Lead intelligence updated."
-      );
-
-
-      /*
-        Optional debugging information.
-        Does not expose hidden reasoning.
-      */
-
-      if (
-        data &&
-        typeof data === "object"
-      ) {
-
-        console.debug(
-          "[GLIME Lead AI]",
-          data
+      if (!data) {
+        throw new Error(
+          "No analysis response received."
         );
-
       }
+
+
+      renderAnalysis(data);
+
+      setStatus(
+        "Lead analysis completed successfully."
+      );
 
     } catch (error) {
 
       console.error(
-        "[GLIME Lead AI]",
+        "GLIME Lead AI analysis error:",
         error
       );
 
-
-      if (
-        addon$("intelligenceStatus")
-      ) {
-
-        addon$("intelligenceStatus")
-          .textContent =
-          "Analysis failed. Please try again.";
-
-      }
-
-
-      showAddonMessage(
+      setStatus(
         error?.message ||
-        "Lead analysis failed.",
+          "Lead analysis failed.",
         true
       );
 
     } finally {
 
-      intelligenceInProgress =
-        false;
-
-
       if (button) {
-
-        button.disabled =
-          false;
-
+        button.disabled = false;
         button.textContent =
-          originalText;
-
+          "Analyze Lead";
       }
 
     }
-
   }
 
 
-  /* =======================================================
-     OPEN LEAD HOOK
-     
-     Existing leads.js opens the detail modal.
-     We watch for the modal/detail content and detect
-     the selected lead without replacing existing logic.
-  ======================================================= */
+  /* =========================================================
+     DETECT LEAD OPEN
+  ========================================================= */
 
-  function detectCurrentLead() {
+  function handleDocumentClick(event) {
 
-    const detailModal =
-      addon$("detailModal");
-
-    if (
-      !detailModal ||
-      detailModal.classList.contains(
-        "hidden"
-      )
-    ) {
-      return null;
-    }
-
-
-    /*
-      Existing leads.js stores the lead ID
-      in the detail action buttons.
-    */
-
-    const deleteButton =
-      detailModal.querySelector(
-        "[data-delete]"
+    const button =
+      event.target.closest(
+        "[data-open]"
       );
 
-    if (
-      deleteButton?.dataset?.delete
-    ) {
-      return deleteButton.dataset.delete;
-    }
-
-
-    const statusSelect =
-      detailModal.querySelector(
-        "[data-status-lead]"
-      );
-
-    if (
-      statusSelect?.dataset?.statusLead
-    ) {
-      return statusSelect.dataset.statusLead;
-    }
-
-
-    /*
-      Fallback:
-      look for any button carrying a lead ID.
-    */
-
-    const candidate =
-      detailModal.querySelector(
-        "[data-lead-id]"
-      );
-
-    if (
-      candidate?.dataset?.leadId
-    ) {
-      return candidate.dataset.leadId;
-    }
-
-
-    return null;
-  }
-
-
-  /* =======================================================
-     OBSERVE DETAIL MODAL
-  ======================================================= */
-
-  function observeDetailModal() {
-
-    const modal =
-      addon$("detailModal");
-
-    if (!modal) {
+    if (!button) {
       return;
     }
 
+    const leadId =
+      button.dataset.open;
 
-    const observer =
-      new MutationObserver(
-        async () => {
+    if (!leadId) {
+      return;
+    }
 
-          if (
-            modal.classList.contains(
-              "hidden"
-            )
-          ) {
-            return;
-          }
-
-
-          ensureIntelligencePanel();
-
-
-          const leadId =
-            detectCurrentLead();
-
-
-          if (
-            !leadId ||
-            leadId === intelligenceLeadId
-          ) {
-            return;
-          }
-
-
-          intelligenceLeadId =
-            leadId;
-
-
-          resetIntelligenceUI();
-
-
-          try {
-
-            await loadLeadIntelligence(
-              leadId
-            );
-
-          } catch (error) {
-
-            /*
-              Do not break the existing Leads UI
-              if AI data cannot be loaded.
-            */
-
-            console.warn(
-              "[GLIME Lead AI] Could not load intelligence:",
-              error
-            );
-
-          }
-
-        }
-      );
-
-
-    observer.observe(
-      modal,
-      {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: [
-          "class",
-          "data-delete",
-          "data-status-lead",
-          "data-lead-id"
-        ]
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     INIT
-  ======================================================= */
-
-  function initLeadAIAddon() {
+    activeLeadId = leadId;
 
     /*
-      Give leads.js a moment to finish its
-      initial DOM setup.
+      leads.js replaces detailContent.innerHTML
+      asynchronously during openDetail().
+      Give it a moment, then attach our panel.
     */
 
-    ensureIntelligencePanel();
+    setTimeout(() => {
 
-    observeDetailModal();
+      const panel =
+        ensurePanel();
 
-    console.info(
-      "[GLIME] Lead AI addon initialized."
-    );
+      if (!panel) {
+        return;
+      }
 
+      setStatus(
+        "Loading Lead AI intelligence…"
+      );
+
+      loadExistingAnalysis(
+        leadId
+      );
+
+    }, 100);
   }
 
 
-  /* =======================================================
+  /* =========================================================
+     OBSERVE DETAIL MODAL
+  ========================================================= */
+
+  function startObserver() {
+
+    const detail =
+      document.getElementById(
+        "detailContent"
+      );
+
+    if (!detail) {
+      return;
+    }
+
+    if (panelObserver) {
+      panelObserver.disconnect();
+    }
+
+    panelObserver =
+      new MutationObserver(() => {
+
+        if (!activeLeadId) {
+          return;
+        }
+
+        const panel =
+          document.getElementById(
+            "leadAiPanel"
+          );
+
+        if (!panel) {
+          ensurePanel();
+        }
+
+      });
+
+    panelObserver.observe(
+      detail,
+      {
+        childList: true,
+        subtree: true
+      }
+    );
+  }
+
+
+  /* =========================================================
      PUBLIC API
-  ======================================================= */
+  ========================================================= */
 
   window.GLIMELeadAI = {
+    analyze: analyzeLead,
 
-    analyzeLead,
-
-    loadLeadIntelligence,
-
-    ensureIntelligencePanel
-
+    refresh: () => {
+      if (activeLeadId) {
+        loadExistingAnalysis(
+          activeLeadId
+        );
+      }
+    }
   };
 
 
-  /* =======================================================
-     START
-  ======================================================= */
+  /* =========================================================
+     INIT
+  ========================================================= */
 
-  if (
-    document.readyState ===
-    "loading"
-  ) {
+  document.addEventListener(
+    "click",
+    handleDocumentClick
+  );
 
-    document.addEventListener(
-      "DOMContentLoaded",
-      initLeadAIAddon
-    );
+  startObserver();
 
-  } else {
-
-    initLeadAIAddon();
-
-  }
+  console.log(
+    "GLIME Lead AI Employee loaded."
+  );
 
 })();
