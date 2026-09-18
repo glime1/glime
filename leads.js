@@ -12,6 +12,11 @@ let clientId = null;
 let allLeads = [];
 let customFields = [];
 
+/*
+  Prevents accidental double-click / duplicate form submission.
+*/
+let leadSaveInProgress = false;
+
 const $ = (id) => document.getElementById(id);
 
 const esc = (value) =>
@@ -1140,6 +1145,33 @@ async function createLead(event) {
 
   event.preventDefault();
 
+  /*
+    IMPORTANT:
+    Prevent two submissions from the same click / double-click.
+  */
+
+  if (leadSaveInProgress) {
+    return;
+  }
+
+  leadSaveInProgress = true;
+
+  const submitButton =
+    event.submitter ||
+    event.target.querySelector(
+      'button[type="submit"]'
+    );
+
+  const originalSubmitText =
+    submitButton?.textContent ||
+    "Save Lead";
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent =
+      "Saving…";
+  }
+
   const form =
     event.target;
 
@@ -1224,9 +1256,21 @@ async function createLead(event) {
   };
 
 
-  /* VALIDATION */
+  /* =======================================================
+     VALIDATION
+  ======================================================= */
 
   if (!payload.name) {
+
+    leadSaveInProgress = false;
+
+    if (submitButton) {
+      submitButton.disabled =
+        false;
+
+      submitButton.textContent =
+        originalSubmitText;
+    }
 
     showMessage(
       "Name is required.",
@@ -1237,7 +1281,9 @@ async function createLead(event) {
   }
 
 
-  /* CREATE LEAD */
+  /* =======================================================
+     CREATE LEAD
+  ======================================================= */
 
   const {
     data: lead,
@@ -1249,10 +1295,24 @@ async function createLead(event) {
     .single();
 
   if (error) {
+
+    leadSaveInProgress = false;
+
+    if (submitButton) {
+      submitButton.disabled =
+        false;
+
+      submitButton.textContent =
+        originalSubmitText;
+    }
+
     throw error;
   }
 
-  /* SOURCE */
+
+  /* =======================================================
+     SOURCE
+  ======================================================= */
 
   const {
     error: sourceError
@@ -1288,7 +1348,9 @@ async function createLead(event) {
   }
 
 
-  /* TIMELINE */
+  /* =======================================================
+     TIMELINE
+  ======================================================= */
 
   const {
     error: timelineError
@@ -1329,7 +1391,10 @@ async function createLead(event) {
     );
   }
 
-  /* BASIC PROFILE */
+
+  /* =======================================================
+     BASIC PROFILE
+  ======================================================= */
 
   const {
     error: profileError
@@ -1357,7 +1422,9 @@ async function createLead(event) {
   }
 
 
-  /* CUSTOM VALUES */
+  /* =======================================================
+     CUSTOM VALUES
+  ======================================================= */
 
   try {
 
@@ -1380,7 +1447,9 @@ async function createLead(event) {
   }
 
 
-  /* RESET */
+  /* =======================================================
+     RESET
+  ======================================================= */
 
   form.reset();
 
@@ -1390,10 +1459,109 @@ async function createLead(event) {
 
   await loadLeads();
 
+
+  /*
+    Unlock only after the entire save flow finishes.
+  */
+
+  leadSaveInProgress =
+    false;
+
+  if (submitButton) {
+
+    submitButton.disabled =
+      false;
+
+    submitButton.textContent =
+      originalSubmitText;
+  }
+
   showMessage(
     "Lead saved successfully."
   );
 }
+
+
+/* =========================================================
+   DELETE LEAD
+========================================================= */
+
+async function deleteLead(id) {
+
+  const lead =
+    allLeads.find(
+      (item) =>
+        item.id === id
+    );
+
+  if (!lead) {
+    return;
+  }
+
+  /*
+    Explicit confirmation prevents accidental deletion.
+  */
+
+  const confirmed =
+    window.confirm(
+      `Delete lead "${lead.name || "Unnamed Lead"}"? This will also remove its timeline, custom data and related lead records.`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const button =
+    $("deleteLead");
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Deleting…";
+  }
+
+  const {
+    error
+  } = await db
+    .from("leads")
+    .delete()
+    .eq(
+      "id",
+      id
+    )
+    .eq(
+      "client_id",
+      clientId
+    );
+
+  if (error) {
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Delete lead";
+    }
+
+    throw error;
+  }
+
+  closeModal(
+    "detailModal"
+  );
+
+  await loadLeads();
+
+  showMessage(
+    "Lead deleted successfully."
+  );
+}
+
 
 /* =========================================================
    FORMAT CUSTOM VALUE
@@ -1660,6 +1828,14 @@ async function openDetail(id) {
         Save status
       </button>
 
+      <button
+        id="deleteLead"
+        class="danger-btn"
+        type="button"
+      >
+        Delete lead
+      </button>
+
     </div>
 
 
@@ -1685,7 +1861,9 @@ async function openDetail(id) {
   );
 
 
-  /* LOAD TIMELINE + CUSTOM VALUES */
+  /* =======================================================
+     LOAD TIMELINE + CUSTOM VALUES
+  ======================================================= */
 
   const [
     timelineResult,
@@ -1725,7 +1903,9 @@ async function openDetail(id) {
   ]);
 
 
-  /* TIMELINE */
+  /* =======================================================
+     TIMELINE
+  ======================================================= */
 
   const {
     data: events,
@@ -1787,10 +1967,11 @@ async function openDetail(id) {
             No timeline events yet.
           </div>
         `;
-  }
+        }
 
-
-  /* CUSTOM VALUES */
+       /* =======================================================
+     CUSTOM VALUES
+  ======================================================= */
 
   const {
     data: values,
@@ -1863,15 +2044,30 @@ async function openDetail(id) {
             for this lead.
           </div>
         `;
-      }
+  }
 
-      /* STATUS UPDATE */
+
+  /* =======================================================
+     STATUS UPDATE
+  ======================================================= */
 
   $("saveDetail").onclick =
     async () => {
 
+      const button =
+        $("saveDetail");
+
       const status =
         $("detailStatus").value;
+
+      if (button) {
+
+        button.disabled =
+          true;
+
+        button.textContent =
+          "Saving…";
+      }
 
       const {
         error
@@ -1891,6 +2087,15 @@ async function openDetail(id) {
         );
 
       if (error) {
+
+        if (button) {
+
+          button.disabled =
+            false;
+
+          button.textContent =
+            "Save status";
+        }
 
         showMessage(
           error.message,
@@ -1951,6 +2156,21 @@ async function openDetail(id) {
         "Lead updated."
       );
     };
+
+
+  /* =======================================================
+     DELETE BUTTON
+  ======================================================= */
+
+  $("deleteLead").onclick =
+    () =>
+      deleteLead(id).catch(
+        (error) =>
+          showMessage(
+            error.message,
+            true
+          )
+      );
 }
 
 
@@ -2021,11 +2241,17 @@ $("leadForm")
       createLead(
         event
       ).catch(
-        (error) =>
+        (error) => {
+
+          leadSaveInProgress =
+            false;
+
           showMessage(
             error.message,
             true
-          )
+          );
+
+        }
       )
   );
 
