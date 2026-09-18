@@ -12,10 +12,16 @@
    - Existing CSS class names are preserved.
    - Does NOT modify leads.js.
    - Does NOT modify GLIME CARE.
+   - Uses existing Supabase tables and specialist gateway.
+   - No automatic sending.
 ========================================================= */
 
 (() => {
   "use strict";
+
+  /* =========================================================
+     SUPABASE
+  ========================================================= */
 
   const SUPABASE_URL =
     "https://ufoulgbiqgjriwapuopc.supabase.co";
@@ -34,6 +40,10 @@
     SUPABASE_URL,
     SUPABASE_KEY
   );
+
+  /* =========================================================
+     STATE
+  ========================================================= */
 
   let activeLeadId = null;
   let requestId = null;
@@ -57,17 +67,25 @@
     );
   }
 
+  /*
+   * Call the existing Phase-8 backend.
+   *
+   * Backend function:
+   * lead-followup-handoff-v2
+   */
   async function invoke(action, body = {}) {
-    const { data, error } =
-      await db.functions.invoke(
-        "lead-followup-handoff-v2",
-        {
-          body: {
-            action,
-            ...body,
-          },
-        }
-      );
+    const {
+      data,
+      error,
+    } = await db.functions.invoke(
+      "lead-followup-handoff-v2",
+      {
+        body: {
+          action,
+          ...body,
+        },
+      }
+    );
 
     if (error) {
       throw new Error(
@@ -161,9 +179,7 @@
       document.createElement("section");
 
     /*
-     * IMPORTANT:
-     * Keep the original ID and CSS class names
-     * so existing CSS continues to work.
+     * Keep the original ID and CSS class names.
      */
     section.id =
       "leadPhase8Handoff";
@@ -172,7 +188,7 @@
       "lead-phase8-section";
 
     /*
-     * Prefer currently proposed request.
+     * Prefer the currently proposed request.
      */
     const current =
       rows.find(
@@ -183,6 +199,10 @@
     const payload =
       current?.action_payload || {};
 
+    /*
+     * Keep the currently active request ID
+     * synchronized with the rendered request.
+     */
     requestId =
       current?.id || null;
 
@@ -375,7 +395,6 @@
     rendering = true;
 
     try {
-
       const rows =
         await loadRequests(
           leadId
@@ -404,7 +423,7 @@
         );
 
       /*
-       * Keep the section after
+       * Keep Phase-8 after
        * the existing Next Best Action card.
        */
       const phase7 =
@@ -416,23 +435,26 @@
         phase7 &&
         phase7.parentNode
       ) {
-
         phase7.parentNode.insertBefore(
           section,
           phase7.nextSibling
         );
-
       } else {
-
         detail.appendChild(
           section
         );
-
       }
 
       bindActions(
         section,
         leadId
+      );
+
+    } catch (error) {
+
+      console.error(
+        "[GLIME Follow-up] Render failed:",
+        error
       );
 
     } finally {
@@ -450,7 +472,6 @@
     section,
     leadId
   ) {
-
     section
       .querySelectorAll(
         "[data-phase8]"
@@ -466,8 +487,18 @@
                 button.dataset
                   .phase8;
 
+              /*
+               * Prevent double-click / duplicate requests.
+               */
+              if (button.disabled) {
+                return;
+              }
+
               button.disabled =
                 true;
+
+              const originalText =
+                button.textContent;
 
               try {
 
@@ -479,6 +510,9 @@
                   type ===
                   "create"
                 ) {
+
+                  button.textContent =
+                    "Preparing...";
 
                   await invoke(
                     "create_draft",
@@ -511,31 +545,32 @@
                     textarea?.value.trim();
 
                   if (!message) {
-
                     throw new Error(
                       "Message cannot be empty."
                     );
-
                   }
 
+                  /*
+                   * Keep frontend validation aligned
+                   * with the Phase-8 backend.
+                   */
                   if (
                     message.length >
-                    2000
+                    200
                   ) {
-
                     throw new Error(
-                      "Message must be 2000 characters or less."
+                      "Message must be 200 characters or less."
                     );
-
                   }
 
                   if (!requestId) {
-
                     throw new Error(
                       "Draft not found."
                     );
-
                   }
+
+                  button.textContent =
+                    "Saving...";
 
                   await invoke(
                     "save_draft",
@@ -560,26 +595,88 @@
                 ) {
 
                   if (!requestId) {
-
                     throw new Error(
                       "Draft not found."
                     );
+                  }
+
+                  button.textContent =
+                    "Regenerating...";
+
+                  /*
+                   * Backend:
+                   *
+                   * 1. Reads the current request.
+                   * 2. Keeps previous draft history.
+                   * 3. Generates a new draft.
+                   * 4. Updates action_payload.
+                   * 5. Increments draft_version.
+                   * 6. Stores regeneration event.
+                   *
+                   * The returned message is used
+                   * immediately below so the UI does
+                   * not depend on render().
+                   */
+                  const result =
+                    await invoke(
+                      "regenerate_draft",
+                      {
+                        request_id:
+                          requestId,
+                      }
+                    );
+
+                  /*
+                   * IMPORTANT:
+                   *
+                   * Show the newly generated
+                   * message immediately.
+                   *
+                   * This fixes the situation where
+                   * render() is temporarily locked by
+                   * another DOM render.
+                   */
+                  const textarea =
+                    section.querySelector(
+                      "#phase8Message"
+                    );
+
+                  if (
+                    textarea &&
+                    result?.message
+                  ) {
+
+                    textarea.value =
+                      result.message;
+
+                    /*
+                     * Put cursor at the end
+                     * of the new message.
+                     */
+                    try {
+                      textarea.focus();
+
+                      textarea.setSelectionRange(
+                        textarea.value.length,
+                        textarea.value.length
+                      );
+                    } catch (_) {
+                      /* Ignore cursor errors. */
+                    }
 
                   }
 
                   /*
-                   * Backend creates a new AI draft.
+                   * Backend has already saved the
+                   * regenerated draft.
                    *
-                   * Previous draft remains stored
-                   * inside draft_history.
+                   * Do not immediately rebuild the
+                   * entire section here because that
+                   * can cause the MutationObserver /
+                   * rendering lock to hide the update.
                    */
-                  await invoke(
-                    "regenerate_draft",
-                    {
-                      request_id:
-                        requestId,
-                    }
-                  );
+
+                  return;
 
                 }
 
@@ -593,11 +690,9 @@
                 ) {
 
                   if (!requestId) {
-
                     throw new Error(
                       "Draft not found."
                     );
-
                   }
 
                   const textarea =
@@ -609,27 +704,26 @@
                     textarea?.value.trim();
 
                   if (!message) {
-
                     throw new Error(
                       "Message cannot be empty."
                     );
-
                   }
 
                   if (
                     message.length >
-                    2000
+                    200
                   ) {
-
                     throw new Error(
-                      "Message must be 2000 characters or less."
+                      "Message must be 200 characters or less."
                     );
-
                   }
 
+                  button.textContent =
+                    "Saving...";
+
                   /*
-                   * Save the exact text
-                   * currently visible to client.
+                   * Save the exact text currently
+                   * visible in the textarea.
                    */
                   await invoke(
                     "save_draft",
@@ -650,13 +744,14 @@
                       "Approve and send this exact message through the connected specialist?"
                     );
 
-                  if (
-                    !confirmed
-                  ) {
+                  if (!confirmed) {
 
                     return;
 
                   }
+
+                  button.textContent =
+                    "Sending...";
 
                   /*
                    * Backend performs:
@@ -678,7 +773,11 @@
 
                 /*
                  * Reload the section after
-                 * successful operation.
+                 * successful create/save/send.
+                 *
+                 * Regenerate intentionally returns
+                 * above after directly updating the
+                 * textarea.
                  */
                 await render(
                   leadId
@@ -702,6 +801,9 @@
 
                 button.disabled =
                   false;
+
+                button.textContent =
+                  originalText;
 
               }
 
@@ -731,6 +833,9 @@
           openButton.getAttribute(
             "data-open"
           );
+
+        requestId =
+          null;
 
         setTimeout(
           () => {
@@ -847,6 +952,10 @@
       activeLeadId,
 
   };
+
+  /* =========================================================
+     START
+  ========================================================= */
 
   startObserver();
 
