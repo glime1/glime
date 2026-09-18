@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="GLIME Follow-up Specialist">
+  <title>GLIME — Follow-up Specialist</title>
+  <link rel="stylesheet" href="follow-up.css">
+</head>
+<body>
+  <main class="followup-app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">GLIME SPECIALIST</div>
+        <h1>Follow-up Specialist</h1>
+        <p class="subtitle">Initial follow-up, conversation analysis and proposed lead changes.</p>
+      </div>
+      <div class="top-actions">
+        <span id="authStatus" class="status-pill">Checking access…</span>
+        <button id="refreshBtn" class="btn ghost" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <div id="pageMessage" class="page-message" hidden></div>
+
+    <section class="hero-grid">
+      <article class="card control-card">
+        <div class="card-head">
+          <div>
+            <span class="label">FOLLOW-UP</span>
+            <h2>Specialist Control</h2>
+          </div>
+          <label class="switch">
+            <input id="followupEnabled" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p class="muted">Follow-up only starts from an approved trigger: Lead AI recommendation, client request, or conversation need.</p>
+
+        <div class="mode-box">
+          <span class="label">SENDING MODE</span>
+          <div class="segmented">
+            <label>
+              <input type="radio" name="sendingMode" value="manual_approval">
+              <span>Manual Approval</span>
+            </label>
+            <label>
+              <input type="radio" name="sendingMode" value="automatic_sending">
+              <span>Automatic Sending</span>
+            </label>
+          </div>
+          <small>Automatic Sending never creates its own trigger; it only changes approval behavior after a valid trigger.</small>
+        </div>
+        <button id="saveSettingsBtn" class="btn primary" type="button">Save Settings</button>
+      </article>
+
+      <article class="card stats-card">
+        <div class="stat"><strong id="activeCount">0</strong><span>Active follow-ups</span></div>
+        <div class="stat"><strong id="approvalCount">0</strong><span>Awaiting approval</span></div>
+        <div class="stat"><strong id="analysisCount">0</strong><span>To analyze</span></div>
+        <div class="stat"><strong id="changesCount">0</strong><span>Proposed changes</span></div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <span class="label">CHANNEL CONNECTION CENTER</span>
+          <h2>Connect your communication channels</h2>
+        </div>
+        <span class="muted">One channel per action</span>
+      </div>
+      <div id="channels" class="channel-grid"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <span class="label">FOLLOW-UP LEADS</span>
+          <h2>Lead-wise control</h2>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Lead</th><th>Follow-up</th><th>Channel</th><th>Status</th><th>Last activity</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="leadsBody">
+            <tr><td colspan="6" class="empty">Loading leads…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="two-col">
+      <article class="card">
+        <div class="card-head"><div><span class="label">APPROVALS</span><h2>Follow-up drafts</h2></div></div>
+        <div id="approvalsList" class="stack"><div class="empty">Loading…</div></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><div><span class="label">PROPOSED LEAD CHANGES</span><h2>Review before Lead update</h2></div></div>
+        <div id="changesList" class="stack"><div class="empty">Loading…</div></div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><div><span class="label">REPORTS</span><h2>Recent conclusions</h2></div></div>
+      <div id="conclusionsList" class="stack"><div class="empty">Loading…</div></div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal" hidden>
+    <div class="modal-panel">
+      <div class="modal-head">
+        <h2 id="modalTitle">Follow-up</h2>
+        <button id="modalClose" class="icon-btn" type="button" aria-label="Close">×</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="follow-up.js"></script>
+</body>
+</html>
