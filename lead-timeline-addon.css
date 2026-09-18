@@ -1,0 +1,314 @@
+/* =========================================================
+   GLIME — Lead Timeline & Source History
+   Phase 5 Add-on
+   ========================================================= */
+
+.lead-phase5-section {
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.lead-phase5-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.lead-phase5-section-header h3 {
+  margin: 0 0 5px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.lead-phase5-section-header p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.65;
+}
+
+.lead-phase5-count {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------
+   Source cards
+   --------------------------------------------------------- */
+
+.lead-source-list {
+  display: grid;
+  gap: 10px;
+}
+
+.lead-source-card {
+  padding: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.018);
+}
+
+.lead-source-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.lead-phase5-source-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.07);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.lead-phase5-primary-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lead-source-ref {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.lead-source-ref span {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.lead-source-ref strong {
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.lead-source-date {
+  margin-top: 9px;
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+/* ---------------------------------------------------------
+   Timeline
+   --------------------------------------------------------- */
+
+.lead-phase5-timeline-box {
+  margin-top: 10px;
+}
+
+.lead-phase5-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-left: 6px;
+}
+
+.lead-timeline-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  column-gap: 12px;
+  padding-bottom: 22px;
+}
+
+.lead-timeline-event:last-child {
+  padding-bottom: 4px;
+}
+
+.lead-timeline-marker {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  margin-top: 7px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.55;
+}
+
+.lead-timeline-event:not(:last-child)
+  .lead-timeline-marker::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 2px;
+  width: 2px;
+  height: calc(100% + 22px);
+  min-height: 30px;
+  background: currentColor;
+  opacity: 0.15;
+}
+
+.lead-timeline-event-body {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.018);
+}
+
+.lead-timeline-event-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lead-timeline-title-wrap {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lead-timeline-title-wrap strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.lead-phase5-event-type {
+  width: fit-content;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+}
+
+.lead-timeline-event-header time {
+  flex: 0 0 auto;
+  font-size: 11px;
+  opacity: 0.55;
+  white-space: nowrap;
+}
+
+.lead-timeline-event-meta {
+  margin-top: 9px;
+}
+
+.lead-timeline-description {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: 0.78;
+  word-break: break-word;
+}
+
+/* ---------------------------------------------------------
+   Details / metadata
+   --------------------------------------------------------- */
+
+.lead-phase5-details {
+  margin-top: 11px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 9px;
+}
+
+.lead-phase5-details summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.65;
+}
+
+.lead-phase5-details pre {
+  margin: 9px 0 0;
+  padding: 10px;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.045);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------------------------------------------------------
+   Empty states
+   --------------------------------------------------------- */
+
+.lead-phase5-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 18px;
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.lead-phase5-empty strong {
+  font-size: 13px;
+}
+
+.lead-phase5-empty span {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.lead-phase5-timeline-empty {
+  margin-top: 8px;
+}
+
+/* ---------------------------------------------------------
+   Responsive
+   --------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .lead-phase5-section {
+    padding: 15px;
+    border-radius: 13px;
+  }
+
+  .lead-phase5-section-header {
+    gap: 10px;
+  }
+
+  .lead-timeline-event-header {
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .lead-timeline-event-header time {
+    white-space: normal;
+  }
+
+  .lead-timeline-event-body {
+    padding: 11px 12px;
+  }
+
+  .lead-source-card {
+    padding: 12px;
+  }
+}
