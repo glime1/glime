@@ -11,13 +11,14 @@
    CARE profile exists + Active
         ↓
    ❤️ GLIME CARE दिखाई देगा
+   👨‍👩‍👧‍👦 Family Members दिखाई देगा
 
    IMPORTANT:
    - dashboard.html को replace नहीं करता
    - dashboard-modules-addon.js को नहीं छेड़ता
    - client_modules का उपयोग नहीं करता
    - care_profiles को सीधे read नहीं करता
-   - existing secure CARE RPC का उपयोग करता है
+   - existing secure CARE RPC का उपयोग करता
 ========================================================= */
 
 (() => {
@@ -32,8 +33,14 @@
     const CARE_NAV_ID =
         'glime-care-dashboard-nav';
 
+    const FAMILY_NAV_ID =
+        'glime-care-family-members-dashboard-nav';
+
     const CARE_HREF =
         'care.html';
+
+    const FAMILY_HREF =
+        'care-member.html';
 
 
     /* =====================================================
@@ -44,6 +51,7 @@
         console.error(
             'GLIME CARE Dashboard: Supabase library not loaded.'
         );
+
         return;
     }
 
@@ -83,12 +91,18 @@
 
         style.textContent = `
 
-            #${CARE_NAV_ID} {
+            #${CARE_NAV_ID},
+            #${FAMILY_NAV_ID} {
                 position: relative;
             }
 
-            #${CARE_NAV_ID}:hover {
+            #${CARE_NAV_ID}:hover,
+            #${FAMILY_NAV_ID}:hover {
                 color: #00ff88;
+            }
+
+            #${FAMILY_NAV_ID} {
+                padding-left: 32px;
             }
 
         `;
@@ -103,13 +117,22 @@
 
     function removeCareNavigation() {
 
-        const nav =
+        const careNav =
             document.getElementById(
                 CARE_NAV_ID
             );
 
-        if (nav) {
-            nav.remove();
+        if (careNav) {
+            careNav.remove();
+        }
+
+        const familyNav =
+            document.getElementById(
+                FAMILY_NAV_ID
+            );
+
+        if (familyNav) {
+            familyNav.remove();
         }
     }
 
@@ -119,14 +142,6 @@
     ====================================================== */
 
     function addCareNavigation() {
-
-        if (
-            document.getElementById(
-                CARE_NAV_ID
-            )
-        ) {
-            return;
-        }
 
         const sidebar =
             document.querySelector(
@@ -144,77 +159,136 @@
 
         addStyles();
 
-        const nav =
-            document.createElement('a');
 
-        nav.id =
-            CARE_NAV_ID;
+        /* =================================================
+           EXISTING CARE LINK
+        ================================================== */
 
-        nav.className =
-            'nav-item';
-
-        nav.href =
-            CARE_HREF;
-
-        nav.textContent =
-            '❤️ GLIME CARE';
-
-        nav.setAttribute(
-            'aria-label',
-            'Open GLIME CARE'
-        );
-
-
-        /* -----------------------------------------------
-           Put CARE before Billing if available
-        ------------------------------------------------ */
-
-        const billing =
-            sidebar.querySelector(
-                'a[href="#billingSection"]'
+        let careNav =
+            document.getElementById(
+                CARE_NAV_ID
             );
 
-        if (billing) {
+        if (!careNav) {
 
-            sidebar.insertBefore(
-                nav,
-                billing
+            careNav =
+                document.createElement('a');
+
+            careNav.id =
+                CARE_NAV_ID;
+
+            careNav.className =
+                'nav-item';
+
+            careNav.href =
+                CARE_HREF;
+
+            careNav.textContent =
+                '❤️ GLIME CARE';
+
+            careNav.setAttribute(
+                'aria-label',
+                'Open GLIME CARE'
             );
 
-            return;
+
+            /* ---------------------------------------------
+               Put CARE before Billing if available
+            ---------------------------------------------- */
+
+            const billing =
+                sidebar.querySelector(
+                    'a[href="#billingSection"]'
+                );
+
+            if (billing) {
+
+                sidebar.insertBefore(
+                    careNav,
+                    billing
+                );
+
+            } else {
+
+                /* -----------------------------------------
+                   Otherwise put CARE before Logout
+                ------------------------------------------ */
+
+                const logout =
+                    sidebar.querySelector(
+                        '.logout-btn'
+                    );
+
+                if (logout) {
+
+                    sidebar.insertBefore(
+                        careNav,
+                        logout
+                    );
+
+                } else {
+
+                    sidebar.appendChild(
+                        careNav
+                    );
+                }
+            }
         }
 
 
-        /* -----------------------------------------------
-           Otherwise put CARE before Logout
-        ------------------------------------------------ */
+        /* =================================================
+           FAMILY MEMBERS LINK
+        ================================================== */
 
-        const logout =
-            sidebar.querySelector(
-                '.logout-btn'
+        let familyNav =
+            document.getElementById(
+                FAMILY_NAV_ID
             );
 
-        if (logout) {
+        if (!familyNav) {
 
-            sidebar.insertBefore(
-                nav,
-                logout
+            familyNav =
+                document.createElement('a');
+
+            familyNav.id =
+                FAMILY_NAV_ID;
+
+            familyNav.className =
+                'nav-item';
+
+            familyNav.href =
+                FAMILY_HREF;
+
+            familyNav.textContent =
+                '👨‍👩‍👧‍👦 Family Members';
+
+            familyNav.setAttribute(
+                'aria-label',
+                'Open GLIME CARE Family Members'
             );
 
-            return;
+
+            /* ---------------------------------------------
+               Family Members immediately after CARE
+            ---------------------------------------------- */
+
+            if (careNav.nextSibling) {
+
+                sidebar.insertBefore(
+                    familyNav,
+                    careNav.nextSibling
+                );
+
+            } else {
+
+                sidebar.appendChild(
+                    familyNav
+                );
+            }
         }
-
-
-        /* -----------------------------------------------
-           Final fallback
-        ------------------------------------------------ */
-
-        sidebar.appendChild(
-            nav
-        );
 
         console.log(
-            'GLIME CARE Dashboard: CARE navigation added.'
+            'GLIME CARE Dashboard: CARE + Family Members navigation added.'
         );
     }
 
@@ -408,9 +482,11 @@
 
         setTimeout(
             () => {
+
                 waitForDashboard(
                     attempt + 1
                 );
+
             },
             250
         );
