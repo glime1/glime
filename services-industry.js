@@ -1,6 +1,39 @@
 (function () {
   "use strict";
 
+  /*
+   * ============================================================
+   * GLIME SERVICES WIZARD — STEP 2
+   * INDUSTRY SELECTION
+   * ============================================================
+   *
+   * This step supports:
+   *
+   * 1. Existing system industry
+   * 2. Custom industry
+   *
+   * System industry:
+   *     Supabase industries table
+   *
+   * Custom industry:
+   *     Stored temporarily in wizard state
+   *     and saved permanently later by the
+   *     final Foundation configuration step.
+   *
+   * IMPORTANT:
+   * This page does NOT permanently write the
+   * Foundation configuration.
+   *
+   * It only prepares the wizard state for
+   * the next step.
+   * ============================================================
+   */
+
+
+  /* ============================================================
+     CONFIGURATION
+     ============================================================ */
+
   const SUPABASE_URL =
     "https://ufoulgbiqgjriwapuopc.supabase.co";
 
@@ -10,56 +43,137 @@
   const STORAGE_KEY =
     "glime_services_wizard";
 
-  const $ = (id) => document.getElementById(id);
 
-  const searchInput = $("industrySearch");
-  const clearSearchBtn = $("clearSearchBtn");
-  const industryList = $("industryList");
-  const industryStatus = $("industryStatus");
-  const emptyState = $("emptyState");
-  const message = $("message");
-  const nextBtn = $("nextBtn");
+  /* ============================================================
+     DOM HELPERS
+     ============================================================ */
+
+  const $ = (id) =>
+    document.getElementById(id);
+
+
+  const searchInput =
+    $("industrySearch");
+
+  const clearSearchBtn =
+    $("clearSearchBtn");
+
+  const industryList =
+    $("industryList");
+
+  const industryStatus =
+    $("industryStatus");
+
+  const emptyState =
+    $("emptyState");
+
+  const customIndustryBtn =
+    $("customIndustryBtn");
+
+  const customIndustryForm =
+    $("customIndustryForm");
+
+  const customIndustryName =
+    $("customIndustryName");
+
+  const customIndustryDescription =
+    $("customIndustryDescription");
+
+  const closeCustomBtn =
+    $("closeCustomBtn");
+
+  const cancelCustomBtn =
+    $("cancelCustomBtn");
+
+  const useCustomBtn =
+    $("useCustomBtn");
+
+  const message =
+    $("message");
+
+  const nextBtn =
+    $("nextBtn");
+
+  const customOptionTitle =
+    $("customOptionTitle");
+
+
+  /* ============================================================
+     INTERNAL STATE
+     ============================================================ */
 
   let supabaseClient = null;
+
   let industries = [];
+
   let selectedIndustry = null;
 
+  let selectedSource = null;
+
+
+  /* ============================================================
+     SUPABASE CLIENT
+     ============================================================ */
+
   function getSupabaseClient() {
+
     if (supabaseClient) {
       return supabaseClient;
     }
 
     if (
       !window.supabase ||
-      typeof window.supabase.createClient !== "function"
+      typeof window.supabase.createClient !==
+        "function"
     ) {
-      throw new Error("Supabase client library did not load.");
+      throw new Error(
+        "Supabase client library did not load."
+      );
     }
 
-    supabaseClient = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY
-    );
+    supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+      );
 
     return supabaseClient;
   }
 
+
+  /* ============================================================
+     WIZARD STATE
+     ============================================================ */
+
   function readWizardState() {
+
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+
+      const raw =
+        sessionStorage.getItem(
+          STORAGE_KEY
+        );
 
       if (!raw) {
         return {};
       }
 
-      const parsed = JSON.parse(raw);
+      const parsed =
+        JSON.parse(raw);
 
-      return parsed && typeof parsed === "object"
-        ? parsed
-        : {};
+      if (
+        !parsed ||
+        typeof parsed !== "object"
+      ) {
+        return {};
+      }
+
+      return parsed;
+
     } catch (error) {
+
       console.warn(
-        "[GLIME] Could not read wizard state.",
+        "[GLIME] Unable to read wizard state.",
         error
       );
 
@@ -67,175 +181,665 @@
     }
   }
 
-  function writeWizardState(patch) {
-    const current = readWizardState();
 
-    const next = {
+  function writeWizardState(
+    patch
+  ) {
+
+    const current =
+      readWizardState();
+
+    const nextState = {
       ...current,
       ...patch
     };
 
     sessionStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify(next)
+      JSON.stringify(nextState)
     );
 
-    return next;
+    return nextState;
   }
 
-  function setStatus(text, type = "") {
+
+  /* ============================================================
+     UI STATUS
+     ============================================================ */
+
+  function setStatus(
+    text,
+    type = ""
+  ) {
+
     if (!industryStatus) {
       return;
     }
 
-    industryStatus.textContent = text;
+    industryStatus.textContent =
+      text;
+
     industryStatus.className =
       `status-line ${type}`;
   }
 
-  function showMessage(text) {
+
+  function showMessage(
+    text
+  ) {
+
     if (!message) {
       return;
     }
 
     message.hidden = false;
-    message.textContent = text;
+
+    message.textContent =
+      text;
   }
 
-  function renderIndustries(list) {
+
+  function hideMessage() {
+
+    if (!message) {
+      return;
+    }
+
+    message.hidden = true;
+
+    message.textContent =
+      "";
+  }
+
+
+  /* ============================================================
+     HTML ESCAPING
+     ============================================================ */
+
+  function escapeHtml(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
+  }
+
+
+  /* ============================================================
+     SLUG CREATION
+     ============================================================ */
+
+  function slugify(
+    value
+  ) {
+
+    return String(
+      value || ""
+    )
+      .toLowerCase()
+      .trim()
+      .replace(
+        /[^a-z0-9]+/g,
+        "-"
+      )
+      .replace(
+        /^-+|-+$/g,
+        ""
+      )
+      .slice(
+        0,
+        100
+      );
+  }
+
+
+  /* ============================================================
+     FILTER INDUSTRIES
+     ============================================================ */
+
+  function filterIndustries(
+    query
+  ) {
+
+    const search =
+      String(
+        query || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    if (!search) {
+      return industries;
+    }
+
+    return industries.filter(
+      (industry) => {
+
+        const name =
+          String(
+            industry.name || ""
+          ).toLowerCase();
+
+        const slug =
+          String(
+            industry.slug || ""
+          ).toLowerCase();
+
+        return (
+          name.includes(search) ||
+          slug.includes(search)
+        );
+      }
+    );
+  }
+
+
+  /* ============================================================
+     RENDER SYSTEM INDUSTRIES
+     ============================================================ */
+
+  function renderIndustries(
+    list
+  ) {
+
     if (!industryList) {
       return;
     }
 
-    industryList.innerHTML = "";
+    industryList.innerHTML =
+      "";
 
-    list.forEach((industry) => {
-      const button =
-        document.createElement("button");
+    list.forEach(
+      (industry) => {
 
-      button.type = "button";
-      button.className = "industry-option";
-      button.dataset.industryId =
-        industry.id;
+        const button =
+          document.createElement(
+            "button"
+          );
 
-      button.innerHTML = `
-        <span class="industry-name">
-          ${escapeHtml(industry.name)}
-        </span>
+        button.type =
+          "button";
 
-        <span class="industry-slug">
-          ${escapeHtml(industry.slug || "")}
-        </span>
-      `;
+        button.className =
+          "industry-option";
 
-      if (
-        selectedIndustry?.id ===
-        industry.id
-      ) {
-        button.classList.add("selected");
+        button.dataset.industryId =
+          industry.id;
+
+        button.innerHTML = `
+          <span class="industry-name">
+            ${escapeHtml(
+              industry.name
+            )}
+          </span>
+
+          <span class="industry-slug">
+            ${escapeHtml(
+              industry.slug || ""
+            )}
+          </span>
+        `;
+
+        if (
+          selectedSource ===
+            "system" &&
+          selectedIndustry &&
+          selectedIndustry.id ===
+            industry.id
+        ) {
+
+          button.classList.add(
+            "selected"
+          );
+        }
+
+        button.addEventListener(
+          "click",
+          function () {
+            selectSystemIndustry(
+              industry
+            );
+          }
+        );
+
+        industryList.appendChild(
+          button
+        );
       }
-
-      button.addEventListener(
-        "click",
-        () => selectIndustry(industry)
-      );
-
-      industryList.appendChild(button);
-    });
+    );
 
     const hasResults =
       list.length > 0;
 
-    emptyState.hidden =
-      hasResults;
-
     industryList.hidden =
       !hasResults;
+
+    if (emptyState) {
+      emptyState.hidden =
+        hasResults;
+    }
   }
 
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
 
-  function selectIndustry(industry) {
+  /* ============================================================
+     SELECT SYSTEM INDUSTRY
+     ============================================================ */
+
+  function selectSystemIndustry(
+    industry
+  ) {
+
     selectedIndustry =
       industry;
 
+    selectedSource =
+      "system";
+
+    hideMessage();
+
+    /*
+     * Clear any previously entered
+     * custom industry.
+     */
+    if (customIndustryName) {
+      customIndustryName.value =
+        "";
+    }
+
+    if (customIndustryDescription) {
+      customIndustryDescription.value =
+        "";
+    }
+
+    /*
+     * Close custom form if it is open.
+     */
+    if (customIndustryForm) {
+      customIndustryForm.hidden =
+        true;
+    }
+
+    /*
+     * Restore normal custom option text.
+     */
+    if (customOptionTitle) {
+      customOptionTitle.textContent =
+        "Create a custom industry";
+    }
+
+    nextBtn.disabled =
+      false;
+
     renderIndustries(
       filterIndustries(
-        searchInput?.value || ""
+        searchInput
+          ? searchInput.value
+          : ""
       )
     );
 
-    nextBtn.disabled = false;
+    /*
+     * Store only temporary wizard
+     * state at this point.
+     */
+    writeWizardState({
 
-    message.hidden = true;
-    message.textContent = "";
+      industrySource:
+        "system",
+
+      industry: {
+
+        id:
+          industry.id,
+
+        name:
+          industry.name,
+
+        slug:
+          industry.slug || null
+
+      },
+
+      customIndustry:
+        null,
+
+      businessModel:
+        null,
+
+      template:
+        null,
+
+      entityType:
+        null,
+
+      entity:
+        null
+
+    });
 
     setStatus(
       `${industry.name} selected.`,
       "success"
     );
-
-    writeWizardState({
-      industry: {
-        id: industry.id,
-        name: industry.name,
-        slug: industry.slug
-      },
-
-      businessModel: null,
-      template: null,
-      entityType: null,
-      entity: null
-    });
   }
 
-  function filterIndustries(query) {
-    const value =
-      String(query || "")
-        .trim()
-        .toLowerCase();
 
-    if (!value) {
-      return industries;
+  /* ============================================================
+     OPEN CUSTOM INDUSTRY
+     ============================================================ */
+
+  function openCustomIndustry() {
+
+    hideMessage();
+
+    if (!customIndustryForm) {
+      return;
     }
 
-    return industries.filter((industry) => {
-      const haystack = [
-        industry.name,
-        industry.slug
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+    customIndustryForm.hidden =
+      false;
 
-      return haystack.includes(value);
+    /*
+     * If the user searched for something,
+     * automatically use that search text
+     * as the initial custom name.
+     *
+     * Example:
+     *
+     * Search:
+     * Plumber
+     *
+     * becomes:
+     *
+     * Industry name:
+     * Plumber
+     */
+    const searchValue =
+      searchInput
+        ? searchInput.value.trim()
+        : "";
+
+    if (
+      searchValue &&
+      customIndustryName &&
+      !customIndustryName.value
+    ) {
+
+      customIndustryName.value =
+        searchValue;
+    }
+
+    if (customIndustryName) {
+      customIndustryName.focus();
+    }
+
+    setStatus(
+      "Define your own industry.",
+      ""
+    );
+
+    customIndustryForm.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest"
     });
   }
 
+
+  /* ============================================================
+     CLOSE CUSTOM INDUSTRY
+     ============================================================ */
+
+  function closeCustomIndustry() {
+
+    if (!customIndustryForm) {
+      return;
+    }
+
+    customIndustryForm.hidden =
+      true;
+  }
+
+
+  /* ============================================================
+     CLEAR CUSTOM SELECTION
+     ============================================================ */
+
+  function clearCustomSelection() {
+
+    if (
+      selectedSource !==
+      "custom"
+    ) {
+      return;
+    }
+
+    selectedIndustry =
+      null;
+
+    selectedSource =
+      null;
+
+    nextBtn.disabled =
+      true;
+
+    if (customOptionTitle) {
+      customOptionTitle.textContent =
+        "Create a custom industry";
+    }
+
+    renderIndustries(
+      filterIndustries(
+        searchInput
+          ? searchInput.value
+          : ""
+      )
+    );
+
+    setStatus(
+      `${industries.length} industries available.`
+    );
+  }
+
+
+  /* ============================================================
+     USE CUSTOM INDUSTRY
+     ============================================================ */
+
+  function useCustomIndustry() {
+
+    hideMessage();
+
+    const name =
+      customIndustryName
+        ? customIndustryName.value.trim()
+        : "";
+
+    const description =
+      customIndustryDescription
+        ? customIndustryDescription.value.trim()
+        : "";
+
+    if (!name) {
+
+      showMessage(
+        "Please enter an industry name."
+      );
+
+      if (customIndustryName) {
+        customIndustryName.focus();
+      }
+
+      return;
+    }
+
+    if (name.length < 2) {
+
+      showMessage(
+        "Industry name must contain at least 2 characters."
+      );
+
+      if (customIndustryName) {
+        customIndustryName.focus();
+      }
+
+      return;
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * We do NOT create a fake UUID.
+     *
+     * We do NOT insert this into the
+     * global industries table.
+     *
+     * It remains client-specific wizard
+     * data until the final configuration
+     * is saved.
+     */
+    selectedIndustry = {
+
+      id:
+        null,
+
+      name:
+        name,
+
+      slug:
+        slugify(name),
+
+      description:
+        description || null
+
+    };
+
+    selectedSource =
+      "custom";
+
+    writeWizardState({
+
+      industrySource:
+        "custom",
+
+      industry: {
+
+        id:
+          null,
+
+        name:
+          name,
+
+        slug:
+          slugify(name),
+
+        description:
+          description || null
+
+      },
+
+      customIndustry: {
+
+        name:
+          name,
+
+        description:
+          description || null
+
+      },
+
+      businessModel:
+        null,
+
+      template:
+        null,
+
+      entityType:
+        null,
+
+      entity:
+        null
+
+    });
+
+    nextBtn.disabled =
+      false;
+
+    if (customOptionTitle) {
+      customOptionTitle.textContent =
+        `Custom: ${name}`;
+    }
+
+    if (customIndustryForm) {
+      customIndustryForm.hidden =
+        true;
+    }
+
+    setStatus(
+      `"${name}" custom industry selected.`,
+      "success"
+    );
+
+    nextBtn.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest"
+    });
+      }
+
+   /* ============================================================
+     SEARCH
+     ============================================================ */
+
   function handleSearch() {
+
     const query =
-      searchInput?.value || "";
+      searchInput
+        ? searchInput.value
+        : "";
 
     if (clearSearchBtn) {
       clearSearchBtn.hidden =
         !query;
     }
 
+    /*
+     * If the user starts searching again
+     * after selecting a custom industry,
+     * don't destroy the custom selection.
+     */
     const filtered =
-      filterIndustries(query);
+      filterIndustries(
+        query
+      );
 
-    renderIndustries(filtered);
+    renderIndustries(
+      filtered
+    );
 
     if (!filtered.length) {
+
       setStatus(
-        "No matching industry.",
+        "No system industry found. You can create a custom one.",
         "error"
       );
 
@@ -251,34 +855,76 @@
     );
   }
 
+
+  /* ============================================================
+     CLEAR SEARCH
+     ============================================================ */
+
   function clearSearch() {
+
     if (searchInput) {
-      searchInput.value = "";
+
+      searchInput.value =
+        "";
+
       searchInput.focus();
     }
 
     if (clearSearchBtn) {
-      clearSearchBtn.hidden = true;
+      clearSearchBtn.hidden =
+        true;
     }
 
     renderIndustries(
       industries
     );
 
-    setStatus(
-      `${industries.length} industries available.`
-    );
+    if (
+      selectedIndustry
+    ) {
+
+      setStatus(
+        `${
+          selectedSource ===
+          "custom"
+            ? "Custom: "
+            : ""
+        }${
+          selectedIndustry.name
+        } selected.`,
+        "success"
+      );
+
+    } else {
+
+      setStatus(
+        `${industries.length} industries available.`
+      );
+    }
   }
 
+
+  /* ============================================================
+     LOAD SYSTEM INDUSTRIES
+     ============================================================ */
+
   async function loadIndustries() {
+
     setStatus(
       "Loading industries…"
     );
 
     try {
+
       const client =
         getSupabaseClient();
 
+      /*
+       * Only use columns that belong to
+       * the known system industry catalog.
+       *
+       * No custom industry is required here.
+       */
       const {
         data,
         error
@@ -295,7 +941,8 @@
           .order(
             "name",
             {
-              ascending: true
+              ascending:
+                true
             }
           );
 
@@ -304,113 +951,338 @@
       }
 
       industries =
-        data || [];
+        Array.isArray(data)
+          ? data
+          : [];
 
-      if (!industries.length) {
-        setStatus(
-          "No industries are available.",
-          "error"
-        );
-
-        renderIndustries([]);
-
-        return;
-      }
-
+      /*
+       * Restore previous wizard state
+       * if the user returns to this page.
+       */
       const wizard =
         readWizardState();
 
       if (
-        wizard.industry?.id
+        wizard.industrySource ===
+          "custom" &&
+        wizard.customIndustry &&
+        wizard.customIndustry.name
       ) {
-        selectedIndustry =
+
+        selectedSource =
+          "custom";
+
+        selectedIndustry = {
+
+          id:
+            null,
+
+          name:
+            wizard.customIndustry.name,
+
+          slug:
+            wizard.industry &&
+            wizard.industry.slug
+              ? wizard.industry.slug
+              : slugify(
+                  wizard.customIndustry.name
+                ),
+
+          description:
+            wizard.customIndustry.description ||
+            null
+
+        };
+
+        if (customOptionTitle) {
+          customOptionTitle.textContent =
+            `Custom: ${
+              selectedIndustry.name
+            }`;
+        }
+
+        nextBtn.disabled =
+          false;
+
+      } else if (
+        wizard.industrySource ===
+          "system" &&
+        wizard.industry &&
+        wizard.industry.id
+      ) {
+
+        const existing =
           industries.find(
-            (item) =>
-              item.id ===
-              wizard.industry.id
-          ) || null;
+            function (industry) {
+              return (
+                industry.id ===
+                wizard.industry.id
+              );
+            }
+          );
+
+        if (existing) {
+
+          selectedSource =
+            "system";
+
+          selectedIndustry =
+            existing;
+
+          nextBtn.disabled =
+            false;
+        }
       }
 
       renderIndustries(
         filterIndustries(
-          searchInput?.value || ""
+          searchInput
+            ? searchInput.value
+            : ""
         )
       );
 
-      if (selectedIndustry) {
-        nextBtn.disabled =
-          false;
+      if (
+        selectedIndustry
+      ) {
 
         setStatus(
-          `${selectedIndustry.name} selected.`,
+          `${
+            selectedSource ===
+            "custom"
+              ? "Custom: "
+              : ""
+          }${
+            selectedIndustry.name
+          } selected.`,
           "success"
         );
-      } else {
-        nextBtn.disabled =
-          true;
+
+      } else if (
+        industries.length
+      ) {
 
         setStatus(
           `${industries.length} industries available.`
         );
+
+      } else {
+
+        setStatus(
+          "No system industries are available. You can create a custom one.",
+          "error"
+        );
       }
 
     } catch (error) {
+
       console.error(
         "[GLIME Industry] Load failed:",
         error
       );
 
+      /*
+       * Even if the system industry catalog
+       * temporarily fails, CUSTOM INDUSTRY
+       * must remain usable.
+       */
+      industries = [];
+
+      renderIndustries([]);
+
       setStatus(
-        "Could not load industries.",
+        "System industries could not be loaded. Custom industry is still available.",
         "error"
       );
 
       showMessage(
-        error.message ||
-        "Please refresh and try again."
+        error &&
+        error.message
+          ? error.message
+          : "You can still create a custom industry."
       );
     }
   }
 
+
+  /* ============================================================
+     NEXT
+     ============================================================ */
+
   function goNext() {
+
     if (!selectedIndustry) {
+
       showMessage(
-        "Please choose an industry first."
+        "Please choose an industry or create a custom one."
       );
 
       return;
     }
 
-    nextBtn.disabled = true;
+    hideMessage();
+
+    nextBtn.disabled =
+      true;
+
     nextBtn.textContent =
       "Opening…";
 
+    /*
+     * Keep the selected industry in the
+     * wizard state.
+     *
+     * Step 3 will consume it.
+     */
     writeWizardState({
-      industry: {
-        id: selectedIndustry.id,
-        name: selectedIndustry.name,
-        slug: selectedIndustry.slug
-      }
+
+      industrySource:
+        selectedSource,
+
+      industry:
+        selectedSource ===
+        "system"
+
+          ? {
+
+              id:
+                selectedIndustry.id,
+
+              name:
+                selectedIndustry.name,
+
+              slug:
+                selectedIndustry.slug ||
+                null
+
+            }
+
+          : {
+
+              id:
+                null,
+
+              name:
+                selectedIndustry.name,
+
+              slug:
+                selectedIndustry.slug ||
+                slugify(
+                  selectedIndustry.name
+                ),
+
+              description:
+                selectedIndustry.description ||
+                null
+
+            }
+
     });
 
+    /*
+     * STEP 3
+     */
     window.location.href =
       "services-business-model.html";
   }
 
-  searchInput?.addEventListener(
-    "input",
-    handleSearch
-  );
 
-  clearSearchBtn?.addEventListener(
-    "click",
-    clearSearch
-  );
+  /* ============================================================
+     EVENTS
+     ============================================================ */
 
-  nextBtn?.addEventListener(
-    "click",
-    goNext
-  );
+  if (searchInput) {
+
+    searchInput.addEventListener(
+      "input",
+      handleSearch
+    );
+  }
+
+
+  if (clearSearchBtn) {
+
+    clearSearchBtn.addEventListener(
+      "click",
+      clearSearch
+    );
+  }
+
+
+  if (customIndustryBtn) {
+
+    customIndustryBtn.addEventListener(
+      "click",
+      openCustomIndustry
+    );
+  }
+
+
+  if (closeCustomBtn) {
+
+    closeCustomBtn.addEventListener(
+      "click",
+      function () {
+
+        closeCustomIndustry();
+
+        /*
+         * Don't delete a previously selected
+         * system industry just because the
+         * custom form was closed.
+         */
+      }
+    );
+  }
+
+
+  if (cancelCustomBtn) {
+
+    cancelCustomBtn.addEventListener(
+      "click",
+      function () {
+
+        closeCustomIndustry();
+
+        /*
+         * If custom was already selected,
+         * cancel means return to the previous
+         * selection state.
+         */
+        if (
+          selectedSource ===
+          "custom"
+        ) {
+
+          clearCustomSelection();
+        }
+
+      }
+    );
+  }
+
+
+  if (useCustomBtn) {
+
+    useCustomBtn.addEventListener(
+      "click",
+      useCustomIndustry
+    );
+  }
+
+
+  if (nextBtn) {
+
+    nextBtn.addEventListener(
+      "click",
+      goNext
+    );
+  }
+
+
+  /* ============================================================
+     BOOT
+     ============================================================ */
 
   loadIndustries();
 
