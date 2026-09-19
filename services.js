@@ -1,7 +1,7 @@
 /* =========================================================
    GLIME — Services / Offers Manager
    FINAL ARCHITECTURE-ALIGNED CORE
-   Version: 1.0
+   Part 1 / 5
    ========================================================= */
 
 (() => {
@@ -12,19 +12,68 @@
      ========================================================= */
 
   const SUPABASE_URL =
-  window.GLIME_SUPABASE_URL ||
-  window.SUPABASE_URL ||
-  "https://ufoulgbiqgjriwapuopc.supabase.co";
+    window.GLIME_SUPABASE_URL ||
+    window.SUPABASE_URL ||
+    "https://ufoulgbiqgjriwapuopc.supabase.co";
 
-const SUPABASE_ANON_KEY =
-  window.GLIME_SUPABASE_ANON_KEY ||
-  window.SUPABASE_ANON_KEY ||
-  "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+  const SUPABASE_ANON_KEY =
+    window.GLIME_SUPABASE_ANON_KEY ||
+    window.SUPABASE_ANON_KEY ||
+    "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
-const sb =
-  window.supabaseClient ||
-  window.sb ||
-  null;
+  /*
+    IMPORTANT:
+    window.supabase = Supabase library namespace.
+    It is NOT the configured Supabase client.
+
+    Only accept an already-created client if it actually
+    exposes the expected Supabase client methods.
+  */
+
+  const existingClient =
+    window.supabaseClient ||
+    window.sb ||
+    null;
+
+  let supabaseClient =
+    existingClient &&
+    typeof existingClient.from === "function" &&
+    existingClient.auth &&
+    typeof existingClient.auth.getUser === "function"
+      ? existingClient
+      : null;
+
+  async function getSupabaseClient() {
+    if (supabaseClient) {
+      return supabaseClient;
+    }
+
+    if (
+      !SUPABASE_URL ||
+      !SUPABASE_ANON_KEY
+    ) {
+      throw new Error(
+        "GLIME Supabase configuration is missing."
+      );
+    }
+
+    if (
+      !window.supabase ||
+      typeof window.supabase.createClient !== "function"
+    ) {
+      throw new Error(
+        "Supabase library is not loaded."
+      );
+    }
+
+    supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+
+    return supabaseClient;
+  }
 
   /* =========================================================
      STATE
@@ -81,17 +130,27 @@ const sb =
       : String(value);
   }
 
-  function setText(id, value) {
+  function setText(
+    id,
+    value
+  ) {
     const el = $(id);
+
     if (el) {
       el.textContent =
         safeText(value);
     }
   }
 
-  function setValue(id, value) {
+  function setValue(
+    id,
+    value
+  ) {
     const el = $(id);
-    if (!el) return;
+
+    if (!el) {
+      return;
+    }
 
     el.value =
       value == null
@@ -101,41 +160,66 @@ const sb =
 
   function getValue(id) {
     const el = $(id);
+
     return el
-      ? String(el.value || "").trim()
+      ? String(
+          el.value || ""
+        ).trim()
       : "";
   }
 
   function getRawValue(id) {
     const el = $(id);
+
     return el
       ? el.value || ""
       : "";
   }
 
-  function show(el, visible = true) {
-    if (!el) return;
-    el.hidden = !visible;
+  function show(
+    el,
+    visible = true
+  ) {
+    if (!el) {
+      return;
+    }
+
+    el.hidden =
+      !visible;
   }
 
-  function setDisabled(id, disabled) {
+  function setDisabled(
+    id,
+    disabled
+  ) {
     const el = $(id);
+
     if (el) {
-      el.disabled = !!disabled;
+      el.disabled =
+        !!disabled;
     }
   }
+
+  /* =========================================================
+     NOTIFICATIONS
+     ========================================================= */
 
   function notify(
     message,
     type = "info"
   ) {
-    const el = $("message");
-    if (!el) return;
+    const el =
+      $("message");
+
+    if (!el) {
+      return;
+    }
 
     el.textContent =
       safeText(message);
 
-    el.dataset.type = type;
+    el.dataset.type =
+      type;
 
     clearTimeout(
       notify._timer
@@ -144,14 +228,16 @@ const sb =
     notify._timer =
       setTimeout(() => {
         if (el) {
-          el.textContent = "";
+          el.textContent =
+            "";
         }
       }, 5000);
   }
 
   function handleError(
     error,
-    fallback = "Something went wrong."
+    fallback =
+      "Something went wrong."
   ) {
     console.error(
       "[GLIME Services]",
@@ -170,6 +256,10 @@ const sb =
     );
   }
 
+  /* =========================================================
+     TEXT / DATA HELPERS
+     ========================================================= */
+
   function slugify(value) {
     return safeText(value)
       .toLowerCase()
@@ -182,7 +272,10 @@ const sb =
         /^-+|-+$/g,
         ""
       )
-      .slice(0, 100);
+      .slice(
+        0,
+        100
+      );
   }
 
   function parseJson(
@@ -201,7 +294,9 @@ const sb =
     }
 
     try {
-      return JSON.parse(value);
+      return JSON.parse(
+        value
+      );
     } catch {
       return fallback;
     }
@@ -219,12 +314,15 @@ const sb =
   function arrayFromText(
     value
   ) {
-    if (!value) return [];
+    if (!value) {
+      return [];
+    }
 
     return String(value)
       .split(/\r?\n/)
-      .map((x) =>
-        x.trim()
+      .map(
+        (item) =>
+          item.trim()
       )
       .filter(Boolean);
   }
@@ -238,10 +336,14 @@ const sb =
       return "";
     }
 
-    return value.join("\n");
+    return value.join(
+      "\n"
+    );
   }
 
-  function escapeHtml(value) {
+  function escapeHtml(
+    value
+  ) {
     return safeText(value)
       .replaceAll(
         "&",
@@ -265,76 +367,53 @@ const sb =
       );
   }
 
-  function localTimezone() {
-    return (
-      Intl.DateTimeFormat()
-        .resolvedOptions()
-        .timeZone ||
-      "Asia/Kolkata"
-    );
-  }
-
   /* =========================================================
-     SUPABASE CLIENT
+     TENANT HELPERS
      ========================================================= */
 
-  async function getSupabaseClient() {
-  if (
-    sb &&
-    typeof sb.from === "function" &&
-    sb.auth &&
-    typeof sb.auth.getUser === "function"
-  ) {
-    return sb;
-  }
+  function tenantConfigId() {
+    const id =
+      state.client?.id;
 
-  if (
-    SUPABASE_URL &&
-    SUPABASE_ANON_KEY &&
-    window.supabase?.createClient
-  ) {
-    return window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY
-    );
-  }
-
-  throw new Error(
-    "Supabase client is not available."
-  );
-  }
-
-  async function getAuthenticatedUser() {
-    const client =
-      await getSupabaseClient();
-
-    const {
-      data,
-      error
-    } =
-      await client.auth.getUser();
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data?.user) {
+    if (
+      id === undefined ||
+      id === null ||
+      id === ""
+    ) {
       throw new Error(
-        "Please sign in first."
+        "Client configuration is not loaded."
       );
     }
 
-    return data.user;
+    return id;
+  }
+
+  function tenantOfferId() {
+    const id =
+      state.client?.client_id;
+
+    if (
+      id === undefined ||
+      id === null ||
+      id === ""
+    ) {
+      throw new Error(
+        "Client ID is not loaded."
+      );
+    }
+
+    return String(id);
   }
 
   /* =========================================================
-     DATABASE HELPERS
+     SAFE SUPABASE READ
      ========================================================= */
 
   async function selectRows(
     table,
     columns = "*",
-    filters = {}
+    filters = {},
+    options = {}
   ) {
     const client =
       await getSupabaseClient();
@@ -344,958 +423,62 @@ const sb =
         .from(table)
         .select(columns);
 
-    Object.entries(
-      filters
-    ).forEach(
-      ([key, value]) => {
-        if (
-          value !== undefined &&
-          value !== null
-        ) {
-          query = query.eq(
+    for (
+      const [
+        key,
+        value
+      ] of Object.entries(
+        filters || {}
+      )
+    ) {
+      if (
+        value === null
+      ) {
+        query =
+          query.is(
+            key,
+            null
+          );
+      } else if (
+        Array.isArray(value)
+      ) {
+        query =
+          query.in(
             key,
             value
           );
-        }
+      } else {
+        query =
+          query.eq(
+            key,
+            value
+          );
       }
-    );
-
-    const {
-      data,
-      error
-    } = await query;
-
-    if (error) {
-      throw error;
     }
 
-    return data || [];
-  }
-
-  async function insertRow(
-    table,
-    payload
-  ) {
-    const client =
-      await getSupabaseClient();
-
-    const {
-      data,
-      error
-    } =
-      await client
-        .from(table)
-        .insert(payload)
-        .select()
-        .single();
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  }
-
-  /* =========================================================
-     CLIENT / TENANT
-     ========================================================= */
-
-  async function loadClient() {
-    const client =
-      await getSupabaseClient();
-
-    const user =
-      await getAuthenticatedUser();
-
-    const {
-      data,
-      error
-    } =
-      await client
-        .from("client_data")
-        .select("*")
-        .eq(
-          "auth_user_id",
-          user.id
-        )
-        .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data) {
-      throw new Error(
-        "No GLIME client profile is connected to this account."
-      );
-    }
-
-    state.client = data;
-
-    /*
-      IMPORTANT:
-
-      client_data.id
-        -> bigint
-        -> used by new architecture tables
-
-      client_data.client_id
-        -> text
-        -> used by legacy/current offer tables
-
-      These MUST NOT be mixed.
-    */
-
-    setText(
-      "clientBadge",
-      data.business_name ||
-        data.company_name ||
-        data.client_name ||
-        data.name ||
-        data.project_name ||
-        data.client_id ||
-        `Client ${data.id}`
-    );
-
-    return data;
-  }
-
-  function tenantOfferId() {
     if (
-      !state.client?.client_id
+      options.order
     ) {
-      throw new Error(
-        "Client tenant identifier is missing."
-      );
-    }
-
-    return state.client.client_id;
-  }
-
-  function tenantConfigId() {
-    if (
-      !state.client?.id
-    ) {
-      throw new Error(
-        "Client configuration identifier is missing."
-      );
-    }
-
-    return state.client.id;
-  }
-
-  /* =========================================================
-     INDUSTRIES
-     ========================================================= */
-
-  async function loadIndustries() {
-    const rows =
-      await selectRows(
-        "industries",
-        "id,name,slug,description,is_active",
-        {
-          is_active: true
-        }
-      );
-
-    state.industries =
-      rows.sort(
-        (a, b) =>
-          safeText(a.name)
-            .localeCompare(
-              safeText(b.name)
-            )
-      );
-
-    const select =
-      $("industrySelect");
-
-    if (!select) return;
-
-    const current =
-      select.value;
-
-    select.innerHTML =
-      `<option value="">Select industry</option>` +
-      state.industries
-        .map(
-          (item) =>
-            `<option value="${escapeHtml(
-              item.id
-            )}">
-              ${escapeHtml(
-                item.name
-              )}
-            </option>`
-        )
-        .join("");
-
-    if (current) {
-      select.value =
-        current;
-    }
-  }
-
-  /* =========================================================
-     BUSINESS MODELS
-     ========================================================= */
-
-  async function loadCustomBusinessModels() {
-    if (
-      !state.client?.id
-    ) {
-      return;
-    }
-
-    state.customBusinessModels =
-      await selectRows(
-        "client_custom_business_models",
-        "*",
-        {
-          client_id:
-            tenantConfigId()
-        }
-      );
-  }
-
-  async function loadBusinessModels(
-    industryId = null
-  ) {
-    const rows =
-      await selectRows(
-        "business_models",
-        "id,name,slug,industry_id,description,is_active",
-        {
-          is_active: true
-        }
-      );
-
-    state.businessModels =
-      rows;
-
-    await loadCustomBusinessModels();
-
-    const select =
-      $("businessModelSelect");
-
-    if (!select) return;
-
-    const current =
-      select.value;
-
-    const filtered =
-      industryId
-        ? rows.filter(
-            (item) =>
-              !item.industry_id ||
-              String(
-                item.industry_id
-              ) ===
-                String(
-                  industryId
-                )
-          )
-        : rows;
-
-    const custom =
-      state.customBusinessModels
-        .filter(
-          (item) =>
-            item.status !==
-            "archived"
-        )
-        .map(
-          (item) => ({
-            ...item,
-            __custom: true
-          })
+      query =
+        query.order(
+          options.order.column,
+          {
+            ascending:
+              options.order
+                .ascending !==
+              false
+          }
         );
-
-    const all = [
-      ...filtered,
-      ...custom
-    ];
-
-    all.sort(
-      (a, b) =>
-        safeText(a.name)
-          .localeCompare(
-            safeText(b.name)
-          )
-    );
-
-    select.innerHTML =
-      `<option value="">Select business model</option>` +
-      all
-        .map((item) => {
-          const value =
-            item.__custom
-              ? `custom:${item.id}`
-              : item.id;
-
-          const prefix =
-            item.__custom
-              ? "Custom — "
-              : "";
-
-          return `
-            <option value="${escapeHtml(
-              value
-            )}">
-              ${escapeHtml(
-                prefix +
-                  item.name
-              )}
-            </option>
-          `;
-        })
-        .join("");
-
-    if (current) {
-      select.value =
-        current;
     }
-  }
-
-  /* =========================================================
-     CLIENT SETUP
-     ========================================================= */
-
-  async function loadClientSetup() {
-    if (
-      !state.client?.id
-    ) {
-      return;
-    }
-
-    const rows =
-      await selectRows(
-        "client_industry_configurations",
-        "*",
-        {
-          client_id:
-            tenantConfigId()
-        }
-      );
-
-    const current =
-      rows.find(
-        (item) =>
-          item.status ===
-          "active"
-      ) ||
-      rows[0];
-
-    if (current) {
-      setValue(
-        "industrySelect",
-        current.industry_id ||
-          ""
-      );
-
-      await loadBusinessModels(
-        current.industry_id
-      );
-
-      /*
-        Custom business model belongs to the
-        client config layer. Resolve it separately.
-      */
-
-      if (
-        current.id
-      ) {
-        const custom =
-          state.customBusinessModels.find(
-            (item) =>
-              String(
-                item.industry_configuration_id
-              ) ===
-              String(
-                current.id
-              )
-          );
-
-        if (custom) {
-          setValue(
-            "businessModelSelect",
-            `custom:${custom.id}`
-          );
-
-          setValue(
-            "customBusinessModel",
-            custom.name ||
-              ""
-          );
-        } else if (
-          current.business_model_id
-        ) {
-          setValue(
-            "businessModelSelect",
-            current.business_model_id
-          );
-        }
-      }
-    } else {
-      await loadBusinessModels();
-    }
-
-    updateSetupState();
-  }
-
-  async function saveSetup() {
-    if (
-      !state.client?.id
-    ) {
-      throw new Error(
-        "Client profile is not loaded."
-      );
-    }
-
-    const industryId =
-      getValue(
-        "industrySelect"
-      );
-
-    const modelValue =
-      getValue(
-        "businessModelSelect"
-      );
-
-    const customName =
-      getValue(
-        "customBusinessModel"
-      );
-
-    if (!industryId) {
-      throw new Error(
-        "Please select an industry."
-      );
-    }
-
-    if (!modelValue) {
-      throw new Error(
-        "Please select a business model."
-      );
-    }
-
-    const client =
-      await getSupabaseClient();
-
-    const existing =
-      await selectRows(
-        "client_industry_configurations",
-        "*",
-        {
-          client_id:
-            tenantConfigId()
-        }
-      );
-
-    let configuration =
-      existing.find(
-        (item) =>
-          item.status ===
-          "active"
-      ) ||
-      existing[0] ||
-      null;
-
-    let businessModelId =
-      null;
-
-    let customBusinessModelId =
-      null;
 
     if (
-      modelValue.startsWith(
-        "custom:"
+      Number.isInteger(
+        options.limit
       )
     ) {
-      customBusinessModelId =
-        modelValue.split(
-          ":"
-        )[1] || null;
-
-      const custom =
-        state.customBusinessModels.find(
-          (item) =>
-            String(
-              item.id
-            ) ===
-            String(
-              customBusinessModelId
-            )
-        );
-
-      if (
-        custom &&
-        customName &&
-        customName !==
-          custom.name
-      ) {
-        const {
-          error
-        } =
-          await client
-            .from(
-              "client_custom_business_models"
-            )
-            .update({
-              name:
-                customName,
-              slug:
-                slugify(
-                  customName
-                ),
-              updated_at:
-                new Date().toISOString()
-            })
-            .eq(
-              "id",
-              custom.id
-            )
-            .eq(
-              "client_id",
-              tenantConfigId()
-            );
-
-        if (error) {
-          throw error;
-        }
-      }
-    } else {
-      businessModelId =
-        modelValue;
-    }
-
-    const payload = {
-  client_id:
-    tenantConfigId(),
-
-  industry_id:
-    industryId,
-
-  business_model_id:
-    businessModelId,
-
-    status:
-      "active",
-
-    selection_source:
-      "services-ui",
-
-    updated_at:
-      new Date().toISOString()
-   };
-
-    if (configuration) {
-      const {
-        data,
-        error
-      } =
-        await client
-          .from(
-            "client_industry_configurations"
-          )
-          .update(
-            payload
-          )
-          .eq(
-            "id",
-            configuration.id
-          )
-          .eq(
-            "client_id",
-            tenantConfigId()
-          )
-          .select()
-          .single();
-
-      if (error) {
-        throw error;
-      }
-
-      configuration =
-        data;
-    } else {
-      const {
-        data,
-        error
-      } =
-        await client
-          .from(
-            "client_industry_configurations"
-          )
-          .insert(
-            payload
-          )
-          .select()
-          .single();
-
-      if (error) {
-        throw error;
-      }
-
-      configuration =
-        data;
-    }
-
-    /*
-      If a custom model is selected but doesn't exist yet,
-      create it for this tenant only.
-    */
-
-    if (
-      modelValue.startsWith(
-        "custom:"
-      ) &&
-      customBusinessModelId
-    ) {
-      await client
-        .from(
-          "client_custom_business_models"
-        )
-        .update({
-          industry_configuration_id:
-            configuration.id,
-          updated_at:
-            new Date().toISOString()
-        })
-        .eq(
-          "id",
-          customBusinessModelId
-        )
-        .eq(
-          "client_id",
-          tenantConfigId()
-        );
-    }
-
-    state.setupSaved =
-      true;
-
-    updateSetupState();
-
-    await loadTemplates();
-
-    notify(
-      "Business setup saved successfully.",
-      "success"
-    );
-  }
-
-  function updateSetupState() {
-    const complete =
-      !!getValue(
-        "industrySelect"
-      ) &&
-      !!getValue(
-        "businessModelSelect"
-      );
-
-    state.setupSaved =
-      complete;
-
-    const el =
-      $("setupState");
-
-    if (!el) return;
-
-    el.textContent =
-      complete
-        ? "Business setup complete"
-        : "Business setup required";
-
-    el.dataset.state =
-      complete
-        ? "complete"
-        : "incomplete";
-  }
-
-  /* =========================================================
-     TEMPLATES
-     ========================================================= */
-
-  async function loadTemplates() {
-    const industryId =
-      getValue(
-        "industrySelect"
-      );
-
-    if (!industryId) {
-      state.templates =
-        [];
-      return;
-    }
-
-    state.templates =
-      await selectRows(
-        "industry_templates",
-        "*",
-        {
-          industry_id:
-            industryId
-        }
-      );
-  }
-
-  /* =========================================================
-     CATEGORIES
-     ========================================================= */
-
-  async function loadCategories() {
-    if (
-      !state.client?.client_id
-    ) {
-      return;
-    }
-
-    const client =
-      await getSupabaseClient();
-
-    const {
-      data,
-      error
-    } =
-      await client
-        .from(
-          "offer_categories"
-        )
-        .select("*")
-        .eq(
-          "client_id",
-          tenantOfferId()
-        )
-        .eq(
-          "is_active",
-          true
-        )
-        .order(
-          "sort_order",
-          {
-            ascending: true
-          }
-        })
-        .order(
-          "name",
-          {
-            ascending: true
-          }
-        );
-
-    if (error) {
-      console.warn(
-        "[GLIME] Category load failed:",
-        error
-      );
-
-      state.categories =
-        [];
-
-      renderCategories();
-
-      return;
-    }
-
-    state.categories =
-      data || [];
-
-    renderCategories();
-    populateCategorySelect();
-  }
-
-  function renderCategories() {
-    const list =
-      $("categoryList");
-
-    if (!list) return;
-
-    if (
-      !state.categories.length
-    ) {
-      list.innerHTML =
-        `<div class="empty-state">
-          No categories yet.
-        </div>`;
-      return;
-    }
-
-    list.innerHTML =
-      state.categories
-        .map(
-          (category) => `
-            <button
-              type="button"
-              class="category-item"
-              data-category-id="${escapeHtml(
-                category.id
-              )}"
-            >
-              ${escapeHtml(
-                category.name ||
-                  "Unnamed"
-              )}
-            </button>
-          `
-        )
-        .join("");
-
-    qsa(
-      ".category-item",
-      list
-    ).forEach(
-      (button) => {
-        button.addEventListener(
-          "click",
-          async () => {
-            try {
-              await loadOffers(
-                button.dataset
-                  .categoryId
-              );
-            } catch (
-              error
-            ) {
-              handleError(
-                error
-              );
-            }
-          }
-        );
-      }
-    );
-  }
-
-  function populateCategorySelect() {
-    const select =
-      $("offerCategory");
-
-    if (!select) return;
-
-    const current =
-      select.value;
-
-    select.innerHTML =
-      `<option value="">No category</option>` +
-      state.categories
-        .map(
-          (category) => `
-            <option value="${escapeHtml(
-              category.id
-            )}">
-              ${escapeHtml(
-                category.name ||
-                  "Unnamed"
-              )}
-            </option>
-          `
-        )
-        .join("");
-
-    if (current) {
-      select.value =
-        current;
-    }
-  }
-
-  async function createCategory() {
-    const name =
-      window.prompt(
-        "Enter category name:"
-      );
-
-    if (
-      !name ||
-      !name.trim()
-    ) {
-      return;
-    }
-
-    const cleanName =
-      name.trim();
-
-    const category =
-      await insertRow(
-        "offer_categories",
-        {
-          client_id:
-            tenantOfferId(),
-
-          name:
-            cleanName,
-
-          slug:
-            slugify(
-              cleanName
-            ),
-
-          is_active:
-            true,
-
-          sort_order:
-            state.categories
-              .length
-        }
-      );
-
-    state.categories.push(
-      category
-    );
-
-    renderCategories();
-    populateCategorySelect();
-
-    setValue(
-      "offerCategory",
-      category.id
-    );
-
-    notify(
-      "Category created.",
-      "success"
-    );
-  }
-
-  /* =========================================================
-     OFFERS
-     ========================================================= */
-
-  async function loadOffers(
-    categoryId = null
-  ) {
-    if (
-      !state.client?.client_id
-    ) {
-      return;
-    }
-
-    const client =
-      await getSupabaseClient();
-
-    let query =
-      client
-        .from("offers")
-        .select(`
-          *,
-          offer_versions:offer_versions(*)
-        `)
-        .eq(
-          "client_id",
-          tenantOfferId()
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
-
-    if (categoryId) {
       query =
-        query.eq(
-          "category_id",
-          categoryId
+        query.limit(
+          options.limit
         );
     }
 
@@ -1309,574 +492,1961 @@ const sb =
       throw error;
     }
 
-    state.offers =
-      data || [];
-
-    renderOffers();
-
-    setText(
-      "offerCount",
-      String(
-        state.offers.length
-      )
-    );
+    return data || [];
   }
 
-  function findCurrentVersion(
-    offer
-  ) {
-    const versions =
-      Array.isArray(
-        offer?.offer_versions
-      )
-        ? offer.offer_versions
-        : [];
+  /* =========================================================
+     SESSION / AUTH
+     ========================================================= */
 
-    if (
-      offer?.current_version_id
-    ) {
-      const exact =
-        versions.find(
-          (version) =>
-            String(
-              version.id
-            ) ===
-            String(
-              offer.current_version_id
-            )
-        );
+  async function getCurrentUser() {
+    const client =
+      await getSupabaseClient();
 
-      if (exact) {
-        return exact;
-      }
+    const {
+      data,
+      error
+    } =
+      await client.auth.getUser();
+
+    if (error) {
+      throw error;
     }
 
-    return (
-      versions.find(
-        (version) =>
-          version.status ===
-          "draft"
-      ) ||
-      versions.find(
-        (version) =>
-          version.status ===
-          "review"
-      ) ||
-      versions.find(
-        (version) =>
-          version.status ===
-          "approved"
-      ) ||
-      versions.find(
-        (version) =>
-          version.status ===
-          "published"
-      ) ||
-      versions[0] ||
-      null
+    return data?.user ||
+      null;
+  }
+
+  /* =========================================================
+     CURRENT USER → CLIENT PROFILE
+     ========================================================= */
+
+  async function loadClientProfile() {
+    const user =
+      await getCurrentUser();
+
+    if (!user) {
+      throw new Error(
+        "Please sign in to continue."
+      );
+    }
+
+    const rows =
+      await selectRows(
+        "client_data",
+        "*",
+        {
+          auth_user_id:
+            user.id
+        },
+        {
+          limit: 1
+        }
+      );
+
+    if (
+      !rows.length
+    ) {
+      throw new Error(
+        "No GLIME client profile is linked to this account."
+      );
+    }
+
+    state.client =
+      rows[0];
+
+    setText(
+      "clientBadge",
+      state.client.client_id
+        ? `Client ${state.client.client_id}`
+        : "Client"
+    );
+
+    return state.client;
+  }
+
+  /* =========================================================
+     COMMON ERROR-SAFE EVENT WRAPPER
+     ========================================================= */
+
+  function safeAsync(
+    handler,
+    fallback
+  ) {
+    return async function (
+      event
+    ) {
+      try {
+        if (event) {
+          event.preventDefault();
+        }
+
+        await handler(
+          event
+        );
+      } catch (
+        error
+      ) {
+        handleError(
+          error,
+          fallback
+        );
+      }
+    };
+  }
+
+  /* =========================================================
+     FORM JSON HELPERS
+     ========================================================= */
+
+  function normalizeJsonArray(
+    value
+  ) {
+    if (
+      Array.isArray(value)
+    ) {
+      return value;
+    }
+
+    return arrayFromText(
+      value
     );
   }
 
-  function renderOffers() {
-    const list =
-      $("offerList");
+  function normalizeJsonObject(
+    value
+  ) {
+    if (
+      value &&
+      typeof value ===
+        "object" &&
+      !Array.isArray(
+        value
+      )
+    ) {
+      return value;
+    }
 
-    if (!list) return;
+    return {};
+  }
+
+  /* =========================================================
+     PART 1 END
+     ========================================================= */
+
+  window.GLIME_SERVICES_STATE =
+    state;
+
+  window.GLIME_GET_SUPABASE_CLIENT =
+    getSupabaseClient;
+
+     /* =========================================================
+     CLIENT SETUP
+     Industry → Business Model → Custom Business Model
+     → Template Configuration
+     ========================================================= */
+
+  async function loadClientSetup() {
+    const client = await getSupabaseClient();
+    const clientId = tenantConfigId();
+
+    if (!clientId) {
+      throw new Error("Client ID is not available.");
+    }
+
+    const { data, error } = await client
+      .from("client_industry_configurations")
+      .select(`
+        id,
+        client_id,
+        industry_id,
+        custom_industry_name,
+        custom_industry_description,
+        business_model_id,
+        selection_source,
+        status,
+        metadata,
+        created_at,
+        updated_at
+      `)
+      .eq("client_id", clientId)
+      .in("status", ["draft", "active"])
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      state.setupSaved = false;
+      return null;
+    }
+
+    state.setupSaved = true;
+    state.currentIndustryConfiguration = data;
+
+    return data;
+  }
+
+
+  /* =========================================================
+     LOAD INDUSTRIES
+     ========================================================= */
+
+  async function loadIndustries() {
+    const client = await getSupabaseClient();
+
+    const { data, error } = await client
+      .from("industries")
+      .select(`
+        id,
+        slug,
+        name,
+        description,
+        status,
+        is_system,
+        metadata
+      `)
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    state.industries = data || [];
+
+    const select = $("industrySelect");
+
+    if (!select) {
+      return state.industries;
+    }
+
+    select.innerHTML = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select industry";
+    select.appendChild(placeholder);
+
+    state.industries.forEach((industry) => {
+      const option = document.createElement("option");
+
+      option.value = industry.id;
+      option.textContent = industry.name;
+
+      select.appendChild(option);
+    });
+
+    return state.industries;
+  }
+
+
+  /* =========================================================
+     LOAD BUSINESS MODELS
+     ========================================================= */
+
+  async function loadBusinessModels(industryId) {
+    const client = await getSupabaseClient();
+
+    state.businessModels = [];
+    state.customBusinessModels = [];
+
+    const businessModelSelect = $("businessModelSelect");
+
+    if (businessModelSelect) {
+      businessModelSelect.innerHTML = "";
+
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Select business model";
+      businessModelSelect.appendChild(placeholder);
+    }
+
+    if (!industryId) {
+      return [];
+    }
+
+    const { data, error } = await client
+      .from("business_models")
+      .select(`
+        id,
+        industry_id,
+        slug,
+        name,
+        description,
+        status,
+        is_system,
+        metadata
+      `)
+      .eq("industry_id", industryId)
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    state.businessModels = data || [];
+
+    if (businessModelSelect) {
+      state.businessModels.forEach((model) => {
+        const option = document.createElement("option");
+
+        option.value = model.id;
+        option.textContent = model.name;
+
+        businessModelSelect.appendChild(option);
+      });
+    }
+
+    return state.businessModels;
+  }
+
+
+  /* =========================================================
+     LOAD CLIENT CUSTOM BUSINESS MODELS
+     ========================================================= */
+
+  async function loadCustomBusinessModels(
+    industryConfigurationId = null
+  ) {
+    const client = await getSupabaseClient();
+    const clientId = tenantConfigId();
+
+    if (!clientId) {
+      return [];
+    }
+
+    let query = client
+      .from("client_custom_business_models")
+      .select(`
+        id,
+        client_id,
+        industry_configuration_id,
+        base_business_model_id,
+        name,
+        slug,
+        description,
+        status,
+        is_custom,
+        metadata,
+        created_at,
+        updated_at
+      `)
+      .eq("client_id", clientId)
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
+    if (industryConfigurationId) {
+      query = query.or(
+        `industry_configuration_id.eq.${industryConfigurationId},industry_configuration_id.is.null`
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    state.customBusinessModels = data || [];
+
+    return state.customBusinessModels;
+  }
+
+
+  /* =========================================================
+     LOAD TEMPLATES
+     ========================================================= */
+
+  async function loadTemplates(industryId, businessModelId) {
+    const client = await getSupabaseClient();
+
+    state.templates = [];
+
+    if (!industryId || !businessModelId) {
+      return [];
+    }
+
+    const { data, error } = await client
+      .from("industry_templates")
+      .select(`
+        id,
+        industry_id,
+        business_model_id,
+        slug,
+        name,
+        description,
+        status,
+        is_system,
+        version,
+        metadata
+      `)
+      .eq("industry_id", industryId)
+      .eq("business_model_id", businessModelId)
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    state.templates = data || [];
+
+    return state.templates;
+  }
+
+
+  /* =========================================================
+     SAVE / UPDATE INDUSTRY CONFIGURATION
+     ========================================================= */
+
+  async function saveIndustryConfiguration({
+    industryId = null,
+    customIndustryName = null,
+    customIndustryDescription = null,
+    businessModelId = null,
+    selectionSource = "system"
+  } = {}) {
+
+    const client = await getSupabaseClient();
+    const clientId = tenantConfigId();
+
+    if (!clientId) {
+      throw new Error("Client ID is missing.");
+    }
+
+    /*
+      Backend contract:
+      selection_source MUST be:
+      system | custom | ai
+
+      Never use values such as:
+      services-ui
+      manual
+      frontend
+      ui
+    */
+
+    const allowedSources = ["system", "custom", "ai"];
+
+    if (!allowedSources.includes(selectionSource)) {
+      selectionSource = "system";
+    }
 
     if (
-      !state.offers.length
+      selectionSource === "system" &&
+      !industryId
     ) {
-      list.innerHTML =
-        `<div class="empty-state">
-          No offers yet. Create your first service or product.
-        </div>`;
+      throw new Error(
+        "A system industry must have an industry ID."
+      );
+    }
+
+    if (
+      (selectionSource === "custom" ||
+        selectionSource === "ai") &&
+      !String(customIndustryName || "").trim()
+    ) {
+      throw new Error(
+        "Custom or AI industry requires an industry name."
+      );
+    }
+
+    const payload = {
+      client_id: clientId,
+      industry_id: industryId || null,
+      custom_industry_name:
+        customIndustryName
+          ? String(customIndustryName).trim()
+          : null,
+      custom_industry_description:
+        customIndustryDescription
+          ? String(customIndustryDescription).trim()
+          : null,
+      business_model_id: businessModelId || null,
+      selection_source: selectionSource,
+      status: "active",
+      metadata: {
+        source: "services-ui",
+        updated_by: "client"
+      }
+    };
+
+    const existing = await loadClientSetup();
+
+    let result;
+
+    if (existing?.id) {
+      result = await client
+        .from("client_industry_configurations")
+        .update(payload)
+        .eq("id", existing.id)
+        .eq("client_id", clientId)
+        .select()
+        .single();
+    } else {
+      result = await client
+        .from("client_industry_configurations")
+        .insert(payload)
+        .select()
+        .single();
+    }
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    state.currentIndustryConfiguration = result.data;
+    state.setupSaved = true;
+
+    return result.data;
+  }
+
+
+  /* =========================================================
+     SAVE CUSTOM BUSINESS MODEL
+     ========================================================= */
+
+  async function saveCustomBusinessModel({
+    name,
+    description = "",
+    baseBusinessModelId = null,
+    industryConfigurationId = null
+  } = {}) {
+
+    const client = await getSupabaseClient();
+    const clientId = tenantConfigId();
+
+    const cleanName = String(name || "").trim();
+
+    if (!clientId) {
+      throw new Error("Client ID is missing.");
+    }
+
+    if (!cleanName) {
+      throw new Error(
+        "Custom business model name is required."
+      );
+    }
+
+    const slug = cleanName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80);
+
+    if (!slug) {
+      throw new Error(
+        "Could not create a valid business model slug."
+      );
+    }
+
+    const payload = {
+      client_id: clientId,
+      industry_configuration_id:
+        industryConfigurationId || null,
+      base_business_model_id:
+        baseBusinessModelId || null,
+      name: cleanName,
+      slug,
+      description:
+        String(description || "").trim() || null,
+      status: "active",
+      is_custom: true,
+      metadata: {
+        source: "services-ui"
+      }
+    };
+
+    const { data, error } = await client
+      .from("client_custom_business_models")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      /*
+        If the slug already exists, generate a stable suffix.
+      */
+
+      if (error.code === "23505") {
+        const retryPayload = {
+          ...payload,
+          slug: `${slug}-${Date.now().toString(36)}`
+        };
+
+        const retry = await client
+          .from("client_custom_business_models")
+          .insert(retryPayload)
+          .select()
+          .single();
+
+        if (retry.error) {
+          throw retry.error;
+        }
+
+        state.customBusinessModels = [
+          ...(state.customBusinessModels || []),
+          retry.data
+        ];
+
+        return retry.data;
+      }
+
+      throw error;
+    }
+
+    state.customBusinessModels = [
+      ...(state.customBusinessModels || []),
+      data
+    ];
+
+    return data;
+  }
+
+
+  /* =========================================================
+     SAVE TEMPLATE CONFIGURATION
+     ========================================================= */
+
+  async function saveTemplateConfiguration({
+    industryConfigurationId,
+    businessModelId = null,
+    customBusinessModelId = null,
+    templateId = null,
+    templateName = null,
+    config = {},
+    metadata = {}
+  } = {}) {
+
+    const client = await getSupabaseClient();
+    const clientId = tenantConfigId();
+
+    if (!clientId) {
+      throw new Error("Client ID is missing.");
+    }
+
+    if (
+      !templateId &&
+      !String(templateName || "").trim()
+    ) {
+      throw new Error(
+        "A template ID or template name is required."
+      );
+    }
+
+    const payload = {
+      client_id: clientId,
+      industry_configuration_id:
+        industryConfigurationId || null,
+      business_model_id:
+        businessModelId || null,
+      custom_business_model_id:
+        customBusinessModelId || null,
+      template_id:
+        templateId || null,
+      template_name:
+        templateName
+          ? String(templateName).trim()
+          : null,
+      status: "active",
+      config: config || {},
+      metadata: metadata || {}
+    };
+
+    /*
+      There must be only one active template configuration
+      for the client.
+
+      Archive previous active configurations first.
+    */
+
+    const archiveResult = await client
+      .from("client_template_configurations")
+      .update({
+        status: "archived"
+      })
+      .eq("client_id", clientId)
+      .eq("status", "active");
+
+    if (archiveResult.error) {
+      throw archiveResult.error;
+    }
+
+    const { data, error } = await client
+      .from("client_template_configurations")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    state.currentTemplateConfiguration = data;
+
+    return data;
+  }
+
+
+  /* =========================================================
+     READ ACTIVE TEMPLATE CONFIGURATION
+     ========================================================= */
+
+  async function loadTemplateConfiguration() {
+    const client = await getSupabaseClient();
+    const clientId = tenantConfigId();
+
+    if (!clientId) {
+      return null;
+    }
+
+    const { data, error } = await client
+      .from("client_template_configurations")
+      .select(`
+        id,
+        client_id,
+        industry_configuration_id,
+        business_model_id,
+        custom_business_model_id,
+        template_id,
+        template_name,
+        status,
+        config,
+        metadata,
+        created_at,
+        updated_at
+      `)
+      .eq("client_id", clientId)
+      .eq("status", "active")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    state.currentTemplateConfiguration = data || null;
+
+    return data || null;
+  }
+
+
+  /* =========================================================
+     UI SETUP STATE
+     ========================================================= */
+
+  function setSetupMessage(message, type = "info") {
+    const element = $("message");
+
+    if (!element) {
       return;
     }
 
-    list.innerHTML =
-      state.offers
-        .map((offer) => {
-          const version =
-            findCurrentVersion(
-              offer
-            );
+    element.textContent = message || "";
 
-          const title =
-            version?.title ||
-            offer.name ||
-            "Untitled Offer";
+    element.dataset.type = type;
 
-          const status =
-            version?.status ||
-            offer.status ||
-            "draft";
+    element.classList.remove(
+      "success",
+      "error",
+      "warning",
+      "info"
+    );
 
-          return `
-            <button
-              type="button"
-              class="offer-item"
-              data-offer-id="${escapeHtml(
-                offer.id
-              )}"
-            >
-              <span class="offer-item-title">
-                ${escapeHtml(
-                  title
-                )}
-              </span>
+    element.classList.add(type);
+  }
 
-              <span class="offer-item-meta">
-                ${escapeHtml(
-                  offer.offer_type ||
-                    "service"
-                )}
-                ·
-                ${escapeHtml(
-                  status
-                )}
-              </span>
-            </button>
-          `;
-        })
-        .join("");
 
-    qsa(
-      ".offer-item",
-      list
-    ).forEach(
-      (button) => {
-        button.addEventListener(
-          "click",
-          async () => {
-            try {
-              await openOffer(
-                button.dataset
-                  .offerId
-              );
-            } catch (
-              error
-            ) {
-              handleError(
-                error,
-                "Unable to open offer."
-              );
-            }
-          }
-        );
+  function setSetupState(text, type = "info") {
+    const element = $("setupState");
+
+    if (!element) {
+      return;
+    }
+
+    element.textContent = text || "";
+
+    element.dataset.type = type;
+  }
+
+
+  /* =========================================================
+     INDUSTRY CHANGE
+     ========================================================= */
+
+  async function handleIndustryChange() {
+    const select = $("industrySelect");
+
+    if (!select) {
+      return;
+    }
+
+    const industryId = select.value || null;
+
+    if (!industryId) {
+      state.businessModels = [];
+
+      const businessModelSelect =
+        $("businessModelSelect");
+
+      if (businessModelSelect) {
+        businessModelSelect.innerHTML = `
+          <option value="">Select business model</option>
+        `;
       }
-    );
-  }
 
-  /* =========================================================
-     CREATE NEW OFFER
-     ========================================================= */
-
-  async function createNewOffer() {
-    if (
-      !state.client?.client_id
-    ) {
-      throw new Error(
-        "Client profile is not loaded."
-      );
+      return;
     }
 
-    const client =
-      await getSupabaseClient();
-
-    const name =
-      "New Offer";
-
-    const uniqueSlug =
-      `${slugify(
-        name
-      )}-${Date.now()}`;
-
-    const {
-      data: offer,
-      error: offerError
-    } =
-      await client
-        .from("offers")
-        .insert({
-          client_id:
-            tenantOfferId(),
-
-          name,
-
-          slug:
-            uniqueSlug,
-
-          offer_type:
-            "service",
-
-          status:
-            "draft"
-        })
-        .select()
-        .single();
-
-    if (offerError) {
-      throw offerError;
-    }
-
-    const {
-      data: version,
-      error: versionError
-    } =
-      await client
-        .from(
-          "offer_versions"
-        )
-        .insert({
-          offer_id:
-            offer.id,
-
-          version_number:
-            1,
-
-          status:
-            "draft",
-
-          title:
-            name,
-
-          description:
-            "",
-
-          sales_talking_points:
-            [],
-
-          allowed_claims:
-            [],
-
-          restrictions:
-            [],
-
-          customer_eligibility:
-            [],
-
-          metadata:
-            {}
-        })
-        .select()
-        .single();
-
-    if (versionError) {
-      await client
-        .from("offers")
-        .delete()
-        .eq(
-          "id",
-          offer.id
-        )
-        .eq(
-          "client_id",
-          tenantOfferId()
-        );
-
-      throw versionError;
-    }
-
-    const {
-      error:
-        currentError
-    } =
-      await client
-        .from("offers")
-        .update({
-          current_version_id:
-            version.id,
-
-          updated_at:
-            new Date().toISOString()
-        })
-        .eq(
-          "id",
-          offer.id
-        )
-        .eq(
-          "client_id",
-          tenantOfferId()
-        );
-
-    if (currentError) {
-      throw currentError;
-    }
-
-    state.currentOffer =
-      offer;
-
-    state.currentVersion =
-      version;
-
-    state.currentBinding =
-      null;
-
-    state.sourceVersion =
-      null;
-
-    resetForm();
-
-    setValue(
-      "offerName",
-      name
+    setSetupState(
+      "Loading business models…",
+      "info"
     );
 
-    await ensureOfferBinding(
-      offer.id,
-      version.id
-    );
-
-    showEditor();
-
-    await loadOffers();
-
-    updateVersionActions();
-
-    notify(
-      "Draft offer created.",
-      "success"
-    );
-  }
-
-  /* =========================================================
-     OPEN OFFER
-     ========================================================= */
-
-  async function openOffer(
-    offerId
-  ) {
-    const client =
-      await getSupabaseClient();
-
-    const {
-      data: offer,
-      error: offerError
-    } =
-      await client
-        .from("offers")
-        .select("*")
-        .eq(
-          "id",
-          offerId
-        )
-        .eq(
-          "client_id",
-          tenantOfferId()
-        )
-        .single();
-
-    if (offerError) {
-      throw offerError;
-    }
-
-    const {
-      data: versions,
-      error: versionError
-    } =
-      await client
-        .from(
-          "offer_versions"
-        )
-        .select("*")
-        .eq(
-          "offer_id",
-          offer.id
-        )
-        .order(
-          "version_number",
-          {
-            ascending: false
-          }
-        );
-
-    if (versionError) {
-      throw versionError;
-    }
-
-    const version =
-      findCurrentVersion({
-        ...offer,
-        offer_versions:
-          versions || []
-      });
-
-    if (!version) {
-      throw new Error(
-        "No offer version found."
-      );
-    }
-
-    state.currentOffer =
-      offer;
-
-    state.currentVersion =
-      version;
-
-    state.sourceVersion =
-      null;
-
-    await loadOfferBinding(
-      offer.id
-    );
-
-    await loadOfferAvailability(
-      version.id
-    );
-
-    await loadOfferIntoForm();
-
-    state.currentStep =
-      1;
-
-    showEditor();
-
-    updateStepUI();
-    updateVersionActions();
-  }
-
-  /* =========================================================
-     OFFER BINDING
-     ========================================================= */
-
-  async function loadOfferBinding(
-    offerId
-  ) {
     try {
-      const rows =
-        await selectRows(
-          "offer_catalog_bindings",
-          "*",
-          {
-            offer_id:
-              offerId,
+      await loadBusinessModels(industryId);
 
-            client_id:
-              tenantConfigId()
-          }
-        );
-
-      state.currentBinding =
-        rows[0] || null;
-
-      return state.currentBinding;
-    } catch (
-      error
-    ) {
-      console.warn(
-        "[GLIME] Binding load warning:",
+      setSetupState(
+        "Business models loaded.",
+        "success"
+      );
+    } catch (error) {
+      console.error(
+        "[GLIME] Business model load failed:",
         error
       );
 
-      state.currentBinding =
-        null;
+      setSetupState(
+        "Could not load business models.",
+        "error"
+      );
+
+      setSetupMessage(
+        error.message ||
+          "Could not load business models.",
+        "error"
+      );
+    }
+  }
+
+
+  /* =========================================================
+     SAVE SETUP BUTTON
+     ========================================================= */
+
+  async function handleSaveSetup() {
+    if (state.saving) {
+      return;
+    }
+
+    const industrySelect = $("industrySelect");
+    const businessModelSelect =
+      $("businessModelSelect");
+    const customBusinessModel =
+      $("customBusinessModel");
+
+    const industryId =
+      industrySelect?.value || null;
+
+    const businessModelId =
+      businessModelSelect?.value || null;
+
+    const customBusinessModelName =
+      customBusinessModel?.value?.trim() || "";
+
+    if (!industryId) {
+      setSetupMessage(
+        "Please select an industry first.",
+        "error"
+      );
+      return;
+    }
+
+    if (
+      !businessModelId &&
+      !customBusinessModelName
+    ) {
+      setSetupMessage(
+        "Select a business model or enter a custom business model.",
+        "error"
+      );
+      return;
+    }
+
+    state.saving = true;
+
+    setSetupState(
+      "Saving business setup…",
+      "info"
+    );
+
+    try {
+      const existing =
+        await loadClientSetup();
+
+      let selectedBusinessModelId =
+        businessModelId;
+
+      let customBusinessModelId = null;
+
+      /*
+        If the user entered a custom model,
+        persist it in the dedicated custom-model table.
+      */
+
+      if (customBusinessModelName) {
+        const customModel =
+          await saveCustomBusinessModel({
+            name: customBusinessModelName,
+            description:
+              "Custom business model created from Services setup.",
+            baseBusinessModelId:
+              businessModelId || null,
+            industryConfigurationId:
+              existing?.id || null
+          });
+
+        customBusinessModelId =
+          customModel.id;
+
+        /*
+          A custom business model does not replace
+          the system business_model_id.
+          The custom ID is stored separately.
+        */
+      }
+
+      const industryConfiguration =
+        await saveIndustryConfiguration({
+          industryId,
+          customIndustryName: null,
+          customIndustryDescription: null,
+          businessModelId:
+            selectedBusinessModelId || null,
+          selectionSource: "system"
+        });
+
+      /*
+        Load available templates for the selected
+        system business model.
+      */
+
+      const templates =
+        await loadTemplates(
+          industryId,
+          selectedBusinessModelId
+        );
+
+      /*
+        If a custom business model exists and no
+        system template can be resolved, the UI can
+        still continue with a custom template name.
+      */
+
+      let selectedTemplate =
+        templates[0] || null;
+
+      if (selectedTemplate) {
+        await saveTemplateConfiguration({
+          industryConfigurationId:
+            industryConfiguration.id,
+          businessModelId:
+            selectedBusinessModelId || null,
+          customBusinessModelId,
+          templateId:
+            selectedTemplate.id,
+          templateName:
+            selectedTemplate.name,
+          config: {},
+          metadata: {
+            source: "services-ui",
+            auto_selected: true
+          }
+        });
+      }
+
+      state.setupSaved = true;
+
+      setSetupState(
+        "Business setup saved.",
+        "success"
+      );
+
+      setSetupMessage(
+        selectedTemplate
+          ? "Business setup and template saved successfully."
+          : "Business setup saved. Template can be configured later.",
+        "success"
+      );
+
+      await loadOffers();
+
+    } catch (error) {
+      console.error(
+        "[GLIME] Setup save failed:",
+        error
+      );
+
+      setSetupState(
+        "Setup could not be saved.",
+        "error"
+      );
+
+      setSetupMessage(
+        error.message ||
+          "Could not save business setup.",
+        "error"
+      );
+
+    } finally {
+      state.saving = false;
+    }
+  }
+
+
+  /* =========================================================
+     RESTORE SETUP INTO UI
+     ========================================================= */
+
+  async function restoreSetupUI() {
+    try {
+      const configuration =
+        await loadClientSetup();
+
+      if (!configuration) {
+        setSetupState(
+          "Business setup not configured yet.",
+          "warning"
+        );
+
+        return null;
+      }
+
+      const industrySelect =
+        $("industrySelect");
+
+      const businessModelSelect =
+        $("businessModelSelect");
+
+      if (industrySelect && configuration.industry_id) {
+        industrySelect.value =
+          configuration.industry_id;
+
+        await loadBusinessModels(
+          configuration.industry_id
+        );
+      }
+
+      if (
+        businessModelSelect &&
+        configuration.business_model_id
+      ) {
+        businessModelSelect.value =
+          configuration.business_model_id;
+      }
+
+      await loadCustomBusinessModels(
+        configuration.id
+      );
+
+      await loadTemplateConfiguration();
+
+      setSetupState(
+        "Business setup is active.",
+        "success"
+      );
+
+      return configuration;
+
+    } catch (error) {
+      console.error(
+        "[GLIME] Setup restore failed:",
+        error
+      );
+
+      setSetupState(
+        "Could not restore business setup.",
+        "error"
+      );
 
       return null;
     }
   }
 
+
+  /* =========================================================
+     SETUP EVENT BINDINGS
+     ========================================================= */
+
+  function bindSetupEvents() {
+
+    const industrySelect =
+      $("industrySelect");
+
+    if (industrySelect) {
+      industrySelect.addEventListener(
+        "change",
+        handleIndustryChange
+      );
+    }
+
+    const saveSetupBtn =
+      $("saveSetupBtn");
+
+    if (saveSetupBtn) {
+      saveSetupBtn.addEventListener(
+        "click",
+        handleSaveSetup
+      );
+    }
+  }
+
+     /* =========================================================
+     CATEGORIES
+     ========================================================= */
+
+  async function loadCategories() {
+    const client = await getSupabaseClient();
+    const clientId = tenantOfferId();
+
+    if (!clientId) {
+      state.categories = [];
+      return [];
+    }
+
+    const { data, error } = await client
+      .from("offer_categories")
+      .select(`
+        id,
+        client_id,
+        name,
+        slug,
+        description,
+        sort_order,
+        is_active,
+        created_at,
+        updated_at
+      `)
+      .eq("client_id", clientId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    state.categories = data || [];
+
+    renderCategories();
+    populateCategorySelect();
+
+    return state.categories;
+  }
+
+
+  function renderCategories() {
+    const list = $("categoryList");
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = "";
+
+    if (!state.categories.length) {
+      const empty = document.createElement("div");
+
+      empty.className = "empty-state";
+      empty.textContent =
+        "No categories created yet.";
+
+      list.appendChild(empty);
+
+      return;
+    }
+
+    state.categories.forEach((category) => {
+      const item = document.createElement("div");
+
+      item.className = "category-item";
+
+      item.innerHTML = `
+        <div class="category-item-main">
+          <strong></strong>
+          <span></span>
+        </div>
+      `;
+
+      const name =
+        item.querySelector("strong");
+
+      const slug =
+        item.querySelector("span");
+
+      if (name) {
+        name.textContent =
+          category.name || "Unnamed category";
+      }
+
+      if (slug) {
+        slug.textContent =
+          category.slug
+            ? `/${category.slug}`
+            : "";
+      }
+
+      list.appendChild(item);
+    });
+  }
+
+
+  function populateCategorySelect() {
+    const select = $("offerCategory");
+
+    if (!select) {
+      return;
+    }
+
+    const currentValue =
+      select.value || "";
+
+    select.innerHTML = `
+      <option value="">No category</option>
+    `;
+
+    state.categories.forEach((category) => {
+      const option =
+        document.createElement("option");
+
+      option.value = category.id;
+      option.textContent = category.name;
+
+      select.appendChild(option);
+    });
+
+    if (
+      currentValue &&
+      state.categories.some(
+        (category) =>
+          category.id === currentValue
+      )
+    ) {
+      select.value = currentValue;
+    }
+  }
+
+
+  async function createCategory() {
+    const client = await getSupabaseClient();
+    const clientId = tenantOfferId();
+
+    if (!clientId) {
+      throw new Error(
+        "Client ID is not available."
+      );
+    }
+
+    const name = window.prompt(
+      "Enter category name:"
+    );
+
+    const cleanName =
+      String(name || "").trim();
+
+    if (!cleanName) {
+      return null;
+    }
+
+    const slug = cleanName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80);
+
+    if (!slug) {
+      throw new Error(
+        "Could not create a valid category slug."
+      );
+    }
+
+    const nextSortOrder =
+      state.categories.length
+        ? Math.max(
+            ...state.categories.map(
+              (item) =>
+                Number(item.sort_order) || 0
+            )
+          ) + 1
+        : 0;
+
+    const { data, error } = await client
+      .from("offer_categories")
+      .insert({
+        client_id: clientId,
+        name: cleanName,
+        slug,
+        description: null,
+        sort_order: nextSortOrder,
+        is_active: true
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    state.categories.push(data);
+
+    renderCategories();
+    populateCategorySelect();
+
+    const categorySelect =
+      $("offerCategory");
+
+    if (categorySelect) {
+      categorySelect.value = data.id;
+    }
+
+    return data;
+  }
+
+
+  /* =========================================================
+     ENTITY TYPES
+     ========================================================= */
+
+  async function loadEntityTypes() {
+    const client = await getSupabaseClient();
+
+    const { data, error } = await client
+      .from("entity_types")
+      .select(`
+        id,
+        name,
+        slug,
+        description,
+        status,
+        metadata
+      `)
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    state.entityTypes = data || [];
+
+    return state.entityTypes;
+  }
+
+
+  /*
+    UI type → database offer_type
+
+    Database currently permits only:
+      service
+      product
+      package
+      offer
+
+    Rich entity identity is preserved through
+    offer_catalog_bindings.entity_type_id.
+  */
+
+  function mapUIOfferTypeToDatabase(
+    uiType
+  ) {
+    const value =
+      String(uiType || "service")
+        .trim()
+        .toLowerCase();
+
+    const mapping = {
+      service: "service",
+      product: "product",
+      package: "package",
+
+      /*
+        These are richer entity types but the
+        offers table currently uses generic "offer".
+      */
+      plan: "offer",
+      property: "offer",
+      "menu-item": "offer",
+      custom: "offer"
+    };
+
+    return mapping[value] || "service";
+  }
+
+
+  function normalizeUIOfferType(
+    uiType
+  ) {
+    const value =
+      String(uiType || "service")
+        .trim()
+        .toLowerCase();
+
+    const allowed = [
+      "service",
+      "product",
+      "package",
+      "plan",
+      "property",
+      "menu-item",
+      "custom"
+    ];
+
+    return allowed.includes(value)
+      ? value
+      : "service";
+  }
+
+
+  function getEntityTypeCandidates(
+    uiType
+  ) {
+    const type =
+      normalizeUIOfferType(uiType);
+
+    const names = {
+      service: [
+        "service"
+      ],
+
+      product: [
+        "product"
+      ],
+
+      package: [
+        "package"
+      ],
+
+      plan: [
+        "plan"
+      ],
+
+      property: [
+        "property"
+      ],
+
+      "menu-item": [
+        "menu item",
+        "menu-item",
+        "menu_item",
+        "menuitem"
+      ],
+
+      custom: [
+        "custom"
+      ]
+    };
+
+    return names[type] || [
+      type
+    ];
+  }
+
+
+  function findEntityTypeForUIType(
+    uiType
+  ) {
+    const candidates =
+      getEntityTypeCandidates(uiType);
+
+    const normalizedCandidates =
+      candidates.map(
+        (value) =>
+          String(value)
+            .toLowerCase()
+            .replace(/[_-]+/g, " ")
+            .trim()
+      );
+
+    return (
+      state.entityTypes.find((entity) => {
+        const name =
+          String(entity.name || "")
+            .toLowerCase()
+            .replace(/[_-]+/g, " ")
+            .trim();
+
+        const slug =
+          String(entity.slug || "")
+            .toLowerCase()
+            .replace(/[_-]+/g, " ")
+            .trim();
+
+        return (
+          normalizedCandidates.includes(name) ||
+          normalizedCandidates.includes(slug)
+        );
+      }) || null
+    );
+  }
+
+
+  /* =========================================================
+     OFFER LIST
+     ========================================================= */
+
+  async function loadOffers() {
+    const client = await getSupabaseClient();
+    const clientId = tenantOfferId();
+
+    if (!clientId) {
+      state.offers = [];
+      renderOfferList();
+      updateOfferCount();
+      return [];
+    }
+
+    const { data, error } = await client
+      .from("offers")
+      .select(`
+        id,
+        client_id,
+        offer_type,
+        name,
+        slug,
+        short_description,
+        description,
+        category_id,
+        status,
+        current_version_id,
+        created_at,
+        updated_at
+      `)
+      .eq("client_id", clientId)
+      .order("updated_at", {
+        ascending: false
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    state.offers = data || [];
+
+    renderOfferList();
+    updateOfferCount();
+
+    return state.offers;
+  }
+
+
+  function updateOfferCount() {
+    const count = $("offerCount");
+
+    if (!count) {
+      return;
+    }
+
+    count.textContent =
+      String(state.offers.length);
+  }
+
+
+  function renderOfferList() {
+    const list = $("offerList");
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = "";
+
+    if (!state.offers.length) {
+      const empty =
+        document.createElement("div");
+
+      empty.className = "empty-state";
+
+      empty.textContent =
+        "No services or offers created yet.";
+
+      list.appendChild(empty);
+
+      return;
+    }
+
+    state.offers.forEach((offer) => {
+      const item =
+        document.createElement("button");
+
+      item.type = "button";
+      item.className = "offer-list-item";
+
+      const status =
+        String(offer.status || "draft");
+
+      item.innerHTML = `
+        <div class="offer-list-main">
+          <strong></strong>
+          <span></span>
+        </div>
+        <div class="offer-list-meta">
+          <span class="offer-type"></span>
+          <span class="offer-status"></span>
+        </div>
+      `;
+
+      const title =
+        item.querySelector("strong");
+
+      const description =
+        item.querySelector("span");
+
+      const type =
+        item.querySelector(".offer-type");
+
+      const statusElement =
+        item.querySelector(".offer-status");
+
+      if (title) {
+        title.textContent =
+          offer.name || "Untitled";
+      }
+
+      if (description) {
+        description.textContent =
+          offer.short_description || "";
+      }
+
+      if (type) {
+        type.textContent =
+          normalizeUIOfferType(
+            offer.offer_type
+          );
+      }
+
+      if (statusElement) {
+        statusElement.textContent =
+          status;
+      }
+
+      item.addEventListener(
+        "click",
+        () => openOffer(offer.id)
+      );
+
+      list.appendChild(item);
+    });
+  }
+
+
+  /* =========================================================
+     CREATE NEW OFFER
+     ========================================================= */
+
+  function createSlug(value) {
+    return String(value || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 100);
+  }
+
+
+  async function createNewOffer(
+    requestedType = "service"
+  ) {
+    const client = await getSupabaseClient();
+    const clientId = tenantOfferId();
+
+    if (!clientId) {
+      throw new Error(
+        "Client ID is not available."
+      );
+    }
+
+    const uiType =
+      normalizeUIOfferType(
+        requestedType
+      );
+
+    const dbType =
+      mapUIOfferTypeToDatabase(
+        uiType
+      );
+
+    const entityType =
+      findEntityTypeForUIType(uiType);
+
+    if (!entityType) {
+      throw new Error(
+        `Entity type "${uiType}" is not configured in the database.`
+      );
+    }
+
+    const defaultName =
+      uiType === "service"
+        ? "New Service"
+        : uiType === "product"
+          ? "New Product"
+          : uiType === "package"
+            ? "New Package"
+            : uiType === "plan"
+              ? "New Plan"
+              : uiType === "property"
+                ? "New Property"
+                : uiType === "menu-item"
+                  ? "New Menu Item"
+                  : "New Custom Offer";
+
+    const baseSlug =
+      createSlug(defaultName);
+
+    /*
+      Avoid guessing that a slug is unique.
+      Generate a client-safe unique slug.
+    */
+
+    const slug =
+      `${baseSlug}-${Date.now().toString(36)}`;
+
+    const { data: offer, error } =
+      await client
+        .from("offers")
+        .insert({
+          client_id: clientId,
+          offer_type: dbType,
+          name: defaultName,
+          slug,
+          short_description: "",
+          description: "",
+          category_id: null,
+          status: "draft"
+        })
+        .select()
+        .single();
+
+    if (error) {
+      throw error;
+    }
+
+    /*
+      Version 1 starts as draft.
+    */
+
+    const { data: version, error: versionError } =
+      await client
+        .from("offer_versions")
+        .insert({
+          offer_id: offer.id,
+          version_number: 1,
+          status: "draft",
+          title: defaultName,
+          description: "",
+          sales_talking_points: [],
+          allowed_claims: [],
+          restrictions: [],
+          customer_eligibility: [],
+          metadata: {
+            ui_offer_type: uiType,
+            entity_type_id: entityType.id,
+            created_from: "services-ui"
+          }
+        })
+        .select()
+        .single();
+
+    if (versionError) {
+      /*
+        Roll back the offer if version creation fails.
+      */
+
+      await client
+        .from("offers")
+        .delete()
+        .eq("id", offer.id)
+        .eq("client_id", clientId);
+
+      throw versionError;
+    }
+
+    /*
+      Current version points to version 1.
+    */
+
+    const { data: updatedOffer,
+      error: updateError } =
+      await client
+        .from("offers")
+        .update({
+          current_version_id: version.id
+        })
+        .eq("id", offer.id)
+        .eq("client_id", clientId)
+        .select()
+        .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    /*
+      Binding is mandatory because entity_type_id
+      is NOT NULL in the database.
+    */
+
+    const binding =
+      await ensureOfferBinding(
+        updatedOffer.id,
+        version.id,
+        uiType
+      );
+
+    state.offers.unshift(
+      updatedOffer
+    );
+
+    renderOfferList();
+    updateOfferCount();
+
+    state.currentOffer =
+      updatedOffer;
+
+    state.currentVersion =
+      version;
+
+    state.currentBinding =
+      binding;
+
+    state.sourceVersion = null;
+
+    showEditor();
+
+    loadOfferIntoForm(
+      updatedOffer,
+      version,
+      binding
+    );
+
+    return {
+      offer: updatedOffer,
+      version,
+      binding
+    };
+  }
+
+
+  /* =========================================================
+     ENSURE CATALOG BINDING
+     ========================================================= */
+
   async function ensureOfferBinding(
     offerId,
-    versionId
+    versionId,
+    uiType = null
   ) {
     const client =
       await getSupabaseClient();
 
-    await loadOfferBinding(
-      offerId
-    );
+    const clientId =
+      tenantOfferId();
 
-    if (
-      state.currentBinding
-    ) {
-      return state.currentBinding;
-    }
-
-    let entityTypeId =
-      null;
-
-    try {
-      const entityTypes =
-        await selectRows(
-          "entity_types",
-          "id,name,slug",
-          {}
-        );
-
-      const type =
-        entityTypes.find(
-          (item) => {
-            const value =
-              safeText(
-                item.slug ||
-                  item.name
-              ).toLowerCase();
-
-            return [
-              "service",
-              "product",
-              "offer"
-            ].includes(
-              value
-            );
-          }
-        );
-
-      entityTypeId =
-        type?.id || null;
-    } catch (
-      error
-    ) {
-      console.warn(
-        "[GLIME] Entity type lookup:",
-        error
+    if (!offerId || !clientId) {
+      throw new Error(
+        "Offer or client ID is missing."
       );
     }
 
-    const payload = {
-      offer_id:
-        offerId,
+    /*
+      First check existing binding.
+    */
 
-      client_id:
-        tenantConfigId(),
+    const { data: existing,
+      error: existingError } =
+      await client
+        .from("offer_catalog_bindings")
+        .select(`
+          id,
+          offer_id,
+          client_id,
+          entity_type_id,
+          template_configuration_id,
+          status,
+          custom_data,
+          metadata,
+          created_at,
+          updated_at
+        `)
+        .eq("offer_id", offerId)
+        .eq("client_id", clientId)
+        .maybeSingle();
 
+    if (existingError) {
+      throw existingError;
+    }
+
+    let resolvedUIType =
+      uiType ||
+      state.currentBinding?.metadata?.ui_offer_type ||
+      state.currentVersion?.metadata?.ui_offer_type ||
+      state.currentOffer?.offer_type ||
+      "service";
+
+    resolvedUIType =
+      normalizeUIOfferType(
+        resolvedUIType
+      );
+
+    const entityType =
+      findEntityTypeForUIType(
+        resolvedUIType
+      );
+
+    if (!entityType) {
+      throw new Error(
+        `No entity type exists for "${resolvedUIType}".`
+      );
+    }
+
+    const metadata = {
+      ...(existing?.metadata || {}),
+      ui_offer_type: resolvedUIType,
+      db_offer_type:
+        mapUIOfferTypeToDatabase(
+          resolvedUIType
+        ),
       entity_type_id:
-        entityTypeId,
-
-      template_configuration_id:
-        null,
-
-      status:
-        "draft",
-
-      custom_data:
-        {
-          version_id:
-            versionId
-        },
-
-      metadata:
-        {
-          source:
-            "services-ui",
-
-          version_id:
-            versionId
-        }
+        entityType.id,
+      source: "services-ui"
     };
 
-    try {
-      const {
-        data,
-        error
-      } =
+    const customData = {
+      ...(existing?.custom_data || {}),
+      ui_offer_type: resolvedUIType
+    };
+
+    if (existing) {
+      const { data, error } =
         await client
-          .from(
-            "offer_catalog_bindings"
-          )
-          .insert(
-            payload
-          )
+          .from("offer_catalog_bindings")
+          .update({
+            entity_type_id:
+              entityType.id,
+            status:
+              existing.status === "active"
+                ? "active"
+                : "draft",
+            custom_data: customData,
+            metadata
+          })
+          .eq("id", existing.id)
+          .eq("client_id", clientId)
           .select()
           .single();
 
@@ -1888,229 +2458,894 @@ const sb =
         data;
 
       return data;
-    } catch (
-      error
-    ) {
-      /*
-        Binding is important to the new architecture,
-        but a legacy offer must not become uneditable
-        because the binding is temporarily unavailable.
-      */
+    }
 
-      console.warn(
-        "[GLIME] Binding creation warning:",
-        error
+    /*
+      Resolve the active client template configuration.
+    */
+
+    const { data: templateConfig,
+      error: templateError } =
+      await client
+        .from("client_template_configurations")
+        .select(`
+          id,
+          template_id,
+          template_name,
+          status
+        `)
+        .eq("client_id", clientId)
+        .eq("status", "active")
+        .order("updated_at", {
+          ascending: false
+        })
+        .limit(1)
+        .maybeSingle();
+
+    if (templateError) {
+      throw templateError;
+    }
+
+    const { data, error } =
+      await client
+        .from("offer_catalog_bindings")
+        .insert({
+          offer_id: offerId,
+          client_id: clientId,
+          entity_type_id:
+            entityType.id,
+          template_configuration_id:
+            templateConfig?.id || null,
+          status: "draft",
+          custom_data: customData,
+          metadata
+        })
+        .select()
+        .single();
+
+    if (error) {
+      throw error;
+    }
+
+    state.currentBinding =
+      data;
+
+    return data;
+  }
+
+
+  /* =========================================================
+     OPEN EXISTING OFFER
+     ========================================================= */
+
+  async function openOffer(
+    offerId
+  ) {
+    const client =
+      await getSupabaseClient();
+
+    const clientId =
+      tenantOfferId();
+
+    if (!offerId || !clientId) {
+      throw new Error(
+        "Offer ID or client ID is missing."
       );
+    }
 
-      return null;
+    const { data: offer,
+      error: offerError } =
+      await client
+        .from("offers")
+        .select(`
+          id,
+          client_id,
+          offer_type,
+          name,
+          slug,
+          short_description,
+          description,
+          category_id,
+          status,
+          current_version_id,
+          created_at,
+          updated_at
+        `)
+        .eq("id", offerId)
+        .eq("client_id", clientId)
+        .single();
+
+    if (offerError) {
+      throw offerError;
+    }
+
+    const { data: versions,
+      error: versionsError } =
+      await client
+        .from("offer_versions")
+        .select(`
+          id,
+          offer_id,
+          version_number,
+          status,
+          title,
+          description,
+          sales_talking_points,
+          allowed_claims,
+          restrictions,
+          customer_eligibility,
+          metadata,
+          published_at,
+          created_at,
+          updated_at
+        `)
+        .eq("offer_id", offerId)
+        .order("version_number", {
+          ascending: false
+        });
+
+    if (versionsError) {
+      throw versionsError;
+    }
+
+    if (!versions?.length) {
+      throw new Error(
+        "No version exists for this offer."
+      );
+    }
+
+    /*
+      Prefer current_version_id.
+      Fall back to latest version.
+    */
+
+    const currentVersion =
+      versions.find(
+        (version) =>
+          version.id ===
+          offer.current_version_id
+      ) ||
+      versions[0];
+
+    /*
+      Binding.
+    */
+
+    const { data: binding,
+      error: bindingError } =
+      await client
+        .from("offer_catalog_bindings")
+        .select(`
+          id,
+          offer_id,
+          client_id,
+          entity_type_id,
+          template_configuration_id,
+          status,
+          custom_data,
+          metadata,
+          created_at,
+          updated_at,
+          entity_types (
+            id,
+            name,
+            slug
+          )
+        `)
+        .eq("offer_id", offerId)
+        .eq("client_id", clientId)
+        .maybeSingle();
+
+    if (bindingError) {
+      throw bindingError;
+    }
+
+    /*
+      Ensure binding exists for legacy offers.
+    */
+
+    let finalBinding =
+      binding;
+
+    if (!finalBinding) {
+      finalBinding =
+        await ensureOfferBinding(
+          offer.id,
+          currentVersion.id,
+          currentVersion?.metadata?.ui_offer_type ||
+            offer.offer_type
+        );
+    }
+
+    /*
+      Load availability.
+    */
+
+    const { data: availability,
+      error: availabilityError } =
+      await client
+        .from("offer_availability")
+        .select(`
+          id,
+          offer_version_id,
+          day_of_week,
+          start_time,
+          end_time,
+          timezone,
+          capacity,
+          is_available,
+          notes
+        `)
+        .eq(
+          "offer_version_id",
+          currentVersion.id
+        )
+        .order("day_of_week", {
+          ascending: true
+        });
+
+    if (availabilityError) {
+      throw availabilityError;
+    }
+
+    state.currentOffer =
+      offer;
+
+    state.currentVersion =
+      currentVersion;
+
+    state.currentBinding =
+      finalBinding;
+
+    state.availability =
+      availability || [];
+
+    state.sourceVersion =
+      null;
+
+    showEditor();
+
+    await loadOfferIntoForm(
+      offer,
+      currentVersion,
+      finalBinding
+    );
+
+    return {
+      offer,
+      versions,
+      version: currentVersion,
+      binding: finalBinding,
+      availability:
+        state.availability
+    };
+  }
+
+
+  /* =========================================================
+     EDITOR VISIBILITY
+     ========================================================= */
+
+  function showEditor() {
+    const empty =
+      $("editorEmpty");
+
+    const form =
+      $("offerForm");
+
+    if (empty) {
+      empty.hidden = true;
+    }
+
+    if (form) {
+      form.hidden = false;
     }
   }
 
-     /* =========================================================
-     FORM LOAD
+
+  function hideEditor() {
+    const empty =
+      $("editorEmpty");
+
+    const form =
+      $("offerForm");
+
+    if (empty) {
+      empty.hidden = false;
+    }
+
+    if (form) {
+      form.hidden = true;
+    }
+  }
+
+
+  /* =========================================================
+     NEW OFFER BUTTON
      ========================================================= */
 
-  async function loadOfferIntoForm() {
-    const offer =
-      state.currentOffer;
+  async function handleNewOffer() {
+    try {
+      const selectedType =
+        $("offerType")?.value ||
+        "service";
 
-    const version =
-      state.currentVersion;
+      await createNewOffer(
+        selectedType
+      );
 
-    if (
-      !offer ||
-      !version
-    ) {
+      setSetupMessage(
+        "New draft created.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "[GLIME] New offer creation failed:",
+        error
+      );
+
+      setSetupMessage(
+        error.message ||
+          "Could not create the new offer.",
+        "error"
+      );
+    }
+  }
+
+
+  /* =========================================================
+     REFRESH
+     ========================================================= */
+
+  async function refreshServicesData() {
+    try {
+      setSetupState(
+        "Refreshing…",
+        "info"
+      );
+
+      await Promise.all([
+        loadEntityTypes(),
+        loadCategories(),
+        loadOffers()
+      ]);
+
+      await restoreSetupUI();
+
+      setSetupState(
+        "Ready.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "[GLIME] Services refresh failed:",
+        error
+      );
+
+      setSetupState(
+        "Refresh failed.",
+        "error"
+      );
+
+      setSetupMessage(
+        error.message ||
+          "Could not refresh Services.",
+        "error"
+      );
+    }
+  }
+
+
+  /* =========================================================
+     PART 3 COMPLETE
+     ========================================================= */
+
+     /* =========================================================
+     PART 4/5
+     OFFER FORM + VERSION DATA + PRICING
+     + VARIANTS + AVAILABILITY + DRAFT SAVE
+     ========================================================= */
+
+
+  /* =========================================================
+     FORM VALUE HELPERS
+     ========================================================= */
+
+  function setFieldValue(
+    id,
+    value
+  ) {
+    const element = $(id);
+
+    if (!element) {
       return;
     }
 
-    const metadata =
-      getMetadata(
+    if (
+      element.type === "checkbox"
+    ) {
+      element.checked =
+        Boolean(value);
+
+      return;
+    }
+
+    element.value =
+      value == null
+        ? ""
+        : String(value);
+  }
+
+
+  function getFieldValue(
+    id
+  ) {
+    const element = $(id);
+
+    if (!element) {
+      return "";
+    }
+
+    if (
+      element.type === "checkbox"
+    ) {
+      return element.checked;
+    }
+
+    return element.value;
+  }
+
+
+  function parseJSONField(
+    value,
+    fallback = []
+  ) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      return fallback;
+    }
+
+    if (
+      Array.isArray(value) ||
+      typeof value === "object"
+    ) {
+      return value;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+
+
+  function arrayToText(
+    value
+  ) {
+    const array =
+      parseJSONField(
+        value,
+        []
+      );
+
+    if (!Array.isArray(array)) {
+      return String(
+        value || ""
+      );
+    }
+
+    return array
+      .map((item) => {
+        if (
+          typeof item === "string"
+        ) {
+          return item;
+        }
+
+        return JSON.stringify(item);
+      })
+      .join("\n");
+  }
+
+
+  function textToArray(
+    value
+  ) {
+    return String(value || "")
+      .split("\n")
+      .map(
+        (item) =>
+          item.trim()
+      )
+      .filter(Boolean);
+  }
+
+
+  /* =========================================================
+     ENTITY TYPE → UI TYPE
+     ========================================================= */
+
+  function resolveUITypeFromBinding(
+    binding,
+    offer,
+    version
+  ) {
+    const metadataType =
+      binding?.metadata?.ui_offer_type ||
+      binding?.custom_data?.ui_offer_type ||
+      version?.metadata?.ui_offer_type;
+
+    if (metadataType) {
+      return normalizeUIOfferType(
+        metadataType
+      );
+    }
+
+    const entity =
+      binding?.entity_types;
+
+    if (entity) {
+      const name =
+        String(
+          entity.name || ""
+        )
+          .toLowerCase()
+          .trim();
+
+      const slug =
+        String(
+          entity.slug || ""
+        )
+          .toLowerCase()
+          .trim();
+
+      if (
+        name === "menu item" ||
+        slug === "menu-item" ||
+        slug === "menu_item"
+      ) {
+        return "menu-item";
+      }
+
+      if (
+        name === "plan" ||
+        slug === "plan"
+      ) {
+        return "plan";
+      }
+
+      if (
+        name === "property" ||
+        slug === "property"
+      ) {
+        return "property";
+      }
+
+      if (
+        name === "custom" ||
+        slug === "custom"
+      ) {
+        return "custom";
+      }
+
+      if (
+        name === "package" ||
+        slug === "package"
+      ) {
+        return "package";
+      }
+
+      if (
+        name === "product" ||
+        slug === "product"
+      ) {
+        return "product";
+      }
+
+      if (
+        name === "service" ||
+        slug === "service"
+      ) {
+        return "service";
+      }
+    }
+
+    return normalizeUIOfferType(
+      offer?.offer_type ||
+        "service"
+    );
+  }
+
+
+  /* =========================================================
+     LOAD OFFER INTO FORM
+     ========================================================= */
+
+  async function loadOfferIntoForm(
+    offer,
+    version,
+    binding
+  ) {
+    if (!offer || !version) {
+      return;
+    }
+
+    const client =
+      await getSupabaseClient();
+
+    /*
+      UI entity type must come from binding/version
+      rather than blindly using offers.offer_type.
+    */
+
+    const uiOfferType =
+      resolveUITypeFromBinding(
+        binding,
+        offer,
         version
       );
 
-    setValue(
+    setFieldValue(
       "offerName",
-      version.title ||
-        offer.name ||
+      offer.name ||
+        version.title ||
         ""
     );
 
-    setValue(
+    setFieldValue(
       "offerType",
-      offer.offer_type ||
-        "service"
+      uiOfferType
     );
 
-    setValue(
+    setFieldValue(
+      "offerCategory",
+      offer.category_id ||
+        ""
+    );
+
+    setFieldValue(
       "shortDescription",
       offer.short_description ||
-        metadata.short_description ||
         ""
     );
 
-    setValue(
+    setFieldValue(
       "offerDescription",
       version.description ||
         offer.description ||
         ""
     );
 
-    setValue(
-      "offerCategory",
-      offer.category_id ||
-        metadata.category_id ||
-        ""
+    setFieldValue(
+      "eligibility",
+      arrayToText(
+        version.customer_eligibility
+      )
     );
 
-    setValue(
+    setFieldValue(
+      "talkingPoints",
+      arrayToText(
+        version.sales_talking_points
+      )
+    );
+
+    setFieldValue(
+      "allowedClaims",
+      arrayToText(
+        version.allowed_claims
+      )
+    );
+
+    setFieldValue(
+      "restrictions",
+      arrayToText(
+        version.restrictions
+      )
+    );
+
+
+    /*
+      Rich metadata stores fields that are not direct
+      columns in offer_versions.
+    */
+
+    const metadata =
+      version.metadata || {};
+
+    setFieldValue(
       "detailDuration",
       metadata.duration ||
         ""
     );
 
-    setValue(
-      "eligibility",
-      textFromArray(
-        version.customer_eligibility
-      ) ||
-        metadata.eligibility ||
-        ""
-    );
-
-    setValue(
+    setFieldValue(
       "included",
-      metadata.included ||
-        ""
+      arrayToText(
+        metadata.included
+      )
     );
 
-    setValue(
+    setFieldValue(
       "excluded",
-      metadata.excluded ||
-        ""
+      arrayToText(
+        metadata.excluded
+      )
     );
 
-    setValue(
+    setFieldValue(
       "faqs",
-      metadata.faqs ||
-        ""
+      arrayToText(
+        metadata.faqs
+      )
     );
 
-    setValue(
+    setFieldValue(
       "policies",
-      metadata.policies ||
-        ""
+      arrayToText(
+        metadata.policies
+      )
     );
 
-    setValue(
+    setFieldValue(
       "qualification",
-      metadata.qualification ||
-        ""
+      arrayToText(
+        metadata.qualification
+      )
     );
 
-    setValue(
-      "talkingPoints",
-      textFromArray(
-        version.sales_talking_points
-      ) ||
-        metadata.talking_points ||
-        ""
-    );
-
-    setValue(
-      "allowedClaims",
-      textFromArray(
-        version.allowed_claims
-      ) ||
-        metadata.allowed_claims ||
-        ""
-    );
-
-    setValue(
-      "restrictions",
-      textFromArray(
-        version.restrictions
-      ) ||
-        metadata.restrictions ||
-        ""
-    );
-
-    setValue(
+    setFieldValue(
       "aiInstructions",
       metadata.ai_instructions ||
         ""
     );
 
-    setValue(
+    setFieldValue(
       "websiteLink",
-      metadata.website_url ||
+      metadata.links?.website ||
         ""
     );
 
-    setValue(
+    setFieldValue(
       "bookingLink",
-      metadata.booking_url ||
+      metadata.links?.booking ||
         ""
     );
 
-    setValue(
+    setFieldValue(
       "instagramLink",
-      metadata.instagram_url ||
+      metadata.links?.instagram ||
         ""
     );
 
-    setValue(
+    setFieldValue(
       "facebookLink",
-      metadata.facebook_url ||
+      metadata.links?.facebook ||
         ""
     );
 
-    setValue(
+    setFieldValue(
       "mediaUrls",
-      textFromArray(
+      arrayToText(
         metadata.media_urls
       )
     );
 
-    setValue(
+    setFieldValue(
       "aliases",
-      textFromArray(
+      arrayToText(
         metadata.aliases
       )
     );
 
-    await loadOfferPricing(
+    /*
+      Pricing.
+    */
+
+    await loadPricingIntoForm(
       version.id
     );
 
-    renderShareIdentity();
+    /*
+      Availability.
+    */
 
-    renderAICheck(
-      metadata.ai_check
+    await loadAvailability(
+      version.id
     );
 
-    updateVersionActions();
+    renderAvailability();
+
+    /*
+      UI status.
+    */
+
+    setEditorStatus(
+      version.status
+    );
+
+    setEditorTitle(
+      offer.name ||
+        version.title ||
+        "Offer"
+    );
+
+    updateProgress();
+
+    return {
+      offer,
+      version,
+      binding
+    };
   }
 
+
   /* =========================================================
-     PRICING
+     EDITOR HEADER
      ========================================================= */
 
-  async function loadOfferPricing(
+  function setEditorTitle(
+    value
+  ) {
+    const element =
+      $("editorTitle");
+
+    if (element) {
+      element.textContent =
+        value || "Offer";
+    }
+  }
+
+
+  function setEditorStatus(
+    status
+  ) {
+    const element =
+      $("editorStatus");
+
+    if (!element) {
+      return;
+    }
+
+    element.textContent =
+      status || "draft";
+
+    element.dataset.status =
+      status || "draft";
+  }
+
+
+  /* =========================================================
+     LOAD PRICING
+     ========================================================= */
+
+  async function loadPricingIntoForm(
     versionId
   ) {
     const client =
       await getSupabaseClient();
 
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await client
-        .from(
-          "offer_prices"
-        )
-        .select("*")
+        .from("offer_prices")
+        .select(`
+          id,
+          offer_version_id,
+          variant_id,
+          amount,
+          currency,
+          price_type,
+          min_amount,
+          max_amount,
+          billing_period,
+          is_active
+        `)
         .eq(
           "offer_version_id",
           versionId
@@ -2119,94 +3354,117 @@ const sb =
           "is_active",
           true
         )
-        .is(
-          "variant_id",
-          null
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        )
-        .limit(1);
+        .order("id", {
+          ascending: true
+        });
 
     if (error) {
-      console.warn(
-        "[GLIME] Pricing load:",
-        error
-      );
-
-      return;
+      throw error;
     }
 
     const price =
-      data?.[0];
+      data?.[0] || null;
 
-    if (price) {
-      setValue(
+    if (!price) {
+      setFieldValue(
         "priceAmount",
-        price.amount ??
-          ""
+        ""
       );
 
-      setValue(
-        "priceCurrency",
-        price.currency ||
-          "INR"
-      );
-
-      setValue(
-        "priceType",
-        price.price_type ||
-          "fixed"
-      );
-
-      setValue(
-        "billingPeriod",
-        price.billing_period ||
-          ""
-      );
-
-      setValue(
-        "minAmount",
-        price.min_amount ??
-          ""
-      );
-
-      setValue(
-        "maxAmount",
-        price.max_amount ??
-          ""
-      );
-    } else {
-      setValue(
+      setFieldValue(
         "priceCurrency",
         "INR"
       );
 
-      setValue(
+      setFieldValue(
         "priceType",
         "fixed"
       );
+
+      setFieldValue(
+        "billingPeriod",
+        ""
+      );
+
+      setFieldValue(
+        "minAmount",
+        ""
+      );
+
+      setFieldValue(
+        "maxAmount",
+        ""
+      );
+
+      toggleRangeFields(
+        "fixed"
+      );
+
+      return data || [];
     }
 
-    renderRangeState();
+    setFieldValue(
+      "priceAmount",
+      price.amount
+    );
+
+    setFieldValue(
+      "priceCurrency",
+      price.currency ||
+        "INR"
+    );
+
+    setFieldValue(
+      "priceType",
+      price.price_type ||
+        "fixed"
+    );
+
+    setFieldValue(
+      "billingPeriod",
+      price.billing_period ||
+        ""
+    );
+
+    setFieldValue(
+      "minAmount",
+      price.min_amount
+    );
+
+    setFieldValue(
+      "maxAmount",
+      price.max_amount
+    );
+
+    toggleRangeFields(
+      price.price_type
+    );
+
+    return data;
   }
 
-  function priceHasValue() {
-    return (
-      !!getValue(
-        "priceAmount"
-      ) ||
-      !!getValue(
-        "minAmount"
-      ) ||
-      !!getValue(
-        "maxAmount"
-      )
-    );
+
+  function toggleRangeFields(
+    priceType
+  ) {
+    const rangeRow =
+      $("rangeRow");
+
+    if (!rangeRow) {
+      return;
+    }
+
+    const show =
+      priceType === "range";
+
+    rangeRow.hidden =
+      !show;
   }
+
+
+  /* =========================================================
+     SAVE PRICING
+     ========================================================= */
 
   async function savePricing(
     versionId
@@ -2214,95 +3472,191 @@ const sb =
     const client =
       await getSupabaseClient();
 
-    const amount =
-      getValue(
-        "priceAmount"
+    if (!versionId) {
+      throw new Error(
+        "Version ID is required for pricing."
+      );
+    }
+
+    const priceType =
+      String(
+        getFieldValue(
+          "priceType"
+        ) || "fixed"
+      ).toLowerCase();
+
+    const currency =
+      String(
+        getFieldValue(
+          "priceCurrency"
+        ) || "INR"
+      )
+        .trim()
+        .toUpperCase();
+
+    let amount =
+      parseFloat(
+        getFieldValue(
+          "priceAmount"
+        )
       );
 
-    const minAmount =
-      getValue(
-        "minAmount"
+    let minAmount =
+      parseFloat(
+        getFieldValue(
+          "minAmount"
+        )
       );
 
-    const maxAmount =
-      getValue(
-        "maxAmount"
+    let maxAmount =
+      parseFloat(
+        getFieldValue(
+          "maxAmount"
+        )
       );
+
+    if (
+      Number.isNaN(amount)
+    ) {
+      amount = null;
+    }
+
+    if (
+      Number.isNaN(minAmount)
+    ) {
+      minAmount = null;
+    }
+
+    if (
+      Number.isNaN(maxAmount)
+    ) {
+      maxAmount = null;
+    }
 
     /*
-      Do not create an empty price row.
+      Database requires amount NOT NULL.
+
+      For range pricing, use min_amount as the
+      base amount when the main amount is empty.
     */
 
     if (
-      !amount &&
-      !minAmount &&
-      !maxAmount
+      priceType === "range"
     ) {
-      return;
+      if (
+        minAmount === null &&
+        maxAmount !== null
+      ) {
+        minAmount =
+          maxAmount;
+      }
+
+      if (
+        amount === null &&
+        minAmount !== null
+      ) {
+        amount =
+          minAmount;
+      }
+
+      if (
+        amount === null &&
+        maxAmount !== null
+      ) {
+        amount =
+          maxAmount;
+      }
+
+      if (
+        minAmount !== null &&
+        maxAmount !== null &&
+        minAmount > maxAmount
+      ) {
+        throw new Error(
+          "Minimum price cannot be greater than maximum price."
+        );
+      }
     }
 
-    const payload = {
-      offer_version_id:
-        versionId,
+    /*
+      Custom pricing can legitimately have no numeric
+      customer-facing price. Database still requires
+      a non-null amount, so zero is used as the storage
+      placeholder while price_type=custom carries the
+      actual semantic meaning.
+    */
 
-      variant_id:
-        null,
+    if (
+      amount === null &&
+      priceType === "custom"
+    ) {
+      amount = 0;
+    }
 
-      amount:
-        amount
-          ? Number(
-              amount
-            )
-          : null,
+    /*
+      Starting-from pricing requires a usable amount.
+    */
 
-      currency:
-        getValue(
-          "priceCurrency"
-        ) ||
-        "INR",
+    if (
+      amount === null &&
+      priceType === "starting_from"
+    ) {
+      if (
+        minAmount !== null
+      ) {
+        amount =
+          minAmount;
+      } else {
+        throw new Error(
+          "Starting-from pricing requires an amount."
+        );
+      }
+    }
 
-      price_type:
-        getValue(
-          "priceType"
-        ) ||
-        "fixed",
+    if (
+      amount === null
+    ) {
+      throw new Error(
+        "Please enter a valid price."
+      );
+    }
 
-      min_amount:
-        minAmount
-          ? Number(
-              minAmount
-            )
-          : null,
+    if (
+      amount < 0
+    ) {
+      throw new Error(
+        "Price cannot be negative."
+      );
+    }
 
-      max_amount:
-        maxAmount
-          ? Number(
-              maxAmount
-            )
-          : null,
+    if (
+      minAmount !== null &&
+      minAmount < 0
+    ) {
+      throw new Error(
+        "Minimum price cannot be negative."
+      );
+    }
 
-      billing_period:
-        getValue(
-          "billingPeriod"
-        ) ||
-        null,
+    if (
+      maxAmount !== null &&
+      maxAmount < 0
+    ) {
+      throw new Error(
+        "Maximum price cannot be negative."
+      );
+    }
 
-      is_active:
-        true,
+    /*
+      Disable previous active prices first.
+    */
 
-      updated_at:
-        new Date().toISOString()
-    };
-
-    const {
-      data: existing,
-      error: findError
-    } =
+    const deactivate =
       await client
-        .from(
-          "offer_prices"
-        )
-        .select("id")
+        .from("offer_prices")
+        .update({
+          is_active: false
+        })
         .eq(
           "offer_version_id",
           versionId
@@ -2310,927 +3664,810 @@ const sb =
         .eq(
           "is_active",
           true
-        )
-        .is(
-          "variant_id",
-          null
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        )
-        .limit(1);
+        );
 
-    if (findError) {
-      throw findError;
+    if (deactivate.error) {
+      throw deactivate.error;
     }
 
-    if (
-      existing?.[0]
-    ) {
-      const {
-        error
-      } =
-        await client
-          .from(
-            "offer_prices"
-          )
-          .update(
-            payload
-          )
-          .eq(
-            "id",
-            existing[0].id
-          );
+    const payload = {
+      offer_version_id:
+        versionId,
+      variant_id: null,
+      amount,
+      currency,
+      price_type:
+        priceType,
+      min_amount:
+        priceType === "range"
+          ? minAmount
+          : null,
+      max_amount:
+        priceType === "range"
+          ? maxAmount
+          : null,
+      billing_period:
+        String(
+          getFieldValue(
+            "billingPeriod"
+          ) || ""
+        ).trim() || null,
+      is_active: true
+    };
 
-      if (error) {
-        throw error;
-      }
-    } else {
-      const {
-        error
-      } =
-        await client
-          .from(
-            "offer_prices"
-          )
-          .insert(
-            payload
-          );
+    const { data, error } =
+      await client
+        .from("offer_prices")
+        .insert(payload)
+        .select()
+        .single();
 
-      if (error) {
-        throw error;
-      }
+    if (error) {
+      throw error;
     }
+
+    return data;
   }
 
-  function renderRangeState() {
-    const row =
-      $("rangeRow");
-
-    if (!row) return;
-
-    const type =
-      getValue(
-        "priceType"
-      );
-
-    row.hidden =
-      ![
-        "range",
-        "starting_from",
-        "from_to"
-      ].includes(
-        type
-      );
-  }
 
   /* =========================================================
      AVAILABILITY
      ========================================================= */
 
-  async function loadOfferAvailability(
+  async function loadAvailability(
     versionId
   ) {
     const client =
       await getSupabaseClient();
 
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await client
-        .from(
-          "offer_availability"
-        )
-        .select("*")
+        .from("offer_availability")
+        .select(`
+          id,
+          offer_version_id,
+          day_of_week,
+          start_time,
+          end_time,
+          timezone,
+          capacity,
+          is_available,
+          notes
+        `)
         .eq(
           "offer_version_id",
           versionId
         )
-        .order(
-          "day_of_week",
-          {
-            ascending: true
-          }
-        )
-        .order(
-          "start_time",
-          {
-            ascending: true
-          }
-        );
+        .order("day_of_week", {
+          ascending: true
+        });
 
     if (error) {
-      console.warn(
-        "[GLIME] Availability load:",
-        error
-      );
-
-      state.availability =
-        [];
-
-      renderAvailability();
-
-      return;
+      throw error;
     }
 
     state.availability =
       data || [];
 
-    renderAvailability();
+    return state.availability;
   }
+
 
   function renderAvailability() {
     const list =
       $("availabilityList");
 
-    if (!list) return;
+    if (!list) {
+      return;
+    }
 
-    if (
-      !state.availability.length
-    ) {
-      list.innerHTML =
-        `<div class="availability-empty">
-          No availability rules added.
-        </div>`;
+    list.innerHTML = "";
+
+    if (!state.availability.length) {
+      const empty =
+        document.createElement("div");
+
+      empty.className =
+        "empty-state";
+
+      empty.textContent =
+        "No availability rules added.";
+
+      list.appendChild(empty);
 
       return;
     }
 
-    const days = [
-      [0, "Sunday"],
-      [1, "Monday"],
-      [2, "Tuesday"],
-      [3, "Wednesday"],
-      [4, "Thursday"],
-      [5, "Friday"],
-      [6, "Saturday"]
-    ];
+    state.availability.forEach(
+      (item, index) => {
+        const row =
+          document.createElement("div");
 
-    list.innerHTML =
-      state.availability
-        .map(
-          (item, index) => `
-            <div
-              class="availability-row"
-              data-index="${index}"
-            >
+        row.className =
+          "availability-item";
 
-              <select
-                class="availability-day"
-              >
-                ${days
-                  .map(
-                    ([value, label]) => `
-                      <option
-                        value="${value}"
-                        ${
-                          String(
-                            item.day_of_week
-                          ) ===
-                          String(
-                            value
-                          )
-                            ? "selected"
-                            : ""
-                        }
-                      >
-                        ${label}
-                      </option>
-                    `
-                  )
-                  .join("")}
-              </select>
-
-              <input
-                type="time"
-                class="availability-start"
-                value="${escapeHtml(
-                  item.start_time ||
-                    ""
-                )}"
-              />
-
-              <input
-                type="time"
-                class="availability-end"
-                value="${escapeHtml(
-                  item.end_time ||
-                    ""
-                )}"
-              />
-
-              <input
-                type="number"
-                min="0"
-                class="availability-capacity"
-                placeholder="Capacity"
-                value="${escapeHtml(
-                  item.capacity ??
-                    ""
-                )}"
-              />
-
-              <button
-                type="button"
-                class="remove-availability"
-                data-index="${index}"
-              >
-                Remove
-              </button>
-
-            </div>
-          `
-        )
-        .join("");
-
-    qsa(
-      ".remove-availability",
-      list
-    ).forEach(
-      (button) => {
-        button.addEventListener(
-          "click",
-          async () => {
-            try {
-              const index =
+        const day =
+          item.day_of_week === null
+            ? "Any day"
+            : [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday"
+              ][
                 Number(
-                  button.dataset
-                    .index
-                );
+                  item.day_of_week
+                )
+              ] || "Day";
 
-              const row =
-                state
-                  .availability[
-                  index
-                ];
+        const time =
+          item.start_time &&
+          item.end_time
+            ? `${item.start_time} – ${item.end_time}`
+            : "All day";
 
-              if (row?.id) {
-                const client =
-                  await getSupabaseClient();
+        row.innerHTML = `
+          <div>
+            <strong></strong>
+            <span></span>
+          </div>
+          <button
+            type="button"
+            class="availability-remove"
+            data-index="${index}"
+          >
+            Remove
+          </button>
+        `;
 
-                const {
-                  error
-                } =
-                  await client
-                    .from(
-                      "offer_availability"
-                    )
-                    .delete()
-                    .eq(
-                      "id",
-                      row.id
-                    );
+        const strong =
+          row.querySelector(
+            "strong"
+          );
 
-                if (error) {
-                  throw error;
-                }
-              }
+        const span =
+          row.querySelector(
+            "span"
+          );
 
-              state.availability.splice(
-                index,
-                1
-              );
+        if (strong) {
+          strong.textContent =
+            day;
+        }
 
-              renderAvailability();
-            } catch (
-              error
-            ) {
-              handleError(
-                error,
-                "Unable to remove availability."
-              );
-            }
-          }
-        );
+        if (span) {
+          span.textContent =
+            `${time} · ${
+              item.timezone ||
+              "UTC"
+            }`;
+        }
+
+        const removeButton =
+          row.querySelector(
+            ".availability-remove"
+          );
+
+        if (removeButton) {
+          removeButton.addEventListener(
+            "click",
+            () =>
+              removeAvailability(
+                index
+              )
+          );
+        }
+
+        list.appendChild(row);
       }
     );
   }
 
-  function addAvailabilityRow() {
-    state.availability.push({
+
+  async function addAvailability() {
+    const versionId =
+      state.currentVersion?.id;
+
+    if (!versionId) {
+      setSetupMessage(
+        "Create or open an offer first.",
+        "error"
+      );
+
+      return;
+    }
+
+    const dayInput =
+      window.prompt(
+        "Day of week (0=Sunday, 1=Monday ... 6=Saturday). Leave empty for every day:"
+      );
+
+    let dayOfWeek =
+      String(dayInput || "")
+        .trim();
+
+    if (dayOfWeek === "") {
+      dayOfWeek = null;
+    } else {
+      dayOfWeek =
+        Number(dayOfWeek);
+
+      if (
+        !Number.isInteger(
+          dayOfWeek
+        ) ||
+        dayOfWeek < 0 ||
+        dayOfWeek > 6
+      ) {
+        setSetupMessage(
+          "Day must be between 0 and 6.",
+          "error"
+        );
+
+        return;
+      }
+    }
+
+    const startTime =
+      window.prompt(
+        "Start time (HH:MM), or leave empty for all day:"
+      );
+
+    const endTime =
+      window.prompt(
+        "End time (HH:MM), or leave empty for all day:"
+      );
+
+    const timezone =
+      window.prompt(
+        "Timezone:",
+        "Asia/Kolkata"
+      ) || "Asia/Kolkata";
+
+    const capacityInput =
+      window.prompt(
+        "Capacity (optional):"
+      );
+
+    let capacity =
+      capacityInput
+        ? Number(capacityInput)
+        : null;
+
+    if (
+      capacity !== null &&
+      (
+        !Number.isFinite(
+          capacity
+        ) ||
+        capacity <= 0
+      )
+    ) {
+      setSetupMessage(
+        "Capacity must be greater than zero.",
+        "error"
+      );
+
+      return;
+    }
+
+    const client =
+      await getSupabaseClient();
+
+    const payload = {
+      offer_version_id:
+        versionId,
       day_of_week:
-        1,
-
+        dayOfWeek,
       start_time:
-        "09:00",
-
+        String(
+          startTime || ""
+        ).trim() || null,
       end_time:
-        "17:00",
-
+        String(
+          endTime || ""
+        ).trim() || null,
       timezone:
-        localTimezone(),
+        String(
+          timezone
+        ).trim() ||
+        "Asia/Kolkata",
+      capacity,
+      is_available: true,
+      notes: null
+    };
 
-      capacity:
-        null,
+    if (
+      (
+        payload.start_time &&
+        !payload.end_time
+      ) ||
+      (
+        !payload.start_time &&
+        payload.end_time
+      )
+    ) {
+      setSetupMessage(
+        "Start and end time must both be provided.",
+        "error"
+      );
 
-      is_available:
-        true,
+      return;
+    }
 
-      notes:
-        null
-    });
+    const { data, error } =
+      await client
+        .from("offer_availability")
+        .insert(payload)
+        .select()
+        .single();
+
+    if (error) {
+      throw error;
+    }
+
+    state.availability.push(
+      data
+    );
+
+    renderAvailability();
+
+    return data;
+  }
+
+
+  async function removeAvailability(
+    index
+  ) {
+    const item =
+      state.availability[index];
+
+    if (!item) {
+      return;
+    }
+
+    const client =
+      await getSupabaseClient();
+
+    const { error } =
+      await client
+        .from("offer_availability")
+        .delete()
+        .eq(
+          "id",
+          item.id
+        )
+        .eq(
+          "offer_version_id",
+          state.currentVersion.id
+        );
+
+    if (error) {
+      throw error;
+    }
+
+    state.availability.splice(
+      index,
+      1
+    );
 
     renderAvailability();
   }
 
-  async function saveAvailability(
-    versionId
-  ) {
-    const client =
-      await getSupabaseClient();
-
-    const container =
-      $("availabilityList");
-
-    if (!container) {
-      return;
-    }
-
-    const rows =
-      qsa(
-        ".availability-row",
-        container
-      );
-
-    /*
-      If the user removed all rows,
-      delete existing rows for this version.
-    */
-
-    if (!rows.length) {
-      const {
-        error
-      } =
-        await client
-          .from(
-            "offer_availability"
-          )
-          .delete()
-          .eq(
-            "offer_version_id",
-            versionId
-          );
-
-      if (error) {
-        throw error;
-      }
-
-      state.availability =
-        [];
-
-      return;
-    }
-
-    const submittedIds =
-      new Set();
-
-    for (
-      let index = 0;
-      index < rows.length;
-      index++
-    ) {
-      const row =
-        rows[index];
-
-      const existing =
-        state.availability[
-          index
-        ] || {};
-
-      const day =
-        Number(
-          qs(
-            ".availability-day",
-            row
-          )?.value || 0
-        );
-
-      const start =
-        qs(
-          ".availability-start",
-          row
-        )?.value ||
-        null;
-
-      const end =
-        qs(
-          ".availability-end",
-          row
-        )?.value ||
-        null;
-
-      const capacityValue =
-        qs(
-          ".availability-capacity",
-          row
-        )?.value;
-
-      const payload = {
-        offer_version_id:
-          versionId,
-
-        day_of_week:
-          day,
-
-        start_time:
-          start,
-
-        end_time:
-          end,
-
-        timezone:
-          existing.timezone ||
-          localTimezone(),
-
-        capacity:
-          capacityValue !==
-            "" &&
-          capacityValue !=
-            null
-            ? Number(
-                capacityValue
-              )
-            : null,
-
-        is_available:
-          existing.is_available !==
-          false,
-
-        notes:
-          existing.notes ||
-          null,
-
-        updated_at:
-          new Date().toISOString()
-      };
-
-      if (
-        existing.id
-      ) {
-        submittedIds.add(
-          existing.id
-        );
-
-        const {
-          error
-        } =
-          await client
-            .from(
-              "offer_availability"
-            )
-            .update(
-              payload
-            )
-            .eq(
-              "id",
-              existing.id
-            );
-
-        if (error) {
-          throw error;
-        }
-      } else {
-        const {
-          data,
-          error
-        } =
-          await client
-            .from(
-              "offer_availability"
-            )
-            .insert(
-              payload
-            )
-            .select()
-            .single();
-
-        if (error) {
-          throw error;
-        }
-
-        state.availability[
-          index
-        ] = data;
-      }
-    }
-
-    /*
-      Remove database rows that are no longer present
-      in the editor.
-    */
-
-    const existingIds =
-      state.availability
-        .map(
-          (item) =>
-            item.id
-        )
-        .filter(Boolean);
-
-    const removedIds =
-      existingIds.filter(
-        (id) =>
-          !submittedIds.has(
-            id
-          )
-      );
-
-    if (
-      removedIds.length
-    ) {
-      const {
-        error
-      } =
-        await client
-          .from(
-            "offer_availability"
-          )
-          .delete()
-          .in(
-            "id",
-            removedIds
-          );
-
-      if (error) {
-        throw error;
-      }
-    }
-  }
 
   /* =========================================================
-     METADATA COLLECTION
+     BUILD VERSION METADATA FROM FORM
      ========================================================= */
 
-  function collectVersionMetadata() {
+  function buildVersionMetadata() {
     return {
-      short_description:
-        getValue(
-          "shortDescription"
-        ),
-
-      category_id:
-        getValue(
-          "offerCategory"
-        ) ||
-        null,
-
       duration:
-        getValue(
-          "detailDuration"
-        ),
-
-      eligibility:
-        getValue(
-          "eligibility"
-        ),
+        String(
+          getFieldValue(
+            "detailDuration"
+          ) || ""
+        ).trim() || null,
 
       included:
-        getValue(
-          "included"
+        textToArray(
+          getFieldValue(
+            "included"
+          )
         ),
 
       excluded:
-        getValue(
-          "excluded"
+        textToArray(
+          getFieldValue(
+            "excluded"
+          )
         ),
 
       faqs:
-        getValue(
-          "faqs"
+        textToArray(
+          getFieldValue(
+            "faqs"
+          )
         ),
 
       policies:
-        getValue(
-          "policies"
+        textToArray(
+          getFieldValue(
+            "policies"
+          )
         ),
 
       qualification:
-        getValue(
-          "qualification"
+        textToArray(
+          getFieldValue(
+            "qualification"
+          )
         ),
 
       ai_instructions:
-        getValue(
-          "aiInstructions"
-        ),
+        String(
+          getFieldValue(
+            "aiInstructions"
+          ) || ""
+        ).trim(),
 
-      website_url:
-        getValue(
-          "websiteLink"
-        ),
-
-      booking_url:
-        getValue(
-          "bookingLink"
-        ),
-
-      instagram_url:
-        getValue(
-          "instagramLink"
-        ),
-
-      facebook_url:
-        getValue(
-          "facebookLink"
+      aliases:
+        textToArray(
+          getFieldValue(
+            "aliases"
+          )
         ),
 
       media_urls:
-        arrayFromText(
-          getRawValue(
+        textToArray(
+          getFieldValue(
             "mediaUrls"
           )
         ),
 
-      aliases:
-        arrayFromText(
-          getRawValue(
-            "aliases"
+      links: {
+        website:
+          String(
+            getFieldValue(
+              "websiteLink"
+            ) || ""
+          ).trim(),
+
+        booking:
+          String(
+            getFieldValue(
+              "bookingLink"
+            ) || ""
+          ).trim(),
+
+        instagram:
+          String(
+            getFieldValue(
+              "instagramLink"
+            ) || ""
+          ).trim(),
+
+        facebook:
+          String(
+            getFieldValue(
+              "facebookLink"
+            ) || ""
+          ).trim()
+      },
+
+      ui_offer_type:
+        normalizeUIOfferType(
+          getFieldValue(
+            "offerType"
           )
-        )
+        ),
+
+      saved_from:
+        "services-ui"
     };
   }
 
-  function collectVersionArrays() {
-    return {
-      sales_talking_points:
-        arrayFromText(
-          getRawValue(
-            "talkingPoints"
-          )
-        ),
-
-      allowed_claims:
-        arrayFromText(
-          getRawValue(
-            "allowedClaims"
-          )
-        ),
-
-      restrictions:
-        arrayFromText(
-          getRawValue(
-            "restrictions"
-          )
-        ),
-
-      customer_eligibility:
-        arrayFromText(
-          getRawValue(
-            "eligibility"
-          )
-        )
-    };
-  }
 
   /* =========================================================
-     SAVE DRAFT
+     SAVE OFFER DRAFT
      ========================================================= */
 
   async function saveCurrentDraft() {
-    if (
-      !state.currentOffer ||
-      !state.currentVersion
-    ) {
+    if (!state.currentOffer) {
       throw new Error(
-        "No offer is open."
+        "No offer is currently open."
       );
-    }
-
-    /*
-      Only a draft can be directly edited.
-
-      Published / approved / review versions are immutable.
-      Editing them automatically creates a new draft version.
-    */
-
-    if (
-      state.currentVersion.status !==
-      "draft"
-    ) {
-      await createDraftFromCurrent();
     }
 
     const client =
       await getSupabaseClient();
 
-    const title =
-      getValue(
-        "offerName"
-      ) ||
-      "Untitled Offer";
+    const clientId =
+      tenantOfferId();
 
-    const offerType =
-      getValue(
-        "offerType"
-      ) ||
-      "service";
+    if (!clientId) {
+      throw new Error(
+        "Client ID is missing."
+      );
+    }
 
-    const categoryId =
-      getValue(
-        "offerCategory"
-      ) ||
-      null;
+    state.saving = true;
 
-    const description =
-      getValue(
-        "offerDescription"
+    try {
+      /*
+        If current version is not draft, create a new
+        draft version first instead of modifying a
+        review/approved/published version.
+      */
+
+      if (
+        !state.currentVersion ||
+        state.currentVersion.status !==
+          "draft"
+      ) {
+        await createDraftFromCurrent();
+      }
+
+      const offer =
+        state.currentOffer;
+
+      const version =
+        state.currentVersion;
+
+      const uiOfferType =
+        normalizeUIOfferType(
+          getFieldValue(
+            "offerType"
+          ) ||
+            version?.metadata?.ui_offer_type ||
+            offer.offer_type
+        );
+
+      const dbOfferType =
+        mapUIOfferTypeToDatabase(
+          uiOfferType
+        );
+
+      const name =
+        String(
+          getFieldValue(
+            "offerName"
+          ) || ""
+        ).trim();
+
+      if (!name) {
+        throw new Error(
+          "Offer name is required."
+        );
+      }
+
+      const shortDescription =
+        String(
+          getFieldValue(
+            "shortDescription"
+          ) || ""
+        ).trim();
+
+      const description =
+        String(
+          getFieldValue(
+            "offerDescription"
+          ) || ""
+        ).trim();
+
+      const metadata =
+        buildVersionMetadata();
+
+      /*
+        Keep the UI entity identity in metadata.
+      */
+
+      metadata.ui_offer_type =
+        uiOfferType;
+
+      metadata.db_offer_type =
+        dbOfferType;
+
+
+      /* -----------------------------------------------
+         UPDATE OFFER
+         ----------------------------------------------- */
+
+      const { data: updatedOffer,
+        error: offerError } =
+        await client
+          .from("offers")
+          .update({
+            offer_type:
+              dbOfferType,
+            name,
+            short_description:
+              shortDescription,
+            description,
+            category_id:
+              getFieldValue(
+                "offerCategory"
+              ) || null
+          })
+          .eq("id", offer.id)
+          .eq(
+            "client_id",
+            clientId
+          )
+          .select()
+          .single();
+
+      if (offerError) {
+        throw offerError;
+      }
+
+
+      /* -----------------------------------------------
+         UPDATE VERSION
+         ----------------------------------------------- */
+
+      const { data: updatedVersion,
+        error: versionError } =
+        await client
+          .from("offer_versions")
+          .update({
+            title: name,
+            description,
+            sales_talking_points:
+              textToArray(
+                getFieldValue(
+                  "talkingPoints"
+                )
+              ),
+            allowed_claims:
+              textToArray(
+                getFieldValue(
+                  "allowedClaims"
+                )
+              ),
+            restrictions:
+              textToArray(
+                getFieldValue(
+                  "restrictions"
+                )
+              ),
+            customer_eligibility:
+              textToArray(
+                getFieldValue(
+                  "eligibility"
+                )
+              ),
+            metadata
+          })
+          .eq(
+            "id",
+            version.id
+          )
+          .eq(
+            "offer_id",
+            offer.id
+          )
+          .eq(
+            "status",
+            "draft"
+          )
+          .select()
+          .single();
+
+      if (versionError) {
+        throw versionError;
+      }
+
+
+      /* -----------------------------------------------
+         PRICING
+         ----------------------------------------------- */
+
+      await savePricing(
+        updatedVersion.id
       );
 
-    const metadata =
-      collectVersionMetadata();
 
-    const arrays =
-      collectVersionArrays();
+      /* -----------------------------------------------
+         BINDING
+         ----------------------------------------------- */
 
-    const slug =
-      `${slugify(
-        title
-      )}-${String(
-        state.currentOffer.id
-      ).slice(0, 8)}`;
+      const binding =
+        await ensureOfferBinding(
+          offer.id,
+          updatedVersion.id,
+          uiOfferType
+        );
 
-    /*
-      IMPORTANT:
-      offers.client_id is TEXT in the current schema.
-    */
 
-    const {
-      data: updatedOffer,
-      error: offerError
-    } =
-      await client
-        .from("offers")
-        .update({
-          name:
-            title,
+      /* -----------------------------------------------
+         UPDATE LOCAL STATE
+         ----------------------------------------------- */
 
-          slug,
+      state.currentOffer =
+        updatedOffer;
 
-          offer_type:
-            offerType,
+      state.currentVersion =
+        updatedVersion;
 
-          short_description:
-            metadata.short_description ||
-            null,
+      state.currentBinding =
+        binding;
 
-          description:
-            description ||
-            null,
+      state.sourceVersion =
+        null;
 
-          category_id:
-            categoryId,
+      setEditorTitle(
+        updatedOffer.name
+      );
 
-          status:
-            "draft",
+      setEditorStatus(
+        updatedVersion.status
+      );
 
-          current_version_id:
-            state.currentVersion.id,
+      await loadAvailability(
+        updatedVersion.id
+      );
 
-          updated_at:
-            new Date().toISOString()
-        })
-        .eq(
-          "id",
-          state.currentOffer.id
-        )
-        .eq(
-          "client_id",
-          tenantOfferId()
-        )
-        .select()
-        .single();
+      renderAvailability();
 
-    if (offerError) {
-      throw offerError;
+      await loadOffers();
+
+      updateProgress();
+
+      setSetupMessage(
+        "Draft saved successfully.",
+        "success"
+      );
+
+      return {
+        offer:
+          updatedOffer,
+        version:
+          updatedVersion,
+        binding
+      };
+
+    } finally {
+      state.saving = false;
     }
-
-    const {
-      data: updatedVersion,
-      error: versionError
-    } =
-      await client
-        .from(
-          "offer_versions"
-        )
-        .update({
-          title,
-
-          description,
-
-          sales_talking_points:
-            arrays.sales_talking_points,
-
-          allowed_claims:
-            arrays.allowed_claims,
-
-          restrictions:
-            arrays.restrictions,
-
-          customer_eligibility:
-            arrays.customer_eligibility,
-
-          metadata,
-
-          updated_at:
-            new Date().toISOString()
-        })
-        .eq(
-          "id",
-          state.currentVersion.id
-        )
-        .eq(
-          "offer_id",
-          state.currentOffer.id
-        )
-        .select()
-        .single();
-
-    if (versionError) {
-      throw versionError;
-    }
-
-    state.currentOffer =
-      updatedOffer;
-
-    state.currentVersion =
-      updatedVersion;
-
-    await savePricing(
-      updatedVersion.id
-    );
-
-    await saveAvailability(
-      updatedVersion.id
-    );
-
-    await saveBinding(
-      updatedOffer.id,
-      updatedVersion.id
-    );
-
-    renderShareIdentity();
-
-    await loadOffers();
-
-    updateVersionActions();
-
-    notify(
-      "Draft saved.",
-      "success"
-    );
-
-    /*
-      Runtime AI context can refresh after business truth
-      changes, but it never becomes the source of truth.
-    */
-
-    await refreshAIContextAddon();
   }
 
+
   /* =========================================================
-     CREATE NEW DRAFT VERSION
+     CREATE DRAFT FROM NON-DRAFT VERSION
      ========================================================= */
 
   async function createDraftFromCurrent() {
     const client =
       await getSupabaseClient();
 
-    const source =
-      state.currentVersion;
-
     const offer =
       state.currentOffer;
 
-    if (
-      !source ||
-      !offer
-    ) {
+    const source =
+      state.currentVersion;
+
+    if (!offer || !source) {
       throw new Error(
-        "No source version found."
+        "No source version is available."
       );
     }
 
     /*
-      Always calculate next version from database,
-      not just from the currently loaded version.
+      Determine next version number.
     */
 
-    const {
-      data: versions,
-      error:
-        versionsError
-    } =
+    const { data: versions,
+      error: versionsError } =
       await client
-        .from(
-          "offer_versions"
-        )
-        .select(
-          "version_number"
-        )
+        .from("offer_versions")
+        .select(`
+          id,
+          version_number,
+          status
+        `)
         .eq(
           "offer_id",
           offer.id
@@ -3240,91 +4477,80 @@ const sb =
           {
             ascending: false
           }
-        )
-        .limit(1);
+        );
 
     if (versionsError) {
       throw versionsError;
     }
 
-    const nextNumber =
-      Number(
-        versions?.[0]
-          ?.version_number ||
-          source.version_number ||
-          0
-      ) + 1;
+    const maxVersion =
+      versions?.reduce(
+        (
+          maximum,
+          item
+        ) =>
+          Math.max(
+            maximum,
+            Number(
+              item.version_number
+            ) || 0
+          ),
+        0
+      ) || 0;
 
-    const metadata =
-      getMetadata(
-        source
-      );
+    const nextVersion =
+      maxVersion + 1;
 
-    const {
-      data: draft,
-      error: draftError
-    } =
-      await client
-        .from(
-          "offer_versions"
+    const sourceMetadata =
+      source.metadata || {};
+
+    const draftMetadata = {
+      ...sourceMetadata,
+      cloned_from_version_id:
+        source.id,
+      cloned_at:
+        new Date().toISOString(),
+      ui_offer_type:
+        sourceMetadata.ui_offer_type ||
+        state.currentBinding?.metadata?.ui_offer_type ||
+        normalizeUIOfferType(
+          offer.offer_type
         )
+    };
+
+    const { data: draft,
+      error: draftError } =
+      await client
+        .from("offer_versions")
         .insert({
           offer_id:
             offer.id,
-
           version_number:
-            nextNumber,
-
+            nextVersion,
           status:
             "draft",
-
           title:
             source.title ||
             offer.name ||
-            "Untitled Offer",
-
+            "Untitled",
           description:
             source.description ||
+            offer.description ||
             "",
-
           sales_talking_points:
-            Array.isArray(
-              source.sales_talking_points
-            )
-              ? source.sales_talking_points
-              : [],
-
+            source.sales_talking_points ||
+            [],
           allowed_claims:
-            Array.isArray(
-              source.allowed_claims
-            )
-              ? source.allowed_claims
-              : [],
-
+            source.allowed_claims ||
+            [],
           restrictions:
-            Array.isArray(
-              source.restrictions
-            )
-              ? source.restrictions
-              : [],
-
+            source.restrictions ||
+            [],
           customer_eligibility:
-            Array.isArray(
-              source.customer_eligibility
-            )
-              ? source.customer_eligibility
-              : [],
-
-          metadata: {
-            ...metadata,
-
-            /*
-              AI check belongs to the old version.
-              New draft starts with a fresh check.
-            */
-            ai_check:
-              null
-          }
+            source.customer_eligibility ||
+            [],
+          metadata:
+            draftMetadata
         })
         .select()
         .single();
@@ -3333,175 +4559,175 @@ const sb =
       throw draftError;
     }
 
-    /* =====================================================
-       CLONE VARIANTS
-       ===================================================== */
 
-    const {
-      data: variants
-    } =
-      await client
-        .from(
-          "offer_variants"
-        )
-        .select("*")
-        .eq(
-          "offer_version_id",
-          source.id
-        );
-
-    const variantMap =
-      new Map();
-
-    if (
-      variants?.length
-    ) {
-      for (
-        const variant of variants
-      ) {
-        const {
-          data: newVariant,
-          error
-        } =
-          await client
-            .from(
-              "offer_variants"
-            )
-            .insert({
-              offer_version_id:
-                draft.id,
-
-              name:
-                variant.name,
-
-              sku:
-                variant.sku,
-
-              description:
-                variant.description,
-
-              attributes:
-                variant.attributes ||
-                {},
-
-              is_active:
-                variant.is_active !==
-                false,
-
-              sort_order:
-                variant.sort_order ||
-                0
-            })
-            .select()
-            .single();
-
-        if (error) {
-          throw error;
-        }
-
-        variantMap.set(
-          String(
-            variant.id
-          ),
-          newVariant.id
-        );
-      }
-    }
-
-    /* =====================================================
+    /* -----------------------------------------------
        CLONE PRICES
-       ===================================================== */
+       ----------------------------------------------- */
 
-    const {
-      data: prices,
-      error: pricesError
-    } =
+    const { data: prices,
+      error: pricesError } =
       await client
-        .from(
-          "offer_prices"
-        )
-        .select("*")
+        .from("offer_prices")
+        .select(`
+          variant_id,
+          amount,
+          currency,
+          price_type,
+          min_amount,
+          max_amount,
+          billing_period
+        `)
         .eq(
           "offer_version_id",
           source.id
+        )
+        .eq(
+          "is_active",
+          true
         );
 
     if (pricesError) {
       throw pricesError;
     }
 
-    if (
-      prices?.length
-    ) {
+    if (prices?.length) {
       const priceRows =
         prices.map(
           (price) => ({
             offer_version_id:
               draft.id,
-
             variant_id:
-              price.variant_id
-                ? variantMap.get(
-                    String(
-                      price.variant_id
-                    )
-                  ) || null
-                : null,
-
+              null,
             amount:
-              price.amount,
-
+              Number(
+                price.amount
+              ) || 0,
             currency:
-              price.currency,
-
+              price.currency ||
+              "INR",
             price_type:
-              price.price_type,
-
+              price.price_type ||
+              "fixed",
             min_amount:
-              price.min_amount,
-
+              price.min_amount ??
+              null,
             max_amount:
-              price.max_amount,
-
+              price.max_amount ??
+              null,
             billing_period:
-              price.billing_period,
-
+              price.billing_period ??
+              null,
             is_active:
-              price.is_active !==
-              false
+              true
           })
         );
 
       const {
         error
-      } =
-        await client
-          .from(
-            "offer_prices"
-          )
-          .insert(
-            priceRows
-          );
+      } = await client
+        .from("offer_prices")
+        .insert(
+          priceRows
+        );
 
       if (error) {
         throw error;
       }
     }
 
-    /* =====================================================
-       CLONE AVAILABILITY
-       ===================================================== */
 
-    const {
-      data: availability,
-      error:
-        availabilityError
-    } =
+    /* -----------------------------------------------
+       CLONE VARIANTS
+       ----------------------------------------------- */
+
+    const { data: variants,
+      error: variantsError } =
       await client
-        .from(
-          "offer_availability"
+        .from("offer_variants")
+        .select(`
+          name,
+          sku,
+          description,
+          attributes,
+          is_active,
+          sort_order
+        `)
+        .eq(
+          "offer_version_id",
+          source.id
         )
-        .select("*")
+        .eq(
+          "is_active",
+          true
+        )
+        .order(
+          "sort_order",
+          {
+            ascending: true
+          }
+        );
+
+    if (variantsError) {
+      throw variantsError;
+    }
+
+    if (variants?.length) {
+      const variantRows =
+        variants.map(
+          (variant) => ({
+            offer_version_id:
+              draft.id,
+            name:
+              variant.name,
+            sku:
+              variant.sku ||
+              null,
+            description:
+              variant.description ||
+              null,
+            attributes:
+              variant.attributes ||
+              {},
+            is_active:
+              true,
+            sort_order:
+              Number(
+                variant.sort_order
+              ) || 0
+          })
+        );
+
+      const {
+        error
+      } = await client
+        .from("offer_variants")
+        .insert(
+          variantRows
+        );
+
+      if (error) {
+        throw error;
+      }
+    }
+
+
+    /* -----------------------------------------------
+       CLONE AVAILABILITY
+       ----------------------------------------------- */
+
+    const { data: availability,
+      error: availabilityError } =
+      await client
+        .from("offer_availability")
+        .select(`
+          day_of_week,
+          start_time,
+          end_time,
+          timezone,
+          capacity,
+          is_available,
+          notes
+        `)
         .eq(
           "offer_version_id",
           source.id
@@ -3511,75 +4737,59 @@ const sb =
       throw availabilityError;
     }
 
-    if (
-      availability?.length
-    ) {
-      const rows =
+    if (availability?.length) {
+      const availabilityRows =
         availability.map(
           (item) => ({
             offer_version_id:
               draft.id,
-
             day_of_week:
               item.day_of_week,
-
             start_time:
               item.start_time,
-
             end_time:
               item.end_time,
-
             timezone:
-              item.timezone,
-
+              item.timezone ||
+              "Asia/Kolkata",
             capacity:
-              item.capacity,
-
+              item.capacity ??
+              null,
             is_available:
-              item.is_available !==
-              false,
-
+              item.is_available !== false,
             notes:
-              item.notes
+              item.notes ||
+              null
           })
         );
 
       const {
         error
-      } =
-        await client
-          .from(
-            "offer_availability"
-          )
-          .insert(
-            rows
-          );
+      } = await client
+        .from("offer_availability")
+        .insert(
+          availabilityRows
+        );
 
       if (error) {
         throw error;
       }
     }
 
-    /* =====================================================
-       MAKE NEW DRAFT CURRENT
-       ===================================================== */
 
-    const {
-      data: updatedOffer,
-      error:
-        offerError
-    } =
+    /* -----------------------------------------------
+       POINT CURRENT VERSION TO NEW DRAFT
+       ----------------------------------------------- */
+
+    const { data: updatedOffer,
+      error: updateError } =
       await client
         .from("offers")
         .update({
           current_version_id:
             draft.id,
-
           status:
-            "draft",
-
-          updated_at:
-            new Date().toISOString()
+            "draft"
         })
         .eq(
           "id",
@@ -3592,201 +4802,570 @@ const sb =
         .select()
         .single();
 
-    if (offerError) {
-      throw offerError;
+    if (updateError) {
+      throw updateError;
     }
 
-    state.sourceVersion =
-      source;
 
-    state.currentVersion =
-      draft;
+    /*
+      Binding remains attached to the offer, but its
+      metadata is refreshed for the new draft.
+    */
+
+    const binding =
+      await ensureOfferBinding(
+        offer.id,
+        draft.id,
+        draftMetadata.ui_offer_type
+      );
 
     state.currentOffer =
       updatedOffer;
 
-    await loadOfferAvailability(
+    state.currentVersion =
+      draft;
+
+    state.currentBinding =
+      binding;
+
+    state.sourceVersion =
+      source;
+
+    await loadAvailability(
       draft.id
     );
 
-    await loadOfferBinding(
-      offer.id
-    );
+    return {
+      offer:
+        updatedOffer,
+      version:
+        draft,
+      binding
+    };
+  }
 
-    await loadOfferIntoForm();
 
-    updateVersionActions();
+  /* =========================================================
+     STEP PROGRESS
+     ========================================================= */
 
-    notify(
-      `Draft v${nextNumber} created.`,
-      "success"
+  function updateProgress() {
+    const progress =
+      $("progress");
+
+    const stepLabel =
+      $("stepLabel");
+
+    if (progress) {
+      const percentage =
+        Math.round(
+          (
+            state.currentStep /
+            state.totalSteps
+          ) * 100
+        );
+
+      progress.style.width =
+        `${percentage}%`;
+    }
+
+    if (stepLabel) {
+      stepLabel.textContent =
+        `Step ${state.currentStep} of ${state.totalSteps}`;
+    }
+  }
+
+
+  /* =========================================================
+     PRICE TYPE UI
+     ========================================================= */
+
+  function bindPricingEvents() {
+    const priceType =
+      $("priceType");
+
+    if (!priceType) {
+      return;
+    }
+
+    priceType.addEventListener(
+      "change",
+      () => {
+        toggleRangeFields(
+          priceType.value
+        );
+      }
     );
   }
 
+
   /* =========================================================
-     BINDING SAVE
+     PART 4 COMPLETE
      ========================================================= */
 
-  async function saveBinding(
-    offerId,
-    versionId
-  ) {
+     /* =========================================================
+     PART 5/5
+     REVIEW → AI CHECK → APPROVAL → PUBLISH
+     NAVIGATION → EVENTS → INITIALIZATION
+     ========================================================= */
+
+
+  /* =========================================================
+     SAVE DRAFT BUTTON
+     ========================================================= */
+
+  async function handleSaveDraft() {
+    if (state.saving) {
+      return;
+    }
+
     try {
-      const binding =
-        await ensureOfferBinding(
-          offerId,
-          versionId
-        );
+      setSetupState(
+        "Saving draft…",
+        "info"
+      );
 
-      if (!binding) {
-        return;
-      }
+      await saveCurrentDraft();
 
-      const client =
-        await getSupabaseClient();
+      setEditorStatus(
+        state.currentVersion?.status ||
+          "draft"
+      );
 
-      const existingMetadata =
-        getMetadata(
-          binding
-        );
+      setSetupState(
+        "Draft saved.",
+        "success"
+      );
 
-      const customData = {
-        version_id:
-          versionId,
-
-        offer_type:
-          getValue(
-            "offerType"
-          ),
-
-        duration:
-          getValue(
-            "detailDuration"
-          ),
-
-        qualification:
-          getValue(
-            "qualification"
-          )
-      };
-
-      const metadata = {
-        ...existingMetadata,
-
-        aliases:
-          arrayFromText(
-            getRawValue(
-              "aliases"
-            )
-          ),
-
-        media_urls:
-          arrayFromText(
-            getRawValue(
-              "mediaUrls"
-            )
-          ),
-
-        website_url:
-          getValue(
-            "websiteLink"
-          ),
-
-        booking_url:
-          getValue(
-            "bookingLink"
-          ),
-
-        instagram_url:
-          getValue(
-            "instagramLink"
-          ),
-
-        facebook_url:
-          getValue(
-            "facebookLink"
-          )
-      };
-
-      const {
-        data,
+    } catch (error) {
+      console.error(
+        "[GLIME] Save draft failed:",
         error
-      } =
-        await client
-          .from(
-            "offer_catalog_bindings"
-          )
-          .update({
-            status:
-              "draft",
+      );
 
-            custom_data:
-              customData,
+      setSetupState(
+        "Draft save failed.",
+        "error"
+      );
 
-            metadata,
-
-            updated_at:
-              new Date().toISOString()
-          })
-          .eq(
-            "id",
-            binding.id
-          )
-          .eq(
-            "client_id",
-            tenantConfigId()
-          )
-          .select()
-          .single();
-
-      if (error) {
-        throw error;
-      }
-
-      state.currentBinding =
-        data;
-    } catch (
-      error
-    ) {
-      console.warn(
-        "[GLIME] Binding save warning:",
-        error
+      setSetupMessage(
+        error.message ||
+          "Could not save draft.",
+        "error"
       );
     }
   }
 
-     /* =========================================================
-     REVIEW
+
+  /* =========================================================
+     AI CHECK
+     ========================================================= */
+
+  function buildAICheckResult() {
+    const errors = [];
+    const warnings = [];
+    const passed = [];
+
+    const name =
+      String(
+        getFieldValue(
+          "offerName"
+        ) || ""
+      ).trim();
+
+    const description =
+      String(
+        getFieldValue(
+          "offerDescription"
+        ) || ""
+      ).trim();
+
+    const shortDescription =
+      String(
+        getFieldValue(
+          "shortDescription"
+        ) || ""
+      ).trim();
+
+    const priceType =
+      String(
+        getFieldValue(
+          "priceType"
+        ) || ""
+      ).trim();
+
+    const priceAmount =
+      String(
+        getFieldValue(
+          "priceAmount"
+        ) || ""
+      ).trim();
+
+    const policies =
+      textToArray(
+        getFieldValue(
+          "policies"
+        )
+      );
+
+    const eligibility =
+      textToArray(
+        getFieldValue(
+          "eligibility"
+        )
+      );
+
+    const restrictions =
+      textToArray(
+        getFieldValue(
+          "restrictions"
+        )
+      );
+
+    const allowedClaims =
+      textToArray(
+        getFieldValue(
+          "allowedClaims"
+        )
+      );
+
+    /*
+      Required business truth.
+    */
+
+    if (!name) {
+      errors.push(
+        "Offer name is missing."
+      );
+    } else {
+      passed.push(
+        "Offer name is present."
+      );
+    }
+
+    if (!shortDescription) {
+      warnings.push(
+        "Short description is empty."
+      );
+    } else {
+      passed.push(
+        "Short description is present."
+      );
+    }
+
+    if (!description) {
+      warnings.push(
+        "Detailed description is empty."
+      );
+    } else {
+      passed.push(
+        "Detailed description is present."
+      );
+    }
+
+    /*
+      Pricing.
+    */
+
+    if (!priceType) {
+      errors.push(
+        "Pricing type is not selected."
+      );
+    } else if (
+      priceType === "custom"
+    ) {
+      passed.push(
+        "Custom pricing is explicitly configured."
+      );
+    } else if (
+      priceType === "range"
+    ) {
+      const min =
+        Number(
+          getFieldValue(
+            "minAmount"
+          )
+        );
+
+      const max =
+        Number(
+          getFieldValue(
+            "maxAmount"
+          )
+        );
+
+      if (
+        !Number.isFinite(min) &&
+        !Number.isFinite(max)
+      ) {
+        errors.push(
+          "Range pricing requires a minimum or maximum amount."
+        );
+      } else if (
+        Number.isFinite(min) &&
+        Number.isFinite(max) &&
+        min > max
+      ) {
+        errors.push(
+          "Minimum price is greater than maximum price."
+        );
+      } else {
+        passed.push(
+          "Range pricing is valid."
+        );
+      }
+
+    } else if (!priceAmount) {
+      errors.push(
+        "Price amount is missing."
+      );
+    } else {
+      const numericPrice =
+        Number(priceAmount);
+
+      if (
+        !Number.isFinite(
+          numericPrice
+        ) ||
+        numericPrice < 0
+      ) {
+        errors.push(
+          "Price amount is invalid."
+        );
+      } else {
+        passed.push(
+          "Pricing is valid."
+        );
+      }
+    }
+
+    /*
+      Customer truth.
+    */
+
+    if (
+      eligibility.length
+    ) {
+      passed.push(
+        "Customer eligibility is defined."
+      );
+    } else {
+      warnings.push(
+        "Customer eligibility is not defined."
+      );
+    }
+
+    if (
+      policies.length
+    ) {
+      passed.push(
+        "Policies are defined."
+      );
+    } else {
+      warnings.push(
+        "Policies are not defined."
+      );
+    }
+
+    /*
+      AI safety truth.
+    */
+
+    if (
+      allowedClaims.length
+    ) {
+      passed.push(
+        "Allowed claims are defined."
+      );
+    } else {
+      warnings.push(
+        "Allowed claims are not explicitly defined."
+      );
+    }
+
+    if (
+      restrictions.length
+    ) {
+      passed.push(
+        "Restricted claims/instructions are defined."
+      );
+    } else {
+      warnings.push(
+        "Restrictions are not explicitly defined."
+      );
+    }
+
+    /*
+      Availability is optional depending on business model,
+      therefore it is a warning rather than a hard error.
+    */
+
+    if (
+      state.availability?.length
+    ) {
+      passed.push(
+        "Availability information is configured."
+      );
+    } else {
+      warnings.push(
+        "No availability rules are configured."
+      );
+    }
+
+    /*
+      Final determination.
+
+      This is intentionally a local deterministic
+      completeness check. It is NOT presented as an
+      external AI certification.
+    */
+
+    return {
+      ok:
+        errors.length === 0,
+
+      errors,
+      warnings,
+      passed,
+
+      checked_at:
+        new Date().toISOString(),
+
+      engine:
+        "GLIME deterministic business-truth check",
+
+      version:
+        "1.0"
+    };
+  }
+
+
+  async function runAICheck() {
+    if (!state.currentOffer) {
+      setSetupMessage(
+        "Open an offer first.",
+        "error"
+      );
+
+      return null;
+    }
+
+    try {
+      /*
+        Save current draft first so the check uses
+        the same business truth that will enter review.
+      */
+
+      if (
+        state.currentVersion?.status ===
+        "draft"
+      ) {
+        await saveCurrentDraft();
+      }
+
+      const result =
+        buildAICheckResult();
+
+      const aiCheck =
+        $("aiCheck");
+
+      if (aiCheck) {
+        aiCheck.textContent =
+          JSON.stringify(
+            result,
+            null,
+            2
+          );
+
+        aiCheck.dataset.status =
+          result.ok
+            ? "passed"
+            : "failed";
+      }
+
+      if (result.ok) {
+        setSetupMessage(
+          result.warnings.length
+            ? `AI check passed with ${result.warnings.length} warning(s).`
+            : "AI check passed.",
+          result.warnings.length
+            ? "warning"
+            : "success"
+        );
+      } else {
+        setSetupMessage(
+          `AI check found ${result.errors.length} blocking issue(s).`,
+          "error"
+        );
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error(
+        "[GLIME] AI check failed:",
+        error
+      );
+
+      setSetupMessage(
+        error.message ||
+          "AI check failed.",
+        "error"
+      );
+
+      return null;
+    }
+  }
+
+
+  /* =========================================================
+     SUBMIT FOR REVIEW
      ========================================================= */
 
   async function submitForReview() {
+    if (!state.currentVersion?.id) {
+      throw new Error(
+        "No offer version is open."
+      );
+    }
+
     /*
-      Save first. If currently published/approved/review,
-      saveCurrentDraft() creates a new draft automatically.
+      Only draft versions should enter review.
+    */
+
+    if (
+      state.currentVersion.status !==
+      "draft"
+    ) {
+      throw new Error(
+        `Only a draft can be submitted. Current status: ${state.currentVersion.status}.`
+      );
+    }
+
+    /*
+      Save the latest form changes first.
     */
 
     await saveCurrentDraft();
 
-    const versionId =
-      state.currentVersion?.id;
+    const check =
+      buildAICheckResult();
 
-    if (!versionId) {
+    if (!check.ok) {
       throw new Error(
-        "No current version available."
+        `Resolve ${check.errors.length} blocking issue(s) before review.`
       );
     }
 
     const client =
       await getSupabaseClient();
 
-    const {
-      error
-    } =
+    const { data, error } =
       await client.rpc(
         "client_submit_offer_version_for_review",
         {
           p_version_id:
-            versionId
+            state.currentVersion.id
         }
       );
 
@@ -3794,19 +5373,114 @@ const sb =
       throw error;
     }
 
-    const {
-      data: version,
-      error:
-        versionError
-    } =
+    /*
+      RPC may return the updated version,
+      depending on the function definition.
+    */
+
+    if (
+      data &&
+      typeof data === "object" &&
+      data.id
+    ) {
+      state.currentVersion =
+        Array.isArray(data)
+          ? data[0]
+          : data;
+    } else {
+      /*
+        Re-read version when RPC returns no row.
+      */
+
+      const { data: version,
+        error: versionError } =
+        await client
+          .from("offer_versions")
+          .select("*")
+          .eq(
+            "id",
+            state.currentVersion.id
+          )
+          .single();
+
+      if (versionError) {
+        throw versionError;
+      }
+
+      state.currentVersion =
+        version;
+    }
+
+    setEditorStatus(
+      state.currentVersion.status
+    );
+
+    setSetupMessage(
+      "Offer submitted for review.",
+      "success"
+    );
+
+    return state.currentVersion;
+  }
+
+
+  /* =========================================================
+     APPROVE OFFER
+     ========================================================= */
+
+  async function approveOffer() {
+    if (!state.currentVersion?.id) {
+      throw new Error(
+        "No offer version is open."
+      );
+    }
+
+    if (
+      state.currentVersion.status !==
+      "review"
+    ) {
+      throw new Error(
+        "Only a version in review can be approved."
+      );
+    }
+
+    const client =
+      await getSupabaseClient();
+
+    const notes =
+      window.prompt(
+        "Approval notes (optional):",
+        ""
+      ) || "";
+
+    const { data, error } =
+      await client.rpc(
+        "client_approve_offer_version",
+        {
+          p_version_id:
+            state.currentVersion.id,
+          p_notes:
+            notes.trim() || null
+        }
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    /*
+      Re-read version to guarantee local state
+      matches database state.
+    */
+
+    const { data: version,
+      error: versionError } =
       await client
-        .from(
-          "offer_versions"
-        )
+        .from("offer_versions")
         .select("*")
         .eq(
           "id",
-          versionId
+          state.currentVersion.id
         )
         .single();
 
@@ -3817,60 +5491,65 @@ const sb =
     state.currentVersion =
       version;
 
-    await loadOfferBinding(
-      state.currentOffer.id
+    setEditorStatus(
+      version.status
     );
 
-    updateVersionActions();
-
-    notify(
-      "Offer submitted for review.",
+    setSetupMessage(
+      "Offer version approved.",
       "success"
     );
+
+    return version;
   }
 
+
   /* =========================================================
-     APPROVAL
+     REJECT OFFER
      ========================================================= */
 
-  async function approveOffer() {
-    const version =
-      state.currentVersion;
-
-    if (!version) {
+  async function rejectOffer() {
+    if (!state.currentVersion?.id) {
       throw new Error(
         "No offer version is open."
       );
     }
 
     if (
-      version.status !==
+      state.currentVersion.status !==
       "review"
     ) {
       throw new Error(
-        "Only a version in review can be approved."
+        "Only a version in review can be rejected."
       );
     }
-
-    const notes =
-      window.prompt(
-        "Approval note (optional):"
-      ) || null;
 
     const client =
       await getSupabaseClient();
 
-    const {
-      error
-    } =
+    const notes =
+      window.prompt(
+        "Rejection reason:",
+        ""
+      ) || "";
+
+    if (!notes.trim()) {
+      setSetupMessage(
+        "A rejection reason is required.",
+        "warning"
+      );
+
+      return null;
+    }
+
+    const { error } =
       await client.rpc(
-        "client_approve_offer_version",
+        "client_reject_offer_version",
         {
           p_version_id:
-            version.id,
-
+            state.currentVersion.id,
           p_notes:
-            notes
+            notes.trim()
         }
       );
 
@@ -3878,53 +5557,50 @@ const sb =
       throw error;
     }
 
-    const {
-      data: updated,
-      error:
-        refreshError
-    } =
+    const { data: version,
+      error: versionError } =
       await client
-        .from(
-          "offer_versions"
-        )
+        .from("offer_versions")
         .select("*")
         .eq(
           "id",
-          version.id
+          state.currentVersion.id
         )
         .single();
 
-    if (refreshError) {
-      throw refreshError;
+    if (versionError) {
+      throw versionError;
     }
 
     state.currentVersion =
-      updated;
+      version;
 
-    updateVersionActions();
-
-    notify(
-      "Offer version approved.",
-      "success"
+    setEditorStatus(
+      version.status
     );
+
+    setSetupMessage(
+      "Offer review was rejected.",
+      "warning"
+    );
+
+    return version;
   }
 
+
   /* =========================================================
-     PUBLISH
+     PUBLISH OFFER
      ========================================================= */
 
   async function publishOffer() {
-    const version =
-      state.currentVersion;
-
-    if (!version) {
+    if (!state.currentVersion?.id) {
       throw new Error(
         "No offer version is open."
       );
     }
 
     if (
-      version.status !==
+      state.currentVersion.status !==
       "approved"
     ) {
       throw new Error(
@@ -3935,18 +5611,21 @@ const sb =
     const client =
       await getSupabaseClient();
 
-    /*
-      Server-side RPC remains the authority.
-    */
+    const confirmed =
+      window.confirm(
+        "Publish this approved offer? Published business truth can be used by customer-facing AI systems."
+      );
 
-    const {
-      error
-    } =
+    if (!confirmed) {
+      return null;
+    }
+
+    const { error } =
       await client.rpc(
         "client_publish_offer_version",
         {
           p_version_id:
-            version.id
+            state.currentVersion.id
         }
       );
 
@@ -3954,19 +5633,18 @@ const sb =
       throw error;
     }
 
-    const {
-      data: updatedVersion,
-      error:
-        versionError
-    } =
+    /*
+      Re-read offer and version.
+    */
+
+    const { data: version,
+      error: versionError } =
       await client
-        .from(
-          "offer_versions"
-        )
+        .from("offer_versions")
         .select("*")
         .eq(
           "id",
-          version.id
+          state.currentVersion.id
         )
         .single();
 
@@ -3974,31 +5652,11 @@ const sb =
       throw versionError;
     }
 
-    state.currentVersion =
-      updatedVersion;
-
-    /*
-      Offer-level status and binding status are kept
-      synchronized with the published business truth.
-    */
-
-    const {
-      data: updatedOffer,
-      error:
-        offerError
-    } =
+    const { data: offer,
+      error: offerError } =
       await client
         .from("offers")
-        .update({
-          status:
-            "active",
-
-          current_version_id:
-            updatedVersion.id,
-
-          updated_at:
-            new Date().toISOString()
-        })
+        .select("*")
         .eq(
           "id",
           state.currentOffer.id
@@ -4007,529 +5665,273 @@ const sb =
           "client_id",
           tenantOfferId()
         )
-        .select()
         .single();
 
     if (offerError) {
       throw offerError;
     }
 
+    state.currentVersion =
+      version;
+
     state.currentOffer =
-      updatedOffer;
+      offer;
 
-    /*
-      Binding becomes active only after publish.
-      Draft/incomplete data therefore does not become
-      customer-facing AI truth.
-    */
-
-    if (
-      state.currentBinding?.id
-    ) {
-      const {
-        data: binding,
-        error:
-          bindingError
-      } =
-        await client
-          .from(
-            "offer_catalog_bindings"
-          )
-          .update({
-            status:
-              "active",
-
-            custom_data: {
-              ...(state.currentBinding
-                .custom_data ||
-                {}),
-              version_id:
-                updatedVersion.id
-            },
-
-            updated_at:
-              new Date().toISOString()
-          })
-          .eq(
-            "id",
-            state.currentBinding.id
-          )
-          .eq(
-            "client_id",
-            tenantConfigId()
-          )
-          .select()
-          .single();
-
-      if (bindingError) {
-        console.warn(
-          "[GLIME] Binding activation warning:",
-          bindingError
-        );
-      } else {
-        state.currentBinding =
-          binding;
-      }
-    }
-
-    updateVersionActions();
-
-    renderShareIdentity();
+    setEditorStatus(
+      version.status
+    );
 
     await loadOffers();
 
-    await refreshAIContextAddon();
-
-    notify(
+    setSetupMessage(
       "Offer published successfully.",
       "success"
     );
-  }
 
-  /* =========================================================
-     AI COMPLETENESS CHECK
-     ========================================================= */
-
-  async function runAICheck() {
-    if (
-      !state.currentVersion
-    ) {
-      throw new Error(
-        "Open an offer first."
-      );
-    }
-
-    const result =
-      $("aiCheck");
-
-    if (result) {
-      result.textContent =
-        "Running AI completeness check...";
-
-      result.dataset.state =
-        "loading";
-    }
-
-    const missing = [];
-
-    if (
-      !getValue(
-        "offerName"
-      )
-    ) {
-      missing.push(
-        "Offer name"
-      );
-    }
-
-    if (
-      !getValue(
-        "offerDescription"
-      )
-    ) {
-      missing.push(
-        "Description"
-      );
-    }
-
-    if (
-      !priceHasValue()
-    ) {
-      missing.push(
-        "Pricing"
-      );
-    }
-
-    if (
-      !getValue(
-        "policies"
-      )
-    ) {
-      missing.push(
-        "Policies"
-      );
-    }
-
-    if (
-      !getValue(
-        "faqs"
-      )
-    ) {
-      missing.push(
-        "FAQs"
-      );
-    }
-
-    if (
-      !getValue(
-        "qualification"
-      )
-    ) {
-      missing.push(
-        "Qualification rules"
-      );
-    }
-
-    if (
-      !getValue(
-        "detailDuration"
-      ) &&
-      getValue(
-        "offerType"
-      ) ===
-        "service"
-    ) {
-      missing.push(
-        "Duration"
-      );
-    }
-
-    const score =
-      Math.max(
-        0,
-        100 -
-          missing.length *
-            12
-      );
-
-    const check = {
-      score,
-
-      status:
-        missing.length ===
-        0
-          ? "ready"
-          : "needs_attention",
-
-      missing,
-
-      checked_at:
-        new Date().toISOString()
+    return {
+      offer,
+      version
     };
-
-    const metadata =
-      getMetadata(
-        state.currentVersion
-      );
-
-    metadata.ai_check =
-      check;
-
-    const client =
-      await getSupabaseClient();
-
-    const {
-      data: updated,
-      error
-    } =
-      await client
-        .from(
-          "offer_versions"
-        )
-        .update({
-          metadata,
-
-          updated_at:
-            new Date().toISOString()
-        })
-        .eq(
-          "id",
-          state.currentVersion.id
-        )
-        .select()
-        .single();
-
-    if (error) {
-      throw error;
-    }
-
-    state.currentVersion =
-      updated;
-
-    renderAICheck(
-      check
-    );
-
-    if (
-      missing.length ===
-      0
-    ) {
-      notify(
-        "AI check passed. Offer is structurally complete.",
-        "success"
-      );
-    } else {
-      notify(
-        `AI check found ${missing.length} item(s) to review.`,
-        "info"
-      );
-    }
   }
 
-  function renderAICheck(
-    check
-  ) {
-    const el =
-      $("aiCheck");
-
-    if (!el) return;
-
-    if (!check) {
-      el.textContent =
-        "AI check has not been run yet.";
-
-      el.dataset.state =
-        "idle";
-
-      return;
-    }
-
-    const missing =
-      Array.isArray(
-        check.missing
-      )
-        ? check.missing
-        : [];
-
-    if (
-      !missing.length
-    ) {
-      el.innerHTML = `
-        <strong>Ready</strong>
-        <div>
-          All core offer information is present.
-        </div>
-        <div>
-          Score:
-          ${escapeHtml(
-            check.score ??
-              100
-          )}/100
-        </div>
-      `;
-
-      el.dataset.state =
-        "ready";
-
-      return;
-    }
-
-    el.innerHTML = `
-      <strong>Needs attention</strong>
-
-      <div>
-        Score:
-        ${escapeHtml(
-          check.score ??
-            ""
-        )}/100
-      </div>
-
-      <ul>
-        ${missing
-          .map(
-            (item) =>
-              `<li>${escapeHtml(
-                item
-              )}</li>`
-          )
-          .join("")}
-      </ul>
-    `;
-
-    el.dataset.state =
-      "needs_attention";
-  }
 
   /* =========================================================
-     SHARE IDENTITY
+     SHARE PREVIEW
      ========================================================= */
 
-  function getShareIdentity() {
+  function buildSharePreview() {
+    if (!state.currentOffer) {
+      return "";
+    }
+
     const offer =
       state.currentOffer;
 
     const version =
       state.currentVersion;
 
-    if (!offer) {
-      return "";
-    }
-
-    const metadata =
-      getMetadata(
-        version || {}
+    const uiType =
+      resolveUITypeFromBinding(
+        state.currentBinding,
+        offer,
+        version
       );
 
-    /*
-      Use an actual configured public URL if one exists.
-    */
+    const lines = [
+      offer.name ||
+        "Untitled Offer",
+      "",
+      offer.short_description ||
+        "",
+      "",
+      `Type: ${uiType}`,
+      `Status: ${
+        version?.status ||
+        offer.status ||
+        "draft"
+      }`
+    ];
 
-    const existingUrl =
-      metadata.share_url ||
-      metadata.public_url ||
-      metadata.share?.url;
+    const website =
+      version?.metadata?.links?.website;
 
-    if (
-      existingUrl
-    ) {
-      return existingUrl;
+    const booking =
+      version?.metadata?.links?.booking;
+
+    if (website) {
+      lines.push(
+        "",
+        `Website: ${website}`
+      );
     }
 
-    /*
-      Stable GLIME identity.
+    if (booking) {
+      lines.push(
+        `Booking: ${booking}`
+      );
+    }
 
-      We deliberately DO NOT invent a website route here.
-      The actual public/share route can later resolve this ID.
-    */
-
-    return `GLIME:OFFER:${offer.id}`;
+    return lines
+      .filter(
+        (line) =>
+          line !== undefined
+      )
+      .join("\n");
   }
 
-  function renderShareIdentity() {
-    const el =
+
+  function updateSharePreview() {
+    const preview =
       $("sharePreview");
 
-    if (!el) return;
-
-    const identity =
-      getShareIdentity();
-
-    el.textContent =
-      identity ||
-      "Save this offer to generate its share identity.";
-  }
-
-  async function copyShareIdentity() {
-    const identity =
-      getShareIdentity();
-
-    if (!identity) {
-      throw new Error(
-        "No offer identity is available."
-      );
+    if (!preview) {
+      return;
     }
 
-    if (
-      navigator.clipboard?.writeText
-    ) {
-      await navigator.clipboard.writeText(
-        identity
+    preview.textContent =
+      buildSharePreview();
+  }
+
+
+  async function copySharePreview() {
+    const text =
+      buildSharePreview();
+
+    if (!text) {
+      setSetupMessage(
+        "Nothing is available to share.",
+        "warning"
       );
-    } else {
-      const textarea =
-        document.createElement(
-          "textarea"
+
+      return;
+    }
+
+    try {
+      if (
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+        await navigator.clipboard.writeText(
+          text
+        );
+      } else {
+        const textarea =
+          document.createElement(
+            "textarea"
+          );
+
+        textarea.value =
+          text;
+
+        document.body.appendChild(
+          textarea
         );
 
-      textarea.value =
-        identity;
+        textarea.select();
 
-      document.body.appendChild(
-        textarea
+        document.execCommand(
+          "copy"
+        );
+
+        textarea.remove();
+      }
+
+      setSetupMessage(
+        "Share preview copied.",
+        "success"
       );
 
-      textarea.select();
-
-      document.execCommand(
-        "copy"
+    } catch (error) {
+      console.error(
+        "[GLIME] Copy failed:",
+        error
       );
 
-      textarea.remove();
+      setSetupMessage(
+        "Could not copy share preview.",
+        "error"
+      );
+    }
+  }
+
+
+  /* =========================================================
+     STEP NAVIGATION
+     ========================================================= */
+
+  function getStepSections() {
+    return Array.from(
+      document.querySelectorAll(
+        "[data-step]"
+      )
+    );
+  }
+
+
+  function showStep(
+    step
+  ) {
+    const numericStep =
+      Number(step);
+
+    if (
+      !Number.isInteger(
+        numericStep
+      )
+    ) {
+      return;
     }
 
-    notify(
-      "Offer share identity copied.",
-      "success"
-    );
-  }
-
-  /* =========================================================
-     FORM RESET
-     ========================================================= */
-
-  function resetForm() {
-    [
-      "offerName",
-      "shortDescription",
-      "offerDescription",
-      "detailDuration",
-      "eligibility",
-      "included",
-      "excluded",
-      "priceAmount",
-      "billingPeriod",
-      "minAmount",
-      "maxAmount",
-      "faqs",
-      "policies",
-      "qualification",
-      "talkingPoints",
-      "allowedClaims",
-      "restrictions",
-      "aiInstructions",
-      "websiteLink",
-      "bookingLink",
-      "instagramLink",
-      "facebookLink",
-      "mediaUrls",
-      "aliases"
-    ].forEach(
-      (id) =>
-        setValue(
-          id,
-          ""
+    state.currentStep =
+      Math.max(
+        1,
+        Math.min(
+          state.totalSteps,
+          numericStep
         )
-    );
+      );
 
-    setValue(
-      "priceCurrency",
-      "INR"
-    );
+    getStepSections()
+      .forEach(
+        (section) => {
+          const sectionStep =
+            Number(
+              section.dataset.step
+            );
 
-    setValue(
-      "priceType",
-      "fixed"
-    );
+          section.hidden =
+            sectionStep !==
+            state.currentStep;
+        }
+      );
 
-    setValue(
-      "offerType",
-      "service"
-    );
+    updateProgress();
 
-    setValue(
-      "offerCategory",
-      ""
-    );
+    const previous =
+      $("prevStepBtn");
 
-    state.availability =
-      [];
+    const next =
+      $("nextStepBtn");
 
-    renderAvailability();
-    renderAICheck(
-      null
-    );
-    renderShareIdentity();
-    renderRangeState();
+    if (previous) {
+      previous.disabled =
+        state.currentStep <= 1;
+    }
+
+    if (next) {
+      next.disabled =
+        state.currentStep >=
+        state.totalSteps;
+    }
   }
+
+
+  function nextStep() {
+    if (
+      state.currentStep <
+      state.totalSteps
+    ) {
+      showStep(
+        state.currentStep + 1
+      );
+    }
+  }
+
+
+  function previousStep() {
+    if (
+      state.currentStep > 1
+    ) {
+      showStep(
+        state.currentStep - 1
+      );
+    }
+  }
+
 
   /* =========================================================
-     EDITOR
+     EDITOR CLOSE
      ========================================================= */
-
-  function showEditor() {
-    show(
-      $("editorEmpty"),
-      false
-    );
-
-    show(
-      $("offerForm"),
-      true
-    );
-
-    updateStepUI();
-  }
 
   function closeEditor() {
     state.currentOffer =
@@ -4547,671 +5949,537 @@ const sb =
     state.availability =
       [];
 
-    show(
-      $("offerForm"),
-      false
-    );
+    hideEditor();
 
-    show(
-      $("editorEmpty"),
-      true
-    );
-
-    state.currentStep =
-      1;
-
-    updateStepUI();
+    showStep(1);
   }
+
 
   /* =========================================================
-     STEP NAVIGATION
+     BUTTON HANDLERS
      ========================================================= */
 
-  function getSteps() {
-    return qsa(
-      ".step"
-    );
-  }
-
-  function updateStepUI() {
-    const steps =
-      getSteps();
-
-    if (!steps.length) {
-      return;
-    }
-
-    steps.forEach(
-      (step) => {
-        const number =
-          Number(
-            step.dataset.step
-          );
-
-        const active =
-          number ===
-          state.currentStep;
-
-        step.hidden =
-          !active;
-
-        step.classList.toggle(
-          "active",
-          active
-        );
-      }
-    );
-
-    setText(
-      "stepLabel",
-      `Step ${state.currentStep} of ${state.totalSteps}`
-    );
-
-    const progress =
-      $("progress");
-
-    if (progress) {
-      const percentage =
-        Math.round(
-          (state.currentStep /
-            state.totalSteps) *
-            100
-        );
-
-      progress.style.width =
-        `${percentage}%`;
-
-      progress.setAttribute(
-        "aria-valuenow",
-        String(
-          percentage
-        )
-      );
-    }
-
-    setDisabled(
-      "prevStepBtn",
-      state.currentStep <=
-        1
-    );
-
-    setDisabled(
-      "nextStepBtn",
-      state.currentStep >=
-        state.totalSteps
-    );
-  }
-
-  function nextStep() {
-    if (
-      state.currentStep <
-      state.totalSteps
-    ) {
-      state.currentStep++;
-
-      updateStepUI();
-    }
-  }
-
-  function previousStep() {
-    if (
-      state.currentStep >
-      1
-    ) {
-      state.currentStep--;
-
-      updateStepUI();
-    }
-  }
-
-  /* =========================================================
-     VERSION ACTION STATE
-     ========================================================= */
-
-  function updateVersionActions() {
-    const version =
-      state.currentVersion;
-
-    if (!version) {
-      setText(
-        "editorStatus",
-        ""
+  async function handleSubmitReview() {
+    try {
+      setSetupState(
+        "Submitting for review…",
+        "info"
       );
 
-      return;
-    }
+      await submitForReview();
 
-    const status =
-      safeText(
-        version.status ||
-          "draft"
-      ).toLowerCase();
-
-    const isDraft =
-      status === "draft";
-
-    const isReview =
-      status === "review";
-
-    const isApproved =
-      status === "approved";
-
-    const isPublished =
-      status === "published";
-
-    /*
-      Action buttons.
-    */
-
-    setDisabled(
-      "saveDraftBtn",
-      false
-    );
-
-    setDisabled(
-      "submitReviewBtn",
-      !isDraft
-    );
-
-    setDisabled(
-      "approveBtn",
-      !isReview
-    );
-
-    setDisabled(
-      "publishBtn",
-      !isApproved
-    );
-
-    /*
-      Only draft versions are editable.
-
-      For non-draft versions the user can still click
-      Save Draft; that action creates a new draft.
-    */
-
-    const form =
-      $("offerForm");
-
-    if (form) {
-      const lock =
-        !isDraft;
-
-      const actionIds = [
-        "prevStepBtn",
-        "nextStepBtn",
-        "closeEditorBtn",
-        "saveDraftBtn",
-        "submitReviewBtn",
-        "approveBtn",
-        "publishBtn",
-        "runCheckBtn",
-        "copyShareBtn",
-        "addAvailabilityBtn"
-      ];
-
-      qsa(
-        "input, textarea, select",
-        form
-      ).forEach(
-        (element) => {
-          if (
-            actionIds.includes(
-              element.id
-            )
-          ) {
-            return;
-          }
-
-          element.disabled =
-            lock;
-        }
+      setSetupState(
+        "Submitted for review.",
+        "success"
       );
-    }
 
-    /*
-      Status text.
-    */
-
-    if (
-      isPublished
-    ) {
-      setText(
-        "editorStatus",
-        "PUBLISHED — create a new draft to edit"
-      );
-    } else if (
-      isApproved
-    ) {
-      setText(
-        "editorStatus",
-        "APPROVED — ready to publish"
-      );
-    } else if (
-      isReview
-    ) {
-      setText(
-        "editorStatus",
-        "IN REVIEW — waiting for approval"
-      );
-    } else {
-      setText(
-        "editorStatus",
-        "DRAFT"
-      );
-    }
-  }
-
-  /* =========================================================
-     AI CONTEXT ADDON
-     ========================================================= */
-
-  async function refreshAIContextAddon() {
-    if (
-      window.GLIMEServicesAIContext &&
-      typeof window
-        .GLIMEServicesAIContext
-        .refresh ===
-        "function"
-    ) {
-      try {
-        await window
-          .GLIMEServicesAIContext
-          .refresh();
-      } catch (
+    } catch (error) {
+      console.error(
+        "[GLIME] Submit review failed:",
         error
-      ) {
-        console.warn(
-          "[GLIME] AI context addon refresh failed:",
-          error
-        );
-      }
+      );
+
+      setSetupMessage(
+        error.message ||
+          "Could not submit for review.",
+        "error"
+      );
     }
   }
 
+
+  async function handleApprove() {
+    try {
+      setSetupState(
+        "Approving…",
+        "info"
+      );
+
+      await approveOffer();
+
+      setSetupState(
+        "Approved.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "[GLIME] Approval failed:",
+        error
+      );
+
+      setSetupMessage(
+        error.message ||
+          "Could not approve offer.",
+        "error"
+      );
+    }
+  }
+
+
+  async function handlePublish() {
+    try {
+      setSetupState(
+        "Publishing…",
+        "info"
+      );
+
+      await publishOffer();
+
+      updateSharePreview();
+
+      setSetupState(
+        "Published.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "[GLIME] Publish failed:",
+        error
+      );
+
+      setSetupMessage(
+        error.message ||
+          "Could not publish offer.",
+        "error"
+      );
+    }
+  }
+
+
   /* =========================================================
-     EVENTS
+     EVENT BINDINGS
      ========================================================= */
 
-  function bindEvents() {
-    $("saveSetupBtn")
-      ?.addEventListener(
+  function bindOfferEvents() {
+
+    const newOfferBtn =
+      $("newOfferBtn");
+
+    if (newOfferBtn) {
+      newOfferBtn.addEventListener(
         "click",
-        async () => {
-          try {
-            await saveSetup();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "Unable to save business setup."
-            );
-          }
-        }
+        handleNewOffer
       );
+    }
 
-    $("industrySelect")
-      ?.addEventListener(
-        "change",
-        async (event) => {
-          try {
-            await loadBusinessModels(
-              event.target
-                .value
-            );
 
-            updateSetupState();
-          } catch (
-            error
-          ) {
-            handleError(
-              error
-            );
-          }
-        }
-      );
+    const emptyNewBtn =
+      $("emptyNewBtn");
 
-    $("businessModelSelect")
-      ?.addEventListener(
-        "change",
-        updateSetupState
-      );
-
-    $("newOfferBtn")
-      ?.addEventListener(
+    if (emptyNewBtn) {
+      emptyNewBtn.addEventListener(
         "click",
-        async () => {
-          try {
-            await createNewOffer();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "Unable to create offer."
-            );
-          }
-        }
+        handleNewOffer
       );
+    }
 
-    $("emptyNewBtn")
-      ?.addEventListener(
+
+    const refreshBtn =
+      $("refreshBtn");
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener(
         "click",
-        async () => {
-          try {
-            await createNewOffer();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "Unable to create offer."
-            );
-          }
-        }
+        refreshServicesData
       );
+    }
 
-    $("refreshBtn")
-      ?.addEventListener(
-        "click",
-        async () => {
-          try {
-            await refreshCatalog();
-          } catch (
-            error
-          ) {
-            handleError(
-              error
-            );
-          }
-        }
-      );
 
-    $("addCategoryBtn")
-      ?.addEventListener(
+    const addCategoryBtn =
+      $("addCategoryBtn");
+
+    if (addCategoryBtn) {
+      addCategoryBtn.addEventListener(
         "click",
         async () => {
           try {
             await createCategory();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "Unable to create category."
+
+            setSetupMessage(
+              "Category created.",
+              "success"
+            );
+
+          } catch (error) {
+            console.error(
+              "[GLIME] Category creation failed:",
+              error
+            );
+
+            setSetupMessage(
+              error.message ||
+                "Could not create category.",
+              "error"
             );
           }
         }
       );
+    }
 
-     $("closeEditorBtn")
-      ?.addEventListener(
+
+    const saveDraftBtn =
+      $("saveDraftBtn");
+
+    if (saveDraftBtn) {
+      saveDraftBtn.addEventListener(
+        "click",
+        handleSaveDraft
+      );
+    }
+
+
+    const runCheckBtn =
+      $("runCheckBtn");
+
+    if (runCheckBtn) {
+      runCheckBtn.addEventListener(
+        "click",
+        runAICheck
+      );
+    }
+
+
+    const submitReviewBtn =
+      $("submitReviewBtn");
+
+    if (submitReviewBtn) {
+      submitReviewBtn.addEventListener(
+        "click",
+        handleSubmitReview
+      );
+    }
+
+
+    const approveBtn =
+      $("approveBtn");
+
+    if (approveBtn) {
+      approveBtn.addEventListener(
+        "click",
+        handleApprove
+      );
+    }
+
+
+    const publishBtn =
+      $("publishBtn");
+
+    if (publishBtn) {
+      publishBtn.addEventListener(
+        "click",
+        handlePublish
+      );
+    }
+
+
+    const closeEditorBtn =
+      $("closeEditorBtn");
+
+    if (closeEditorBtn) {
+      closeEditorBtn.addEventListener(
         "click",
         closeEditor
       );
+    }
 
-    $("prevStepBtn")
-      ?.addEventListener(
+
+    const prevStepBtn =
+      $("prevStepBtn");
+
+    if (prevStepBtn) {
+      prevStepBtn.addEventListener(
         "click",
         previousStep
       );
+    }
 
-    $("nextStepBtn")
-      ?.addEventListener(
+
+    const nextStepBtn =
+      $("nextStepBtn");
+
+    if (nextStepBtn) {
+      nextStepBtn.addEventListener(
         "click",
         nextStep
       );
+    }
 
-    $("addAvailabilityBtn")
-      ?.addEventListener(
-        "click",
-        addAvailabilityRow
-      );
 
-    $("priceType")
-      ?.addEventListener(
-        "change",
-        renderRangeState
-      );
+    const addAvailabilityBtn =
+      $("addAvailabilityBtn");
 
-    $("copyShareBtn")
-      ?.addEventListener(
+    if (addAvailabilityBtn) {
+      addAvailabilityBtn.addEventListener(
         "click",
         async () => {
           try {
-            await copyShareIdentity();
-          } catch (
-            error
-          ) {
-            handleError(
+            await addAvailability();
+
+            setSetupMessage(
+              "Availability added.",
+              "success"
+            );
+
+          } catch (error) {
+            console.error(
+              "[GLIME] Availability creation failed:",
               error
             );
-          }
-        }
-      );
 
-    $("runCheckBtn")
-      ?.addEventListener(
-        "click",
-        async () => {
-          try {
-            await runAICheck();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "AI check failed."
+            setSetupMessage(
+              error.message ||
+                "Could not add availability.",
+              "error"
             );
           }
         }
-      );
-
-    $("saveDraftBtn")
-      ?.addEventListener(
-        "click",
-        async () => {
-          try {
-            await saveCurrentDraft();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "Unable to save draft."
-            );
-          }
-        }
-      );
-
-    $("submitReviewBtn")
-      ?.addEventListener(
-        "click",
-        async () => {
-          try {
-            await submitForReview();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "Unable to submit for review."
-            );
-          }
-        }
-      );
-
-    $("approveBtn")
-      ?.addEventListener(
-        "click",
-        async () => {
-          try {
-            await approveOffer();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "Unable to approve offer."
-            );
-          }
-        }
-      );
-
-    $("publishBtn")
-      ?.addEventListener(
-        "click",
-        async () => {
-          try {
-            await publishOffer();
-          } catch (
-            error
-          ) {
-            handleError(
-              error,
-              "Unable to publish offer."
-            );
-          }
-        }
-      );
-  }
-
-  /* =========================================================
-     REFRESH CATALOG
-     ========================================================= */
-
-  async function refreshCatalog() {
-    await loadCategories();
-
-    await loadOffers();
-
-    if (
-      state.currentOffer
-    ) {
-      await loadOfferBinding(
-        state.currentOffer.id
       );
     }
 
-    await refreshAIContextAddon();
 
-    notify(
-      "Catalog refreshed.",
-      "success"
-    );
+    const copyShareBtn =
+      $("copyShareBtn");
+
+    if (copyShareBtn) {
+      copyShareBtn.addEventListener(
+        "click",
+        copySharePreview
+      );
+    }
+
+
+    bindPricingEvents();
   }
 
+
   /* =========================================================
-     INITIALIZATION
+     STATUS-BASED ACTION VISIBILITY
      ========================================================= */
 
-  async function init() {
-    if (
-      state.initialized
-    ) {
+  function updateLifecycleButtons() {
+    const status =
+      state.currentVersion?.status ||
+      "draft";
+
+    const saveDraftBtn =
+      $("saveDraftBtn");
+
+    const submitReviewBtn =
+      $("submitReviewBtn");
+
+    const approveBtn =
+      $("approveBtn");
+
+    const publishBtn =
+      $("publishBtn");
+
+    if (saveDraftBtn) {
+      saveDraftBtn.disabled =
+        !state.currentVersion ||
+        status !== "draft";
+    }
+
+    if (submitReviewBtn) {
+      submitReviewBtn.disabled =
+        !state.currentVersion ||
+        status !== "draft";
+    }
+
+    if (approveBtn) {
+      approveBtn.disabled =
+        !state.currentVersion ||
+        status !== "review";
+    }
+
+    if (publishBtn) {
+      publishBtn.disabled =
+        !state.currentVersion ||
+        status !== "approved";
+    }
+  }
+
+
+  /* =========================================================
+     SAFE INITIALIZATION
+     ========================================================= */
+
+  async function initializeServices() {
+    if (state.initialized) {
       return;
     }
 
-    try {
-      if (
-        !$("offerForm")
-      ) {
-        console.warn(
-          "[GLIME Services] services.html not detected."
-        );
+    state.initialized = true;
 
-        return;
+    try {
+      setSetupState(
+        "Connecting…",
+        "info"
+      );
+
+      /*
+        This is the critical Supabase initialization.
+
+        We intentionally use getSupabaseClient()
+        rather than window.supabase directly.
+      */
+
+      const client =
+        await getSupabaseClient();
+
+      state.client =
+        client;
+
+
+      /* -----------------------------------------------
+         AUTH CHECK
+         ----------------------------------------------- */
+
+      const user =
+        await getCurrentUser();
+
+      if (!user) {
+        throw new Error(
+          "No authenticated user is available. Please sign in again."
+        );
       }
+
+
+      /* -----------------------------------------------
+         CLIENT PROFILE
+         ----------------------------------------------- */
+
+      const profile =
+        await loadClientProfile();
+
+      if (!profile) {
+        throw new Error(
+          "Your authenticated account is not linked to a GLIME client."
+        );
+      }
+
+
+      /* -----------------------------------------------
+         CLIENT BADGE
+         ----------------------------------------------- */
+
+      const clientBadge =
+        $("clientBadge");
+
+      if (clientBadge) {
+        clientBadge.textContent =
+          profile.project_name ||
+          profile.client_id ||
+          "Client";
+      }
+
+
+      /* -----------------------------------------------
+         LOAD CORE DATA
+         ----------------------------------------------- */
+
+      setSetupState(
+        "Loading business configuration…",
+        "info"
+      );
+
+      await loadEntityTypes();
+
+      await loadIndustries();
+
+      await loadCategories();
+
+      await restoreSetupUI();
+
+      await loadOffers();
+
+
+      /* -----------------------------------------------
+         INITIAL EDITOR
+         ----------------------------------------------- */
+
+      hideEditor();
+
+      showStep(1);
+
+      updateLifecycleButtons();
+
+      updateSharePreview();
+
+
+      /* -----------------------------------------------
+         READY
+         ----------------------------------------------- */
+
+      setSetupState(
+        "Ready.",
+        "success"
+      );
 
       state.initialized =
         true;
 
-      bindEvents();
-
-      updateStepUI();
-
-      show(
-        $("offerForm"),
-        false
+    } catch (error) {
+      console.error(
+        "[GLIME] Services initialization failed:",
+        error
       );
 
-      show(
-        $("editorEmpty"),
-        true
-      );
-
-      await loadClient();
-
-      await loadIndustries();
-
-      await loadClientSetup();
-
-      await loadCategories();
-
-      await loadOffers();
-
-      await loadTemplates();
-
-      populateCategorySelect();
-
-      renderRangeState();
-
-      updateSetupState();
-
-      console.log(
-        "[GLIME Services] FINAL core initialized."
-      );
-    } catch (
-      error
-    ) {
       state.initialized =
         false;
 
-      handleError(
-        error,
-        "GLIME Services could not be initialized."
+      const clientBadge =
+        $("clientBadge");
+
+      if (clientBadge) {
+        clientBadge.textContent =
+          "Client unavailable";
+      }
+
+      setSetupState(
+        "Services could not initialize.",
+        "error"
+      );
+
+      setSetupMessage(
+        error.message ||
+          "Could not initialize Services.",
+        "error"
       );
     }
   }
 
+
   /* =========================================================
-     PUBLIC API
+     GLOBAL ERROR HANDLING
      ========================================================= */
 
-  window.GLIMEServices = {
-    refresh:
-      refreshCatalog,
+  window.addEventListener(
+    "error",
+    (event) => {
+      console.error(
+        "[GLIME] Services runtime error:",
+        event.error ||
+          event.message
+      );
+    }
+  );
 
-    openOffer:
-      openOffer,
 
-    createOffer:
-      createNewOffer,
+  window.addEventListener(
+    "unhandledrejection",
+    (event) => {
+      console.error(
+        "[GLIME] Services unhandled promise rejection:",
+        event.reason
+      );
+    }
+  );
 
-    saveDraft:
-      saveCurrentDraft,
-
-    submitReview:
-      submitForReview,
-
-    approve:
-      approveOffer,
-
-    publish:
-      publishOffer,
-
-    runAICheck:
-      runAICheck,
-
-    getState:
-      () => ({
-        ...state
-      })
-  };
 
   /* =========================================================
-     START
+     DOM READY
      ========================================================= */
 
   if (
@@ -5220,13 +6488,75 @@ const sb =
   ) {
     document.addEventListener(
       "DOMContentLoaded",
-      init,
+      () => {
+        bindSetupEvents();
+        bindOfferEvents();
+        initializeServices();
+      },
       {
         once: true
       }
     );
   } else {
-    init();
+    bindSetupEvents();
+    bindOfferEvents();
+    initializeServices();
   }
 
-})();   
+
+  /* =========================================================
+     PUBLIC SERVICES API
+     ========================================================= */
+
+  window.GLIME_SERVICES = {
+    refresh:
+      refreshServicesData,
+
+    loadOffers:
+      loadOffers,
+
+    createOffer:
+      createNewOffer,
+
+    openOffer:
+      openOffer,
+
+    saveDraft:
+      saveCurrentDraft,
+
+    runAICheck:
+      runAICheck,
+
+    submitForReview:
+      submitForReview,
+
+    approve:
+      approveOffer,
+
+    reject:
+      rejectOffer,
+
+    publish:
+      publishOffer,
+
+    getState:
+      () => state
+  };
+
+
+  /* =========================================================
+     FINAL INITIALIZATION STATE
+     ========================================================= */
+
+  window.GLIME_SERVICES_STATE =
+    state;
+
+
+  /* =========================================================
+     END OF GLIME SERVICES CORE
+     ========================================================= */
+
+})();
+    
+       
+
