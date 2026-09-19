@@ -2550,19 +2550,47 @@
   }
 
   async function publishVersion(
-    offerId,
-    versionId
-  ) {
+  offerId,
+  versionId
+) {
 
-    await archiveOtherPublishedVersions(
-      offerId,
-      versionId
+  const {
+    data,
+    error
+  } = await db.rpc(
+    "client_publish_offer_version",
+    {
+      p_version_id: versionId
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.ok) {
+    throw new Error(
+      "The offer could not be published."
     );
+  }
 
-    const now =
-      new Date()
-        .toISOString();
+  const {
+    data: publishedVersion,
+    error: versionError
+  } = await db
+    .from("offer_versions")
+    .select("*")
+    .eq("id", versionId)
+    .eq("offer_id", offerId)
+    .single();
 
+  if (versionError) {
+    throw versionError;
+  }
+
+  return publishedVersion;
+  }
+  
     const {
       data:
         publishedVersion,
