@@ -2,640 +2,532 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
   <title>GLIME — Services & Offers</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
 
-  <link rel="stylesheet" href="services.css">
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <link
+    rel="stylesheet"
+    href="services.css"
+  >
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
+
 <main class="shell">
 
+  <!-- =====================================================
+       TOP BAR
+       ===================================================== -->
+
   <header class="topbar">
-    <a class="brand" href="dashboard.html">
-      <img src="glime_logo_clean.svg" alt="GLIME">
+
+    <a
+      class="brand"
+      href="dashboard.html"
+      aria-label="GLIME Dashboard"
+    >
+      <img
+        src="glime_logo_clean.svg"
+        alt="GLIME"
+      >
     </a>
 
     <div class="topbar-right">
-      <span id="clientBadge" class="badge">Loading client…</span>
-      <a href="dashboard.html" class="back-link">Dashboard</a>
+
+      <span
+        id="clientBadge"
+        class="badge"
+      >
+        Loading client…
+      </span>
+
+      <a
+        href="dashboard.html"
+        class="back-link"
+      >
+        Dashboard
+      </a>
+
     </div>
+
   </header>
 
+
+  <!-- =====================================================
+       HERO
+       ===================================================== -->
+
   <section class="hero">
+
     <div>
-      <div class="eyebrow">CLIENT CONTROL CENTER · SERVICES & OFFERS</div>
-      <h1>Services & Offers</h1>
+
+      <div class="eyebrow">
+        CLIENT CONTROL CENTER · SERVICES & OFFERS
+      </div>
+
+      <h1>
+        Services & Offers
+      </h1>
+
       <p>
-        Build one business truth for every GLIME specialist.
-        Configure progressively, review the AI check, then approve and publish.
+        Build your business truth progressively.
+        Start with the business foundation, then configure
+        the industry, business model and template before
+        adding customer-facing services, products or other
+        business entities.
       </p>
+
     </div>
 
-    <button id="newOfferBtn" class="primary" type="button">
-      + New Service / Product
-    </button>
   </section>
 
-  <div id="message" class="message" hidden></div>
 
-  <!-- BUSINESS FOUNDATION -->
+  <!-- =====================================================
+       GLOBAL MESSAGE
+       ===================================================== -->
+
+  <div
+    id="message"
+    class="message"
+    hidden
+  ></div>
+
+
+  <!-- =====================================================
+       CONFIGURATION FOUNDATION
+       ===================================================== -->
+
   <section class="setup panel">
+
     <div class="panel-head">
+
       <div>
-        <h2>Business configuration</h2>
-        <span class="muted">Foundation used by the Service & Offer engine</span>
+
+        <h2>
+          Business foundation
+        </h2>
+
+        <span class="muted">
+          The foundation used by GLIME business systems
+        </span>
+
       </div>
-      <span id="setupState" class="status draft">Not configured</span>
+
+      <span
+        id="setupState"
+        class="status draft"
+      >
+        Not configured
+      </span>
+
     </div>
 
+
     <div class="setup-grid">
-      <label>
-        Industry
-        <select id="industrySelect">
-          <option value="">Select industry</option>
-        </select>
-      </label>
+
+      <!-- INDUSTRY -->
 
       <label>
-        Business model
-        <select id="businessModelSelect">
-          <option value="">Select business model</option>
+
+        Industry
+
+        <select id="industrySelect">
+
+          <option value="">
+            Select industry
+          </option>
+
         </select>
+
       </label>
+
+
+      <!-- BUSINESS MODEL -->
+
+      <label>
+
+        Business model
+
+        <select id="businessModelSelect">
+
+          <option value="">
+            Select business model
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <!-- CUSTOM BUSINESS MODEL -->
 
       <label class="wide">
+
         Custom business model
+
         <input
           id="customBusinessModel"
           maxlength="160"
-          placeholder="Optional — e.g. appointment + product sales"
+          placeholder="Optional — define your own business model"
         >
+
       </label>
 
-      <button id="saveSetupBtn" class="ghost" type="button">
-        Save configuration
+
+      <!-- SAVE FOUNDATION -->
+
+      <button
+        id="saveSetupBtn"
+        class="ghost"
+        type="button"
+      >
+        Save foundation
       </button>
+
     </div>
+
   </section>
 
-  <section class="workspace">
 
-    <!-- CATALOG -->
-    <aside class="catalog-panel panel">
+  <!-- =====================================================
+       CONFIGURATION JOURNEY
+       ===================================================== -->
 
-      <div class="panel-head">
-        <div>
-          <h2>Your catalog</h2>
-          <span id="offerCount" class="muted">0 items</span>
-        </div>
+  <section class="panel">
 
-        <button id="refreshBtn" class="icon-btn" type="button" title="Refresh">
-          ↻
-        </button>
+    <div class="panel-head">
+
+      <div>
+
+        <h2>
+          Configuration journey
+        </h2>
+
+        <span class="muted">
+          Each layer becomes the foundation for the next one
+        </span>
+
       </div>
 
-      <div class="category-tools">
-        <input id="categoryName" placeholder="New category name">
-        <button id="addCategoryBtn" class="ghost" type="button">Add</button>
-      </div>
+    </div>
 
-      <div id="categoryList" class="category-list"></div>
 
-      <div id="offerList" class="offer-list">
-        <div class="empty">Loading catalog…</div>
-      </div>
+    <div class="setup-grid">
 
-    </aside>
 
-    <!-- EDITOR -->
-    <section class="editor-panel panel">
+      <!-- =================================================
+           LAYER 01 — BUSINESS
+           ================================================= -->
 
-      <div id="editorEmpty" class="empty-editor">
-        <div class="empty-icon">✦</div>
-        <h2>Build a business offer</h2>
-        <p>
-          Create a service, product, package, plan or custom offer.
-          Complete only the information relevant to your business.
-        </p>
+      <div class="panel">
 
-        <button id="emptyNewBtn" class="primary" type="button">
-          Create Service / Product
-        </button>
-      </div>
+        <div class="panel-head">
 
-      <form id="offerForm" hidden>
-
-        <div class="editor-head">
           <div>
-            <div class="eyebrow">OFFER BUILDER</div>
 
-            <h2 id="editorTitle">New Service</h2>
+            <div class="eyebrow">
+              LAYER 01
+            </div>
 
-            <span id="editorStatus" class="status draft">
-              Draft
+            <h2>
+              Business
+            </h2>
+
+            <span class="muted">
+              Client business identity
             </span>
-          </div>
-
-          <button id="closeEditorBtn" class="icon-btn" type="button">
-            ×
-          </button>
-        </div>
-
-        <!-- PROGRESS -->
-        <div id="progress" class="progress"></div>
-
-        <!-- STEP 1 -->
-        <section class="step active" data-step="1">
-
-          <div class="step-head">
-            <span>01</span>
-
-            <div>
-              <h3>Service / Product</h3>
-              <p>Define the customer-facing identity.</p>
-            </div>
-          </div>
-
-          <div class="grid two">
-
-            <label>
-              Name
-              <input
-                id="offerName"
-                required
-                maxlength="160"
-                placeholder="e.g. Hair Spa"
-              >
-            </label>
-
-            <label>
-              Type
-              <select id="offerType">
-                <option value="service">Service</option>
-                <option value="product">Product</option>
-                <option value="package">Package</option>
-                <option value="plan">Plan</option>
-                <option value="property">Property</option>
-                <option value="menu-item">Menu Item</option>
-                <option value="custom">Custom</option>
-              </select>
-            </label>
-
-            <label>
-              Category
-              <select id="offerCategory">
-                <option value="">No category</option>
-              </select>
-            </label>
-
-            <label>
-              Short description
-              <input
-                id="shortDescription"
-                maxlength="240"
-                placeholder="One-line customer-facing description"
-              >
-            </label>
 
           </div>
 
-          <label>
-            Description
-            <textarea
-              id="offerDescription"
-              rows="5"
-              placeholder="What the customer gets"
-            ></textarea>
-          </label>
-
-        </section>
-
-        <!-- STEP 2 -->
-        <section class="step" data-step="2">
-
-          <div class="step-head">
-            <span>02</span>
-
-            <div>
-              <h3>Details</h3>
-              <p>Capture operational facts without forcing irrelevant fields.</p>
-            </div>
-          </div>
-
-          <div class="grid two">
-
-            <label>
-              Duration / specification
-              <input
-                id="detailDuration"
-                placeholder="e.g. 60 minutes / 500 ml / 2 BHK"
-              >
-            </label>
-
-            <label>
-              Eligibility
-              <input
-                id="eligibility"
-                placeholder="Who can purchase or use it?"
-              >
-            </label>
-
-          </div>
-
-          <label>
-            Included
-            <textarea
-              id="included"
-              rows="4"
-              placeholder="One item per line"
-            ></textarea>
-          </label>
-
-          <label>
-            Excluded
-            <textarea
-              id="excluded"
-              rows="4"
-              placeholder="One item per line"
-            ></textarea>
-          </label>
-
-        </section>
-
-        <!-- STEP 3 -->
-        <section class="step" data-step="3">
-
-          <div class="step-head">
-            <span>03</span>
-
-            <div>
-              <h3>Pricing & Availability</h3>
-              <p>Keep commercial truth explicit.</p>
-            </div>
-          </div>
-
-          <div class="grid four">
-
-            <label>
-              Amount
-              <input
-                id="priceAmount"
-                type="number"
-                min="0"
-                step="0.01"
-              >
-            </label>
-
-            <label>
-              Currency
-              <input
-                id="priceCurrency"
-                value="INR"
-                maxlength="8"
-              >
-            </label>
-
-            <label>
-              Price type
-              <select id="priceType">
-                <option value="fixed">Fixed</option>
-                <option value="starting_from">Starting from</option>
-                <option value="range">Range</option>
-                <option value="custom">Custom</option>
-              </select>
-            </label>
-
-            <label>
-              Billing period
-              <input
-                id="billingPeriod"
-                placeholder="one-time / monthly"
-              >
-            </label>
-
-          </div>
-
-          <div
-            id="rangeRow"
-            class="grid two"
-            hidden
-          >
-            <label>
-              Minimum
-              <input
-                id="minAmount"
-                type="number"
-                min="0"
-                step="0.01"
-              >
-            </label>
-
-            <label>
-              Maximum
-              <input
-                id="maxAmount"
-                type="number"
-                min="0"
-                step="0.01"
-              >
-            </label>
-          </div>
-
-          <div class="section-title-row">
-            <h4>Availability rules</h4>
-
-            <button
-              id="addAvailabilityBtn"
-              class="ghost small"
-              type="button"
-            >
-              Add rule
-            </button>
-          </div>
-
-          <div id="availabilityList"></div>
-
-        </section>
-
-        <!-- STEP 4 -->
-        <section class="step" data-step="4">
-
-          <div class="step-head">
-            <span>04</span>
-
-            <div>
-              <h3>FAQs, Policies & Qualification</h3>
-              <p>Give agents the answers and boundaries they need.</p>
-            </div>
-          </div>
-
-          <label>
-            FAQs
-            <textarea
-              id="faqs"
-              rows="6"
-              placeholder="Question — Answer, one per line"
-            ></textarea>
-          </label>
-
-          <label>
-            Policies
-            <textarea
-              id="policies"
-              rows="5"
-              placeholder="Cancellation, refund, booking, delivery, warranty, etc."
-            ></textarea>
-          </label>
-
-          <label>
-            Qualification questions
-            <textarea
-              id="qualification"
-              rows="5"
-              placeholder="Questions AI should ask before recommending or booking"
-            ></textarea>
-          </label>
-
-        </section>
-
-        <!-- STEP 5 -->
-        <section class="step" data-step="5">
-
-          <div class="step-head">
-            <span>05</span>
-
-            <div>
-              <h3>AI Context</h3>
-              <p>Control what customer-facing agents may and may not say.</p>
-            </div>
-          </div>
-
-          <label>
-            Sales talking points
-            <textarea
-              id="talkingPoints"
-              rows="5"
-              placeholder="One point per line"
-            ></textarea>
-          </label>
-
-          <div class="grid two">
-
-            <label>
-              Allowed claims
-              <textarea
-                id="allowedClaims"
-                rows="5"
-                placeholder="Claims AI may make"
-              ></textarea>
-            </label>
-
-            <label>
-              Restricted / forbidden claims
-              <textarea
-                id="restrictions"
-                rows="5"
-                placeholder="Claims or statements AI must avoid"
-              ></textarea>
-            </label>
-
-          </div>
-
-          <label>
-            AI instructions
-            <textarea
-              id="aiInstructions"
-              rows="5"
-              placeholder="Tone, response length, escalation rules, fixed answers, etc."
-            ></textarea>
-          </label>
-
-        </section>
-
-        <!-- STEP 6 -->
-        <section class="step" data-step="6">
-
-          <div class="step-head">
-            <span>06</span>
-
-            <div>
-              <h3>Media & Links</h3>
-              <p>
-                Attach identity so shared content can resolve back to this offer.
-              </p>
-            </div>
-          </div>
-
-          <div class="grid two">
-
-            <label>
-              Website / landing page
-              <input id="websiteLink" type="url">
-            </label>
-
-            <label>
-              Booking / order / payment link
-              <input id="bookingLink" type="url">
-            </label>
-
-            <label>
-              Instagram URL
-              <input id="instagramLink" type="url">
-            </label>
-
-            <label>
-              Facebook URL
-              <input id="facebookLink" type="url">
-            </label>
-
-          </div>
-
-          <label>
-            Media URLs
-            <textarea
-              id="mediaUrls"
-              rows="4"
-              placeholder="One URL per line"
-            ></textarea>
-          </label>
-
-          <label>
-            Recognition aliases / keywords
-            <textarea
-              id="aliases"
-              rows="4"
-              placeholder="Names, SKU, tags, phrases customers may use"
-            ></textarea>
-          </label>
-
-        </section>
-
-        <!-- STEP 7 -->
-        <section class="step" data-step="7">
-
-          <div class="step-head">
-            <span>07</span>
-
-            <div>
-              <h3>Share & Review</h3>
-              <p>
-                Generate identity, run the AI check, then use approval lifecycle.
-              </p>
-            </div>
-          </div>
-
-          <div class="share-card">
-
-            <div>
-              <strong>Public share identity</strong>
-
-              <p id="sharePreview">
-                Saved after first draft.
-              </p>
-            </div>
-
-            <button
-              id="copyShareBtn"
-              class="ghost small"
-              type="button"
-            >
-              Copy link
-            </button>
-
-          </div>
-
-          <div
-            id="aiCheck"
-            class="check-box"
-          >
-            AI Check has not run.
-          </div>
-
-          <div class="review-actions">
-
-            <button
-              id="runCheckBtn"
-              class="ghost"
-              type="button"
-            >
-              Run AI Check
-            </button>
-
-            <button
-              id="saveDraftBtn"
-              class="ghost"
-              type="button"
-            >
-              Save Draft
-            </button>
-
-            <button
-              id="submitReviewBtn"
-              class="primary"
-              type="button"
-            >
-              Submit for Review
-            </button>
-
-            <button
-              id="approveBtn"
-              class="primary"
-              type="button"
-            >
-              Approve
-            </button>
-
-            <button
-              id="publishBtn"
-              class="primary"
-              type="button"
-            >
-              Publish
-            </button>
-
-          </div>
-
-        </section>
-
-        <div class="step-nav">
-
-          <button
-            id="prevStepBtn"
-            class="ghost"
-            type="button"
-          >
-            Back
-          </button>
-
-          <span id="stepLabel">
-            Step 1 of 7
+          <span class="status active">
+            Active
           </span>
 
-          <button
-            id="nextStepBtn"
-            class="primary"
-            type="button"
-          >
-            Next
-          </button>
+        </div>
+
+      </div>
+
+
+      <!-- =================================================
+           LAYER 02 — INDUSTRY
+           ================================================= -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div>
+
+            <div class="eyebrow">
+              LAYER 02
+            </div>
+
+            <h2>
+              Industry
+            </h2>
+
+            <span class="muted">
+              System or custom industry
+            </span>
+
+          </div>
+
+          <span class="status draft">
+            Configure
+          </span>
 
         </div>
 
-      </form>
+      </div>
 
-    </section>
+
+      <!-- =================================================
+           LAYER 03 — BUSINESS MODEL
+           ================================================= -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div>
+
+            <div class="eyebrow">
+              LAYER 03
+            </div>
+
+            <h2>
+              Business Model
+            </h2>
+
+            <span class="muted">
+              How this business operates
+            </span>
+
+          </div>
+
+          <span class="status draft">
+            Configure
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- =================================================
+           LAYER 04 — TEMPLATE
+           ================================================= -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div>
+
+            <div class="eyebrow">
+              LAYER 04
+            </div>
+
+            <h2>
+              Template
+            </h2>
+
+            <span class="muted">
+              Structure used by business entities
+            </span>
+
+          </div>
+
+          <span class="status draft">
+            Next layer
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       NEXT LAYER
+       ===================================================== -->
+
+  <section class="panel">
+
+    <div class="panel-head">
+
+      <div>
+
+        <div class="eyebrow">
+          NEXT
+        </div>
+
+        <h2>
+          Business entities
+        </h2>
+
+        <span class="muted">
+          Services, products, packages, plans, properties,
+          menu items and custom entities will be added here
+          through separate modules.
+        </span>
+
+      </div>
+
+      <span class="status draft">
+        Add-on
+      </span>
+
+    </div>
+
+
+    <div style="padding:20px">
+
+      <p
+        class="muted"
+        style="margin:0;line-height:1.7"
+      >
+        Complete the business foundation first.
+        Entity management will appear here when the
+        corresponding GLIME module is enabled.
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       AI CONTEXT
+       Existing published-context addon remains separate.
+       ===================================================== -->
+
+  <section
+    id="publishedContextMount"
+    class="panel"
+  >
+
+    <div class="panel-head">
+
+      <div>
+
+        <div class="eyebrow">
+          AI CONTEXT
+        </div>
+
+        <h2>
+          Published catalog context
+        </h2>
+
+        <span class="muted">
+          Published business truth available to GLIME
+          customer-facing specialists.
+        </span>
+
+      </div>
+
+      <span class="status active">
+        Runtime
+      </span>
+
+    </div>
+
+    <div
+      id="publishedContextContent"
+      style="padding:20px"
+    >
+      Loading published context…
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       FOOTER STATE
+       ===================================================== -->
+
+  <section
+    class="panel"
+    style="margin-top:16px"
+  >
+
+    <div
+      style="
+        padding:18px 20px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
+      "
+    >
+
+      <div>
+
+        <div class="eyebrow">
+          GLIME BUSINESS TRUTH
+        </div>
+
+        <span class="muted">
+          Configuration first. Entity data second.
+          Published truth last.
+        </span>
+
+      </div>
+
+      <button
+        id="refreshBtn"
+        class="ghost"
+        type="button"
+      >
+        Refresh
+      </button>
+
+    </div>
+
   </section>
 
 </main>
 
+
+<!-- =======================================================
+     CORE
+     ======================================================= -->
+
 <script src="services.js"></script>
+
+
+<!-- =======================================================
+     EXISTING PUBLISHED CONTEXT ADDON
+     ======================================================= -->
+
 <script src="services-context-addon.js"></script>
+
 
 </body>
 </html>
