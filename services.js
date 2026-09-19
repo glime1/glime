@@ -1,2512 +1,2401 @@
+/* =========================================================
+   GLIME — Services & Offer Management
+   Layer 1G
+   Lifecycle:
+   Draft → Review → Approved → Published
+
+   Business Truth:
+   Service / Product / Package / Plan / Property / Menu Item
+   ========================================================= */
+
 (() => {
   "use strict";
+
+  /* ---------------------------------------------------------
+     1. SUPABASE
+  --------------------------------------------------------- */
 
   const SUPABASE_URL =
     "https://ufoulgbiqgjriwapuopc.supabase.co";
 
-  const SUPABASE_KEY =
+  const SUPABASE_ANON_KEY =
     "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
-  if (!window.supabase?.createClient) {
-    console.error("Supabase client library is not loaded.");
+  if (!window.supabase) {
+    console.error("GLIME: Supabase library not loaded.");
     return;
   }
 
   const db = window.supabase.createClient(
     SUPABASE_URL,
-    SUPABASE_KEY
+    SUPABASE_ANON_KEY
   );
 
-  let client = null;
-  let categories = [];
-  let offers = [];
-  let selectedOffer = null;
-  let selectedVersion = null;
-  let variants = [];
-  let availability = [];
+  /* ---------------------------------------------------------
+     2. GLOBAL STATE
+  --------------------------------------------------------- */
 
-  // Version metadata is intentionally kept separate from offers.
-  // This is the key boundary for future version/review/publish workflows.
-  let offerVersionsByOfferId = new Map();
+  const state = {
+    user: null,
+    client: null,
 
-  let loading = false;
-  let saveInProgress = false;
+    industries: [],
+    businessModels: [],
+    templates: [],
+    categories: [],
+    offers: [],
 
-  const VERSION_STATUSES = new Set([
-    "draft",
-    "review",
-    "approved",
-    "published",
-    "archived"
-  ]);
+    selectedOffer: null,
+    selectedVersion: null,
 
-  const EDITABLE_VERSION_STATUS = "draft";
+    currentDraftVersion: null,
 
-  const $ = (id) => document.getElementById(id);
+    currentIndustryConfig: null,
+    currentTemplateConfig: null,
 
-  const escapeHtml = (value) =>
-    String(value ?? "")
-      .replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-      }[char]));
+    currentStep: 1,
 
-  const slugify = (value) =>
-    String(value || "")
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 70);
-
-  const lines = (value) =>
-    String(value || "")
-      .split("\n")
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-  const textLines = (value) =>
-    Array.isArray(value) ? value.join("\n") : "";
-
-  const clientId = () => client?.client_id;
-
-  const normalizeVersionStatus = (value) => {
-    const status = String(value || "draft").toLowerCase();
-    return VERSION_STATUSES.has(status) ? status : "draft";
+    saving: false,
+    loading: false
   };
 
-  const versionSort = (a, b) =>
-    Number(b?.version_number || 0) -
-    Number(a?.version_number || 0);
+  /* ---------------------------------------------------------
+     3. DOM HELPERS
+  --------------------------------------------------------- */
 
-  function showMessage(text, type = "info") {
-    const element = $("message");
+  const $ = (selector) => document.querySelector(selector);
 
-    if (!element) return;
+  const $$ = (selector) =>
+    Array.from(document.querySelectorAll(selector));
 
-    element.textContent = text || "";
-    element.className = "message " + type;
-    element.hidden = !text;
+  function byId(id) {
+    return document.getElementById(id);
   }
 
-  function setBusy(isBusy) {
-    saveInProgress = isBusy;
-
-    [
-      "newVersionBtn",
-      "saveDraftBtn",
-      "savePublishBtn",
-      "deleteOfferBtn",
-      "addVariantBtn",
-      "addAvailabilityBtn",
-      "addCategoryBtn"
-    ].forEach((id) => {
-      const element = $(id);
-      if (element) element.disabled = isBusy;
-    });
+  function safeText(value) {
+    return value == null ? "" : String(value);
   }
 
-  async function getClient() {
-    const { data, error } = await db.auth.getSession();
-
-    if (error) throw error;
-
-    const user = data?.session?.user;
-
-    if (!user) {
-      window.location.replace("login.html");
-      return null;
-    }
-
-    const { data: clientData, error: clientError } = await db
-      .from("client_data")
-      .select(
-        "id,client_id,client_name,full_name,name,email"
-      )
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-
-    if (clientError) throw clientError;
-
-    if (!clientData?.client_id) {
-      throw new Error(
-        "Authenticated client profile was not found."
-      );
-    }
-
-    return clientData;
-  }
-
-  async function fetchVersionSummaries(offerIds) {
-    const map = new Map();
-
-    if (!offerIds.length) return map;
-
-    const { data, error } = await db
-      .from("offer_versions")
-      .select(
-        "id,offer_id,version_number,status,title,published_at,created_at,updated_at"
-      )
-      .in("offer_id", offerIds)
-      .order(
-        "version_number",
-        {
-          ascending: false
-        }
-      );
-
-    if (error) throw error;
-
-    (data || []).forEach((version) => {
-      const list =
-        map.get(version.offer_id) || [];
-
-      list.push(version);
-      map.set(version.offer_id, list);
-    });
-
-    for (const [offerId, list] of map.entries()) {
-      list.sort(versionSort);
-      map.set(offerId, list);
-    }
-
-    return map;
-  }
-
-  async function loadCatalog(
-    {
-      preserveSelection = true
-    } = {}
-  ) {
-    if (!clientId() || loading) return;
-
-    loading = true;
-
-    const previousOfferId =
-      preserveSelection
-        ? selectedOffer?.id || null
-        : null;
-
-    const previousVersionId =
-      preserveSelection
-        ? selectedVersion?.id || null
-        : null;
+  function jsonOrEmpty(value) {
+    if (!value) return {};
+    if (typeof value === "object") return value;
 
     try {
-      const [
-        categoryResult,
-        offerResult
-      ] = await Promise.all([
-
-        db
-          .from("offer_categories")
-          .select("*")
-          .eq(
-            "client_id",
-            clientId()
-          )
-          .order(
-            "sort_order"
-          )
-          .order(
-            "name"
-          ),
-
-        db
-          .from("offers")
-          .select(
-            "id,client_id,offer_type,name,slug,short_description,description,category_id,status,current_version_id,created_at,updated_at"
-          )
-          .eq(
-            "client_id",
-            clientId()
-          )
-          .order(
-            "updated_at",
-            {
-              ascending: false
-            }
-          )
-
-      ]);
-
-      if (categoryResult.error) {
-        throw categoryResult.error;
-      }
-
-      if (offerResult.error) {
-        throw offerResult.error;
-      }
-
-      categories =
-        categoryResult.data || [];
-
-      offers =
-        offerResult.data || [];
-
-      const versionMap =
-        await fetchVersionSummaries(
-          offers.map(
-            (offer) => offer.id
-          )
-        );
-
-      offerVersionsByOfferId =
-        versionMap;
-
-      renderCategories();
-      renderOffers();
-
-      if (previousOfferId) {
-        const freshOffer =
-          offers.find(
-            (offer) =>
-              offer.id ===
-              previousOfferId
-          );
-
-        if (freshOffer) {
-          await selectOffer(
-            freshOffer,
-            false,
-            previousVersionId
-          );
-        } else {
-          clearEditorSelection();
-        }
-      }
-
-    } finally {
-      loading = false;
+      return JSON.parse(value);
+    } catch {
+      return {};
     }
   }
 
-  async function loadOfferVersions(
-    offerId
-  ) {
-    if (!offerId) return [];
+  function setValue(id, value) {
+    const el = byId(id);
+    if (!el) return;
+
+    if (el.type === "checkbox") {
+      el.checked = Boolean(value);
+    } else {
+      el.value = value ?? "";
+    }
+  }
+
+  function getValue(id) {
+    const el = byId(id);
+    if (!el) return "";
+
+    if (el.type === "checkbox") {
+      return el.checked;
+    }
+
+    return el.value;
+  }
+
+  function showMessage(message, type = "info") {
+    console.log(`[GLIME ${type}]`, message);
+
+    const existing = byId("glimeToast");
+
+    if (existing) {
+      existing.textContent = message;
+      existing.dataset.type = type;
+      existing.classList.add("show");
+
+      setTimeout(() => {
+        existing.classList.remove("show");
+      }, 4000);
+
+      return;
+    }
+
+    const toast = document.createElement("div");
+
+    toast.id = "glimeToast";
+    toast.dataset.type = type;
+    toast.textContent = message;
+
+    toast.style.position = "fixed";
+    toast.style.right = "20px";
+    toast.style.bottom = "20px";
+    toast.style.zIndex = "99999";
+    toast.style.padding = "14px 18px";
+    toast.style.borderRadius = "10px";
+    toast.style.background = "#111";
+    toast.style.color = "#fff";
+    toast.style.fontSize = "14px";
+    toast.style.boxShadow = "0 10px 30px rgba(0,0,0,.25)";
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 4000);
+  }
+
+  function setLoading(isLoading) {
+    state.loading = isLoading;
+
+    document.body.classList.toggle(
+      "glime-loading",
+      isLoading
+    );
+  }
+
+  function setSaving(isSaving) {
+    state.saving = isSaving;
+
+    const buttons = [
+      "saveDraftBtn",
+      "submitReviewBtn",
+      "approveBtn",
+      "publishBtn",
+      "aiCheckBtn"
+    ];
+
+    buttons.forEach((id) => {
+      const el = byId(id);
+      if (el) {
+        el.disabled = isSaving;
+      }
+    });
+  }
+
+  function normalizeStatus(status) {
+    return String(status || "").toLowerCase();
+  }
+
+  /* ---------------------------------------------------------
+     4. AUTHENTICATION
+  --------------------------------------------------------- */
+
+  async function getCurrentUser() {
+    const {
+      data,
+      error
+    } = await db.auth.getUser();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.user) {
+      throw new Error(
+        "GLIME login required. Please sign in first."
+      );
+    }
+
+    state.user = data.user;
+
+    return data.user;
+  }
+
+  /* ---------------------------------------------------------
+     5. LOAD CLIENT
+  --------------------------------------------------------- */
+
+  async function loadClient() {
+    if (!state.user) {
+      await getCurrentUser();
+    }
 
     const {
       data,
       error
     } = await db
-      .from("offer_versions")
-      .select(
-        "id,offer_id,version_number,status,title,description,sales_talking_points,allowed_claims,restrictions,customer_eligibility,metadata,published_at,created_at,updated_at"
-      )
-      .eq(
-        "offer_id",
-        offerId
-      )
-      .order(
-        "version_number",
-        {
-          ascending: false
-        }
-      );
-
-    if (error) throw error;
-
-    const versions =
-      (data || []).sort(
-        versionSort
-      );
-
-    offerVersionsByOfferId.set(
-      offerId,
-      versions
-    );
-
-    return versions;
-  }
-
-  function getVersionsForOffer(
-    offerId
-  ) {
-    return (
-      offerVersionsByOfferId.get(
-        offerId
-      ) || []
-    )
-      .slice()
-      .sort(
-        versionSort
-      );
-  }
-
-  function getPreferredVersion(
-    offer,
-    versions,
-    preferredVersionId = null
-  ) {
-    if (!versions.length) {
-      return null;
-    }
-
-    if (preferredVersionId) {
-      const preferred =
-        versions.find(
-          (version) =>
-            version.id ===
-            preferredVersionId
-        );
-
-      if (preferred) {
-        return preferred;
-      }
-    }
-
-    if (offer?.current_version_id) {
-      const current =
-        versions.find(
-          (version) =>
-            version.id ===
-            offer.current_version_id
-        );
-
-      if (current) {
-        return current;
-      }
-    }
-
-    return versions[0] || null;
-  }
-
-  function renderCategories() {
-    const categoryList =
-      $("categoryList");
-
-    if (categoryList) {
-      categoryList.innerHTML =
-        categories.length
-          ? categories
-              .map(
-                (category) => `
-                  <span class="category-pill">
-                    ${escapeHtml(
-                      category.name
-                    )}
-                  </span>
-                `
-              )
-              .join("")
-          : '<span class="muted">No categories yet</span>';
-    }
-
-    const categorySelect =
-      $("offerCategory");
-
-    if (!categorySelect) {
-      return;
-    }
-
-    const currentValue =
-      categorySelect.value;
-
-    categorySelect.innerHTML =
-      '<option value="">No category</option>' +
-      categories
-        .map(
-          (category) => `
-            <option value="${escapeHtml(
-              category.id
-            )}">
-              ${escapeHtml(
-                category.name
-              )}
-            </option>
-          `
-        )
-        .join("");
-
-    if (selectedOffer) {
-      categorySelect.value =
-        selectedOffer.category_id ||
-        "";
-    } else if (currentValue) {
-      categorySelect.value =
-        currentValue;
-    }
-  }
-
-  function getOfferCategoryName(
-    offer
-  ) {
-    return (
-      categories.find(
-        (category) =>
-          category.id ===
-          offer.category_id
-      )?.name ||
-      "Uncategorized"
-    );
-  }
-
-  function getOfferDisplayStatus(
-    offer
-  ) {
-    const versions =
-      getVersionsForOffer(
-        offer.id
-      );
-
-    const currentVersion =
-      versions.find(
-        (version) =>
-          version.id ===
-          offer.current_version_id
-      );
-
-    if (
-      offer.status === "active" &&
-      currentVersion?.status ===
-        "published"
-    ) {
-      return "Published";
-    }
-
-    return (
-      offer.status ||
-      "draft"
-    );
-  }
-
-  function renderOffers() {
-    const count =
-      $("offerCount");
-
-    if (count) {
-      count.textContent =
-        `${offers.length} item${
-          offers.length === 1
-            ? ""
-            : "s"
-        }`;
-    }
-
-    const list =
-      $("offerList");
-
-    if (!list) {
-      return;
-    }
-
-    if (!offers.length) {
-      list.innerHTML = `
-        <div class="empty">
-          No services or offers yet.
-        </div>
-      `;
-
-      return;
-    }
-
-    list.innerHTML =
-      offers
-        .map(
-          (offer) => {
-
-            const displayStatus =
-              getOfferDisplayStatus(
-                offer
-              );
-
-            return `
-              <div
-                class="offer-card ${
-                  selectedOffer?.id ===
-                  offer.id
-                    ? "selected"
-                    : ""
-                }"
-              >
-
-                <button
-                  type="button"
-                  data-offer-id="${escapeHtml(
-                    offer.id
-                  )}"
-                >
-
-                  <div class="offer-name">
-                    ${escapeHtml(
-                      offer.name
-                    )}
-                  </div>
-
-                  <div class="offer-meta">
-
-                    <span>
-                      ${escapeHtml(
-                        offer.offer_type
-                      )}
-                      ·
-                      ${escapeHtml(
-                        getOfferCategoryName(
-                          offer
-                        )
-                      )}
-                    </span>
-
-                    <span
-                      class="status ${String(
-                        displayStatus
-                      ).toLowerCase()}"
-                    >
-                      ${escapeHtml(
-                        displayStatus
-                      )}
-                    </span>
-
-                  </div>
-
-                </button>
-
-              </div>
-            `;
-
-          }
-        )
-        .join("");
-
-    list
-      .querySelectorAll(
-        "[data-offer-id]"
-      )
-      .forEach(
-        (button) => {
-
-          button.addEventListener(
-            "click",
-            () => {
-
-              const offer =
-                offers.find(
-                  (item) =>
-                    item.id ===
-                    button.dataset.offerId
-                );
-
-              if (!offer) {
-                return;
-              }
-
-              selectOffer(
-                offer
-              ).catch(
-                (error) => {
-
-                  console.error(
-                    error
-                  );
-
-                  showMessage(
-                    error.message ||
-                      String(error),
-                    "error"
-                  );
-
-                }
-              );
-
-            }
-          );
-
-        }
-      );
-
-  }
-
-  function ensureVersionHistoryUI() {
-    const label =
-      $("versionLabel");
-
-    const strip =
-      label?.closest(
-        ".version-strip"
-      );
-
-    if (!strip) {
-      return null;
-    }
-
-    let host =
-      $("versionHistoryHost");
-
-    if (!host) {
-
-      host =
-        document.createElement(
-          "div"
-        );
-
-      host.id =
-        "versionHistoryHost";
-
-      host.className =
-        "version-history-host";
-
-      const style =
-        document.createElement(
-          "style"
-        );
-
-      style.textContent = `
-        .version-history-host {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-top: 12px;
-          flex-wrap: wrap;
-        }
-
-        .version-history-host label {
-          color: var(--dim, #6f818c);
-          font: 500 10px "DM Mono", monospace;
-          letter-spacing: .04em;
-          text-transform: uppercase;
-        }
-
-        .version-history-host select {
-          min-width: 220px;
-        }
-
-        .version-history-note {
-          color: var(--dim, #6f818c);
-          font-size: 11px;
-        }
-      `;
-
-      document.head.appendChild(
-        style
-      );
-
-      strip.insertAdjacentElement(
-        "afterend",
-        host
-      );
-    }
-
-    return host;
-  }
-
-  function renderVersionHistory() {
-    const host =
-      ensureVersionHistoryUI();
-
-    if (!host) {
-      return;
-    }
-
-    if (!selectedOffer) {
-      host.innerHTML = "";
-      return;
-    }
-
-    const versions =
-      getVersionsForOffer(
-        selectedOffer.id
-      );
-
-    if (!versions.length) {
-
-      host.innerHTML = `
-        <span class="version-history-note">
-          No version history yet.
-        </span>
-      `;
-
-      return;
-    }
-
-    host.innerHTML = `
-      <label for="versionHistorySelect">
-        Version history
-      </label>
-
-      <select id="versionHistorySelect">
-
-        ${versions
-          .map(
-            (version) => {
-
-              const status =
-                normalizeVersionStatus(
-                  version.status
-                );
-
-              const isSelected =
-                version.id ===
-                selectedVersion?.id;
-
-              return `
-                <option
-                  value="${escapeHtml(
-                    version.id
-                  )}"
-                  ${
-                    isSelected
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  v${escapeHtml(
-                    version.version_number
-                  )}
-                  ·
-                  ${escapeHtml(
-                    status
-                  )}
-                  ${
-                    version.title
-                      ? " · " +
-                        escapeHtml(
-                          version.title
-                        )
-                      : ""
-                  }
-                </option>
-              `;
-
-            }
-          )
-          .join("")}
-
-      </select>
-
-      <span class="version-history-note">
-        Published versions are read-only.
-      </span>
-    `;
-
-    $(
-      "versionHistorySelect"
-    )?.addEventListener(
-      "change",
-      async (event) => {
-
-        const versionId =
-          event.target.value;
-
-        const version =
-          versions.find(
-            (item) =>
-              item.id ===
-              versionId
-          );
-
-        if (!version) {
-          return;
-        }
-
-        selectedVersion =
-          version;
-
-        await loadVersionData();
-
-        applyEditorLockState();
-
-      }
-    );
-  }
-
-  function clearEditorSelection() {
-    selectedOffer = null;
-    selectedVersion = null;
-    variants = [];
-    availability = [];
-
-    const form =
-      $("offerForm");
-
-    const empty =
-      $("editorEmpty");
-
-    if (form) {
-      form.hidden = true;
-    }
-
-    if (empty) {
-      empty.hidden = false;
-    }
-
-    renderOffers();
-    renderVersionHistory();
-  }
-
-  function resetEditor() {
-    selectedOffer = null;
-    selectedVersion = null;
-
-    variants = [];
-    availability = [];
-
-    $("editorEmpty").hidden =
-      true;
-
-    $("offerForm").hidden =
-      false;
-
-    $("editorTitle").textContent =
-      "New Service";
-
-    $("editorStatus").textContent =
-      "Draft";
-
-    $("editorStatus").className =
-      "status draft";
-
-    [
-      "offerName",
-      "shortDescription",
-      "offerDescription",
-      "versionTitle",
-      "eligibility",
-      "talkingPoints",
-      "allowedClaims",
-      "restrictions",
-      "priceAmount",
-      "billingPeriod",
-      "minAmount",
-      "maxAmount"
-    ].forEach(
-      (id) => {
-
-        const field =
-          $(id);
-
-        if (field) {
-          field.value =
-            "";
-        }
-
-      }
-    );
-
-    $("offerType").value =
-      "service";
-
-    $("priceCurrency").value =
-      "INR";
-
-    $("priceType").value =
-      "fixed";
-
-    $("offerCategory").value =
-      "";
-
-    $("versionLabel").textContent =
-      "Version 1";
-
-    $("versionStatus").textContent =
-      "Draft";
-
-    $("versionStatus").className =
-      "status draft";
-
-    $("publishToggle").checked =
-      false;
-
-    $("deleteOfferBtn").hidden =
-      true;
-
-    renderVariants();
-    renderAvailability();
-    renderVersionHistory();
-    updatePriceRange();
-    applyEditorLockState();
-
-    if (window.innerWidth < 951) {
-      $("offerForm")?.scrollIntoView({
-        behavior: "smooth"
-      });
-    }
-  }
-
-  async function selectOffer(
-    offer,
-    scroll = true,
-    preferredVersionId = null
-  ) {
-
-    if (!offer) {
-      return;
-    }
-
-    selectedOffer =
-      offer;
-
-    const versions =
-      await loadOfferVersions(
-        offer.id
-      );
-
-    selectedVersion =
-      getPreferredVersion(
-        offer,
-        versions,
-        preferredVersionId
-      );
-
-    $("editorEmpty").hidden =
-      true;
-
-    $("offerForm").hidden =
-      false;
-
-    $("editorTitle").textContent =
-      offer.name ||
-      "Service";
-
-    $("editorStatus").textContent =
-      offer.status ||
-      "draft";
-
-    $("editorStatus").className =
-      "status " +
-      (
-        offer.status ||
-        "draft"
-      );
-
-    $("offerName").value =
-      offer.name ||
-      "";
-
-    $("offerType").value =
-      offer.offer_type ||
-      "service";
-
-    $("shortDescription").value =
-      offer.short_description ||
-      "";
-
-    $("offerDescription").value =
-      offer.description ||
-      "";
-
-    $("offerCategory").value =
-      offer.category_id ||
-      "";
-
-    $("deleteOfferBtn").hidden =
-      false;
-
-    renderVersionHistory();
-
-    await loadVersionData();
-
-    applyEditorLockState();
-
-    renderOffers();
-    renderCategories();
-
-    if (
-      scroll &&
-      window.innerWidth < 951
-    ) {
-
-      $("offerForm")?.scrollIntoView({
-        behavior: "smooth"
-      });
-
-    }
-  }
-
-  async function loadVersionData() {
-
-    const version =
-      selectedVersion;
-
-    if (!version) {
-
-      $("versionLabel").textContent =
-        "Version 1";
-
-      $("versionStatus").textContent =
-        "Draft";
-
-      $("versionStatus").className =
-        "status draft";
-
-      $("versionTitle").value =
-        "";
-
-      $("eligibility").value =
-        "";
-
-      $("talkingPoints").value =
-        "";
-
-      $("allowedClaims").value =
-        "";
-
-      $("restrictions").value =
-        "";
-
-      $("priceAmount").value =
-        "";
-
-      $("priceCurrency").value =
-        "INR";
-
-      $("priceType").value =
-        "fixed";
-
-      $("billingPeriod").value =
-        "";
-
-      $("minAmount").value =
-        "";
-
-       $("maxAmount").value =
-        "";
-
-      $("publishToggle").checked =
-        false;
-
-      variants = [];
-      availability = [];
-
-      renderVariants();
-      renderAvailability();
-      renderVersionHistory();
-      updatePriceRange();
-
-      return;
-    }
-
-    $("versionLabel").textContent =
-      `Version ${
-        version.version_number
-      }`;
-
-    $("versionStatus").textContent =
-      normalizeVersionStatus(
-        version.status
-      );
-
-    $("versionStatus").className =
-      "status " +
-      normalizeVersionStatus(
-        version.status
-      );
-
-    $("versionTitle").value =
-      version.title ||
-      "";
-
-    $("eligibility").value =
-      version
-        .customer_eligibility
-        ?.text ||
-      "";
-
-    $("talkingPoints").value =
-      textLines(
-        version.sales_talking_points
-      );
-
-    $("allowedClaims").value =
-      textLines(
-        version.allowed_claims
-      );
-
-    $("restrictions").value =
-      textLines(
-        version.restrictions
-      );
-
-    const [
-      variantResult,
-      priceResult,
-      availabilityResult
-    ] =
-      await Promise.all([
-
-        db
-          .from("offer_variants")
-          .select("*")
-          .eq(
-            "offer_version_id",
-            version.id
-          )
-          .order(
-            "sort_order"
-          ),
-
-        db
-          .from("offer_prices")
-          .select("*")
-          .eq(
-            "offer_version_id",
-            version.id
-          )
-          .order(
-            "created_at"
-          ),
-
-        db
-          .from("offer_availability")
-          .select("*")
-          .eq(
-            "offer_version_id",
-            version.id
-          )
-          .order(
-            "day_of_week"
-          )
-
-      ]);
-
-    if (variantResult.error) {
-      throw variantResult.error;
-    }
-
-    if (priceResult.error) {
-      throw priceResult.error;
-    }
-
-    if (availabilityResult.error) {
-      throw availabilityResult.error;
-    }
-
-    variants =
-      variantResult.data ||
-      [];
-
-    availability =
-      availabilityResult.data ||
-      [];
-
-    const price =
-      priceResult.data?.[0];
-
-    $("priceAmount").value =
-      price?.amount ??
-      "";
-
-    $("priceCurrency").value =
-      price?.currency ||
-      "INR";
-
-    $("priceType").value =
-      price?.price_type ||
-      "fixed";
-
-    $("billingPeriod").value =
-      price?.billing_period ||
-      "";
-
-    $("minAmount").value =
-      price?.min_amount ??
-      "";
-
-    $("maxAmount").value =
-      price?.max_amount ??
-      "";
-
-    $("publishToggle").checked =
-      version.status ===
-        "published" &&
-      selectedOffer?.current_version_id ===
-        version.id;
-
-    updatePriceRange();
-
-    renderVariants();
-    renderAvailability();
-    renderVersionHistory();
-  }
-
-  function isEditorLocked() {
-
-    if (!selectedOffer) {
-      return false;
-    }
-
-    const versionStatus =
-      normalizeVersionStatus(
-        selectedVersion?.status
-      );
-
-    if (
-      selectedOffer.status ===
-      "archived"
-    ) {
-      return true;
-    }
-
-    return (
-      versionStatus !==
-      EDITABLE_VERSION_STATUS
-    );
-  }
-
-  function applyEditorLockState() {
-
-    const locked =
-      isEditorLocked();
-
-    const form =
-      $("offerForm");
-
-    if (!form) {
-      return;
-    }
-
-    form.dataset.locked =
-      locked
-        ? "true"
-        : "false";
-
-    const controls =
-      form.querySelectorAll(
-        "input, textarea, select"
-      );
-
-    controls.forEach(
-      (control) => {
-
-        if (
-          control.id ===
-          "publishToggle"
-        ) {
-          return;
-        }
-
-        control.disabled =
-          locked;
-      }
-    );
-
-    const actionIds = [
-      "saveDraftBtn",
-      "savePublishBtn",
-      "addVariantBtn",
-      "addAvailabilityBtn"
-    ];
-
-    actionIds.forEach(
-      (id) => {
-
-        const element =
-          $(id);
-
-        if (element) {
-          element.disabled =
-            locked ||
-            saveInProgress;
-        }
-
-      }
-    );
-
-    const createVersionButton =
-      $("newVersionBtn");
-
-    if (createVersionButton) {
-
-      createVersionButton.disabled =
-        Boolean(
-          selectedOffer?.status ===
-            "archived"
-        ) ||
-        saveInProgress;
-    }
-
-    const note =
-      ensureVersionHistoryUI()
-        ?.querySelector(
-          ".version-history-note"
-        );
-
-    if (note) {
-
-      note.textContent =
-        locked
-          ? "This version is read-only. Create a new draft version to edit."
-          : "Draft version is editable. Published versions stay immutable.";
-    }
-
-    const publishBox =
-      document.querySelector(
-        ".publish-box"
-      );
-
-    if (publishBox) {
-
-      publishBox.dataset.locked =
-        locked
-          ? "true"
-          : "false";
-    }
-  }
-
-  function renderVariants() {
-
-    const list =
-      $("variantList");
-
-    if (!list) {
-      return;
-    }
-
-    if (!variants.length) {
-
-      list.innerHTML = `
-        <div class="empty">
-          No variants. Add one if the offer has options.
-        </div>
-      `;
-
-      return;
-    }
-
-    list.innerHTML =
-      variants
-        .map(
-          (variant, index) => `
-            <div class="item-row">
-
-              <input
-                data-variant-name="${index}"
-                value="${escapeHtml(
-                  variant.name
-                )}"
-                placeholder="Variant name"
-                ${
-                  isEditorLocked()
-                    ? "disabled"
-                    : ""
-                }
-              >
-
-              <input
-                data-variant-sku="${index}"
-                value="${escapeHtml(
-                  variant.sku ||
-                  ""
-                ) }"
-                placeholder="SKU (optional)"
-                ${
-                  isEditorLocked()
-                    ? "disabled"
-                    : ""
-                }
-              >
-
-              <button
-                type="button"
-                class="remove-btn"
-                data-remove-variant="${index}"
-                ${
-                  isEditorLocked()
-                    ? "disabled"
-                    : ""
-                }
-              >
-                ×
-              </button>
-
-            </div>
-          `
-        )
-        .join("");
-
-    list
-      .querySelectorAll(
-        "[data-remove-variant]"
-      )
-      .forEach(
-        (button) => {
-
-          button.onclick =
-            () => {
-
-              if (
-                isEditorLocked()
-              ) {
-                return;
-              }
-
-              variants.splice(
-                Number(
-                  button.dataset
-                    .removeVariant
-                ),
-                1
-              );
-
-              renderVariants();
-            };
-
-        }
-      );
-  }
-
-  function renderAvailability() {
-
-    const days = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday"
-    ];
-
-    const list =
-      $("availabilityList");
-
-    if (!list) {
-      return;
-    }
-
-    if (!availability.length) {
-
-      list.innerHTML = `
-        <div class="empty">
-          No availability rule added.
-        </div>
-      `;
-
-      return;
-    }
-
-    list.innerHTML =
-      availability
-        .map(
-          (item, index) => `
-            <div class="availability-row">
-
-              <select
-                data-availability-day="${index}"
-                ${
-                  isEditorLocked()
-                    ? "disabled"
-                    : ""
-                }
-              >
-
-                <option value="">
-                  Any day
-                </option>
-
-                ${days
-                  .map(
-                    (day, dayIndex) => `
-                      <option
-                        value="${dayIndex}"
-                        ${
-                          String(
-                            item.day_of_week
-                          ) ===
-                          String(
-                            dayIndex
-                          )
-                            ? "selected"
-                            : ""
-                        }
-                      >
-                        ${day}
-                      </option>
-                    `
-                  )
-                  .join("")}
-
-              </select>
-
-              <input
-                type="time"
-                data-availability-start="${index}"
-                value="${escapeHtml(
-                  item.start_time ||
-                  ""
-                ) }"
-                ${
-                  isEditorLocked()
-                    ? "disabled"
-                    : ""
-                }
-              >
-
-              <input
-                type="time"
-                data-availability-end="${index}"
-                value="${escapeHtml(
-                  item.end_time ||
-                  ""
-                ) }"
-                ${
-                  isEditorLocked()
-                    ? "disabled"
-                    : ""
-                }
-              >
-
-              <input
-                data-availability-notes="${index}"
-                value="${escapeHtml(
-                  item.notes ||
-                  ""
-                ) }"
-                placeholder="Notes"
-                ${
-                  isEditorLocked()
-                    ? "disabled"
-                    : ""
-                }
-              >
-
-              <button
-                type="button"
-                class="remove-btn"
-                data-remove-availability="${index}"
-                ${
-                  isEditorLocked()
-                    ? "disabled"
-                    : ""
-                }
-              >
-                ×
-              </button>
-
-            </div>
-          `
-        )
-        .join("");
-
-    list
-      .querySelectorAll(
-        "[data-remove-availability]"
-      )
-      .forEach(
-        (button) => {
-
-          button.onclick =
-            () => {
-
-              if (
-                isEditorLocked()
-              ) {
-                return;
-              }
-
-              availability.splice(
-                Number(
-                  button.dataset
-                    .removeAvailability
-                ),
-                1
-              );
-
-              renderAvailability();
-            };
-
-        }
-      );
-  }
-
-  function syncEditorArrays() {
-
-    variants =
-      variants.map(
-        (variant, index) => ({
-
-          ...variant,
-
-          name:
-            document
-              .querySelector(
-                `[data-variant-name="${index}"]`
-              )
-              ?.value.trim() ||
-            "",
-
-          sku:
-            document
-              .querySelector(
-                `[data-variant-sku="${index}"]`
-              )
-              ?.value.trim() ||
-            null
-
-        })
-      );
-
-    availability =
-      availability.map(
-        (item, index) => {
-
-          const day =
-            document.querySelector(
-              `[data-availability-day="${index}"]`
-            )?.value;
-
-          return {
-
-            ...item,
-
-            day_of_week:
-              day === ""
-                ? null
-                : Number(day),
-
-            start_time:
-              document
-                .querySelector(
-                  `[data-availability-start="${index}"]`
-                )
-                ?.value ||
-              null,
-
-            end_time:
-              document
-                .querySelector(
-                  `[data-availability-end="${index}"]`
-                )
-                ?.value ||
-              null,
-
-            notes:
-              document
-                .querySelector(
-                  `[data-availability-notes="${index}"]`
-                )
-                ?.value.trim() ||
-              null
-
-          };
-
-        }
-      );
-  }
-
-  function updatePriceRange() {
-
-    const priceType =
-      $("priceType")?.value;
-
-    const row =
-      $("rangeRow");
-
-    if (!row) {
-      return;
-    }
-
-    row.hidden =
-      priceType !==
-      "range";
-  }
-
-  function validateEditor() {
-
-    const name =
-      $("offerName")
-        ?.value.trim();
-
-    if (!name) {
-
-      throw new Error(
-        "Service name is required."
-      );
-    }
-
-    if (
-      variants.some(
-        (variant) =>
-          !variant.name
-      )
-    ) {
-
-      throw new Error(
-        "Every variant needs a name."
-      );
-    }
-
-    if (
-      availability.some(
-        (item) =>
-          (
-            item.start_time &&
-            !item.end_time
-          ) ||
-          (
-            !item.start_time &&
-            item.end_time
-          )
-      )
-    ) {
-
-      throw new Error(
-        "Availability needs both start and end time."
-      );
-    }
-
-    const priceType =
-      $("priceType")?.value ||
-      "fixed";
-
-    const priceAmountValue =
-      $("priceAmount")?.value ||
-      "";
-
-    const minAmountValue =
-      $("minAmount")?.value ||
-      "";
-
-    const maxAmountValue =
-      $("maxAmount")?.value ||
-      "";
-
-    if (
-      priceType ===
-      "range"
-    ) {
-
-      if (
-        minAmountValue ===
-          "" ||
-        maxAmountValue ===
-          ""
-      ) {
-
-        throw new Error(
-          "Range pricing needs both minimum and maximum amounts."
-        );
-      }
-
-      if (
-        Number(
-          minAmountValue
-        ) >
-        Number(
-          maxAmountValue
-        )
-      ) {
-
-        throw new Error(
-          "Minimum price cannot be greater than maximum price."
-        );
-      }
-
-    } else if (
-      priceType !==
-        "custom" &&
-      priceAmountValue ===
-        ""
-    ) {
-
-      throw new Error(
-        "Price amount is required for this price type."
-      );
-    }
-
-    if (
-      !selectedOffer &&
-      !selectedVersion
-    ) {
-      return;
-    }
-
-    if (
-      selectedOffer &&
-      isEditorLocked()
-    ) {
-
-      throw new Error(
-        "This version is read-only. Create a new version before editing it."
-      );
-    }
-  }
-
-  function buildVersionPayload(
-    name
-  ) {
-
-    return {
-
-      title:
-        $("versionTitle")
-          ?.value.trim() ||
-        name,
-
-      description:
-        $("offerDescription")
-          ?.value.trim() ||
-        null,
-
-      sales_talking_points:
-        lines(
-          $("talkingPoints")
-            ?.value
-        ),
-
-      allowed_claims:
-        lines(
-          $("allowedClaims")
-            ?.value
-        ),
-
-      restrictions:
-        lines(
-          $("restrictions")
-            ?.value
-        ),
-
-      customer_eligibility: {
-
-        text:
-          $("eligibility")
-            ?.value.trim() ||
-          ""
-
-      },
-
-      metadata: {}
-
-    };
-  }
-
-  function buildOfferPayload(
-    name,
-    offerId = null
-  ) {
-
-    return {
-
-      client_id:
-        clientId(),
-
-      offer_type:
-        $("offerType")
-          ?.value ||
-        "service",
-
-      name,
-
-      slug:
-        selectedOffer?.slug ||
-        (
-          slugify(name) ||
-          "offer"
-        ) +
-          "-" +
-          Date.now().toString(
-            36
-          ),
-
-      short_description:
-        $("shortDescription")
-          ?.value.trim() ||
-        null,
-
-      description:
-        $("offerDescription")
-          ?.value.trim() ||
-        null,
-
-      category_id:
-        $("offerCategory")
-          ?.value ||
-        null
-
-    };
-  }
-
-  async function createOfferRecord(
-    name
-  ) {
-
-    const payload =
-      buildOfferPayload(
-        name
-      );
-
-    const {
-      data,
-      error
-    } =
-      await db
-        .from("offers")
-        .insert({
-
-          ...payload,
-
-          status:
-            "draft",
-
-          current_version_id:
-            null
-
-        })
-        .select()
-        .single();
+      .from("client_data")
+      .select("*")
+      .eq("auth_user_id", state.user.id)
+      .maybeSingle();
 
     if (error) {
       throw error;
     }
+
+    if (!data) {
+      throw new Error(
+        "GLIME client profile not found."
+      );
+    }
+
+    state.client = data;
 
     return data;
   }
 
-  async function getNextVersionNumber(
-    offerId
-  ) {
+  /* ---------------------------------------------------------
+     6. LOAD INDUSTRIES
+  --------------------------------------------------------- */
 
+  async function loadIndustries() {
     const {
       data,
       error
-    } =
-      await db
-        .from("offer_versions")
-        .select(
-          "version_number"
-        )
-        .eq(
-          "offer_id",
-          offerId
-        )
-        .order(
-          "version_number",
-          {
-            ascending:
-              false
-          }
-        )
-        .limit(1);
+    } = await db
+      .from("industries")
+      .select("*")
+      .eq("status", "active")
+      .order("name");
 
     if (error) {
       throw error;
     }
 
-    return (
-      Number(
-        data?.[0]
-          ?.version_number ||
-        0
-      ) + 1
-    );
+    state.industries = data || [];
+
+    const select = byId("industrySelect");
+
+    if (!select) return;
+
+    select.innerHTML =
+      `<option value="">Select industry</option>`;
+
+    state.industries.forEach((industry) => {
+      const option =
+        document.createElement("option");
+
+      option.value = industry.id;
+      option.textContent = industry.name;
+
+      select.appendChild(option);
+    });
   }
 
-  async function createVersionRecord({
+  /* ---------------------------------------------------------
+     7. LOAD BUSINESS MODELS
+  --------------------------------------------------------- */
 
-    offerId,
-    sourceVersion =
-      null,
-    status =
-      "draft",
-    versionNumber =
-      null
+  async function loadBusinessModels(industryId) {
+    const select = byId("businessModelSelect");
 
-  }) {
+    if (!select) return;
 
-    const number =
-      versionNumber ||
-      (
-        await getNextVersionNumber(
-          offerId
-        )
-      );
+    select.innerHTML =
+      `<option value="">Select business model</option>`;
 
-    const sourcePayload =
-      sourceVersion
-        ? {
-
-            title:
-              sourceVersion.title ||
-              null,
-
-            description:
-              sourceVersion.description ||
-              null,
-
-            sales_talking_points:
-              Array.isArray(
-                sourceVersion.sales_talking_points
-              )
-                ? sourceVersion.sales_talking_points
-                : [],
-
-            allowed_claims:
-              Array.isArray(
-                sourceVersion.allowed_claims
-              )
-                ? sourceVersion.allowed_claims
-                : [],
-
-            restrictions:
-              Array.isArray(
-                sourceVersion.restrictions
-              )
-                ? sourceVersion.restrictions
-                : [],
-
-            customer_eligibility:
-              sourceVersion.customer_eligibility ||
-              {},
-
-            metadata:
-              sourceVersion.metadata ||
-              {}
-
-          }
-        : buildVersionPayload(
-            $("offerName")
-              ?.value.trim() ||
-            "Service"
-          );
+    if (!industryId) {
+      state.businessModels = [];
+      return;
+    }
 
     const {
       data,
       error
-    } =
-      await db
-        .from("offer_versions")
+    } = await db
+      .from("business_models")
+      .select("*")
+      .eq("industry_id", industryId)
+      .eq("status", "active")
+      .order("name");
+
+    if (error) {
+      throw error;
+    }
+
+    state.businessModels = data || [];
+
+    state.businessModels.forEach((model) => {
+      const option =
+        document.createElement("option");
+
+      option.value = model.id;
+      option.textContent = model.name;
+
+      select.appendChild(option);
+    });
+  }
+
+  /* ---------------------------------------------------------
+     8. LOAD TEMPLATES
+  --------------------------------------------------------- */
+
+  async function loadTemplates(industryId) {
+    if (!industryId) {
+      state.templates = [];
+      return [];
+    }
+
+    const {
+      data,
+      error
+    } = await db
+      .from("industry_templates")
+      .select("*")
+      .eq("industry_id", industryId)
+      .eq("status", "active")
+      .order("name");
+
+    if (error) {
+      throw error;
+    }
+
+    state.templates = data || [];
+
+    return state.templates;
+  }
+
+  /* ---------------------------------------------------------
+     9. SAVE INDUSTRY CONFIGURATION
+  --------------------------------------------------------- */
+
+  async function saveIndustryConfiguration() {
+    if (!state.client) {
+      throw new Error("Client profile not loaded.");
+    }
+
+    const industryId =
+      getValue("industrySelect");
+
+    if (!industryId) {
+      throw new Error(
+        "Please select an industry first."
+      );
+    }
+
+    const businessModelId =
+      getValue("businessModelSelect");
+
+    const customBusinessModel =
+      getValue("customBusinessModel");
+
+    const {
+      data: existing,
+      error: existingError
+    } = await db
+      .from("client_industry_configurations")
+      .select("*")
+      .eq("client_id", state.client.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    let config;
+
+    if (existing) {
+      const {
+        data,
+        error
+      } = await db
+        .from("client_industry_configurations")
+        .update({
+          industry_id: industryId,
+          custom_industry_name: null,
+          custom_industry_description: null,
+          selection_source: "system",
+          status: "active",
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", existing.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      config = data;
+    } else {
+      const {
+        data,
+        error
+      } = await db
+        .from("client_industry_configurations")
         .insert({
-
-          offer_id:
-            offerId,
-
-          version_number:
-            number,
-
-          status,
-
-          title:
-            sourcePayload.title ||
-            $("offerName")
-              ?.value.trim() ||
-            "Service",
-
-          description:
-            sourcePayload.description ||
-            null,
-
-          sales_talking_points:
-            sourcePayload.sales_talking_points ||
-            [],
-
-          allowed_claims:
-            sourcePayload.allowed_claims ||
-            [],
-
-          restrictions:
-            sourcePayload.restrictions ||
-            [],
-
-          customer_eligibility:
-            sourcePayload.customer_eligibility ||
-            {},
-
-          metadata:
-            sourcePayload.metadata ||
-            {},
-
-          published_at:
-            status ===
-            "published"
-              ? new Date()
-                  .toISOString()
-              : null
-
+          client_id: state.client.id,
+          industry_id: industryId,
+          selection_source: "system",
+          status: "active"
         })
         .select()
         .single();
 
-    if (error) {
-      throw error;
+      if (error) throw error;
+
+      config = data;
     }
 
-    return data;
-  }
-
-  async function replaceVersionChildren(
-    versionId
-  ) {
-
-    const priceType =
-      $("priceType")
-        ?.value ||
-      "fixed";
-
-    const priceAmountValue =
-      $("priceAmount")
-        ?.value ||
-      "";
-
-    const minAmountValue =
-      $("minAmount")
-        ?.value ||
-      "";
-
-    const maxAmountValue =
-      $("maxAmount")
-        ?.value ||
-      "";
+    state.currentIndustryConfig = config;
 
     /*
-     * Prices can reference variants.
-     * Delete prices first, then variants.
-     */
+      Optional custom business model.
+      This is tenant-owned and does not modify global models.
+    */
+
+    if (customBusinessModel.trim()) {
+      const slug =
+        slugify(customBusinessModel);
+
+      const {
+        data: customModel,
+        error: customModelError
+      } = await db
+        .from("client_custom_business_models")
+        .upsert(
+          {
+            client_id: state.client.id,
+            industry_configuration_id: config.id,
+            base_business_model_id:
+              businessModelId || null,
+            name: customBusinessModel.trim(),
+            slug,
+            description: null,
+            status: "active",
+            is_custom: true
+          },
+          {
+            onConflict: "client_id,slug"
+          }
+        )
+        .select()
+        .single();
+
+      if (customModelError) {
+        throw customModelError;
+      }
+
+      state.currentCustomBusinessModel =
+        customModel;
+    }
+
+    /*
+      Resolve effective configuration.
+      If the RPC is not accessible to this frontend user,
+      the core configuration remains saved.
+    */
+
+    try {
+      await db.rpc(
+        "resolve_client_effective_configuration",
+        {
+          p_client_id: state.client.id
+        }
+      );
+    } catch (rpcError) {
+      console.warn(
+        "GLIME effective configuration resolution skipped:",
+        rpcError
+      );
+    }
+
+    showMessage(
+      "Business configuration saved.",
+      "success"
+    );
+
+    await loadClientTemplateConfiguration();
+
+    return config;
+  }
+
+  /* ---------------------------------------------------------
+     10. TEMPLATE CONFIGURATION
+  --------------------------------------------------------- */
+
+  async function loadClientTemplateConfiguration() {
+    if (!state.client) return;
 
     const {
-      error: priceDeleteError
-    } =
-      await db
+      data,
+      error
+    } = await db
+      .from("client_template_configurations")
+      .select("*")
+      .eq("client_id", state.client.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (data) {
+      state.currentTemplateConfig = data;
+      return data;
+    }
+
+    const industryId =
+      getValue("industrySelect");
+
+    if (!industryId) return null;
+
+    const templates =
+      await loadTemplates(industryId);
+
+    const template =
+      templates.find(
+        (item) => item.status === "active"
+      );
+
+    if (!template) {
+      console.warn(
+        "No active template found for industry."
+      );
+
+      return null;
+    }
+
+    const businessModelId =
+      getValue("businessModelSelect");
+
+    const {
+      data: created,
+      error: createError
+    } = await db
+      .from("client_template_configurations")
+      .insert({
+        client_id: state.client.id,
+        industry_configuration_id:
+          state.currentIndustryConfig?.id || null,
+        business_model_id:
+          businessModelId || null,
+        custom_business_model_id:
+          state.currentCustomBusinessModel?.id ||
+          null,
+        template_id: template.id,
+        template_name: null,
+        status: "active",
+        config: {},
+        metadata: {}
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      /*
+        Another tab/session may have created it.
+        Try reading again before failing.
+      */
+
+      const {
+        data: retryData,
+        error: retryError
+      } = await db
+        .from("client_template_configurations")
+        .select("*")
+        .eq("client_id", state.client.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (retryError) {
+        throw createError;
+      }
+
+      state.currentTemplateConfig =
+        retryData;
+
+      return retryData;
+    }
+
+    state.currentTemplateConfig = created;
+
+    return created;
+  }
+
+  /* ---------------------------------------------------------
+     11. LOAD CATEGORIES
+  --------------------------------------------------------- */
+
+  async function loadCategories() {
+    if (!state.client) return;
+
+    const {
+      data,
+      error
+    } = await db
+      .from("offer_categories")
+      .select("*")
+      .eq("client_id", state.client.client_id)
+      .order("name");
+
+    if (error) {
+      throw error;
+    }
+
+    state.categories = data || [];
+
+    const select =
+      byId("offerCategory");
+
+    if (!select) return;
+
+    select.innerHTML =
+      `<option value="">Select category</option>`;
+
+    state.categories.forEach((category) => {
+      const option =
+        document.createElement("option");
+
+      option.value = category.id;
+      option.textContent = category.name;
+
+      select.appendChild(option);
+    });
+  }
+
+  /* ---------------------------------------------------------
+     12. LOAD OFFERS
+  --------------------------------------------------------- */
+
+  async function loadOffers() {
+    if (!state.client) return;
+
+    const {
+      data,
+      error
+    } = await db
+      .from("offers")
+      .select("*")
+      .eq("client_id", state.client.client_id)
+      .order("created_at", {
+        ascending: false
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    state.offers = data || [];
+
+    renderOfferList();
+
+    return state.offers;
+  }
+
+  /* ---------------------------------------------------------
+     13. RENDER OFFER LIST
+  --------------------------------------------------------- */
+
+  function renderOfferList() {
+    const container =
+      byId("offerList");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!state.offers.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>No services or products yet.</p>
+          <button
+            type="button"
+            id="createFirstOfferBtn"
+            class="primary-btn"
+          >
+            Create first offer
+          </button>
+        </div>
+      `;
+
+      const button =
+        byId("createFirstOfferBtn");
+
+      if (button) {
+        button.addEventListener(
+          "click",
+          () => createNewOffer()
+        );
+      }
+
+      return;
+    }
+
+    state.offers.forEach((offer) => {
+      const item =
+        document.createElement("button");
+
+      item.type = "button";
+      item.className =
+        "offer-list-item";
+
+      if (
+        state.selectedOffer &&
+        state.selectedOffer.id === offer.id
+      ) {
+        item.classList.add("active");
+      }
+
+      item.innerHTML = `
+        <strong>
+          ${escapeHtml(
+            offer.name || "Untitled Offer"
+          )}
+        </strong>
+
+        <span>
+          ${escapeHtml(
+            offer.offer_type || "service"
+          )}
+        </span>
+
+        <small>
+          ${escapeHtml(
+            offer.status || "draft"
+          )}
+        </small>
+      `;
+
+      item.addEventListener(
+        "click",
+        () => selectOffer(offer.id)
+      );
+
+      container.appendChild(item);
+    });
+  }
+
+  /* ---------------------------------------------------------
+     14. ENSURE OFFER TYPE OPTION
+  --------------------------------------------------------- */
+
+  function ensureOfferTypeOption(type) {
+    const select =
+      byId("offerType");
+
+    if (!select) return;
+
+    const normalized =
+      String(type || "service");
+
+    const exists =
+      Array.from(select.options)
+        .some(
+          (option) =>
+            option.value === normalized
+        );
+
+    if (!exists) {
+      const option =
+        document.createElement("option");
+
+      option.value = normalized;
+      option.textContent =
+        normalized
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, (c) =>
+            c.toUpperCase()
+          );
+
+      select.appendChild(option);
+    }
+  }
+
+  /* ---------------------------------------------------------
+     15. SELECT OFFER
+  --------------------------------------------------------- */
+
+  async function selectOffer(offerId) {
+    const offer =
+      state.offers.find(
+        (item) => item.id === offerId
+      );
+
+    if (!offer) return;
+
+    state.selectedOffer = offer;
+
+    renderOfferList();
+
+    await loadLatestVersion(offer.id);
+
+    fillOfferForm();
+
+    showEditor();
+
+    setCurrentStep(1);
+  }
+
+  /* ---------------------------------------------------------
+     16. LOAD LATEST VERSION
+  --------------------------------------------------------- */
+
+  async function loadLatestVersion(offerId) {
+    const {
+      data,
+      error
+    } = await db
+      .from("offer_versions")
+      .select("*")
+      .eq("offer_id", offerId)
+      .order("version_number", {
+        ascending: false
+      })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    state.selectedVersion = data || null;
+
+    /*
+      If latest is not draft, it remains immutable.
+      We do NOT edit it directly.
+    */
+
+    if (
+      state.selectedVersion &&
+      normalizeStatus(
+        state.selectedVersion.status
+      ) !== "draft"
+    ) {
+      state.currentDraftVersion = null;
+    } else {
+      state.currentDraftVersion =
+        state.selectedVersion;
+    }
+
+    return state.selectedVersion;
+  }
+
+  /* ---------------------------------------------------------
+     17. CREATE NEW OFFER
+  --------------------------------------------------------- */
+
+  async function createNewOffer() {
+    if (!state.client) {
+      throw new Error(
+        "Client profile not loaded."
+      );
+    }
+
+    const defaultName =
+      "New Service";
+
+    const slug =
+      `${slugify(defaultName)}-${Date.now()}`;
+
+    const {
+      data: offer,
+      error
+    } = await db
+      .from("offers")
+      .insert({
+        client_id: state.client.client_id,
+        offer_type: "service",
+        name: defaultName,
+        slug,
+        short_description: "",
+        description: "",
+        status: "draft",
+        metadata: {}
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    const {
+      data: version,
+      error: versionError
+    } = await db
+      .from("offer_versions")
+      .insert({
+        offer_id: offer.id,
+        version_number: 1,
+        status: "draft",
+        title: defaultName,
+        description: "",
+        sales_talking_points: [],
+        allowed_claims: [],
+        restrictions: [],
+        customer_eligibility: {},
+        metadata: {}
+      })
+      .select()
+      .single();
+
+    if (versionError) {
+      throw versionError;
+    }
+
+    state.selectedOffer = offer;
+    state.selectedVersion = version;
+    state.currentDraftVersion = version;
+
+    await loadOffers();
+
+    fillOfferForm();
+
+    showEditor();
+
+    setCurrentStep(1);
+
+    showMessage(
+      "New draft created.",
+      "success"
+    );
+  }
+
+  /* ---------------------------------------------------------
+     18. CREATE EDITABLE VERSION
+  --------------------------------------------------------- */
+
+  async function ensureEditableVersion() {
+    if (!state.selectedOffer) {
+      throw new Error(
+        "Please select a service or product."
+      );
+    }
+
+    if (
+      state.currentDraftVersion &&
+      normalizeStatus(
+        state.currentDraftVersion.status
+      ) === "draft"
+    ) {
+      return state.currentDraftVersion;
+    }
+
+    const source =
+      state.selectedVersion;
+
+    if (!source) {
+      throw new Error(
+        "Offer version not found."
+      );
+    }
+
+    /*
+      Published / review / approved versions
+      are immutable.
+
+      Create a new draft instead.
+    */
+
+    const {
+      data: versions,
+      error: versionsError
+    } = await db
+      .from("offer_versions")
+      .select("version_number")
+      .eq("offer_id", state.selectedOffer.id)
+      .order("version_number", {
+        ascending: false
+      })
+      .limit(1);
+
+    if (versionsError) {
+      throw versionsError;
+    }
+
+    const maxVersion =
+      versions?.[0]?.version_number || 0;
+
+    const {
+      data: draft,
+      error
+    } = await db
+      .from("offer_versions")
+      .insert({
+        offer_id:
+          state.selectedOffer.id,
+
+        version_number:
+          Number(maxVersion) + 1,
+
+        status: "draft",
+
+        title:
+          source.title ||
+          state.selectedOffer.name,
+
+        description:
+          source.description || "",
+
+        sales_talking_points:
+          source.sales_talking_points || [],
+
+        allowed_claims:
+          source.allowed_claims || [],
+
+        restrictions:
+          source.restrictions || [],
+
+        customer_eligibility:
+          source.customer_eligibility || {},
+
+        metadata:
+          source.metadata || {}
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    state.currentDraftVersion =
+      draft;
+
+    state.selectedVersion =
+      draft;
+
+    showMessage(
+      "A new editable draft version was created.",
+      "info"
+    );
+
+    return draft;
+  }
+
+  /* ---------------------------------------------------------
+     19. FILL FORM
+  --------------------------------------------------------- */
+
+  function fillOfferForm() {
+    const offer =
+      state.selectedOffer;
+
+    const version =
+      state.selectedVersion;
+
+    if (!offer) return;
+
+    ensureOfferTypeOption(
+      offer.offer_type || "service"
+    );
+
+    setValue(
+      "offerType",
+      offer.offer_type || "service"
+    );
+
+    setValue(
+      "offerName",
+      version?.title ||
+      offer.name ||
+      ""
+    );
+
+    setValue(
+      "offerSlug",
+      offer.slug || ""
+    );
+
+    setValue(
+      "offerCategory",
+      offer.category_id || ""
+    );
+
+    setValue(
+      "offerShortDescription",
+      offer.short_description || ""
+    );
+
+    setValue(
+      "offerDescription",
+      version?.description ||
+      offer.description ||
+      ""
+    );
+
+    /*
+      Metadata stores advanced 1G data
+      without creating duplicate business-truth tables.
+    */
+
+    const metadata =
+      jsonOrEmpty(version?.metadata);
+
+    const details =
+      jsonOrEmpty(metadata.details);
+
+    const pricing =
+      jsonOrEmpty(metadata.pricing);
+
+    const availability =
+      jsonOrEmpty(metadata.availability);
+
+    const faq =
+      jsonOrEmpty(metadata.faq);
+
+    const policies =
+      jsonOrEmpty(metadata.policies);
+
+    const qualification =
+      jsonOrEmpty(metadata.qualification);
+
+    const aiContext =
+      jsonOrEmpty(metadata.ai_context);
+
+    const media =
+      jsonOrEmpty(metadata.media);
+
+    const links =
+      jsonOrEmpty(metadata.links);
+
+    const share =
+      jsonOrEmpty(metadata.share);
+
+    setValue(
+      "offerDuration",
+      details.duration || ""
+    );
+
+    setValue(
+      "offerIncluded",
+      details.included || ""
+    );
+
+    setValue(
+      "offerExcluded",
+      details.excluded || ""
+    );
+
+    setValue(
+      "offerPrice",
+      pricing.amount || ""
+    );
+
+    setValue(
+      "offerCurrency",
+      pricing.currency || "INR"
+    );
+
+    setValue(
+      "offerPriceType",
+      pricing.price_type || "fixed"
+    );
+
+    setValue(
+      "offerAvailability",
+      availability.notes || ""
+    );
+
+    setValue(
+      "offerFaq",
+      faq.content || ""
+    );
+
+    setValue(
+      "offerPolicies",
+      policies.content || ""
+    );
+
+    setValue(
+      "offerQualification",
+      qualification.questions || ""
+    );
+
+    setValue(
+      "offerSalesTalkingPoints",
+      arrayToText(
+        version?.sales_talking_points
+      )
+    );
+
+    setValue(
+      "offerAllowedClaims",
+      arrayToText(
+        version?.allowed_claims
+      )
+    );
+
+    setValue(
+      "offerRestrictions",
+      arrayToText(
+        version?.restrictions
+      )
+    );
+
+    setValue(
+      "offerAiInstructions",
+      aiContext.instructions || ""
+    );
+
+    setValue(
+      "offerAiTone",
+      aiContext.tone || ""
+    );
+
+    setValue(
+      "offerAiLanguage",
+      aiContext.language || ""
+    );
+
+    setValue(
+      "offerWebsiteUrl",
+      links.website || ""
+    );
+
+    setValue(
+      "offerBookingUrl",
+      links.booking || ""
+    );
+
+    setValue(
+      "offerInstagramUrl",
+      links.instagram || ""
+    );
+
+    setValue(
+      "offerFacebookUrl",
+      links.facebook || ""
+    );
+
+    setValue(
+      "offerMediaUrls",
+      arrayToText(
+        media.urls
+      )
+    );
+
+    setValue(
+      "offerAliases",
+      arrayToText(
+        share.aliases
+      )
+    );
+
+    setValue(
+      "offerKeywords",
+      arrayToText(
+        share.keywords
+      )
+    );
+
+    updateStatusUI();
+  }
+
+  /* ---------------------------------------------------------
+     20. COLLECT FORM
+  --------------------------------------------------------- */
+
+  function collectFormData() {
+    const metadata = {
+      details: {
+        duration:
+          getValue("offerDuration"),
+
+        included:
+          getValue("offerIncluded"),
+
+        excluded:
+          getValue("offerExcluded")
+      },
+
+      pricing: {
+        amount:
+          getValue("offerPrice"),
+
+        currency:
+          getValue("offerCurrency") ||
+          "INR",
+
+        price_type:
+          getValue("offerPriceType") ||
+          "fixed"
+      },
+
+      availability: {
+        notes:
+          getValue("offerAvailability")
+      },
+
+      faq: {
+        content:
+          getValue("offerFaq")
+      },
+
+      policies: {
+        content:
+          getValue("offerPolicies")
+      },
+
+      qualification: {
+        questions:
+          getValue("offerQualification")
+      },
+
+      ai_context: {
+        instructions:
+          getValue("offerAiInstructions"),
+
+        tone:
+          getValue("offerAiTone"),
+
+        language:
+          getValue("offerAiLanguage")
+      },
+
+      media: {
+        urls:
+          textToArray(
+            getValue("offerMediaUrls")
+          )
+      },
+
+      links: {
+        website:
+          getValue("offerWebsiteUrl"),
+
+        booking:
+          getValue("offerBookingUrl"),
+
+        instagram:
+          getValue("offerInstagramUrl"),
+
+        facebook:
+          getValue("offerFacebookUrl")
+      },
+
+      share: {
+        aliases:
+          textToArray(
+            getValue("offerAliases")
+          ),
+
+        keywords:
+          textToArray(
+            getValue("offerKeywords")
+          )
+      }
+    };
+
+    return {
+      offer: {
+        offer_type:
+          getValue("offerType") ||
+          "service",
+
+        name:
+          getValue("offerName").trim(),
+
+        slug:
+          slugify(
+            getValue("offerSlug") ||
+            getValue("offerName")
+          ),
+
+        short_description:
+          getValue(
+            "offerShortDescription"
+          ),
+
+        description:
+          getValue(
+            "offerDescription"
+          ),
+
+        category_id:
+          getValue(
+            "offerCategory"
+          ) || null
+      },
+
+      version: {
+        title:
+          getValue("offerName").trim(),
+
+        description:
+          getValue(
+            "offerDescription"
+          ),
+
+        sales_talking_points:
+          textToArray(
+            getValue(
+              "offerSalesTalkingPoints"
+            )
+          ),
+
+        allowed_claims:
+          textToArray(
+            getValue(
+              "offerAllowedClaims"
+            )
+          ),
+
+        restrictions:
+          textToArray(
+            getValue(
+              "offerRestrictions"
+            )
+          ),
+
+        customer_eligibility: {
+          qualification:
+            getValue(
+              "offerQualification"
+            )
+        },
+
+        metadata
+      }
+    };
+  }
+
+  /* ---------------------------------------------------------
+     21. SAVE DRAFT
+  --------------------------------------------------------- */
+
+  async function saveDraft(showToast = true) {
+    if (state.saving) return;
+
+    setSaving(true);
+
+    try {
+      if (!state.client) {
+        await loadClient();
+      }
+
+      const form =
+        collectFormData();
+
+      if (!form.offer.name) {
+        throw new Error(
+          "Service/Product name is required."
+        );
+      }
+
+      /*
+        IMPORTANT:
+        If current version is Published,
+        Approved or Review, create a new draft.
+      */
+
+      const draft =
+        await ensureEditableVersion();
+
+      /*
+        Update offer master record.
+      */
+
+      const {
+        data: updatedOffer,
+        error: offerError
+      } = await db
+        .from("offers")
+        .update({
+          offer_type:
+            form.offer.offer_type,
+
+          name:
+            form.offer.name,
+
+          slug:
+            form.offer.slug,
+
+          short_description:
+            form.offer.short_description,
+
+          description:
+            form.offer.description,
+
+          category_id:
+            form.offer.category_id,
+
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq(
+          "id",
+          state.selectedOffer.id
+        )
+        .eq(
+          "client_id",
+          state.client.client_id
+        )
+        .select()
+        .single();
+
+      if (offerError) {
+        throw offerError;
+      }
+
+      /*
+        Update draft version only.
+      */
+
+      const {
+        data: updatedVersion,
+        error: versionError
+      } = await db
+        .from("offer_versions")
+        .update({
+          title:
+            form.version.title,
+
+          description:
+            form.version.description,
+
+          sales_talking_points:
+            form.version.sales_talking_points,
+
+          allowed_claims:
+            form.version.allowed_claims,
+
+          restrictions:
+            form.version.restrictions,
+
+          customer_eligibility:
+            form.version.customer_eligibility,
+
+          metadata:
+            form.version.metadata,
+
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq(
+          "id",
+          draft.id
+        )
+        .eq(
+          "status",
+          "draft"
+        )
+        .select()
+        .single();
+
+      if (versionError) {
+        throw versionError;
+      }
+
+      state.selectedOffer =
+        updatedOffer;
+
+      state.selectedVersion =
+        updatedVersion;
+
+      state.currentDraftVersion =
+        updatedVersion;
+
+      /*
+        Save pricing in existing offer_prices table.
+      */
+
+      await savePricing(
+        updatedVersion.id,
+        form.version.metadata.pricing
+      );
+
+      /*
+        Save availability in existing
+        offer_availability table.
+      */
+
+      await saveAvailability(
+        updatedVersion.id,
+        form.version.metadata.availability
+      );
+
+      updateStatusUI();
+
+      if (showToast) {
+        showMessage(
+          "Draft saved successfully.",
+          "success"
+        );
+      }
+
+      return updatedVersion;
+
+    } catch (error) {
+      console.error(
+        "GLIME saveDraft error:",
+        error
+      );
+
+      showMessage(
+        error.message ||
+        "Could not save draft.",
+        "error"
+      );
+
+      throw error;
+
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /* ---------------------------------------------------------
+     22. SAVE PRICING
+  --------------------------------------------------------- */
+
+  async function savePricing(
+    versionId,
+    pricing
+  ) {
+    if (!pricing) return;
+
+    /*
+      Do not delete pricing from another version.
+      Only operate on the current draft version.
+    */
+
+    const amount =
+      Number(pricing.amount);
+
+    if (!Number.isFinite(amount)) {
+      return;
+    }
+
+    const {
+      data: existing,
+      error: existingError
+    } = await db
+      .from("offer_prices")
+      .select("*")
+      .eq(
+        "offer_version_id",
+        versionId
+      )
+      .eq("active", true)
+      .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (existing) {
+      const {
+        error
+      } = await db
         .from("offer_prices")
-        .delete()
+        .update({
+          amount,
+          currency:
+            pricing.currency || "INR",
+
+          price_type:
+            pricing.price_type || "fixed"
+        })
         .eq(
-          "offer_version_id",
-          versionId
+          "id",
+          existing.id
         );
 
-    if (priceDeleteError) {
-      throw priceDeleteError;
+      if (error) {
+        throw error;
+      }
+
+    } else {
+      const {
+        error
+      } = await db
+        .from("offer_prices")
+        .insert({
+          offer_version_id:
+            versionId,
+
+          amount,
+
+          currency:
+            pricing.currency || "INR",
+
+          price_type:
+            pricing.price_type || "fixed",
+
+          active: true
+        });
+
+      if (error) {
+        throw error;
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------
+     23. SAVE AVAILABILITY
+  --------------------------------------------------------- */
+
+  async function saveAvailability(
+    versionId,
+    availability
+  ) {
+    if (!availability) return;
+
+    const notes =
+      availability.notes || "";
+
+    if (!notes.trim()) {
+      return;
     }
 
     const {
-      error: variantDeleteError
-    } =
-      await db
-        .from("offer_variants")
-        .delete()
-        .eq(
-          "offer_version_id",
-          versionId
-        );
+      data: existing,
+      error: existingError
+    } = await db
+      .from("offer_availability")
+      .select("*")
+      .eq(
+        "offer_version_id",
+        versionId
+      )
+      .limit(1)
+      .maybeSingle();
 
-    if (variantDeleteError) {
-      throw variantDeleteError;
+    if (existingError) {
+      throw existingError;
     }
 
-    const {
-      error:
-        availabilityDeleteError
-    } =
-      await db
+    if (existing) {
+      const {
+        error
+      } = await db
         .from("offer_availability")
-        .delete()
+        .update({
+          notes
+        })
         .eq(
-          "offer_version_id",
-          versionId
+          "id",
+          existing.id
         );
 
-    if (availabilityDeleteError) {
-      throw availabilityDeleteError;
+      if (error) {
+        throw error;
+      }
+
+    } else {
+      const {
+        error
+      } = await db
+        .from("offer_availability")
+        .insert({
+          offer_version_id:
+            versionId,
+
+          notes,
+
+          is_available: true
+        });
+
+      if (error) {
+        throw error;
+      }
     }
+  }
 
-    let createdVariants =
-      [];
+  /* ---------------------------------------------------------
+     24. SUBMIT FOR REVIEW
+  --------------------------------------------------------- */
 
-    if (variants.length) {
+  async function submitForReview() {
+    if (state.saving) return;
+
+    setSaving(true);
+
+    try {
+      const version =
+        await saveDraft(false);
+
+      if (!version) {
+        throw new Error(
+          "Draft version unavailable."
+        );
+      }
 
       const {
         data,
         error
-      } =
-        await db
-          .from("offer_variants")
-          .insert(
-
-            variants.map(
-              (variant, index) => ({
-
-                offer_version_id:
-                  versionId,
-
-                name:
-                  variant.name,
-
-                sku:
-                  variant.sku ||
-                  null,
-
-                description:
-                  variant.description ||
-                  null,
-
-                attributes:
-                  variant.attributes ||
-                  {},
-
-                is_active:
-                  true,
-
-                sort_order:
-                  index
-
-              })
-            )
-
-          )
-          .select();
+      } = await db.rpc(
+        "client_submit_offer_version_for_review",
+        {
+          p_version_id:
+            version.id
+        }
+      );
 
       if (error) {
         throw error;
       }
 
-      createdVariants =
-        data || [];
-    }
+      /*
+        Refresh version state.
+      */
 
-    /*
-     * Price belongs to the version in the current UI.
-     * Variant-specific pricing can be added later without
-     * changing the version architecture.
-     */
-
-    if (
-      priceType ===
-      "custom"
-    ) {
-
-      const {
-        error
-      } =
-        await db
-          .from("offer_prices")
-          .insert({
-
-            offer_version_id:
-              versionId,
-
-            variant_id:
-              null,
-
-            amount:
-              0,
-
-            currency:
-              (
-                $("priceCurrency")
-                  ?.value.trim()
-                  .toUpperCase() ||
-                "INR"
-              ),
-
-            price_type:
-              "custom",
-
-            min_amount:
-              null,
-
-            max_amount:
-              null,
-
-            billing_period:
-              $("billingPeriod")
-                ?.value.trim() ||
-              null,
-
-            is_active:
-              true
-
-          });
-
-      if (error) {
-        throw error;
-      }
-
-    } else if (
-      priceType ===
-      "range"
-    ) {
-
-      const {
-        error
-      } =
-        await db
-          .from("offer_prices")
-          .insert({
-
-            offer_version_id:
-              versionId,
-
-            variant_id:
-              null,
-
-            amount:
-              Number(
-                minAmountValue
-              ),
-
-            currency:
-              (
-                $("priceCurrency")
-                  ?.value.trim()
-                  .toUpperCase() ||
-                "INR"
-              ),
-
-            price_type:
-              "range",
-
-            min_amount:
-              Number(
-                minAmountValue
-              ),
-
-            max_amount:
-              Number(
-                maxAmountValue
-              ),
-
-            billing_period:
-              $("billingPeriod")
-                ?.value.trim() ||
-              null,
-
-            is_active:
-              true
-
-          });
-
-      if (error) {
-        throw error;
-      }
-
-    } else if (
-      priceAmountValue !==
-      ""
-    ) {
-
-      const amount =
-        Number(
-          priceAmountValue
+      state.selectedVersion =
+        await getVersionById(
+          version.id
         );
 
-      const {
+      state.currentDraftVersion =
+        null;
+
+      updateStatusUI();
+
+      showMessage(
+        "Offer submitted for review.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "GLIME review error:",
         error
-      } =
-        await db
-          .from("offer_prices")
-          .insert({
+      );
 
-            offer_version_id:
-              versionId,
+      showMessage(
+        error.message ||
+        "Could not submit for review.",
+        "error"
+      );
 
-            variant_id:
-              null,
+    } finally {
+      setSaving(false);
+    }
+  }
 
-            amount,
+  /* ---------------------------------------------------------
+     25. APPROVE
+  --------------------------------------------------------- */
 
-            currency:
-              (
-                $("priceCurrency")
-                  ?.value.trim()
-                  .toUpperCase() ||
-                "INR"
-              ),
+  async function approveVersion() {
+    if (!state.selectedVersion) {
+      showMessage(
+        "No offer version selected.",
+        "error"
+      );
+      return;
+    }
 
-            price_type:
-              priceType,
+    setSaving(true);
 
-            min_amount:
-              null,
+    try {
+      const {
+        data,
+        error
+      } = await db.rpc(
+        "client_approve_offer_version",
+        {
+          p_version_id:
+            state.selectedVersion.id,
 
-            max_amount:
-              null,
-
-            billing_period:
-              $("billingPeriod")
-                ?.value.trim() ||
-              null,
-
-            is_active:
-              true
-
-          });
+          p_notes:
+            "Approved from GLIME Services UI."
+        }
+      );
 
       if (error) {
         throw error;
       }
+
+      state.selectedVersion =
+        await getVersionById(
+          state.selectedVersion.id
+        );
+
+      state.currentDraftVersion =
+        null;
+
+      updateStatusUI();
+
+      showMessage(
+        "Offer version approved.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "GLIME approval error:",
+        error
+      );
+
+      showMessage(
+        error.message ||
+        "Could not approve offer.",
+        "error"
+      );
+
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /* ---------------------------------------------------------
+     26. PUBLISH
+  --------------------------------------------------------- */
+
+  async function publishVersion() {
+    if (!state.selectedVersion) {
+      showMessage(
+        "No offer version selected.",
+        "error"
+      );
+      return;
     }
 
-    if (availability.length) {
+    if (
+      normalizeStatus(
+        state.selectedVersion.status
+      ) !== "approved"
+    ) {
+      showMessage(
+        "Only an approved version can be published.",
+        "error"
+      );
 
+      return;
+    }
+
+    setSaving(true);
+
+    try {
       const {
+        data,
         error
-      } =
-        await db
-          .from("offer_availability")
-          .insert(
-
-            availability.map(
-              (item) => ({
-
-                offer_version_id:
-                  versionId,
-
-                day_of_week:
-                  item.day_of_week,
-
-                start_time:
-                  item.start_time,
-
-                end_time:
-                  item.end_time,
-
-                timezone:
-                  item.timezone ||
-                  "Asia/Kolkata",
-
-                capacity:
-                  item.capacity ??
-                  null,
-
-                is_available:
-                  item.is_available !==
-                  false,
-
-                notes:
-                  item.notes ||
-                  null
-
-              })
-            )
-
-          );
+      } = await db.rpc(
+        "client_publish_offer_version",
+        {
+          p_version_id:
+            state.selectedVersion.id
+        }
+      );
 
       if (error) {
         throw error;
+      }
+
+      state.selectedVersion =
+        await getVersionById(
+          state.selectedVersion.id
+        );
+
+      state.currentDraftVersion =
+        null;
+
+      await loadOffers();
+
+      updateStatusUI();
+
+      showMessage(
+        "Offer published successfully.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "GLIME publish error:",
+        error
+      );
+
+      showMessage(
+        error.message ||
+        "Could not publish offer.",
+        "error"
+      );
+
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /* ---------------------------------------------------------
+     27. AI CHECK
+  --------------------------------------------------------- */
+
+  async function runAICheck() {
+    if (!state.selectedOffer) {
+      showMessage(
+        "Please select an offer first.",
+        "error"
+      );
+
+      return;
+    }
+
+    try {
+      const form =
+        collectFormData();
+
+      const issues = [];
+      const suggestions = [];
+
+      if (!form.offer.name) {
+        issues.push(
+          "Service/Product name is missing."
+        );
+      }
+
+      if (!form.offer.description) {
+        issues.push(
+          "Description is missing."
+        );
+      }
+
+      if (
+        !form.version.metadata.details
+          .duration
+      ) {
+        suggestions.push(
+          "Consider adding service duration."
+        );
+      }
+
+      if (
+        !form.version.metadata.pricing
+          .amount
+      ) {
+        suggestions.push(
+          "Consider adding pricing information."
+        );
+      }
+
+      if (
+        !form.version.metadata.policies
+          .content
+      ) {
+        suggestions.push(
+          "Consider adding cancellation/refund policy."
+        );
+      }
+
+      if (
+        !form.version.metadata.faq
+          .content
+      ) {
+        suggestions.push(
+          "Consider adding common customer FAQs."
+        );
+      }
+
+      if (
+        !form.version.metadata
+          .ai_context.instructions
+      ) {
+        suggestions.push(
+          "Consider adding AI instructions."
+        );
+      }
+
+      renderAICheckResult({
+        issues,
+        suggestions
+      });
+
+      showMessage(
+        issues.length
+          ? "AI Check found items to review."
+          : "AI Check completed.",
+        issues.length
+          ? "info"
+          : "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "AI Check error:",
+        error
+      );
+
+      showMessage(
+        "AI Check failed.",
+        "error"
+      );
+    }
+  }
+
+  /* ---------------------------------------------------------
+     28. AI RESULT
+  --------------------------------------------------------- */
+
+  function renderAICheckResult(result) {
+    const container =
+      byId("aiCheckResult");
+
+    if (!container) return;
+
+    const issues =
+      result.issues || [];
+
+    const suggestions =
+      result.suggestions || [];
+
+    container.innerHTML = `
+      <div class="ai-check-panel">
+        <h4>AI Business Truth Check</h4>
+
+        ${
+          issues.length
+            ? `
+              <div class="ai-check-section">
+                <strong>Needs attention</strong>
+                <ul>
+                  ${issues
+                    .map(
+                      (item) =>
+                        `<li>${escapeHtml(
+                          item
+                        )}</li>`
+                    )
+                    .join("")}
+                </ul>
+              </div>
+            `
+            : `
+              <div class="ai-check-success">
+                No critical completeness issues detected.
+              </div>
+            `
+        }
+
+        ${
+          suggestions.length
+            ? `
+              <div class="ai-check-section">
+                <strong>Suggestions</strong>
+                <ul>
+                  ${suggestions
+                    .map(
+                      (item) =>
+                        `<li>${escapeHtml(
+                          item
+                        )}</li>`
+                    )
+                    .join("")}
+                </ul>
+              </div>
+            `
+            : ""
+        }
+
+        <small>
+          AI Check only recommends changes.
+          It never publishes automatically.
+        </small>
+      </div>
+    `;
+  }
+
+  /* ---------------------------------------------------------
+     29. SHARE IDENTITY
+  --------------------------------------------------------- */
+
+  function updateShareIdentity() {
+    const slug =
+      getValue("offerSlug") ||
+      getValue("offerName");
+
+    const shareSlug =
+      slugify(slug);
+
+    const output =
+      byId("shareIdentity");
+
+    if (!output) return;
+
+    output.textContent =
+      shareSlug
+        ? `GLIME Offer Identity: ${shareSlug}`
+        : "Offer identity will appear here.";
+  }
+
+  /* ---------------------------------------------------------
+     30. STATUS UI
+  --------------------------------------------------------- */
+
+  function updateStatusUI() {
+    const status =
+      normalizeStatus(
+        state.selectedVersion?.status
+      );
+
+    const statusEl =
+      byId("offerStatus");
+
+    if (statusEl) {
+      statusEl.textContent =
+        status || "new";
+
+      statusEl.dataset.status =
+        status || "new";
+    }
+
+    const saveBtn =
+      byId("saveDraftBtn");
+
+    const reviewBtn =
+      byId("submitReviewBtn");
+
+    const approveBtn =
+      byId("approveBtn");
+
+    const publishBtn =
+      byId("publishBtn");
+
+    /*
+      Draft:
+      edit + save + submit
+
+      Review:
+      no editing
+
+      Approved:
+      no editing, publish
+
+      Published:
+      immutable; create new draft to edit
+    */
+
+    if (saveBtn) {
+      saveBtn.disabled =
+        status === "review" ||
+        status === "approved";
+    }
+
+    if (reviewBtn) {
+      reviewBtn.disabled =
+        status !== "draft";
+    }
+
+    if (approveBtn) {
+      approveBtn.disabled =
+        status !== "review";
+    }
+
+    if (publishBtn) {
+      publishBtn.disabled =
+        status !== "approved";
+    }
+
+    const lockMessage =
+      byId("offerLockMessage");
+
+    if (lockMessage) {
+      if (
+        status === "published" ||
+        status === "approved" ||
+        status === "review"
+      ) {
+        lockMessage.textContent =
+          "This version is protected. Saving changes will create a new draft version.";
+      } else {
+        lockMessage.textContent =
+          "";
       }
     }
   }
 
-  async function updateVersionRecord(
-    versionId,
-    payload
-  ) {
+  /* ---------------------------------------------------------
+     31. STEPS
+  --------------------------------------------------------- */
 
+  function setCurrentStep(step) {
+    state.currentStep =
+      Number(step);
+
+    $$(".service-step").forEach(
+      (element) => {
+        const stepNumber =
+          Number(
+            element.dataset.step
+          );
+
+        element.classList.toggle(
+          "active",
+          stepNumber ===
+            state.currentStep
+        );
+      }
+    );
+
+    $$(".step-panel").forEach(
+      (panel) => {
+        const panelNumber =
+          Number(
+            panel.dataset.stepPanel
+          );
+
+        panel.hidden =
+          panelNumber !==
+          state.currentStep;
+      }
+    );
+
+    updateStepButtons();
+  }
+
+  function updateStepButtons() {
+    const back =
+      byId("previousStepBtn");
+
+    const next =
+      byId("nextStepBtn");
+
+    if (back) {
+      back.disabled =
+        state.currentStep <= 1;
+    }
+
+    if (next) {
+      next.disabled =
+        state.currentStep >= 7;
+    }
+  }
+
+  function nextStep() {
+    if (state.currentStep < 7) {
+      setCurrentStep(
+        state.currentStep + 1
+      );
+    }
+  }
+
+  function previousStep() {
+    if (state.currentStep > 1) {
+      setCurrentStep(
+        state.currentStep - 1
+      );
+    }
+  }
+
+  /* ---------------------------------------------------------
+     32. SHOW EDITOR
+  --------------------------------------------------------- */
+
+  function showEditor() {
+    const editor =
+      byId("offerEditor");
+
+    if (editor) {
+      editor.hidden = false;
+    }
+
+    const empty =
+      byId("offerEditorEmpty");
+
+    if (empty) {
+      empty.hidden = true;
+    }
+  }
+
+  /* ---------------------------------------------------------
+     33. VERSION FETCH
+  --------------------------------------------------------- */
+
+  async function getVersionById(id) {
     const {
       data,
       error
-    } =
-      await db
-        .from("offer_versions")
-        .update({
-
-          ...payload,
-
-          status:
-            "draft",
-
-          published_at:
-            null
-
-        })
-        .eq(
-          "id",
-          versionId
-        )
-        .select()
-        .single();
+    } = await db
+      .from("offer_versions")
+      .select("*")
+      .eq("id", id)
+      .single();
 
     if (error) {
       throw error;
@@ -2515,968 +2404,442 @@
     return data;
   }
 
-  async function archiveOtherPublishedVersions(
-    offerId,
-    keepVersionId
-  ) {
-
-    const {
-      error
-    } =
-      await db
-        .from("offer_versions")
-        .update({
-
-          status:
-            "archived"
-
-        })
-        .eq(
-          "offer_id",
-          offerId
-        )
-        .eq(
-          "status",
-          "published"
-        )
-        .neq(
-          "id",
-          keepVersionId
-        );
-
-    if (error) {
-      throw error;
-    }
-  }
-
-  async function publishVersion(
-  offerId,
-  versionId
-) {
-
-  const {
-    data,
-    error
-  } = await db.rpc(
-    "client_publish_offer_version",
-    {
-      p_version_id: versionId
-    }
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data?.ok) {
-    throw new Error(
-      "The offer could not be published."
-    );
-  }
-
-  const {
-    data: publishedVersion,
-    error: versionError
-  } = await db
-    .from("offer_versions")
-    .select("*")
-    .eq("id", versionId)
-    .eq("offer_id", offerId)
-    .single();
-
-  if (versionError) {
-    throw versionError;
-  }
-
-  return publishedVersion;
-  }
-  
-    const {
-      data:
-        publishedVersion,
-      error:
-        publishError
-    } =
-      await db
-        .from("offer_versions")
-        .update({
-
-          status:
-            "published",
-
-          published_at:
-            now
-
-        })
-        .eq(
-          "id",
-          versionId
-        )
-        .select()
-        .single();
-
-    if (publishError) {
-      throw publishError;
-    }
-
-    const {
-      error:
-        offerError
-    } =
-      await db
-        .from("offers")
-        .update({
-
-          status:
-            "active",
-
-          current_version_id:
-            versionId,
-
-          updated_at:
-            now
-
-        })
-        .eq(
-          "id",
-          offerId
-        )
-        .eq(
-          "client_id",
-          clientId()
-        );
-
-    if (offerError) {
-      throw offerError;
-    }
-
-    return publishedVersion;
-  }
-
-  async function saveOffer(
-    publish
-  ) {
-
-    if (saveInProgress) {
-      return;
-    }
-
-    syncEditorArrays();
-    validateEditor();
-
-    setBusy(true);
-
-    try {
-
-      const name =
-        $("offerName")
-          .value.trim();
-
-      let offer =
-        selectedOffer;
-
-      if (!offer) {
-
-        offer =
-          await createOfferRecord(
-            name
-          );
-
-        selectedOffer =
-          offer;
-
-        selectedVersion =
-          null;
-      }
-
-      const offerPayload =
-        buildOfferPayload(
-          name,
-          offer.id
-        );
-
-      const {
-        data:
-          updatedOffer,
-        error:
-          offerUpdateError
-      } =
-        await db
-          .from("offers")
-          .update(
-            offerPayload
-          )
-          .eq(
-            "id",
-            offer.id
-          )
-          .eq(
-            "client_id",
-            clientId()
-          )
-          .select()
-          .single();
-
-      if (offerUpdateError) {
-        throw offerUpdateError;
-      }
-
-      offer =
-        updatedOffer;
-
-      selectedOffer =
-        updatedOffer;
-
-      /*
-       * Published/review/approved versions are immutable here.
-       * The UI normally locks them, but this guard also protects
-       * against a stale client state.
-       */
-
-      if (
-        !selectedVersion ||
-        normalizeVersionStatus(
-          selectedVersion.status
-        ) !==
-          EDITABLE_VERSION_STATUS
-      ) {
-
-        const sourceVersion =
-          selectedVersion
-            ? await loadVersionRecord(
-                selectedVersion.id
-              )
-            : null;
-
-        selectedVersion =
-          await createVersionRecord({
-
-            offerId:
-              offer.id,
-
-            sourceVersion,
-
-            status:
-              "draft"
-
-          });
-      }
-
-      const versionPayload =
-        buildVersionPayload(
-          name
-        );
-
-      selectedVersion =
-        await updateVersionRecord(
-
-          selectedVersion.id,
-
-          versionPayload
-
-        );
-
-      await replaceVersionChildren(
-        selectedVersion.id
-      );
-
-      if (publish) {
-
-        selectedVersion =
-          await publishVersion(
-
-            offer.id,
-
-            selectedVersion.id
-
-          );
-
-        showMessage(
-
-          `Version ${selectedVersion.version_number} published successfully.`,
-
-          "success"
-
-        );
-
-      } else {
-
-        const shouldRemainActive =
-          Boolean(
-            offer.current_version_id &&
-            offer.status ===
-              "active"
-          );
-
-        const {
-          error
-        } =
-          await db
-            .from("offers")
-            .update({
-
-              status:
-                shouldRemainActive
-                  ? "active"
-                  : "draft",
-
-              updated_at:
-                new Date()
-                  .toISOString()
-
-            })
-            .eq(
-              "id",
-              offer.id
-            )
-            .eq(
-              "client_id",
-              clientId()
+  /* ---------------------------------------------------------
+     34. EVENT LISTENERS
+  --------------------------------------------------------- */
+
+  function bindEvents() {
+    const industry =
+      byId("industrySelect");
+
+    if (industry) {
+      industry.addEventListener(
+        "change",
+        async () => {
+          try {
+            await loadBusinessModels(
+              industry.value
             );
 
-        if (error) {
-          throw error;
+            await loadTemplates(
+              industry.value
+            );
+          } catch (error) {
+            console.error(error);
+
+            showMessage(
+              error.message,
+              "error"
+            );
+          }
         }
-
-        showMessage(
-
-          `Version ${selectedVersion.version_number} saved as draft.`,
-
-          "success"
-
-        );
-      }
-
-      await loadCatalog({
-        preserveSelection:
-          true
-      });
-
-      const freshOffer =
-        offers.find(
-          (item) =>
-            item.id ===
-            offer.id
-        );
-
-      if (freshOffer) {
-
-        await selectOffer(
-
-          freshOffer,
-
-          false,
-
-          selectedVersion?.id ||
-            null
-
-        );
-      }
-
-    } finally {
-
-      setBusy(false);
-
-      applyEditorLockState();
-
+      );
     }
+
+    const saveConfig =
+      byId("saveConfigurationBtn");
+
+    if (saveConfig) {
+      saveConfig.addEventListener(
+        "click",
+        async () => {
+          try {
+            await saveIndustryConfiguration();
+          } catch (error) {
+            console.error(error);
+
+            showMessage(
+              error.message,
+              "error"
+            );
+          }
+        }
+      );
+    }
+
+    const newOffer =
+      byId("newOfferBtn");
+
+    if (newOffer) {
+      newOffer.addEventListener(
+        "click",
+        () => {
+          createNewOffer()
+            .catch((error) => {
+              console.error(error);
+
+              showMessage(
+                error.message,
+                "error"
+              );
+            });
+        }
+      );
+    }
+
+    const saveDraft =
+      byId("saveDraftBtn");
+
+    if (saveDraft) {
+      saveDraft.addEventListener(
+        "click",
+        () => {
+          saveDraft(true)
+            .catch(() => {});
+        }
+      );
+    }
+
+    const submitReview =
+      byId("submitReviewBtn");
+
+    if (submitReview) {
+      submitReview.addEventListener(
+        "click",
+        () => {
+          submitForReview()
+            .catch(() => {});
+        }
+      );
+    }
+
+    const approve =
+      byId("approveBtn");
+
+    if (approve) {
+      approve.addEventListener(
+        "click",
+        () => {
+          approveVersion()
+            .catch(() => {});
+        }
+      );
+    }
+
+    const publish =
+      byId("publishBtn");
+
+    if (publish) {
+      publish.addEventListener(
+        "click",
+        () => {
+          publishVersion()
+            .catch(() => {});
+        }
+      );
+    }
+
+    const aiCheck =
+      byId("aiCheckBtn");
+
+    if (aiCheck) {
+      aiCheck.addEventListener(
+        "click",
+        () => {
+          runAICheck()
+            .catch(() => {});
+        }
+      );
+    }
+
+    const next =
+      byId("nextStepBtn");
+
+    if (next) {
+      next.addEventListener(
+        "click",
+        nextStep
+      );
+    }
+
+    const previous =
+      byId("previousStepBtn");
+
+    if (previous) {
+      previous.addEventListener(
+        "click",
+        previousStep
+      );
+    }
+
+    $$(".service-step").forEach(
+      (step) => {
+        step.addEventListener(
+          "click",
+          () => {
+            const number =
+              Number(
+                step.dataset.step
+              );
+
+            if (
+              Number.isFinite(number)
+            ) {
+              setCurrentStep(number);
+            }
+          }
+        );
+      }
+    );
+
+    [
+      "offerName",
+      "offerSlug"
+    ].forEach((id) => {
+      const el = byId(id);
+
+      if (el) {
+        el.addEventListener(
+          "input",
+          updateShareIdentity
+        );
+      }
+    });
   }
 
-  async function loadVersionRecord(
-    versionId
-  ) {
+  /* ---------------------------------------------------------
+     35. LOAD EXISTING CONFIG
+  --------------------------------------------------------- */
 
-    if (!versionId) {
-      return null;
-    }
+  async function loadExistingConfiguration() {
+    if (!state.client) return;
 
     const {
       data,
       error
-    } =
-      await db
-        .from("offer_versions")
-        .select(
-          "id,offer_id,version_number,status,title,description,sales_talking_points,allowed_claims,restrictions,customer_eligibility,metadata,published_at,created_at,updated_at"
-        )
-        .eq(
-          "id",
-          versionId
-        )
-        .maybeSingle();
+    } = await db
+      .from(
+        "client_industry_configurations"
+      )
+      .select("*")
+      .eq(
+        "client_id",
+        state.client.id
+      )
+      .eq(
+        "status",
+        "active"
+      )
+      .maybeSingle();
 
     if (error) {
       throw error;
     }
 
-    return data || null;
-  }
-
-  async function createNewVersion() {
-
-    if (!selectedOffer) {
-      return;
-    }
-
-    if (
-      selectedOffer.status ===
-      "archived"
-    ) {
-      return;
-    }
-
-    if (saveInProgress) {
-      return;
-    }
-
-    syncEditorArrays();
-
-    setBusy(true);
-
-    try {
-
-      const name =
-        $("offerName")
-          .value.trim();
-
-      const sourceVersion =
-        selectedVersion
-          ? await loadVersionRecord(
-              selectedVersion.id
-            )
-          : null;
-
-      let newVersion =
-        await createVersionRecord({
-
-          offerId:
-            selectedOffer.id,
-
-          sourceVersion,
-
-          status:
-            "draft"
-
-        });
-
-      /*
-       * Re-apply current editor fields so
-       * unsaved form changes are included.
-       */
-
-      newVersion =
-        await updateVersionRecord(
-
-          newVersion.id,
-
-          buildVersionPayload(
-            name
-          )
-
-        );
-
-      selectedVersion =
-        newVersion;
-
-      await replaceVersionChildren(
-        newVersion.id
-      );
-
-      offerVersionsByOfferId.set(
-
-        selectedOffer.id,
-
-        [
-          ...(
-            offerVersionsByOfferId.get(
-              selectedOffer.id
-            ) || []
-          ),
-
-          newVersion
-
-        ].sort(
-          versionSort
-        )
-
-      );
-
-      showMessage(
-
-        `Draft version ${newVersion.version_number} created.`,
-
-        "success"
-
-      );
-
-      await loadCatalog({
-
-        preserveSelection:
-          true
-
-      });
-
-      const freshOffer =
-        offers.find(
-          (offer) =>
-            offer.id ===
-            selectedOffer.id
-        );
-
-      if (freshOffer) {
-
-        await selectOffer(
-
-          freshOffer,
-
-          false,
-
-          newVersion.id
-
-        );
-      }
-
-    } finally {
-
-      setBusy(false);
-
-      applyEditorLockState();
-
-    }
-  }
-
-  async function addCategory() {
-
-    if (saveInProgress) {
-      return;
-    }
-
-    const name =
-      $("categoryName")
-        ?.value.trim();
-
-    if (!name) {
-      return;
-    }
-
-    setBusy(true);
-
-    try {
-
-      const slug =
-        slugify(name) ||
-        "category";
-
-      const {
-        error
-      } =
-        await db
-          .from("offer_categories")
-          .insert({
-
-            client_id:
-              clientId(),
-
-            name,
-
-            slug:
-              `${slug}-${Date.now().toString(36)}`
-
-          });
-
-      if (error) {
-        throw error;
-      }
-
-      $("categoryName").value =
-        "";
-
-      showMessage(
-        "Category created.",
-        "success"
-      );
-
-      await loadCatalog({
-
-        preserveSelection:
-          true
-
-      });
-
-    } finally {
-
-      setBusy(false);
-
-      applyEditorLockState();
-
-    }
-  }
-
-  async function archiveOffer() {
-
-    if (
-      !selectedOffer ||
-      saveInProgress
-    ) {
-      return;
-    }
-
-    if (
-      !window.confirm(
-        "Archive this offer?"
+    if (!data) return;
+
+    state.currentIndustryConfig =
+      data;
+
+    setValue(
+      "industrySelect",
+      data.industry_id
+    );
+
+    await loadBusinessModels(
+      data.industry_id
+    );
+
+    await loadTemplates(
+      data.industry_id
+    );
+
+    const {
+      data: templateConfig,
+      error: templateError
+    } = await db
+      .from(
+        "client_template_configurations"
       )
-    ) {
-      return;
+      .select("*")
+      .eq(
+        "client_id",
+        state.client.id
+      )
+      .eq(
+        "status",
+        "active"
+      )
+      .maybeSingle();
+
+    if (templateError) {
+      throw templateError;
     }
 
-    setBusy(true);
+    state.currentTemplateConfig =
+      templateConfig;
+
+    if (templateConfig) {
+      setValue(
+        "businessModelSelect",
+        templateConfig.business_model_id
+      );
+    }
+  }
+
+  /* ---------------------------------------------------------
+     36. INITIALIZATION
+  --------------------------------------------------------- */
+
+  async function init() {
+    if (state.loading) return;
+
+    setLoading(true);
 
     try {
+      bindEvents();
 
-      const {
-        error
-      } =
-        await db
-          .from("offers")
-          .update({
+      await getCurrentUser();
 
-            status:
-              "archived",
+      await loadClient();
 
-            updated_at:
-              new Date()
-                .toISOString()
+      await loadIndustries();
 
-          })
-          .eq(
-            "id",
-            selectedOffer.id
-          )
-          .eq(
-            "client_id",
-            clientId()
-          );
+      await loadExistingConfiguration();
 
-      if (error) {
-        throw error;
-      }
+      await loadCategories();
 
-      showMessage(
-        "Offer archived.",
-        "success"
+      await loadOffers();
+
+      setCurrentStep(1);
+
+      updateShareIdentity();
+
+      console.log(
+        "GLIME Services initialized."
       );
 
-      clearEditorSelection();
+    } catch (error) {
+      console.error(
+        "GLIME Services initialization failed:",
+        error
+      );
 
-      await loadCatalog({
-        preserveSelection:
-          false
-      });
+      showMessage(
+        error.message ||
+        "GLIME Services could not initialize.",
+        "error"
+      );
 
     } finally {
-
-      setBusy(false);
-
+      setLoading(false);
     }
   }
 
-  function handleError(
-    error
-  ) {
+  /* ---------------------------------------------------------
+     37. UTILITY FUNCTIONS
+  --------------------------------------------------------- */
 
-    console.error(
-      error
-    );
-
-    showMessage(
-      error?.message ||
-        String(error),
-      "error"
-    );
+  function slugify(value) {
+    return String(value || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 100);
   }
 
-  function bindEvents() {
+  function textToArray(value) {
+    if (!value) return [];
 
-    $("newOfferBtn")
-      ?.addEventListener(
-        "click",
-        resetEditor
-      );
-
-    $("emptyNewBtn")
-      ?.addEventListener(
-        "click",
-        resetEditor
-      );
-
-    $("closeEditorBtn")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          clearEditorSelection();
-
-          $("offerForm").hidden =
-            true;
-
-          $("editorEmpty").hidden =
-            false;
-
-        }
-      );
-
-    $("refreshBtn")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          loadCatalog({
-            preserveSelection:
-              true
-          }).catch(
-            handleError
-          );
-
-        }
-      );
-
-    $("addCategoryBtn")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          addCategory()
-            .catch(
-              handleError
-            );
-
-        }
-      );
-
-    $("priceType")
-      ?.addEventListener(
-        "change",
-        updatePriceRange
-      );
-
-    $("addVariantBtn")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          if (
-            isEditorLocked() ||
-            saveInProgress
-          ) {
-            return;
-          }
-
-          syncEditorArrays();
-
-          variants.push({
-
-            name:
-              "",
-
-            sku:
-              null,
-
-            description:
-              null,
-
-            attributes:
-              {}
-
-          });
-
-          renderVariants();
-
-        }
-      );
-
-    $("addAvailabilityBtn")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          if (
-            isEditorLocked() ||
-            saveInProgress
-          ) {
-            return;
-          }
-
-          syncEditorArrays();
-
-          availability.push({
-
-            day_of_week:
-              null,
-
-            start_time:
-              null,
-
-            end_time:
-              null,
-
-            timezone:
-              "Asia/Kolkata",
-
-            capacity:
-              null,
-
-            is_available:
-              true,
-
-            notes:
-              null
-
-          });
-
-          renderAvailability();
-
-        }
-      );
-
-    $("newVersionBtn")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          createNewVersion()
-            .catch(
-              handleError
-            );
-
-        }
-      );
-
-    $("deleteOfferBtn")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          archiveOffer()
-            .catch(
-              handleError
-            );
-
-        }
-      );
-
-    $("saveDraftBtn")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          saveOffer(false)
-            .catch(
-              handleError
-            );
-
-        }
-      );
-
-    $("offerForm")
-      ?.addEventListener(
-        "submit",
-        (event) => {
-
-          event.preventDefault();
-
-          saveOffer(true)
-            .catch(
-              handleError
-            );
-
-        }
-      );
-
-    $("publishToggle")
-      ?.addEventListener(
-        "change",
-        () => {
-
-          showMessage(
-
-            "Use Save Draft or Save & Publish to apply publication changes.",
-
-            "info"
-
-          );
-
-        }
-      );
+    return String(value)
+      .split(/\r?\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
+
+  function arrayToText(value) {
+    if (!Array.isArray(value)) {
+      return "";
+    }
+
+    return value.join("\n");
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  /* ---------------------------------------------------------
+     38. PUBLIC GLIME API
+     Compatibility layer for addons
+  --------------------------------------------------------- */
 
   window.GLIMEServices = {
 
-    refresh:
-      () =>
-        loadCatalog({
-          preserveSelection:
-            true
-        }),
+    refresh: async function () {
+      await loadOffers();
+    },
 
-    createNewVersion,
+    selectOffer: async function (offerId) {
+      await selectOffer(offerId);
+    },
 
-    selectOffer
+    createNewOffer: async function () {
+      await createNewOffer();
+    },
 
+    createNewVersion: async function () {
+      return await ensureEditableVersion();
+    },
+
+    saveDraft: async function () {
+      return await saveDraft(true);
+    },
+
+    submitForReview: async function () {
+      return await submitForReview();
+    },
+
+    approveVersion: async function () {
+      return await approveVersion();
+    },
+
+    publishVersion: async function () {
+      return await publishVersion();
+    },
+
+    runAICheck: async function () {
+      return await runAICheck();
+    },
+
+    getState: function () {
+      return {
+        user: state.user,
+        client: state.client,
+        selectedOffer:
+          state.selectedOffer,
+        selectedVersion:
+          state.selectedVersion,
+        currentDraftVersion:
+          state.currentDraftVersion,
+        currentIndustryConfig:
+          state.currentIndustryConfig,
+        currentTemplateConfig:
+          state.currentTemplateConfig
+      };
+    }
   };
 
-  (async () => {
+  /* ---------------------------------------------------------
+     39. START
+  --------------------------------------------------------- */
 
-    try {
-
-      client =
-        await getClient();
-
-      if (!client) {
-        return;
-      }
-
-      $("clientBadge").textContent =
-        `${
-          client.client_name ||
-          client.full_name ||
-          client.name ||
-          "Client"
-        } · ${
-          client.client_id
-        }`;
-
-      bindEvents();
-
-      resetEditor();
-
-      await loadCatalog({
-
-        preserveSelection:
-          false
-
-      });
-
-    } catch (error) {
-
-      console.error(
-
-        "Services module initialization failed:",
-
-        error
-
-      );
-
-      showMessage(
-
-        error.message ||
-          String(error),
-
-        "error"
-
-      );
-
-    }
-
-  })();
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      init
+    );
+  } else {
+    init();
+  }
 
 })();
