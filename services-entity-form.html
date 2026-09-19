@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLIME — Configure your type</title>
+  <link rel="stylesheet" href="services-entity-form.css">
+</head>
+<body>
+  <main class="wizard-shell">
+    <header class="topbar">
+      <a class="brand" href="services.html" aria-label="GLIME home">
+        <img class="brand-logo" src="glime_logo_clean.svg" alt="GLIME">
+      </a>
+      <div class="step-meta">
+        <span class="step-label">STEP 6</span>
+        <span class="step-subtitle">FIELDS</span>
+      </div>
+    </header>
+
+    <section class="wizard-card">
+      <div class="eyebrow">BUSINESS SETUP</div>
+
+      <h1 id="page-title">Configure your type</h1>
+
+      <p id="page-intro" class="intro">
+        GLIME has loaded the fields for your selected type.
+      </p>
+
+      <div id="selection-context" class="context-card" hidden></div>
+
+      <div id="loading-state" class="state-message">
+        Loading fields…
+      </div>
+
+      <div id="error-state" class="state-message error" hidden></div>
+
+      <section id="field-section" hidden>
+        <div class="section-heading">
+          <div>
+            <h2 id="field-heading">Your fields</h2>
+            <p id="field-subheading">
+              These fields come from your selected structure.
+            </p>
+          </div>
+          <span id="field-count" class="count-badge"></span>
+        </div>
+
+        <form id="entity-form" novalidate>
+          <div id="system-fields" class="field-list"></div>
+
+          <div id="custom-fields-section" class="custom-fields-section" hidden>
+            <div class="subsection-heading">
+              <div>
+                <h3>Additional fields</h3>
+                <p>Optional fields you may want to track for this type.</p>
+              </div>
+            </div>
+
+            <div id="custom-fields-list" class="field-list"></div>
+          </div>
+
+          <div id="add-field-area" class="add-field-area">
+            <button id="add-field-button" class="outline-button" type="button">
+              <span>＋</span>
+              Add a custom field
+            </button>
+            <p>
+              This stays flexible: custom fields can be added without changing
+              the system template.
+            </p>
+          </div>
+
+          <div id="empty-fields" class="empty-fields" hidden>
+            <div class="empty-mark">＋</div>
+            <strong>No fields are defined yet.</strong>
+            <p>Add the fields you want to track for this type.</p>
+          </div>
+
+          <div id="form-error" class="form-error" hidden></div>
+        </form>
+      </section>
+
+      <section id="preview-section" class="preview-section" hidden>
+        <div class="preview-header">
+          <div>
+            <div class="preview-kicker">SETUP PREVIEW</div>
+            <h2 id="preview-title"></h2>
+          </div>
+          <span id="preview-field-count" class="count-badge"></span>
+        </div>
+
+        <div id="preview-list" class="preview-list"></div>
+      </section>
+
+      <div class="footer-actions">
+        <button id="back-button" class="secondary-button" type="button">
+          Back
+        </button>
+
+        <button id="next-button" class="primary-button" type="button" disabled>
+          Save & Continue
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="services-entity-form.js"></script>
+</body>
+</html>
