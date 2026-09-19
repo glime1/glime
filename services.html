@@ -2,706 +2,640 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>GLIME — Services & Offers</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
-  >
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="services.css">
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
+<main class="shell">
 
-  <main class="shell">
+  <header class="topbar">
+    <a class="brand" href="dashboard.html">
+      <img src="glime_logo_clean.svg" alt="GLIME">
+    </a>
 
-    <header class="topbar">
+    <div class="topbar-right">
+      <span id="clientBadge" class="badge">Loading client…</span>
+      <a href="dashboard.html" class="back-link">Dashboard</a>
+    </div>
+  </header>
 
-      <a class="brand" href="dashboard.html">
-        <img
-          src="glime_logo_clean.svg"
-          alt="GLIME"
-        >
-      </a>
+  <section class="hero">
+    <div>
+      <div class="eyebrow">CLIENT CONTROL CENTER · SERVICES & OFFERS</div>
+      <h1>Services & Offers</h1>
+      <p>
+        Build one business truth for every GLIME specialist.
+        Configure progressively, review the AI check, then approve and publish.
+      </p>
+    </div>
 
-      <div class="topbar-right">
+    <button id="newOfferBtn" class="primary" type="button">
+      + New Service / Product
+    </button>
+  </section>
 
-        <span
-          id="clientBadge"
-          class="badge"
-        >
-          Loading client...
-        </span>
+  <div id="message" class="message" hidden></div>
 
-        <a
-          class="back-link"
-          href="dashboard.html"
-        >
-          Dashboard
-        </a>
-
-      </div>
-
-    </header>
-
-
-    <section class="hero">
-
+  <!-- BUSINESS FOUNDATION -->
+  <section class="setup panel">
+    <div class="panel-head">
       <div>
+        <h2>Business configuration</h2>
+        <span class="muted">Foundation used by the Service & Offer engine</span>
+      </div>
+      <span id="setupState" class="status draft">Not configured</span>
+    </div>
 
-        <div class="eyebrow">
-          CLIENT CONTROL CENTER
+    <div class="setup-grid">
+      <label>
+        Industry
+        <select id="industrySelect">
+          <option value="">Select industry</option>
+        </select>
+      </label>
+
+      <label>
+        Business model
+        <select id="businessModelSelect">
+          <option value="">Select business model</option>
+        </select>
+      </label>
+
+      <label class="wide">
+        Custom business model
+        <input
+          id="customBusinessModel"
+          maxlength="160"
+          placeholder="Optional — e.g. appointment + product sales"
+        >
+      </label>
+
+      <button id="saveSetupBtn" class="ghost" type="button">
+        Save configuration
+      </button>
+    </div>
+  </section>
+
+  <section class="workspace">
+
+    <!-- CATALOG -->
+    <aside class="catalog-panel panel">
+
+      <div class="panel-head">
+        <div>
+          <h2>Your catalog</h2>
+          <span id="offerCount" class="muted">0 items</span>
         </div>
 
-        <h1>
-          Services &amp; Offers
-        </h1>
-
-        <p>
-          Manage the services, products, packages and offers
-          your GLIME specialists are allowed to communicate.
-        </p>
-
+        <button id="refreshBtn" class="icon-btn" type="button" title="Refresh">
+          ↻
+        </button>
       </div>
 
-      <button
-        id="newOfferBtn"
-        class="primary"
-        type="button"
-      >
-        + New Service
-      </button>
+      <div class="category-tools">
+        <input id="categoryName" placeholder="New category name">
+        <button id="addCategoryBtn" class="ghost" type="button">Add</button>
+      </div>
 
-    </section>
+      <div id="categoryList" class="category-list"></div>
 
+      <div id="offerList" class="offer-list">
+        <div class="empty">Loading catalog…</div>
+      </div>
 
-    <div
-      id="message"
-      class="message"
-      hidden
-    ></div>
+    </aside>
 
+    <!-- EDITOR -->
+    <section class="editor-panel panel">
 
-    <section class="workspace">
+      <div id="editorEmpty" class="empty-editor">
+        <div class="empty-icon">✦</div>
+        <h2>Build a business offer</h2>
+        <p>
+          Create a service, product, package, plan or custom offer.
+          Complete only the information relevant to your business.
+        </p>
 
+        <button id="emptyNewBtn" class="primary" type="button">
+          Create Service / Product
+        </button>
+      </div>
 
-      <!-- ==============================================
-           CATALOG
-      =============================================== -->
+      <form id="offerForm" hidden>
 
-      <aside class="catalog-panel panel">
-
-        <div class="panel-head">
-
+        <div class="editor-head">
           <div>
+            <div class="eyebrow">OFFER BUILDER</div>
 
-            <h2>
-              Your catalog
-            </h2>
+            <h2 id="editorTitle">New Service</h2>
 
-            <span
-              id="offerCount"
-              class="muted"
-            >
-              0 items
+            <span id="editorStatus" class="status draft">
+              Draft
             </span>
+          </div>
+
+          <button id="closeEditorBtn" class="icon-btn" type="button">
+            ×
+          </button>
+        </div>
+
+        <!-- PROGRESS -->
+        <div id="progress" class="progress"></div>
+
+        <!-- STEP 1 -->
+        <section class="step active" data-step="1">
+
+          <div class="step-head">
+            <span>01</span>
+
+            <div>
+              <h3>Service / Product</h3>
+              <p>Define the customer-facing identity.</p>
+            </div>
+          </div>
+
+          <div class="grid two">
+
+            <label>
+              Name
+              <input
+                id="offerName"
+                required
+                maxlength="160"
+                placeholder="e.g. Hair Spa"
+              >
+            </label>
+
+            <label>
+              Type
+              <select id="offerType">
+                <option value="service">Service</option>
+                <option value="product">Product</option>
+                <option value="package">Package</option>
+                <option value="plan">Plan</option>
+                <option value="property">Property</option>
+                <option value="menu-item">Menu Item</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+
+            <label>
+              Category
+              <select id="offerCategory">
+                <option value="">No category</option>
+              </select>
+            </label>
+
+            <label>
+              Short description
+              <input
+                id="shortDescription"
+                maxlength="240"
+                placeholder="One-line customer-facing description"
+              >
+            </label>
 
           </div>
 
-          <button
-            id="refreshBtn"
-            class="icon-btn"
-            type="button"
-            title="Refresh"
+          <label>
+            Description
+            <textarea
+              id="offerDescription"
+              rows="5"
+              placeholder="What the customer gets"
+            ></textarea>
+          </label>
+
+        </section>
+
+        <!-- STEP 2 -->
+        <section class="step" data-step="2">
+
+          <div class="step-head">
+            <span>02</span>
+
+            <div>
+              <h3>Details</h3>
+              <p>Capture operational facts without forcing irrelevant fields.</p>
+            </div>
+          </div>
+
+          <div class="grid two">
+
+            <label>
+              Duration / specification
+              <input
+                id="detailDuration"
+                placeholder="e.g. 60 minutes / 500 ml / 2 BHK"
+              >
+            </label>
+
+            <label>
+              Eligibility
+              <input
+                id="eligibility"
+                placeholder="Who can purchase or use it?"
+              >
+            </label>
+
+          </div>
+
+          <label>
+            Included
+            <textarea
+              id="included"
+              rows="4"
+              placeholder="One item per line"
+            ></textarea>
+          </label>
+
+          <label>
+            Excluded
+            <textarea
+              id="excluded"
+              rows="4"
+              placeholder="One item per line"
+            ></textarea>
+          </label>
+
+        </section>
+
+        <!-- STEP 3 -->
+        <section class="step" data-step="3">
+
+          <div class="step-head">
+            <span>03</span>
+
+            <div>
+              <h3>Pricing & Availability</h3>
+              <p>Keep commercial truth explicit.</p>
+            </div>
+          </div>
+
+          <div class="grid four">
+
+            <label>
+              Amount
+              <input
+                id="priceAmount"
+                type="number"
+                min="0"
+                step="0.01"
+              >
+            </label>
+
+            <label>
+              Currency
+              <input
+                id="priceCurrency"
+                value="INR"
+                maxlength="8"
+              >
+            </label>
+
+            <label>
+              Price type
+              <select id="priceType">
+                <option value="fixed">Fixed</option>
+                <option value="starting_from">Starting from</option>
+                <option value="range">Range</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+
+            <label>
+              Billing period
+              <input
+                id="billingPeriod"
+                placeholder="one-time / monthly"
+              >
+            </label>
+
+          </div>
+
+          <div
+            id="rangeRow"
+            class="grid two"
+            hidden
           >
-            ↻
-          </button>
+            <label>
+              Minimum
+              <input
+                id="minAmount"
+                type="number"
+                min="0"
+                step="0.01"
+              >
+            </label>
 
-        </div>
+            <label>
+              Maximum
+              <input
+                id="maxAmount"
+                type="number"
+                min="0"
+                step="0.01"
+              >
+            </label>
+          </div>
 
+          <div class="section-title-row">
+            <h4>Availability rules</h4>
 
-        <div class="category-tools">
+            <button
+              id="addAvailabilityBtn"
+              class="ghost small"
+              type="button"
+            >
+              Add rule
+            </button>
+          </div>
 
-          <input
-            id="categoryName"
-            type="text"
-            placeholder="New category name"
+          <div id="availabilityList"></div>
+
+        </section>
+
+        <!-- STEP 4 -->
+        <section class="step" data-step="4">
+
+          <div class="step-head">
+            <span>04</span>
+
+            <div>
+              <h3>FAQs, Policies & Qualification</h3>
+              <p>Give agents the answers and boundaries they need.</p>
+            </div>
+          </div>
+
+          <label>
+            FAQs
+            <textarea
+              id="faqs"
+              rows="6"
+              placeholder="Question — Answer, one per line"
+            ></textarea>
+          </label>
+
+          <label>
+            Policies
+            <textarea
+              id="policies"
+              rows="5"
+              placeholder="Cancellation, refund, booking, delivery, warranty, etc."
+            ></textarea>
+          </label>
+
+          <label>
+            Qualification questions
+            <textarea
+              id="qualification"
+              rows="5"
+              placeholder="Questions AI should ask before recommending or booking"
+            ></textarea>
+          </label>
+
+        </section>
+
+        <!-- STEP 5 -->
+        <section class="step" data-step="5">
+
+          <div class="step-head">
+            <span>05</span>
+
+            <div>
+              <h3>AI Context</h3>
+              <p>Control what customer-facing agents may and may not say.</p>
+            </div>
+          </div>
+
+          <label>
+            Sales talking points
+            <textarea
+              id="talkingPoints"
+              rows="5"
+              placeholder="One point per line"
+            ></textarea>
+          </label>
+
+          <div class="grid two">
+
+            <label>
+              Allowed claims
+              <textarea
+                id="allowedClaims"
+                rows="5"
+                placeholder="Claims AI may make"
+              ></textarea>
+            </label>
+
+            <label>
+              Restricted / forbidden claims
+              <textarea
+                id="restrictions"
+                rows="5"
+                placeholder="Claims or statements AI must avoid"
+              ></textarea>
+            </label>
+
+          </div>
+
+          <label>
+            AI instructions
+            <textarea
+              id="aiInstructions"
+              rows="5"
+              placeholder="Tone, response length, escalation rules, fixed answers, etc."
+            ></textarea>
+          </label>
+
+        </section>
+
+        <!-- STEP 6 -->
+        <section class="step" data-step="6">
+
+          <div class="step-head">
+            <span>06</span>
+
+            <div>
+              <h3>Media & Links</h3>
+              <p>
+                Attach identity so shared content can resolve back to this offer.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid two">
+
+            <label>
+              Website / landing page
+              <input id="websiteLink" type="url">
+            </label>
+
+            <label>
+              Booking / order / payment link
+              <input id="bookingLink" type="url">
+            </label>
+
+            <label>
+              Instagram URL
+              <input id="instagramLink" type="url">
+            </label>
+
+            <label>
+              Facebook URL
+              <input id="facebookLink" type="url">
+            </label>
+
+          </div>
+
+          <label>
+            Media URLs
+            <textarea
+              id="mediaUrls"
+              rows="4"
+              placeholder="One URL per line"
+            ></textarea>
+          </label>
+
+          <label>
+            Recognition aliases / keywords
+            <textarea
+              id="aliases"
+              rows="4"
+              placeholder="Names, SKU, tags, phrases customers may use"
+            ></textarea>
+          </label>
+
+        </section>
+
+        <!-- STEP 7 -->
+        <section class="step" data-step="7">
+
+          <div class="step-head">
+            <span>07</span>
+
+            <div>
+              <h3>Share & Review</h3>
+              <p>
+                Generate identity, run the AI check, then use approval lifecycle.
+              </p>
+            </div>
+          </div>
+
+          <div class="share-card">
+
+            <div>
+              <strong>Public share identity</strong>
+
+              <p id="sharePreview">
+                Saved after first draft.
+              </p>
+            </div>
+
+            <button
+              id="copyShareBtn"
+              class="ghost small"
+              type="button"
+            >
+              Copy link
+            </button>
+
+          </div>
+
+          <div
+            id="aiCheck"
+            class="check-box"
           >
+            AI Check has not run.
+          </div>
+
+          <div class="review-actions">
+
+            <button
+              id="runCheckBtn"
+              class="ghost"
+              type="button"
+            >
+              Run AI Check
+            </button>
+
+            <button
+              id="saveDraftBtn"
+              class="ghost"
+              type="button"
+            >
+              Save Draft
+            </button>
+
+            <button
+              id="submitReviewBtn"
+              class="primary"
+              type="button"
+            >
+              Submit for Review
+            </button>
+
+            <button
+              id="approveBtn"
+              class="primary"
+              type="button"
+            >
+              Approve
+            </button>
+
+            <button
+              id="publishBtn"
+              class="primary"
+              type="button"
+            >
+              Publish
+            </button>
+
+          </div>
+
+        </section>
+
+        <div class="step-nav">
 
           <button
-            id="addCategoryBtn"
+            id="prevStepBtn"
             class="ghost"
             type="button"
           >
-            Add
+            Back
           </button>
 
-        </div>
-
-
-        <div
-          id="categoryList"
-          class="category-list"
-        ></div>
-
-
-        <div
-          id="offerList"
-          class="offer-list"
-        >
-
-          <div class="empty">
-            Loading catalog...
-          </div>
-
-        </div>
-
-      </aside>
-
-
-      <!-- ==============================================
-           EDITOR
-      =============================================== -->
-
-      <section class="editor-panel panel">
-
-
-        <div
-          id="editorEmpty"
-          class="empty-editor"
-        >
-
-          <div class="empty-icon">
-            ✦
-          </div>
-
-          <h2>
-            Build your first offer
-          </h2>
-
-          <p>
-            Create a service or product, add its version,
-            pricing, variants and availability, then
-            publish it for your communication specialists.
-          </p>
+          <span id="stepLabel">
+            Step 1 of 7
+          </span>
 
           <button
-            id="emptyNewBtn"
+            id="nextStepBtn"
             class="primary"
             type="button"
           >
-            Create Service
+            Next
           </button>
 
         </div>
 
-
-        <form
-          id="offerForm"
-          hidden
-        >
-
-
-          <div class="editor-head">
-
-            <div>
-
-              <div class="eyebrow">
-                OFFER EDITOR
-              </div>
-
-              <h2 id="editorTitle">
-                New Service
-              </h2>
-
-              <span
-                id="editorStatus"
-                class="status draft"
-              >
-                Draft
-              </span>
-
-            </div>
-
-
-            <button
-              type="button"
-              id="closeEditorBtn"
-              class="icon-btn"
-            >
-              ×
-            </button>
-
-          </div>
-
-
-          <!-- SERVICE BASICS -->
-
-          <div class="section-block">
-
-            <h3>
-              1. Service basics
-            </h3>
-
-
-            <div class="grid two">
-
-              <label>
-                Name
-
-                <input
-                  id="offerName"
-                  required
-                  maxlength="160"
-                  placeholder="e.g. Hair Spa"
-                >
-
-              </label>
-
-
-              <label>
-                Type
-
-                <select id="offerType">
-
-                  <option value="service">
-                    Service
-                  </option>
-
-                  <option value="package">
-                    Package
-                  </option>
-
-                  <option value="offer">
-                    Offer
-                  </option>
-
-                  <option value="product">
-                    Product
-                  </option>
-
-                </select>
-
-              </label>
-
-
-              <label>
-                Category
-
-                <select id="offerCategory">
-
-                  <option value="">
-                    No category
-                  </option>
-
-                </select>
-
-              </label>
-
-
-              <label>
-                Short description
-
-                <input
-                  id="shortDescription"
-                  maxlength="240"
-                  placeholder="One-line customer-facing description"
-                >
-
-              </label>
-
-            </div>
-
-
-            <label>
-
-              Description
-
-              <textarea
-                id="offerDescription"
-                rows="4"
-                placeholder="Full description"
-              ></textarea>
-
-            </label>
-
-          </div>
-
-
-          <!-- VERSION -->
-
-          <div class="section-block">
-
-            <div class="section-title-row">
-
-              <h3>
-                2. Version
-              </h3>
-
-              <button
-                type="button"
-                id="newVersionBtn"
-                class="ghost small"
-              >
-                Create New Version
-              </button>
-
-            </div>
-
-
-            <div class="version-strip">
-
-              <span id="versionLabel">
-                Version 1
-              </span>
-
-              <span
-                id="versionStatus"
-                class="status draft"
-              >
-                Draft
-              </span>
-
-            </div>
-
-
-            <div class="grid two">
-
-              <label>
-
-                Version title
-
-                <input
-                  id="versionTitle"
-                  maxlength="160"
-                  placeholder="e.g. Hair Spa — Standard"
-                >
-
-              </label>
-
-
-              <label>
-
-                Customer eligibility
-
-                <input
-                  id="eligibility"
-                  maxlength="500"
-                  placeholder="Who can purchase/use it?"
-                >
-
-              </label>
-
-            </div>
-
-
-            <label>
-
-              Sales talking points
-
-              <textarea
-                id="talkingPoints"
-                rows="3"
-                placeholder="One point per line"
-              ></textarea>
-
-            </label>
-
-
-            <div class="grid two">
-
-              <label>
-
-                Allowed claims
-
-                <textarea
-                  id="allowedClaims"
-                  rows="3"
-                  placeholder="Claims AI may make, one per line"
-                ></textarea>
-
-              </label>
-
-
-              <label>
-
-                Restrictions
-
-                <textarea
-                  id="restrictions"
-                  rows="3"
-                  placeholder="Claims/actions AI must avoid, one per line"
-                ></textarea>
-
-              </label>
-
-            </div>
-
-          </div>
-
-
-          <!-- PRICE -->
-
-          <div class="section-block">
-
-            <h3>
-              3. Price
-            </h3>
-
-
-            <div class="grid four">
-
-              <label>
-
-                Amount
-
-                <input
-                  id="priceAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="999"
-                >
-
-              </label>
-
-
-              <label>
-
-                Currency
-
-                <input
-                  id="priceCurrency"
-                  value="INR"
-                  maxlength="8"
-                >
-
-              </label>
-
-
-              <label>
-
-                Price type
-
-                <select id="priceType">
-
-                  <option value="fixed">
-                    Fixed
-                  </option>
-
-                  <option value="starting_from">
-                    Starting from
-                  </option>
-
-                  <option value="range">
-                    Range
-                  </option>
-
-                  <option value="custom">
-                    Custom
-                  </option>
-
-                </select>
-
-              </label>
-
-
-              <label>
-
-                Billing period
-
-                <input
-                  id="billingPeriod"
-                  maxlength="40"
-                  placeholder="one-time / monthly"
-                >
-
-              </label>
-
-            </div>
-
-
-            <div
-              class="grid two"
-              id="rangeRow"
-              hidden
-            >
-
-              <label>
-
-                Minimum
-
-                <input
-                  id="minAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                >
-
-              </label>
-
-
-              <label>
-
-                Maximum
-
-                <input
-                  id="maxAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                >
-
-              </label>
-
-            </div>
-
-          </div>
-
-
-          <!-- VARIANTS -->
-
-          <div class="section-block">
-
-            <div class="section-title-row">
-
-              <h3>
-                4. Variants
-              </h3>
-
-              <button
-                type="button"
-                id="addVariantBtn"
-                class="ghost small"
-              >
-                Add Variant
-              </button>
-
-            </div>
-
-
-            <div
-              id="variantList"
-            ></div>
-
-          </div>
-
-
-          <!-- AVAILABILITY -->
-
-          <div class="section-block">
-
-            <div class="section-title-row">
-
-              <h3>
-                5. Availability
-              </h3>
-
-              <button
-                type="button"
-                id="addAvailabilityBtn"
-                class="ghost small"
-              >
-                Add Rule
-              </button>
-
-            </div>
-
-
-            <div
-              id="availabilityList"
-            ></div>
-
-          </div>
-
-
-          <!-- PUBLISH -->
-
-          <div class="publish-box">
-
-            <div>
-
-              <strong>
-                Publish this offer
-              </strong>
-
-              <p>
-                Only published versions become
-                communication context for AI specialists.
-              </p>
-
-            </div>
-
-
-            <label class="switch">
-
-              <input
-                id="publishToggle"
-                type="checkbox"
-              >
-
-              <span></span>
-
-            </label>
-
-          </div>
-
-
-          <!-- ACTIONS -->
-
-          <div class="actions">
-
-            <button
-              type="button"
-              id="deleteOfferBtn"
-              class="danger ghost"
-              hidden
-            >
-              Archive Offer
-            </button>
-
-
-            <div class="actions-right">
-
-              <button
-                type="button"
-                id="saveDraftBtn"
-                class="ghost"
-              >
-                Save Draft
-              </button>
-
-              <button
-                type="submit"
-                id="savePublishBtn"
-                class="primary"
-              >
-                Save &amp; Publish
-              </button>
-
-            </div>
-
-          </div>
-
-        </form>
-
-      </section>
+      </form>
 
     </section>
+  </section>
 
-  </main>
+</main>
 
-
-  <script src="services.js"></script>
-  <script src="services-context-addon.js"></script>
+<script src="services.js"></script>
+<script src="services-context-addon.js"></script>
 
 </body>
-  </html>
+</html>
