@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLIME — Add Lead</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --card: #12161b;
+      --border: #252c34;
+      --text: #f4f7fa;
+      --muted: #8e99a6;
+      --accent: #ffffff;
+      --danger: #ff6b6b;
+      --success: #55d187;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #171c23 0%, var(--bg) 45%);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 620px;
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: .08em;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: rgba(18, 22, 27, .96);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      color: #c9d0d8;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #0d1115;
+      color: var(--text);
+      padding: 12px 13px;
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: #66717d;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 11px;
+      padding: 13px 16px;
+      background: var(--accent);
+      color: #090b0d;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    #message {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    #message.success {
+      display: block;
+      background: rgba(85, 209, 135, .10);
+      border: 1px solid rgba(85, 209, 135, .30);
+      color: #8ee4ac;
+    }
+
+    #message.error {
+      display: block;
+      background: rgba(255, 107, 107, .10);
+      border: 1px solid rgba(255, 107, 107, .30);
+      color: #ff9b9b;
+    }
+
+    .hint {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    @media (max-width: 560px) {
+      .row { grid-template-columns: 1fr; gap: 0; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <div class="brand">
+      <h1>GLIME</h1>
+      <p>Add a new customer lead</p>
+    </div>
+
+    <section class="card">
+      <form id="leadForm" autocomplete="off">
+
+        <div class="field">
+          <label for="name">Customer Name *</label>
+          <input id="name" name="name" type="text" required maxlength="120"
+                 placeholder="Customer name">
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="mobile">Customer Mobile Number</label>
+            <input id="mobile" name="mobile" type="tel" maxlength="30"
+                   placeholder="+91...">
+          </div>
+
+          <div class="field">
+            <label for="whatsapp">Customer WhatsApp Number</label>
+            <input id="whatsapp" name="whatsapp" type="tel" maxlength="30"
+                   placeholder="+91...">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="instagram_user_id">Customer Instagram ID</label>
+            <input id="instagram_user_id" name="instagram_user_id" type="text"
+                   maxlength="120" placeholder="@username">
+          </div>
+
+          <div class="field">
+            <label for="city_area">City / Area</label>
+            <input id="city_area" name="city_area" type="text"
+                   maxlength="150" placeholder="Jaipur">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="interest">Customer Interest</label>
+          <input id="interest" name="interest" type="text" maxlength="200"
+                 placeholder="What is the customer interested in?">
+        </div>
+
+        <div class="field">
+          <label for="product_service">Product / Service</label>
+          <input id="product_service" name="product_service" type="text"
+                 maxlength="200" placeholder="Product or service">
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="budget">Budget</label>
+            <input id="budget" name="budget" type="number" min="0" step="0.01"
+                   placeholder="Optional">
+          </div>
+
+          <div class="field">
+            <label for="budget_currency">Currency</label>
+            <input id="budget_currency" name="budget_currency" type="text"
+                   maxlength="10" value="INR">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="source">Lead Source</label>
+            <select id="source" name="source">
+              <option value="external">External</option>
+              <option value="website">Website</option>
+              <option value="instagram">Instagram</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="manual">Manual</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="notes">Notes</label>
+          <textarea id="notes" name="notes" maxlength="2000"
+                    placeholder="Additional customer information..."></textarea>
+        </div>
+
+        <button id="saveButton" type="submit">Save Lead</button>
+        <div id="message"></div>
+
+        <div class="hint">
+          Lead data is submitted through the GLIME Core API. Client/tenant identity
+          is resolved server-side and is not taken from this form.
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://ufoulgbiqgjriwapuopc.supabase.co";
+
+    // Use the same publishable key already used by the GLIME frontend.
+    const SUPABASE_PUBLISHABLE_KEY =
+      "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+
+    const form = document.getElementById("leadForm");
+    const saveButton = document.getElementById("saveButton");
+    const message = document.getElementById("message");
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = type;
+    }
+
+    function getSupabaseAuthClient() {
+      if (!window.supabase) {
+        throw new Error("Supabase client library failed to load.");
+      }
+
+      if (!window.__glimeSupabaseClient) {
+        window.__glimeSupabaseClient = window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_PUBLISHABLE_KEY
+        );
+      }
+
+      return window.__glimeSupabaseClient;
+    }
+
+    async function invokeGlimeApi(path, method = "GET", body = null) {
+      const db = getSupabaseAuthClient();
+
+      const { data: sessionData, error: sessionError } =
+        await db.auth.getSession();
+
+      if (sessionError || !sessionData?.session?.access_token) {
+        throw new Error(
+          "आपका GLIME login session नहीं मिला। पहले login करें।"
+        );
+      }
+
+      const headers = {
+        Authorization: "Bearer " + sessionData.session.access_token,
+        apikey: SUPABASE_PUBLISHABLE_KEY
+      };
+
+      if (body !== null) {
+        headers["Content-Type"] = "application/json";
+      }
+
+      const response = await fetch(
+        SUPABASE_URL + "/functions/v1/glime-api" + path,
+        {
+          method,
+          headers,
+          body: body === null ? undefined : JSON.stringify(body)
+        }
+      );
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || payload?.ok === false) {
+        throw new Error(
+          payload?.error?.message ||
+          "GLIME API request failed (" + response.status + ")."
+        );
+      }
+
+      return payload;
+    }
+
+    function clean(value) {
+      const v = String(value ?? "").trim();
+      return v === "" ? null : v;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      saveButton.disabled = true;
+      saveButton.textContent = "Saving...";
+      message.className = "";
+      message.textContent = "";
+
+      try {
+        const budgetRaw = document.getElementById("budget").value.trim();
+
+        const payload = {
+          name: document.getElementById("name").value.trim(),
+          mobile: clean(document.getElementById("mobile").value),
+          whatsapp: clean(document.getElementById("whatsapp").value),
+          instagram_user_id: clean(
+            document.getElementById("instagram_user_id").value
+          ),
+          city_area: clean(document.getElementById("city_area").value),
+          interest: clean(document.getElementById("interest").value),
+          product_service: clean(
+            document.getElementById("product_service").value
+          ),
+          budget: budgetRaw === "" ? null : Number(budgetRaw),
+          budget_currency: clean(
+            document.getElementById("budget_currency").value
+          ),
+          source: document.getElementById("source").value,
+          priority: document.getElementById("priority").value,
+          notes: clean(document.getElementById("notes").value)
+        };
+
+        if (budgetRaw !== "" && (!Number.isFinite(payload.budget) || payload.budget < 0)) {
+          throw new Error("Budget सही number होना चाहिए।");
+        }
+
+        const result = await invokeGlimeApi("/leads", "POST", payload);
+        const leadId = result?.data?.id;
+
+        showMessage(
+          "Lead successfully saved." +
+          (leadId ? " Lead ID: " + leadId : ""),
+          "success"
+        );
+
+        form.reset();
+        document.getElementById("budget_currency").value = "INR";
+        document.getElementById("priority").value = "normal";
+        document.getElementById("source").value = "external";
+
+      } catch (error) {
+        console.error("GLIME external lead error:", error);
+        showMessage(error?.message || "Lead save नहीं हो पाया।", "error");
+      } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = "Save Lead";
+      }
+    });
+  </script>
+
+  <!-- Supabase JS client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>
