@@ -1,156 +1,125 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>GLIME — Choose Your Industry</title>
-
-  <link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-  >
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
-  >
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
-  >
-
-  <link rel="stylesheet" href="services-industry.css">
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GLIME — Choose Industry</title>
+  <link rel="stylesheet" href="services-industry.css" />
 </head>
-
 <body>
-  <main class="page-shell">
+  <div class="page-shell">
 
     <header class="topbar">
-      <a
-        class="brand"
-        href="services.html"
-        aria-label="Back to GLIME setup"
-      >
-        <img src="glime_logo_clean.svg" alt="GLIME">
+      <a class="brand" href="services.html" aria-label="GLIME Services">
+        <span class="brand-mark">G</span>
+        <span>GLIME</span>
       </a>
-
-      <div class="step-label">
-        STEP <strong>01</strong> / 04
-      </div>
+      <span class="step-label">Business Setup</span>
     </header>
 
-
-    <section class="hero">
-      <div class="eyebrow">BUSINESS SETUP · INDUSTRY</div>
-
-      <h1>What does your business do?</h1>
-
-      <p>
-        Choose the industry that best describes your business.
-        You can search the list or select one of the available options.
-      </p>
-
-      <div class="progress" aria-label="Setup progress">
-        <span class="progress-step active">1</span>
-        <span class="progress-line"></span>
-        <span class="progress-step">2</span>
-        <span class="progress-line"></span>
-        <span class="progress-step">3</span>
-        <span class="progress-line"></span>
-        <span class="progress-step">4</span>
-      </div>
-    </section>
-
-
-    <section class="setup-card">
-
-      <div class="search-row">
-        <label class="search-box">
-          <span class="search-icon">⌕</span>
-          <input
-            id="industrySearch"
-            type="search"
-            autocomplete="off"
-            placeholder="Search your industry..."
-            aria-label="Search industry"
-          >
-          <button
-            id="clearSearchBtn"
-            class="clear-search"
-            type="button"
-            aria-label="Clear search"
-            hidden
-          >×</button>
-        </label>
-      </div>
-
-
-      <div
-        id="industryStatus"
-        class="status-line"
-      >
-        Loading industries…
-      </div>
-
-
-      <div
-        id="industryList"
-        class="industry-list"
-        aria-live="polite"
-      ></div>
-
-
-      <div
-        id="emptyState"
-        class="empty-state"
-        hidden
-      >
-        <h3>No matching industry</h3>
+    <main class="main">
+      <section class="hero">
+        <div class="eyebrow">STEP 2 OF 4</div>
+        <h1>What industry is your business in?</h1>
         <p>
-          Try another search term.
+          Choose an industry from the GLIME catalog, or create your own if
+          you don't find an exact match.
         </p>
-      </div>
 
+        <div class="progress" aria-label="Setup progress">
+          <span class="progress-item done"></span>
+          <span class="progress-item active"></span>
+          <span class="progress-item"></span>
+          <span class="progress-item"></span>
+        </div>
+      </section>
 
-      <div
-        id="message"
-        class="message"
-        hidden
-      ></div>
+      <section class="card" aria-labelledby="industry-heading">
+        <div class="card-heading">
+          <div>
+            <h2 id="industry-heading">Select your industry</h2>
+            <p>Search the system catalog or use a custom industry.</p>
+          </div>
+          <div id="selectedBadge" class="selected-badge" hidden>Selected</div>
+        </div>
 
+        <div class="search-row">
+          <label class="search-box" for="industrySearch">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input
+              id="industrySearch"
+              type="search"
+              autocomplete="off"
+              placeholder="Search industry, e.g. Plumbing, Retail, Restaurant"
+            />
+            <button id="clearSearchBtn" class="clear-btn" type="button" aria-label="Clear search" hidden>×</button>
+          </label>
+        </div>
 
-      <div class="navigation">
+        <div id="industryStatus" class="status" role="status" aria-live="polite">
+          Loading industries…
+        </div>
 
-        <a
-          class="back-button"
-          href="services.html"
-        >
-          ← Back
-        </a>
+        <div id="industryList" class="industry-list" aria-live="polite"></div>
 
-        <button
-          id="nextBtn"
-          class="next-button"
-          type="button"
-          disabled
-        >
-          Next <span aria-hidden="true">→</span>
+        <!-- This option is intentionally ALWAYS available. -->
+        <button id="customIndustryBtn" class="custom-option" type="button">
+          <span class="custom-icon">＋</span>
+          <span class="custom-copy">
+            <strong>Create a custom industry</strong>
+            <small>Use your own industry name when the system catalog doesn't fit.</small>
+          </span>
+          <span class="custom-arrow">›</span>
         </button>
 
-      </div>
+        <div id="customIndustryForm" class="custom-form" hidden>
+          <div class="custom-form-header">
+            <div>
+              <span class="form-kicker">CUSTOM INDUSTRY</span>
+              <h3>Create your industry</h3>
+              <p>This is only saved to your setup until you finish the complete setup flow.</p>
+            </div>
+            <button id="closeCustomBtn" class="icon-button" type="button" aria-label="Close custom industry form">×</button>
+          </div>
 
-    </section>
+          <label class="field">
+            <span>Industry name <b>*</b></span>
+            <input
+              id="customIndustryName"
+              type="text"
+              maxlength="120"
+              autocomplete="off"
+              placeholder="e.g. Solar Panel Installation"
+            />
+          </label>
 
+          <label class="field">
+            <span>Description <em>Optional</em></span>
+            <textarea
+              id="customIndustryDescription"
+              maxlength="500"
+              rows="4"
+              placeholder="Briefly describe what your business does."
+            ></textarea>
+          </label>
 
-    <footer class="footer">
-      <span>GLIME</span>
-      <span>Industry selection</span>
-    </footer>
+          <div class="custom-actions">
+            <button id="cancelCustomBtn" class="secondary-btn" type="button">Cancel</button>
+            <button id="useCustomBtn" class="primary-small-btn" type="button">Use this industry</button>
+          </div>
+        </div>
 
-  </main>
+        <div id="message" class="message" role="alert" hidden></div>
+      </section>
 
+      <nav class="navigation" aria-label="Setup navigation">
+        <button id="backBtn" class="back-btn" type="button">← Back</button>
+        <button id="nextBtn" class="next-btn" type="button" disabled>Next →</button>
+      </nav>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="services-industry.js"></script>
 </body>
 </html>
