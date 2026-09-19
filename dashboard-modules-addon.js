@@ -43,6 +43,12 @@
 
     const MODULE_UI = {
 
+       ai-connections: {
+           name: 'AI Connections',
+           icon: '🔗',
+           href: 'ai-connections.html'
+       },
+
         instagram_ai_sales_agent: {
             name: 'AI Sales Agent',
             icon: '🤖',
