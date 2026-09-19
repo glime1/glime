@@ -12,38 +12,107 @@
       <a class="brand" href="services.html" aria-label="GLIME home">
         <img class="brand-logo" src="glime_logo_clean.svg" alt="GLIME">
       </a>
-      <div class="step-count">STEP 5</div>
+      <div class="step-meta">
+        <span class="step-label">STEP 5</span>
+        <span class="step-subtitle">TYPE</span>
+      </div>
     </header>
 
     <section class="wizard-card">
       <div class="eyebrow">BUSINESS SETUP</div>
+
       <h1>What do you want to manage?</h1>
-      <p class="intro">Choose a ready-made type or create your own.</p>
+
+      <p class="intro">
+        Choose the type that best matches what your business offers,
+        delivers, rents, or keeps track of.
+      </p>
 
       <div id="selection-context" class="context-card" hidden></div>
 
-      <div id="loading-state" class="state-message">Loading available options…</div>
+      <div class="setup-note">
+        <span class="note-mark">i</span>
+        <div>
+          <strong>This choice shapes the next screen.</strong>
+          <p>
+            After you choose a type, GLIME will show the fields that
+            belong to it.
+          </p>
+        </div>
+      </div>
+
+      <div id="loading-state" class="state-message">
+        Loading available types…
+      </div>
+
       <div id="error-state" class="state-message error" hidden></div>
 
       <section id="system-section" hidden>
         <div class="section-heading">
-          <h2>Available options</h2>
-          <p>Based on the structure you selected.</p>
+          <div>
+            <h2>Ready-made types</h2>
+            <p>These are available for the structure you selected.</p>
+          </div>
+          <span id="system-count" class="count-badge"></span>
         </div>
+
+        <div id="search-wrap" class="search-wrap" hidden>
+          <span class="search-icon">⌕</span>
+          <input
+            id="entity-search"
+            type="search"
+            placeholder="Search types"
+            autocomplete="off"
+            aria-label="Search types"
+          >
+        </div>
+
         <div id="system-entities" class="option-list"></div>
+
+        <div id="no-search-results" class="empty-search" hidden>
+          No matching types found.
+        </div>
+      </section>
+
+      <section id="empty-system-section" class="empty-system" hidden>
+        <div class="empty-mark">＋</div>
+        <div>
+          <strong>No ready-made type is connected yet.</strong>
+          <p>
+            You can create your own type now and add its fields on the next step.
+          </p>
+        </div>
       </section>
 
       <section class="custom-section">
-        <button id="custom-trigger" class="option-card custom-trigger" type="button">
+        <button
+          id="custom-trigger"
+          class="option-card custom-trigger"
+          type="button"
+          aria-expanded="false"
+        >
           <span class="option-icon">＋</span>
-          <span>
+          <span class="option-copy">
             <strong>Create a custom type</strong>
-            <small>Use your own name for what you manage.</small>
+            <small>
+              Use your own name when the ready-made options do not fit.
+            </small>
           </span>
+          <span class="trigger-arrow" aria-hidden="true">→</span>
         </button>
 
         <form id="custom-form" class="custom-form" hidden>
-          <label for="custom-name">Type name</label>
+          <div class="form-intro">
+            <strong>Create your type</strong>
+            <p>
+              Give it a clear name now. You can define its fields on the next screen.
+            </p>
+          </div>
+
+          <label for="custom-name">
+            Type name
+          </label>
+
           <input
             id="custom-name"
             name="custom-name"
@@ -51,23 +120,26 @@
             maxlength="120"
             placeholder="e.g. Coaching Program"
             autocomplete="off"
+            required
           >
 
           <label for="custom-description">
             Description <span>(optional)</span>
           </label>
+
           <textarea
             id="custom-description"
             name="custom-description"
             maxlength="500"
             rows="4"
-            placeholder="Briefly describe what this type represents."
+            placeholder="What does this type represent?"
           ></textarea>
 
           <div class="custom-actions">
             <button id="custom-cancel" class="secondary-button" type="button">
               Cancel
             </button>
+
             <button id="custom-use" class="primary-button" type="submit">
               Use this type
             </button>
@@ -75,10 +147,19 @@
         </form>
       </section>
 
+      <div class="selection-status" id="selection-status" hidden>
+        <div>
+          <span class="status-label">Selected</span>
+          <strong id="selected-name"></strong>
+        </div>
+        <button id="change-selection" type="button">Change</button>
+      </div>
+
       <div class="footer-actions">
         <button id="back-button" class="secondary-button" type="button">
           Back
         </button>
+
         <button id="next-button" class="primary-button" type="button" disabled>
           Continue
         </button>
@@ -86,6 +167,7 @@
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="services-entity.js"></script>
 </body>
 </html>
