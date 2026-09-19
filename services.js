@@ -866,21 +866,24 @@
     }
 
     const payload = {
-      client_id:
-        tenantConfigId(),
+  client_id:
+    tenantConfigId(),
 
-      industry_id:
-        industryId,
+  industry_id:
+    industryId,
 
-      status:
-        "active",
+  business_model_id:
+    businessModelId,
 
-      selection_source:
-        "services-ui",
+    status:
+      "active",
 
-      updated_at:
-        new Date().toISOString()
-    };
+    selection_source:
+      "services-ui",
+
+    updated_at:
+      new Date().toISOString()
+   };
 
     if (configuration) {
       const {
