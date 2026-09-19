@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Connections | GLIME</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#05080c;--card:#111827;--border:rgba(255,255,255,.07);--green:#00ff88;--cyan:#00f0ff;--muted:#9ca3af;--white:#fff;--danger:#ff4757}
+*{box-sizing:border-box;font-family:Poppins,system-ui,-apple-system,Segoe UI,sans-serif}
+body{margin:0;background:var(--bg);color:var(--white);min-height:100vh;padding:30px 16px}
+.wrap{max-width:1000px;margin:auto}
+.back{display:inline-block;color:var(--muted);text-decoration:none;margin-bottom:24px}
+h1{margin:0 0 8px;font-size:1.8rem}
+.sub{color:var(--muted);margin-bottom:28px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.provider{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.provider h2{margin:0;font-size:1.1rem}
+.badge{font-size:.75rem;padding:5px 9px;border-radius:999px;background:rgba(156,163,175,.1);color:var(--muted);border:1px solid var(--border)}
+.badge.connected{color:var(--green);border-color:rgba(0,255,136,.25);background:rgba(0,255,136,.08)}
+.desc{color:var(--muted);font-size:.88rem;line-height:1.6;margin:12px 0 18px}
+button{border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer;background:var(--white);color:#05080c}
+button.secondary{background:rgba(255,255,255,.08);color:var(--white);border:1px solid var(--border)}
+.endpoint{margin-top:12px;padding:10px;border-radius:9px;background:#090d13;border:1px solid var(--border);font-size:.72rem;word-break:break-all;color:#cbd5e1}
+.permissions{margin-top:28px}
+.permissions h2{font-size:1.15rem;margin-bottom:14px}
+.permission{display:flex;justify-content:space-between;gap:15px;padding:13px 0;border-bottom:1px solid var(--border)}
+.permission span:last-child{font-weight:700}
+.allowed{color:var(--green)} .locked{color:var(--muted)}
+.notice{margin-top:22px;padding:14px;border-radius:10px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.16);color:#cbd5e1;font-size:.83rem;line-height:1.6}
+.message{margin:20px 0;padding:12px;border-radius:9px;display:none}
+.error{display:block;background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.25);color:#ff9b9b}
+@media(max-width:700px){.grid{grid-template-columns:1fr}body{padding:20px 12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="dashboard.html">← Dashboard</a>
+<h1>AI Connections</h1>
+<div class="sub">Connect GLIME with approved AI assistants. Access is controlled by GLIME.</div>
+<div id="message" class="message"></div>
+
+<div class="grid">
+  <section class="card">
+    <div class="provider"><h2>🤖 ChatGPT</h2><span id="chatgptBadge" class="badge">Not connected</span></div>
+    <p class="desc">Connect ChatGPT to your GLIME business data through the secure GLIME MCP Gateway.</p>
+    <button id="chatgptConnect" onclick="connectProvider('chatgpt')">Connect ChatGPT</button>
+    <div class="endpoint" id="chatgptInfo">OAuth connection will be completed securely. No database or source-code access is granted.</div>
+  </section>
+
+  <section class="card">
+    <div class="provider"><h2>✦ Claude</h2><span id="claudeBadge" class="badge">Not connected</span></div>
+    <p class="desc">Connect Claude to your GLIME business data through the same secure gateway and authentication layer.</p>
+    <button id="claudeConnect" onclick="connectProvider('claude')">Connect Claude</button>
+    <div class="endpoint" id="claudeInfo">OAuth connection will be completed securely. No database or source-code access is granted.</div>
+  </section>
+</div>
+
+<section class="card permissions">
+  <h2>GLIME-controlled permissions</h2>
+  <div id="permissionList">
+    <div class="permission"><span>Loading permissions…</span><span class="locked">—</span></div>
+  </div>
+</section>
+
+<div class="notice">
+  These permissions are enforced server-side by GLIME. Clients cannot grant, expand, or modify AI permissions from this page.
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://ufoulgbiqgjriwapuopc.supabase.co";
+const SUPABASE_KEY="sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+const MCP_ENDPOINT=SUPABASE_URL+"/functions/v1/glime-mcp-gateway";
+const sb=window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY,
+  {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}
+);
+
+const PERMISSION_LABELS={
+  "leads.read":"Leads — Read",
+  "leads.create":"Leads — Create",
+  "leads.update":"Leads — Update",
+  "leads.delete":"Leads — Delete",
+  "followups.read":"Follow-ups — Read",
+  "followups.create":"Follow-ups — Create",
+  "followups.update":"Follow-ups — Update",
+  "followups.delete":"Follow-ups — Delete",
+  "services.read":"Services — Read",
+  "services.create":"Services — Create",
+  "services.update":"Services — Update",
+  "services.delete":"Services — Delete"
+};
+
+function showError(text){
+  const el=document.getElementById("message");
+  el.textContent=text;
+  el.className="message error";
+}
+
+function setStatus(id, connected){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.textContent=connected?"Connected":"Not connected";
+  el.classList.toggle("connected",connected);
+}
+
+function setConnectState(provider, connected){
+  const button=document.getElementById(provider+"Connect");
+  const info=document.getElementById(provider+"Info");
+  if(button){
+    button.textContent=connected ? "Connected" : `Connect ${provider==="chatgpt"?"ChatGPT":"Claude"}`;
+    button.disabled=connected;
+    button.classList.toggle("secondary",connected);
+  }
+  if(info && connected){
+    info.textContent="Connected through GLIME OAuth. Access remains controlled by GLIME permissions.";
+  }
+}
+
+function renderPermissions(rows){
+  const list=document.getElementById("permissionList");
+  const order=[
+    "leads.read","leads.create","leads.update","leads.delete",
+    "followups.read","followups.create","followups.update","followups.delete",
+    "services.read","services.create","services.update","services.delete"
+  ];
+  const map=new Map((rows||[]).map(x=>[x.permission_key,x.enabled===true]));
+
+  list.innerHTML=order.map(key=>{
+    const enabled=map.get(key)===true;
+    return `<div class="permission">
+      <span>${PERMISSION_LABELS[key]}</span>
+      <span class="${enabled?"allowed":"locked"}">${enabled?"ALLOWED":"BLOCKED"}</span>
+    </div>`;
+  }).join("")+
+  `<div class="permission"><span>Database / SQL / Schema</span><span class="locked">BLOCKED</span></div>
+   <div class="permission"><span>Source code / prompts / secrets</span><span class="locked">BLOCKED</span></div>
+   <div class="permission"><span>Reports / analytics / unrelated data</span><span class="locked">BLOCKED</span></div>`;
+}
+
+async function getAiModuleAccess(){
+  const {data:module,error:moduleError}=await sb.from("modules")
+    .select("id,name,slug")
+    .eq("slug","ai-connections")
+    .maybeSingle();
+
+  if(moduleError) throw moduleError;
+  if(!module) return {enabled:false,visible:false};
+
+  const {data:access,error:accessError}=await sb.from("client_modules")
+    .select("enabled,visible_to_client,status,expires_at")
+    .eq("module_id",module.id)
+    .maybeSingle();
+
+  if(accessError) throw accessError;
+
+  const active=access?.enabled===true &&
+    (access.status==="active" || access.status==="trial") &&
+    (!access.expires_at || new Date(access.expires_at).getTime()>Date.now());
+
+  return {
+    enabled:active,
+    visible:access?.visible_to_client===true
+  };
+}
+
+async function loadPermissions(){
+  const {data:connections,error:cError}=await sb.from("ai_connections")
+    .select("id,provider,status")
+    .eq("status","active");
+
+  if(cError) throw cError;
+
+  const connectionIds=(connections||[]).map(x=>x.id);
+  if(!connectionIds.length){
+    renderPermissions([]);
+    return;
+  }
+
+  const {data:permissions,error:pError}=await sb.from("ai_connection_permissions")
+    .select("connection_id,permission_key,enabled")
+    .in("connection_id",connectionIds);
+
+  if(pError) throw pError;
+
+  const merged=new Map();
+  (permissions||[]).forEach(row=>{
+    if(row.enabled===true) merged.set(row.permission_key,true);
+    else if(!merged.has(row.permission_key)) merged.set(row.permission_key,false);
+  });
+
+  renderPermissions([...merged].map(([permission_key,enabled])=>({permission_key,enabled})));
+
+  const chatgpt=(connections||[]).some(x=>String(x.provider||"").toLowerCase()==="chatgpt");
+  const claude=(connections||[]).some(x=>String(x.provider||"").toLowerCase()==="claude");
+
+  setStatus("chatgptBadge",chatgpt);
+  setStatus("claudeBadge",claude);
+  setConnectState("chatgpt",chatgpt);
+  setConnectState("claude",claude);
+}
+
+async function connectProvider(provider){
+  const target=provider==="chatgpt"?"ChatGPT":"Claude";
+  alert(`${target} connection is ready for the GLIME OAuth/MCP flow. Open ${target} and choose the GLIME connection when the provider offers its Connect/Add MCP flow.`);
+}
+
+(async()=>{
+  try{
+    const {data,error}=await sb.auth.getSession();
+    if(error||!data.session){
+      location.href="login.html";
+      return;
+    }
+
+    const module=await getAiModuleAccess();
+
+    if(!module.enabled || !module.visible){
+      document.querySelector(".wrap").innerHTML=`
+        <a class="back" href="dashboard.html">← Dashboard</a>
+        <div class="card">
+          <h1>AI Connections</h1>
+          <p class="desc">AI Connections is currently unavailable for this client.</p>
+        </div>`;
+      return;
+    }
+
+    await loadPermissions();
+  }catch(error){
+    console.error("AI Connections load error:",error);
+    showError("AI connection status could not be loaded.");
+  }
+})();
+</script>
+</body>
+</html>
