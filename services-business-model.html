@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GLIME — Choose Business Model</title>
+  <link rel="stylesheet" href="services-business-model.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="services.html" aria-label="GLIME Services">
+        <img class="brand-logo" src="glime_logo_clean.svg" alt="GLIME">
+      </a>
+      <span class="step-label">Business Setup</span>
+    </header>
+
+    <main class="main">
+      <section class="hero">
+        <div class="eyebrow">STEP 3 OF 4</div>
+        <h1>How does your business operate?</h1>
+        <p>Choose the business model that best describes how you sell or deliver your business.</p>
+
+        <div class="progress" aria-label="Setup progress">
+          <span class="progress-item done"></span>
+          <span class="progress-item done"></span>
+          <span class="progress-item active"></span>
+          <span class="progress-item"></span>
+        </div>
+      </section>
+
+      <section class="context-card" aria-label="Selected industry">
+        <span class="context-label">YOUR INDUSTRY</span>
+        <strong id="industryName">Loading…</strong>
+      </section>
+
+      <section class="card" aria-labelledby="business-model-heading">
+        <div class="card-heading">
+          <div>
+            <h2 id="business-model-heading">Select your business model</h2>
+            <p>Choose a system option or create your own.</p>
+          </div>
+          <div id="selectedBadge" class="selected-badge" hidden>Selected</div>
+        </div>
+
+        <div id="modelStatus" class="status" role="status" aria-live="polite">
+          Loading business models…
+        </div>
+
+        <div id="modelList" class="model-list" aria-live="polite"></div>
+
+        <button id="customModelBtn" class="custom-option" type="button">
+          <span class="custom-icon">＋</span>
+          <span class="custom-copy">
+            <strong>Create a custom business model</strong>
+            <small>Use your own model when the available system options don't fit.</small>
+          </span>
+          <span class="custom-arrow">›</span>
+        </button>
+
+        <div id="customModelForm" class="custom-form" hidden>
+          <div class="custom-form-header">
+            <div>
+              <span class="form-kicker">CUSTOM BUSINESS MODEL</span>
+              <h3>Create your business model</h3>
+              <p>This is kept in your setup until the complete setup flow is finished.</p>
+            </div>
+            <button id="closeCustomBtn" class="icon-button" type="button" aria-label="Close custom business model form">×</button>
+          </div>
+
+          <label class="field">
+            <span>Business model name <b>*</b></span>
+            <input id="customModelName" type="text" maxlength="120" autocomplete="off"
+              placeholder="e.g. Consultation + Subscription">
+          </label>
+
+          <label class="field">
+            <span>Description <em>Optional</em></span>
+            <textarea id="customModelDescription" maxlength="500" rows="4"
+              placeholder="Briefly describe how your business sells or delivers its products or services."></textarea>
+          </label>
+
+          <div class="custom-actions">
+            <button id="cancelCustomBtn" class="secondary-btn" type="button">Cancel</button>
+            <button id="useCustomBtn" class="primary-small-btn" type="button">Use this model</button>
+          </div>
+        </div>
+
+        <div id="message" class="message" role="alert" hidden></div>
+      </section>
+
+      <nav class="navigation" aria-label="Setup navigation">
+        <button id="backBtn" class="back-btn" type="button">← Back</button>
+        <button id="nextBtn" class="next-btn" type="button" disabled>Next →</button>
+      </nav>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="services-business-model.js"></script>
+</body>
+</html>
