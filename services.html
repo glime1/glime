@@ -2,450 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
-  >
-
-  <title>GLIME — Services & Offers</title>
-
-  <link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-  >
-
-  <link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-    crossorigin
-  >
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
-  >
-
-  <link
-    rel="stylesheet"
-    href="services.css"
-  >
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GLIME — Business Setup</title>
+  <link rel="stylesheet" href="services.css">
 </head>
-
 <body>
-
-<main class="shell">
-
-  <!-- =====================================================
-       TOP BAR
-       ===================================================== -->
-
-  <header class="topbar">
-
-    <a
-      class="brand"
-      href="dashboard.html"
-      aria-label="GLIME Dashboard"
-    >
-      <img
-        src="glime_logo_clean.svg"
-        alt="GLIME"
-      >
-    </a>
-
-    <div class="topbar-right">
-
-      <span
-        id="clientBadge"
-        class="badge"
-      >
-        Loading client…
-      </span>
-
-      <a
-        href="dashboard.html"
-        class="back-link"
-      >
-        Dashboard
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="dashboard.html" aria-label="GLIME Dashboard">
+        <img src="glime_logo_clean.svg" alt="GLIME">
       </a>
+      <span id="clientBadge" class="client-badge">Loading…</span>
+    </header>
 
-    </div>
-
-  </header>
-
-
-  <!-- =====================================================
-       HERO
-       ===================================================== -->
-
-  <section class="hero">
-
-    <div>
-
-      <div class="eyebrow">
-        CLIENT CONTROL CENTER · SERVICES & OFFERS
-      </div>
-
-      <h1>
-        Services & Offers
-      </h1>
-
+    <section class="hero">
+      <div class="eyebrow">GLIME · BUSINESS SETUP</div>
+      <h1>Let's set up your business.</h1>
       <p>
-        Build your business truth progressively.
-        Configure your business foundation first, then
-        unlock the next business layers.
+        We'll ask a few simple questions. Your answers will configure
+        the right business structure for GLIME.
       </p>
 
-    </div>
+      <div class="progress" aria-label="Setup progress">
+        <span class="progress-step active">1</span>
+        <span class="progress-line"></span>
+        <span class="progress-step">2</span>
+        <span class="progress-line"></span>
+        <span class="progress-step">3</span>
+        <span class="progress-line"></span>
+        <span class="progress-step">4</span>
+      </div>
+    </section>
 
-  </section>
-
-
-  <!-- =====================================================
-       GLOBAL MESSAGE
-       ===================================================== -->
-
-  <div
-    id="message"
-    class="message"
-    hidden
-  ></div>
-
-
-  <!-- =====================================================
-       LAYER 01–03
-       BUSINESS FOUNDATION
-       ===================================================== -->
-
-  <section class="setup panel">
-
-    <div class="panel-head">
-
+    <section class="setup-card">
+      <div class="card-icon">01</div>
       <div>
-
-        <div class="eyebrow">
-          FOUNDATION
-        </div>
-
-        <h2>
-          Business configuration
-        </h2>
-
-        <span class="muted">
-          Configure the foundation before creating business entities.
-        </span>
-
+        <div class="eyebrow">FIRST STEP</div>
+        <h2>Tell us about your business</h2>
+        <p class="muted">
+          Start by choosing your industry. The next screen will use your
+          selection to show the business models available for you.
+        </p>
       </div>
 
-      <span
-        id="setupState"
-        class="status draft"
-      >
-        Not configured
-      </span>
-
-    </div>
-
-
-    <div class="setup-grid">
-
-      <!-- INDUSTRY -->
-
-      <label>
-
-        Industry
-
-        <select id="industrySelect">
-
-          <option value="">
-            Select industry
-          </option>
-
-        </select>
-
-      </label>
-
-
-      <!-- BUSINESS MODEL -->
-
-      <label>
-
-        Business model
-
-        <select id="businessModelSelect">
-
-          <option value="">
-            Select business model
-          </option>
-
-        </select>
-
-      </label>
-
-
-      <!-- CUSTOM BUSINESS MODEL -->
-
-      <label class="wide">
-
-        Custom business model
-
-        <input
-          id="customBusinessModel"
-          maxlength="160"
-          placeholder="Optional — define your own business model"
-        >
-
-      </label>
-
-
-      <!-- SAVE -->
-
-      <button
-        id="saveSetupBtn"
-        class="ghost"
-        type="button"
-      >
-        Save foundation
+      <button id="nextBtn" class="next-button" type="button">
+        Start setup <span aria-hidden="true">→</span>
       </button>
+    </section>
 
-    </div>
+    <p id="message" class="message" hidden></p>
 
-  </section>
+    <footer class="footer">
+      <span>GLIME</span>
+      <span>Business configuration</span>
+    </footer>
+  </main>
 
-
-  <!-- =====================================================
-       CONFIGURATION LAYERS
-       ===================================================== -->
-
-  <section class="panel">
-
-    <div class="panel-head">
-
-      <div>
-
-        <div class="eyebrow">
-          CONFIGURATION LAYERS
-        </div>
-
-        <h2>
-          Business structure
-        </h2>
-
-        <span class="muted">
-          Each layer becomes the foundation for the next layer.
-        </span>
-
-      </div>
-
-    </div>
-
-
-    <div class="setup-grid">
-
-      <!-- BUSINESS -->
-
-      <article class="layer-card">
-
-        <div class="eyebrow">
-          LAYER 01
-        </div>
-
-        <h3>
-          Business
-        </h3>
-
-        <p class="muted">
-          Your client business identity and ownership context.
-        </p>
-
-        <span class="status active">
-          Active
-        </span>
-
-      </article>
-
-
-      <!-- INDUSTRY -->
-
-      <article class="layer-card">
-
-        <div class="eyebrow">
-          LAYER 02
-        </div>
-
-        <h3>
-          Industry
-        </h3>
-
-        <p class="muted">
-          Choose an existing industry or configure a custom industry.
-        </p>
-
-        <span class="status draft">
-          Foundation
-        </span>
-
-      </article>
-
-
-      <!-- BUSINESS MODEL -->
-
-      <article class="layer-card">
-
-        <div class="eyebrow">
-          LAYER 03
-        </div>
-
-        <h3>
-          Business Model
-        </h3>
-
-        <p class="muted">
-          Define how the business sells, books or delivers.
-        </p>
-
-        <span class="status draft">
-          Foundation
-        </span>
-
-      </article>
-
-
-      <!-- TEMPLATE -->
-
-      <article class="layer-card">
-
-        <div class="eyebrow">
-          LAYER 04
-        </div>
-
-        <h3>
-          Template
-        </h3>
-
-        <p class="muted">
-          The structure used by services, products and other entities.
-        </p>
-
-        <span class="status draft">
-          Next layer
-        </span>
-
-      </article>
-
-    </div>
-
-  </section>
-
-
-  <!-- =====================================================
-       ENTITY LAYER
-       ===================================================== -->
-
-  <section class="panel">
-
-    <div class="panel-head">
-
-      <div>
-
-        <div class="eyebrow">
-          ENTITY LAYER
-        </div>
-
-        <h2>
-          Business entities
-        </h2>
-
-        <span class="muted">
-          Entity management will be provided through separate GLIME modules.
-        </span>
-
-      </div>
-
-      <span class="status draft">
-        Add-on
-      </span>
-
-    </div>
-
-
-    <div class="entity-placeholder">
-
-      <div class="entity-placeholder-icon">
-        +
-      </div>
-
-      <h3>
-        Configure the foundation first
-      </h3>
-
-      <p class="muted">
-        Once the business foundation is ready, separate modules
-        can provide Service, Product, Package, Plan, Property,
-        Menu Item and Custom entity management.
-      </p>
-
-    </div>
-
-  </section>
-
-
-  <!-- =====================================================
-       REFRESH / SYSTEM STATUS
-       ===================================================== -->
-
-  <section class="panel system-panel">
-
-    <div class="panel-head">
-
-      <div>
-
-        <div class="eyebrow">
-          GLIME SYSTEM
-        </div>
-
-        <h2>
-          Configuration status
-        </h2>
-
-        <span class="muted">
-          Core configuration stays separate from entity addons.
-        </span>
-
-      </div>
-
-      <button
-        id="refreshBtn"
-        class="ghost"
-        type="button"
-      >
-        Refresh
-      </button>
-
-    </div>
-
-  </section>
-
-</main>
-
-
-<!-- =======================================================
-     CORE SERVICES SCRIPT
-     ======================================================= -->
-
-<script src="services.js"></script>
-<script src="services-foundation-addon.js"></script>
-<script src="services-entity-addon.js"></script>
-
-
-<!-- =======================================================
-     PUBLISHED AI CONTEXT ADDON
-     This addon creates its own panel.
-     ======================================================= -->
-
-<script src="services-context-addon.js"></script>
-
+  <script src="services.js"></script>
 </body>
 </html>
