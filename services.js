@@ -12,20 +12,19 @@
      ========================================================= */
 
   const SUPABASE_URL =
-    window.GLIME_SUPABASE_URL ||
-    window.SUPABASE_URL ||
-    "";
+  window.GLIME_SUPABASE_URL ||
+  window.SUPABASE_URL ||
+  "https://ufoulgbiqgjriwapuopc.supabase.co";
 
-  const SUPABASE_ANON_KEY =
-    window.GLIME_SUPABASE_ANON_KEY ||
-    window.SUPABASE_ANON_KEY ||
-    "";
+const SUPABASE_ANON_KEY =
+  window.GLIME_SUPABASE_ANON_KEY ||
+  window.SUPABASE_ANON_KEY ||
+  "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
-  const sb =
-    window.supabaseClient ||
-    window.supabase ||
-    window.sb ||
-    null;
+const sb =
+  window.supabaseClient ||
+  window.sb ||
+  null;
 
   /* =========================================================
      STATE
@@ -280,24 +279,29 @@
      ========================================================= */
 
   async function getSupabaseClient() {
-    if (sb) {
-      return sb;
-    }
+  if (
+    sb &&
+    typeof sb.from === "function" &&
+    sb.auth &&
+    typeof sb.auth.getUser === "function"
+  ) {
+    return sb;
+  }
 
-    if (
-      SUPABASE_URL &&
-      SUPABASE_ANON_KEY &&
-      window.supabase?.createClient
-    ) {
-      return window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY
-      );
-    }
-
-    throw new Error(
-      "Supabase client is not available."
+  if (
+    SUPABASE_URL &&
+    SUPABASE_ANON_KEY &&
+    window.supabase?.createClient
+  ) {
+    return window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
     );
+  }
+
+  throw new Error(
+    "Supabase client is not available."
+  );
   }
 
   async function getAuthenticatedUser() {
@@ -5225,8 +5229,4 @@
     init();
   }
 
-})();
-   
-
-   
-        
+})();   
