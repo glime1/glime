@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GLIME — Connect your account</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#0b0d10;color:#f4f5f7;display:grid;place-items:center;min-height:100vh;margin:0}
+    .card{width:min(520px,calc(100% - 32px));background:#141820;border:1px solid #2a303b;border-radius:18px;padding:28px;box-sizing:border-box}
+    h1{margin:0 0 8px;font-size:24px}.muted{color:#aeb5c0;line-height:1.5}
+    label{display:block;margin:16px 0 6px;font-size:14px}.input{width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #353c48;background:#0f1217;color:#fff}
+    button{margin-top:18px;width:100%;padding:12px;border:0;border-radius:10px;background:#fff;color:#111;font-weight:700;cursor:pointer}
+    button.secondary{background:#252b35;color:#fff}.hidden{display:none}.error{color:#ff8f8f;margin-top:14px;white-space:pre-wrap}.ok{color:#9ff0b1;margin-top:14px}
+    .scope{display:inline-block;background:#242b35;padding:5px 8px;border-radius:7px;margin:4px 4px 0 0;font-size:13px}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>GLIME Lead Access</h1>
+    <p class="muted">यह केवल आपके authenticated GLIME account की existing leads को read करने की अनुमति देता है। कोई lead create, update या delete नहीं होगा और दूसरे GLIME data तक access नहीं दिया जाएगा.</p>
+
+    <section id="login">
+      <label for="email">GLIME email</label>
+      <input id="email" class="input" type="email" autocomplete="username">
+      <label for="password">GLIME password</label>
+      <input id="password" class="input" type="password" autocomplete="current-password">
+      <button id="loginBtn">GLIME account से login करें</button>
+    </section>
+
+    <section id="consent" class="hidden">
+      <p id="client"></p>
+      <p id="scopeText"></p>
+      <button id="approveBtn">Allow read-only lead access</button>
+      <button id="denyBtn" class="secondary">Deny</button>
+    </section>
+
+    <div id="status" class="muted"></div>
+    <div id="error" class="error"></div>
+  </main>
+
+<script>
+const SUPABASE_URL = "https://ufoulgbiqgjriwapuopc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
+
+const params = new URLSearchParams(location.search);
+const authorizationId = params.get("authorization_id");
+
+const loginEl = document.getElementById("login");
+const consentEl = document.getElementById("consent");
+const statusEl = document.getElementById("status");
+const errorEl = document.getElementById("error");
+
+function showError(message){ errorEl.textContent = message || "Something went wrong."; }
+function setStatus(message){ statusEl.textContent = message || ""; }
+
+async function loadAuthorization(){
+  if (!authorizationId) { showError("authorization_id missing."); return; }
+
+  const { data, error } = await sb.auth.oauth.getAuthorizationDetails(authorizationId);
+  if (error || !data) { showError(error?.message || "Invalid authorization request."); return; }
+
+  if (!("authorization_id" in data)) {
+    location.replace(data.redirect_url);
+    return;
+  }
+
+  document.getElementById("client").innerHTML =
+    "<strong>App:</strong> " + (data.client?.name || "ChatGPT / MCP client");
+
+  const scopes = (data.scope || "").trim().split(/\s+/).filter(Boolean);
+  document.getElementById("scopeText").innerHTML =
+    "<strong>Requested permissions:</strong><br>" +
+    (scopes.length ? scopes.map(s => '<span class="scope">'+s.replace(/[<>]/g,"")+"</span>").join(" ") : "account access");
+
+  loginEl.classList.add("hidden");
+  consentEl.classList.remove("hidden");
+  setStatus("आपके GLIME account की पहचान verify हो गई है।");
+}
+
+async function checkSession(){
+  const { data } = await sb.auth.getSession();
+  if (data?.session?.user) await loadAuthorization();
+}
+
+document.getElementById("loginBtn").onclick = async () => {
+  showError(""); setStatus("Login हो रहा है...");
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  if (!email || !password) { showError("Email और password भरें."); return; }
+
+  const { error } = await sb.auth.signInWithPassword({email,password});
+  if (error) { showError(error.message); setStatus(""); return; }
+  await loadAuthorization();
+};
+
+document.getElementById("approveBtn").onclick = async () => {
+  showError(""); setStatus("Access approve किया जा रहा है...");
+  const { data, error } = await sb.auth.oauth.approveAuthorization(authorizationId);
+  if (error) { showError(error.message); setStatus(""); return; }
+  location.replace(data.redirect_url);
+};
+
+document.getElementById("denyBtn").onclick = async () => {
+  showError(""); setStatus("Request deny किया जा रहा है...");
+  const { data, error } = await sb.auth.oauth.denyAuthorization(authorizationId);
+  if (error) { showError(error.message); setStatus(""); return; }
+  location.replace(data.redirect_url);
+};
+
+checkSession();
+</script>
+</body>
+</html>
