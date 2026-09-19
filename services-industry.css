@@ -58,22 +58,16 @@ button {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
   color: var(--text);
   text-decoration: none;
-  font-weight: 800;
-  letter-spacing: 0.08em;
 }
 
-.brand-mark {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  color: #fff;
-  background: #111827;
-  font-size: 15px;
+.brand-logo {
+  display: block;
+  width: 96px;
+  height: 48px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .step-label {
