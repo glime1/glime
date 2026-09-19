@@ -1,10 +1,15 @@
 /* =========================================================
    GLIME — Services / Offers Manager
-   Version: Architecture-aligned Services Core
+   FINAL ARCHITECTURE-ALIGNED CORE
+   Version: 1.0
    ========================================================= */
 
 (() => {
   "use strict";
+
+  /* =========================================================
+     SUPABASE
+     ========================================================= */
 
   const SUPABASE_URL =
     window.GLIME_SUPABASE_URL ||
@@ -16,77 +21,97 @@
     window.SUPABASE_ANON_KEY ||
     "";
 
-  /*
-    This file expects one of these to already exist:
-      window.supabaseClient
-      window.supabase
-      window.sb
-
-    If your project initializes Supabase differently, the
-    existing client is preferred.
-  */
-
   const sb =
     window.supabaseClient ||
     window.supabase ||
     window.sb ||
     null;
 
+  /* =========================================================
+     STATE
+     ========================================================= */
+
   const state = {
     client: null,
+
     industries: [],
     businessModels: [],
     customBusinessModels: [],
     templates: [],
+
     categories: [],
     offers: [],
+
     currentOffer: null,
     currentVersion: null,
     currentBinding: null,
+    sourceVersion: null,
+
     currentStep: 1,
     totalSteps: 7,
-    editing: false,
-    saving: false,
+
     availability: [],
-    sourceVersion: null,
-    setupSaved: false
+
+    setupSaved: false,
+    saving: false,
+    initialized: false
   };
 
   /* =========================================================
      DOM HELPERS
      ========================================================= */
 
-  const $ = (id) => document.getElementById(id);
+  const $ = (id) =>
+    document.getElementById(id);
 
-  const qs = (selector, root = document) =>
+  const qs = (
+    selector,
+    root = document
+  ) =>
     root.querySelector(selector);
 
-  const qsa = (selector, root = document) =>
+  const qsa = (
+    selector,
+    root = document
+  ) =>
     [...root.querySelectorAll(selector)];
 
   function safeText(value) {
-    return value == null ? "" : String(value);
+    return value == null
+      ? ""
+      : String(value);
   }
 
   function setText(id, value) {
     const el = $(id);
-    if (el) el.textContent = safeText(value);
+    if (el) {
+      el.textContent =
+        safeText(value);
+    }
   }
 
   function setValue(id, value) {
     const el = $(id);
     if (!el) return;
-    el.value = value == null ? "" : value;
+
+    el.value =
+      value == null
+        ? ""
+        : value;
   }
 
   function getValue(id) {
     const el = $(id);
-    return el ? el.value.trim() : "";
+    return el
+      ? String(el.value || "").trim()
+      : "";
   }
 
   function getRawValue(id) {
     const el = $(id);
-    return el ? el.value : "";
+    return el
+      ? el.value || ""
+      : "";
   }
 
   function show(el, visible = true) {
@@ -96,24 +121,43 @@
 
   function setDisabled(id, disabled) {
     const el = $(id);
-    if (el) el.disabled = !!disabled;
+    if (el) {
+      el.disabled = !!disabled;
+    }
   }
 
-  function notify(message, type = "info") {
+  function notify(
+    message,
+    type = "info"
+  ) {
     const el = $("message");
     if (!el) return;
 
-    el.textContent = message;
+    el.textContent =
+      safeText(message);
+
     el.dataset.type = type;
 
-    clearTimeout(notify._timer);
-    notify._timer = setTimeout(() => {
-      if (el) el.textContent = "";
-    }, 5000);
+    clearTimeout(
+      notify._timer
+    );
+
+    notify._timer =
+      setTimeout(() => {
+        if (el) {
+          el.textContent = "";
+        }
+      }, 5000);
   }
 
-  function handleError(error, fallback = "Something went wrong.") {
-    console.error("[GLIME Services]", error);
+  function handleError(
+    error,
+    fallback = "Something went wrong."
+  ) {
+    console.error(
+      "[GLIME Services]",
+      error
+    );
 
     const message =
       error?.message ||
@@ -121,22 +165,39 @@
       error?.details ||
       fallback;
 
-    notify(message, "error");
+    notify(
+      message,
+      "error"
+    );
   }
 
   function slugify(value) {
     return safeText(value)
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
+      .replace(
+        /[^a-z0-9]+/g,
+        "-"
+      )
+      .replace(
+        /^-+|-+$/g,
+        ""
+      )
       .slice(0, 100);
   }
 
-  function parseJson(value, fallback) {
-    if (!value) return fallback;
+  function parseJson(
+    value,
+    fallback = {}
+  ) {
+    if (!value) {
+      return fallback;
+    }
 
-    if (typeof value === "object") {
+    if (
+      typeof value ===
+      "object"
+    ) {
       return value;
     }
 
@@ -147,40 +208,81 @@
     }
   }
 
-  function jsonOrNull(value) {
-    if (!value || !String(value).trim()) return null;
-
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
+  function getMetadata(
+    object
+  ) {
+    return parseJson(
+      object?.metadata,
+      {}
+    );
   }
 
-  function arrayFromText(value) {
+  function arrayFromText(
+    value
+  ) {
     if (!value) return [];
 
     return String(value)
       .split(/\r?\n/)
-      .map((x) => x.trim())
+      .map((x) =>
+        x.trim()
+      )
       .filter(Boolean);
   }
 
-  function textFromArray(value) {
-    if (!Array.isArray(value)) return "";
+  function textFromArray(
+    value
+  ) {
+    if (
+      !Array.isArray(value)
+    ) {
+      return "";
+    }
+
     return value.join("\n");
   }
 
-  function getMetadata(obj) {
-    return parseJson(obj?.metadata, {}) || {};
+  function escapeHtml(value) {
+    return safeText(value)
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
+  }
+
+  function localTimezone() {
+    return (
+      Intl.DateTimeFormat()
+        .resolvedOptions()
+        .timeZone ||
+      "Asia/Kolkata"
+    );
   }
 
   /* =========================================================
-     SUPABASE
+     SUPABASE CLIENT
      ========================================================= */
 
   async function getSupabaseClient() {
-    if (sb) return sb;
+    if (sb) {
+      return sb;
+    }
 
     if (
       SUPABASE_URL &&
@@ -194,23 +296,100 @@
     }
 
     throw new Error(
-      "Supabase client is not available on this page."
+      "Supabase client is not available."
     );
   }
 
   async function getAuthenticatedUser() {
-    const client = await getSupabaseClient();
+    const client =
+      await getSupabaseClient();
 
-    const { data, error } =
+    const {
+      data,
+      error
+    } =
       await client.auth.getUser();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     if (!data?.user) {
-      throw new Error("Please sign in first.");
+      throw new Error(
+        "Please sign in first."
+      );
     }
 
     return data.user;
+  }
+
+  /* =========================================================
+     DATABASE HELPERS
+     ========================================================= */
+
+  async function selectRows(
+    table,
+    columns = "*",
+    filters = {}
+  ) {
+    const client =
+      await getSupabaseClient();
+
+    let query =
+      client
+        .from(table)
+        .select(columns);
+
+    Object.entries(
+      filters
+    ).forEach(
+      ([key, value]) => {
+        if (
+          value !== undefined &&
+          value !== null
+        ) {
+          query = query.eq(
+            key,
+            value
+          );
+        }
+      }
+    );
+
+    const {
+      data,
+      error
+    } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
+  }
+
+  async function insertRow(
+    table,
+    payload
+  ) {
+    const client =
+      await getSupabaseClient();
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .from(table)
+        .insert(payload)
+        .select()
+        .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
   }
 
   /* =========================================================
@@ -218,21 +397,28 @@
      ========================================================= */
 
   async function loadClient() {
-    const client = await getSupabaseClient();
-    const user = await getAuthenticatedUser();
+    const client =
+      await getSupabaseClient();
 
-    /*
-      Existing GLIME architecture uses client_data.id as the
-      tenant identity and auth_user_id as ownership.
-    */
+    const user =
+      await getAuthenticatedUser();
 
-    const { data, error } = await client
-      .from("client_data")
-      .select("*")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
+    const {
+      data,
+      error
+    } =
+      await client
+        .from("client_data")
+        .select("*")
+        .eq(
+          "auth_user_id",
+          user.id
+        )
+        .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     if (!data) {
       throw new Error(
@@ -242,270 +428,340 @@
 
     state.client = data;
 
+    /*
+      IMPORTANT:
+
+      client_data.id
+        -> bigint
+        -> used by new architecture tables
+
+      client_data.client_id
+        -> text
+        -> used by legacy/current offer tables
+
+      These MUST NOT be mixed.
+    */
+
     setText(
       "clientBadge",
       data.business_name ||
         data.company_name ||
+        data.client_name ||
         data.name ||
+        data.project_name ||
+        data.client_id ||
         `Client ${data.id}`
     );
 
     return data;
   }
 
-  /* =========================================================
-     GENERIC DATABASE HELPERS
-     ========================================================= */
+  function tenantOfferId() {
+    if (
+      !state.client?.client_id
+    ) {
+      throw new Error(
+        "Client tenant identifier is missing."
+      );
+    }
 
-  async function selectRows(table, columns = "*", filters = {}) {
-    const client = await getSupabaseClient();
-
-    let query = client
-      .from(table)
-      .select(columns);
-
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.eq(key, value);
-      }
-    });
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    return data || [];
+    return state.client.client_id;
   }
 
-  async function insertRow(table, payload) {
-    const client = await getSupabaseClient();
+  function tenantConfigId() {
+    if (
+      !state.client?.id
+    ) {
+      throw new Error(
+        "Client configuration identifier is missing."
+      );
+    }
 
-    const { data, error } = await client
-      .from(table)
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return data;
-  }
-
-  async function updateRow(table, filters, payload) {
-    const client = await getSupabaseClient();
-
-    let query = client
-      .from(table)
-      .update(payload);
-
-    Object.entries(filters).forEach(([key, value]) => {
-      query = query.eq(key, value);
-    });
-
-    const { data, error } =
-      await query.select().maybeSingle();
-
-    if (error) throw error;
-
-    return data;
+    return state.client.id;
   }
 
   /* =========================================================
-     SETUP — INDUSTRY / BUSINESS MODEL
+     INDUSTRIES
      ========================================================= */
 
   async function loadIndustries() {
-    const rows = await selectRows(
-      "industries",
-      "id,name,slug,description,is_active",
-      { is_active: true }
-    );
+    const rows =
+      await selectRows(
+        "industries",
+        "id,name,slug,description,is_active",
+        {
+          is_active: true
+        }
+      );
 
-    state.industries = rows;
+    state.industries =
+      rows.sort(
+        (a, b) =>
+          safeText(a.name)
+            .localeCompare(
+              safeText(b.name)
+            )
+      );
 
-    const select = $("industrySelect");
+    const select =
+      $("industrySelect");
 
     if (!select) return;
 
-    const current = select.value;
+    const current =
+      select.value;
 
     select.innerHTML =
       `<option value="">Select industry</option>` +
-      rows
-        .sort((a, b) =>
-          safeText(a.name).localeCompare(
-            safeText(b.name)
-          )
-        )
+      state.industries
         .map(
           (item) =>
-            `<option value="${item.id}">
-              ${escapeHtml(item.name)}
+            `<option value="${escapeHtml(
+              item.id
+            )}">
+              ${escapeHtml(
+                item.name
+              )}
             </option>`
         )
         .join("");
 
     if (current) {
-      select.value = current;
+      select.value =
+        current;
     }
   }
 
-  async function loadBusinessModels(industryId = null) {
-    const rows = await selectRows(
-      "business_models",
-      "id,name,slug,industry_id,description,is_active",
-      { is_active: true }
-    );
-
-    state.businessModels = rows;
-
-    await loadCustomBusinessModels();
-
-    const select = $("businessModelSelect");
-
-    if (!select) return;
-
-    const current = select.value;
-
-    const filtered = industryId
-      ? rows.filter(
-          (x) =>
-            !x.industry_id ||
-            String(x.industry_id) === String(industryId)
-        )
-      : rows;
-
-    const customOptions =
-      state.customBusinessModels.map(
-        (item) => ({
-          ...item,
-          __custom: true
-        })
-      );
-
-    const all = [...filtered, ...customOptions];
-
-    select.innerHTML =
-      `<option value="">Select business model</option>` +
-      all
-        .sort((a, b) =>
-          safeText(a.name).localeCompare(
-            safeText(b.name)
-          )
-        )
-        .map((item) => {
-          const prefix = item.__custom
-            ? "Custom — "
-            : "";
-
-          return `
-            <option
-              value="${item.__custom ? `custom:${item.id}` : item.id}"
-            >
-              ${escapeHtml(prefix + item.name)}
-            </option>
-          `;
-        })
-        .join("");
-
-    if (current) {
-      select.value = current;
-    }
-  }
+  /* =========================================================
+     BUSINESS MODELS
+     ========================================================= */
 
   async function loadCustomBusinessModels() {
-    if (!state.client?.id) return;
+    if (
+      !state.client?.id
+    ) {
+      return;
+    }
 
     state.customBusinessModels =
       await selectRows(
         "client_custom_business_models",
         "*",
-        { client_id: state.client.id }
+        {
+          client_id:
+            tenantConfigId()
+        }
       );
   }
 
-  async function loadClientSetup() {
-    if (!state.client?.id) return;
-
-    const configurations =
-      await selectRows(
-        "client_industry_configurations",
-        "*",
-        { client_id: state.client.id }
-      );
-
-    const current =
-      configurations.find(
-        (x) =>
-          x.status === "active" ||
-          x.is_active === true
-      ) ||
-      configurations[0];
-
-    if (current) {
-      setValue(
-        "industrySelect",
-        current.industry_id || ""
-      );
-
-      await loadBusinessModels(
-        current.industry_id
-      );
-
-      setValue(
-        "businessModelSelect",
-        current.business_model_id
-          ? String(current.business_model_id)
-          : ""
-      );
-    } else {
-      await loadBusinessModels();
-    }
-
-    await loadClientCustomBusinessModelField();
-    updateSetupState();
-  }
-
-  async function loadClientCustomBusinessModelField() {
+  async function loadBusinessModels(
+    industryId = null
+  ) {
     const rows =
       await selectRows(
-        "client_custom_business_models",
-        "*",
-        { client_id: state.client.id }
+        "business_models",
+        "id,name,slug,industry_id,description,is_active",
+        {
+          is_active: true
+        }
       );
+
+    state.businessModels =
+      rows;
+
+    await loadCustomBusinessModels();
 
     const select =
       $("businessModelSelect");
 
     if (!select) return;
 
-    const custom =
-      rows.find(
-        (x) =>
-          x.is_active !== false
-      );
+    const current =
+      select.value;
 
-    if (custom) {
-      setValue(
-        "customBusinessModel",
-        custom.name || ""
-      );
+    const filtered =
+      industryId
+        ? rows.filter(
+            (item) =>
+              !item.industry_id ||
+              String(
+                item.industry_id
+              ) ===
+                String(
+                  industryId
+                )
+          )
+        : rows;
+
+    const custom =
+      state.customBusinessModels
+        .filter(
+          (item) =>
+            item.status !==
+            "archived"
+        )
+        .map(
+          (item) => ({
+            ...item,
+            __custom: true
+          })
+        );
+
+    const all = [
+      ...filtered,
+      ...custom
+    ];
+
+    all.sort(
+      (a, b) =>
+        safeText(a.name)
+          .localeCompare(
+            safeText(b.name)
+          )
+    );
+
+    select.innerHTML =
+      `<option value="">Select business model</option>` +
+      all
+        .map((item) => {
+          const value =
+            item.__custom
+              ? `custom:${item.id}`
+              : item.id;
+
+          const prefix =
+            item.__custom
+              ? "Custom — "
+              : "";
+
+          return `
+            <option value="${escapeHtml(
+              value
+            )}">
+              ${escapeHtml(
+                prefix +
+                  item.name
+              )}
+            </option>
+          `;
+        })
+        .join("");
+
+    if (current) {
+      select.value =
+        current;
     }
   }
 
+  /* =========================================================
+     CLIENT SETUP
+     ========================================================= */
+
+  async function loadClientSetup() {
+    if (
+      !state.client?.id
+    ) {
+      return;
+    }
+
+    const rows =
+      await selectRows(
+        "client_industry_configurations",
+        "*",
+        {
+          client_id:
+            tenantConfigId()
+        }
+      );
+
+    const current =
+      rows.find(
+        (item) =>
+          item.status ===
+          "active"
+      ) ||
+      rows[0];
+
+    if (current) {
+      setValue(
+        "industrySelect",
+        current.industry_id ||
+          ""
+      );
+
+      await loadBusinessModels(
+        current.industry_id
+      );
+
+      /*
+        Custom business model belongs to the
+        client config layer. Resolve it separately.
+      */
+
+      if (
+        current.id
+      ) {
+        const custom =
+          state.customBusinessModels.find(
+            (item) =>
+              String(
+                item.industry_configuration_id
+              ) ===
+              String(
+                current.id
+              )
+          );
+
+        if (custom) {
+          setValue(
+            "businessModelSelect",
+            `custom:${custom.id}`
+          );
+
+          setValue(
+            "customBusinessModel",
+            custom.name ||
+              ""
+          );
+        } else if (
+          current.business_model_id
+        ) {
+          setValue(
+            "businessModelSelect",
+            current.business_model_id
+          );
+        }
+      }
+    } else {
+      await loadBusinessModels();
+    }
+
+    updateSetupState();
+  }
+
   async function saveSetup() {
-    if (!state.client?.id) {
-      throw new Error("Client profile not loaded.");
+    if (
+      !state.client?.id
+    ) {
+      throw new Error(
+        "Client profile is not loaded."
+      );
     }
 
     const industryId =
-      getValue("industrySelect");
+      getValue(
+        "industrySelect"
+      );
 
-    let businessModelValue =
-      getValue("businessModelSelect");
+    const modelValue =
+      getValue(
+        "businessModelSelect"
+      );
 
-    const customBusinessModel =
-      getValue("customBusinessModel");
+    const customName =
+      getValue(
+        "customBusinessModel"
+      );
 
     if (!industryId) {
       throw new Error(
@@ -513,142 +769,268 @@
       );
     }
 
-    if (!businessModelValue) {
+    if (!modelValue) {
       throw new Error(
         "Please select a business model."
       );
     }
 
-    const client = await getSupabaseClient();
-
-    let businessModelId = null;
-
-    if (
-      businessModelValue.startsWith("custom:")
-    ) {
-      businessModelId = null;
-
-      const customId =
-        businessModelValue.split(":")[1];
-
-      if (customId) {
-        await client
-          .from("client_custom_business_models")
-          .update({
-            name:
-              customBusinessModel ||
-              "Custom Business Model",
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", customId)
-          .eq("client_id", state.client.id);
-      }
-    } else {
-      businessModelId =
-        businessModelValue;
-    }
-
-    /*
-      Upsert using the existing tenant-scoped
-      configuration model.
-    */
+    const client =
+      await getSupabaseClient();
 
     const existing =
       await selectRows(
         "client_industry_configurations",
         "*",
-        { client_id: state.client.id }
-      );
-
-    const active =
-      existing.find(
-        (x) =>
-          x.status === "active" ||
-          x.is_active === true
-      ) || existing[0];
-
-    const payload = {
-      client_id: state.client.id,
-      industry_id: industryId,
-      business_model_id: businessModelId,
-      status: "active",
-      updated_at: new Date().toISOString()
-    };
-
-    if (active) {
-      await updateRow(
-        "client_industry_configurations",
         {
-          id: active.id,
-          client_id: state.client.id
-        },
-        payload
+          client_id:
+            tenantConfigId()
+        }
       );
+
+    let configuration =
+      existing.find(
+        (item) =>
+          item.status ===
+          "active"
+      ) ||
+      existing[0] ||
+      null;
+
+    let businessModelId =
+      null;
+
+    let customBusinessModelId =
+      null;
+
+    if (
+      modelValue.startsWith(
+        "custom:"
+      )
+    ) {
+      customBusinessModelId =
+        modelValue.split(
+          ":"
+        )[1] || null;
+
+      const custom =
+        state.customBusinessModels.find(
+          (item) =>
+            String(
+              item.id
+            ) ===
+            String(
+              customBusinessModelId
+            )
+        );
+
+      if (
+        custom &&
+        customName &&
+        customName !==
+          custom.name
+      ) {
+        const {
+          error
+        } =
+          await client
+            .from(
+              "client_custom_business_models"
+            )
+            .update({
+              name:
+                customName,
+              slug:
+                slugify(
+                  customName
+                ),
+              updated_at:
+                new Date().toISOString()
+            })
+            .eq(
+              "id",
+              custom.id
+            )
+            .eq(
+              "client_id",
+              tenantConfigId()
+            );
+
+        if (error) {
+          throw error;
+        }
+      }
     } else {
-      await insertRow(
-        "client_industry_configurations",
-        payload
-      );
+      businessModelId =
+        modelValue;
     }
 
-    state.setupSaved = true;
+    const payload = {
+      client_id:
+        tenantConfigId(),
+
+      industry_id:
+        industryId,
+
+      status:
+        "active",
+
+      selection_source:
+        "services-ui",
+
+      updated_at:
+        new Date().toISOString()
+    };
+
+    if (configuration) {
+      const {
+        data,
+        error
+      } =
+        await client
+          .from(
+            "client_industry_configurations"
+          )
+          .update(
+            payload
+          )
+          .eq(
+            "id",
+            configuration.id
+          )
+          .eq(
+            "client_id",
+            tenantConfigId()
+          )
+          .select()
+          .single();
+
+      if (error) {
+        throw error;
+      }
+
+      configuration =
+        data;
+    } else {
+      const {
+        data,
+        error
+      } =
+        await client
+          .from(
+            "client_industry_configurations"
+          )
+          .insert(
+            payload
+          )
+          .select()
+          .single();
+
+      if (error) {
+        throw error;
+      }
+
+      configuration =
+        data;
+    }
+
+    /*
+      If a custom model is selected but doesn't exist yet,
+      create it for this tenant only.
+    */
+
+    if (
+      modelValue.startsWith(
+        "custom:"
+      ) &&
+      customBusinessModelId
+    ) {
+      await client
+        .from(
+          "client_custom_business_models"
+        )
+        .update({
+          industry_configuration_id:
+            configuration.id,
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq(
+          "id",
+          customBusinessModelId
+        )
+        .eq(
+          "client_id",
+          tenantConfigId()
+        );
+    }
+
+    state.setupSaved =
+      true;
 
     updateSetupState();
+
+    await loadTemplates();
 
     notify(
       "Business setup saved successfully.",
       "success"
     );
-
-    await loadTemplates();
   }
 
   function updateSetupState() {
-    const industry =
-      getValue("industrySelect");
-
-    const model =
-      getValue("businessModelSelect");
-
     const complete =
-      !!industry && !!model;
+      !!getValue(
+        "industrySelect"
+      ) &&
+      !!getValue(
+        "businessModelSelect"
+      );
 
-    state.setupSaved = complete;
+    state.setupSaved =
+      complete;
 
-    const el = $("setupState");
+    const el =
+      $("setupState");
 
-    if (el) {
-      el.textContent = complete
+    if (!el) return;
+
+    el.textContent =
+      complete
         ? "Business setup complete"
         : "Business setup required";
 
-      el.dataset.state = complete
+    el.dataset.state =
+      complete
         ? "complete"
         : "incomplete";
-    }
   }
 
   /* =========================================================
-     TEMPLATE
+     TEMPLATES
      ========================================================= */
 
   async function loadTemplates() {
     const industryId =
-      getValue("industrySelect");
+      getValue(
+        "industrySelect"
+      );
 
     if (!industryId) {
-      state.templates = [];
+      state.templates =
+        [];
       return;
     }
 
-    const rows =
+    state.templates =
       await selectRows(
         "industry_templates",
         "*",
-        { industry_id: industryId }
+        {
+          industry_id:
+            industryId
+        }
       );
-
-    state.templates = rows || [];
   }
 
   /* =========================================================
@@ -656,17 +1038,44 @@
      ========================================================= */
 
   async function loadCategories() {
-    if (!state.client?.id) return;
+    if (
+      !state.client?.client_id
+    ) {
+      return;
+    }
 
-    const client = await getSupabaseClient();
+    const client =
+      await getSupabaseClient();
 
-    let query = client
-      .from("offer_categories")
-      .select("*")
-      .eq("client_id", state.client.id);
-
-    const { data, error } =
-      await query.order("name");
+    const {
+      data,
+      error
+    } =
+      await client
+        .from(
+          "offer_categories"
+        )
+        .select("*")
+        .eq(
+          "client_id",
+          tenantOfferId()
+        )
+        .eq(
+          "is_active",
+          true
+        )
+        .order(
+          "sort_order",
+          {
+            ascending: true
+          }
+        })
+        .order(
+          "name",
+          {
+            ascending: true
+          }
+        );
 
     if (error) {
       console.warn(
@@ -674,23 +1083,30 @@
         error
       );
 
-      state.categories = [];
+      state.categories =
+        [];
+
       renderCategories();
+
       return;
     }
 
-    state.categories = data || [];
+    state.categories =
+      data || [];
 
     renderCategories();
     populateCategorySelect();
   }
 
   function renderCategories() {
-    const list = $("categoryList");
+    const list =
+      $("categoryList");
 
     if (!list) return;
 
-    if (!state.categories.length) {
+    if (
+      !state.categories.length
+    ) {
       list.innerHTML =
         `<div class="empty-state">
           No categories yet.
@@ -710,7 +1126,8 @@
               )}"
             >
               ${escapeHtml(
-                category.name || "Unnamed"
+                category.name ||
+                  "Unnamed"
               )}
             </button>
           `
@@ -720,17 +1137,27 @@
     qsa(
       ".category-item",
       list
-    ).forEach((button) => {
-      button.addEventListener(
-        "click",
-        async () => {
-          const id =
-            button.dataset.categoryId;
-
-          await loadOffers(id);
-        }
-      );
-    });
+    ).forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            try {
+              await loadOffers(
+                button.dataset
+                  .categoryId
+              );
+            } catch (
+              error
+            ) {
+              handleError(
+                error
+              );
+            }
+          }
+        );
+      }
+    );
   }
 
   function populateCategorySelect() {
@@ -751,7 +1178,8 @@
               category.id
             )}">
               ${escapeHtml(
-                category.name || "Unnamed"
+                category.name ||
+                  "Unnamed"
               )}
             </option>
           `
@@ -759,7 +1187,8 @@
         .join("");
 
     if (current) {
-      select.value = current;
+      select.value =
+        current;
     }
   }
 
@@ -769,22 +1198,43 @@
         "Enter category name:"
       );
 
-    if (!name?.trim()) return;
+    if (
+      !name ||
+      !name.trim()
+    ) {
+      return;
+    }
 
-    const slug =
-      slugify(name);
+    const cleanName =
+      name.trim();
 
     const category =
       await insertRow(
         "offer_categories",
         {
-          client_id: state.client.id,
-          name: name.trim(),
-          slug
+          client_id:
+            tenantOfferId(),
+
+          name:
+            cleanName,
+
+          slug:
+            slugify(
+              cleanName
+            ),
+
+          is_active:
+            true,
+
+          sort_order:
+            state.categories
+              .length
         }
       );
 
-    state.categories.push(category);
+    state.categories.push(
+      category
+    );
 
     renderCategories();
     populateCategorySelect();
@@ -804,8 +1254,14 @@
      OFFERS
      ========================================================= */
 
-  async function loadOffers(categoryId = null) {
-    if (!state.client?.id) return;
+  async function loadOffers(
+    categoryId = null
+  ) {
+    if (
+      !state.client?.client_id
+    ) {
+      return;
+    }
 
     const client =
       await getSupabaseClient();
@@ -819,58 +1275,98 @@
         `)
         .eq(
           "client_id",
-          state.client.id
+          tenantOfferId()
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
         );
 
     if (categoryId) {
-      query = query.eq(
-        "category_id",
-        categoryId
-      );
+      query =
+        query.eq(
+          "category_id",
+          categoryId
+        );
     }
 
-    const { data, error } =
-      await query.order(
-        "created_at",
-        { ascending: false }
-      );
+    const {
+      data,
+      error
+    } =
+      await query;
 
     if (error) {
-      /*
-        Some older GLIME databases use `category`
-        instead of category_id. Retry without category
-        filtering so the catalog remains usable.
-      */
-
-      const retry =
-        await client
-          .from("offers")
-          .select("*")
-          .eq(
-            "client_id",
-            state.client.id
-          )
-          .order(
-            "created_at",
-            { ascending: false }
-          );
-
-      if (retry.error) {
-        throw error;
-      }
-
-      state.offers =
-        retry.data || [];
-    } else {
-      state.offers =
-        data || [];
+      throw error;
     }
+
+    state.offers =
+      data || [];
 
     renderOffers();
 
     setText(
       "offerCount",
-      String(state.offers.length)
+      String(
+        state.offers.length
+      )
+    );
+  }
+
+  function findCurrentVersion(
+    offer
+  ) {
+    const versions =
+      Array.isArray(
+        offer?.offer_versions
+      )
+        ? offer.offer_versions
+        : [];
+
+    if (
+      offer?.current_version_id
+    ) {
+      const exact =
+        versions.find(
+          (version) =>
+            String(
+              version.id
+            ) ===
+            String(
+              offer.current_version_id
+            )
+        );
+
+      if (exact) {
+        return exact;
+      }
+    }
+
+    return (
+      versions.find(
+        (version) =>
+          version.status ===
+          "draft"
+      ) ||
+      versions.find(
+        (version) =>
+          version.status ===
+          "review"
+      ) ||
+      versions.find(
+        (version) =>
+          version.status ===
+          "approved"
+      ) ||
+      versions.find(
+        (version) =>
+          version.status ===
+          "published"
+      ) ||
+      versions[0] ||
+      null
     );
   }
 
@@ -880,7 +1376,9 @@
 
     if (!list) return;
 
-    if (!state.offers.length) {
+    if (
+      !state.offers.length
+    ) {
       list.innerHTML =
         `<div class="empty-state">
           No offers yet. Create your first service or product.
@@ -891,20 +1389,20 @@
     list.innerHTML =
       state.offers
         .map((offer) => {
-          const status =
-            safeText(
-              offer.status || "draft"
-            ).toLowerCase();
-
-          const currentVersion =
+          const version =
             findCurrentVersion(
               offer
             );
 
           const title =
-            currentVersion?.title ||
+            version?.title ||
             offer.name ||
             "Untitled Offer";
+
+          const status =
+            version?.status ||
+            offer.status ||
+            "draft";
 
           return `
             <button
@@ -915,16 +1413,20 @@
               )}"
             >
               <span class="offer-item-title">
-                ${escapeHtml(title)}
+                ${escapeHtml(
+                  title
+                )}
               </span>
 
               <span class="offer-item-meta">
                 ${escapeHtml(
                   offer.offer_type ||
-                  "Service"
+                    "service"
                 )}
                 ·
-                ${escapeHtml(status)}
+                ${escapeHtml(
+                  status
+                )}
               </span>
             </button>
           `;
@@ -934,58 +1436,38 @@
     qsa(
       ".offer-item",
       list
-    ).forEach((button) => {
-      button.addEventListener(
-        "click",
-        async () => {
-          await openOffer(
-            button.dataset.offerId
-          );
-        }
-      );
-    });
-  }
-
-  function findCurrentVersion(offer) {
-    const versions =
-      Array.isArray(
-        offer.offer_versions
-      )
-        ? offer.offer_versions
-        : [];
-
-    if (
-      offer.current_version_id
-    ) {
-      return (
-        versions.find(
-          (v) =>
-            String(v.id) ===
-            String(
-              offer.current_version_id
-            )
-        ) ||
-        versions[0]
-      );
-    }
-
-    return (
-      versions.find(
-        (v) => v.status === "published"
-      ) ||
-      versions.find(
-        (v) => v.status === "draft"
-      ) ||
-      versions[0]
+    ).forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            try {
+              await openOffer(
+                button.dataset
+                  .offerId
+              );
+            } catch (
+              error
+            ) {
+              handleError(
+                error,
+                "Unable to open offer."
+              );
+            }
+          }
+        );
+      }
     );
   }
 
   /* =========================================================
-     CREATE OFFER
+     CREATE NEW OFFER
      ========================================================= */
 
   async function createNewOffer() {
-    if (!state.client?.id) {
+    if (
+      !state.client?.client_id
+    ) {
       throw new Error(
         "Client profile is not loaded."
       );
@@ -994,46 +1476,81 @@
     const client =
       await getSupabaseClient();
 
-    const tempName =
+    const name =
       "New Offer";
 
-    const slug =
-      `${slugify(tempName)}-${Date.now()}`;
+    const uniqueSlug =
+      `${slugify(
+        name
+      )}-${Date.now()}`;
 
-    const offerPayload = {
-      client_id: state.client.id,
-      name: tempName,
-      slug,
-      offer_type: "service",
-      status: "draft"
-    };
-
-    const { data: offer, error } =
+    const {
+      data: offer,
+      error: offerError
+    } =
       await client
         .from("offers")
-        .insert(offerPayload)
+        .insert({
+          client_id:
+            tenantOfferId(),
+
+          name,
+
+          slug:
+            uniqueSlug,
+
+          offer_type:
+            "service",
+
+          status:
+            "draft"
+        })
         .select()
         .single();
 
-    if (error) throw error;
+    if (offerError) {
+      throw offerError;
+    }
 
-    const versionPayload = {
-      offer_id: offer.id,
-      version_number: 1,
-      status: "draft",
-      title: tempName,
-      description: "",
-      sales_talking_points: [],
-      allowed_claims: [],
-      restrictions: [],
-      customer_eligibility: [],
-      metadata: {}
-    };
-
-    const { data: version, error: versionError } =
+    const {
+      data: version,
+      error: versionError
+    } =
       await client
-        .from("offer_versions")
-        .insert(versionPayload)
+        .from(
+          "offer_versions"
+        )
+        .insert({
+          offer_id:
+            offer.id,
+
+          version_number:
+            1,
+
+          status:
+            "draft",
+
+          title:
+            name,
+
+          description:
+            "",
+
+          sales_talking_points:
+            [],
+
+          allowed_claims:
+            [],
+
+          restrictions:
+            [],
+
+          customer_eligibility:
+            [],
+
+          metadata:
+            {}
+        })
         .select()
         .single();
 
@@ -1041,22 +1558,43 @@
       await client
         .from("offers")
         .delete()
-        .eq("id", offer.id);
+        .eq(
+          "id",
+          offer.id
+        )
+        .eq(
+          "client_id",
+          tenantOfferId()
+        );
 
       throw versionError;
     }
 
-    await client
-      .from("offers")
-      .update({
-        current_version_id:
-          version.id
-      })
-      .eq("id", offer.id)
-      .eq(
-        "client_id",
-        state.client.id
-      );
+    const {
+      error:
+        currentError
+    } =
+      await client
+        .from("offers")
+        .update({
+          current_version_id:
+            version.id,
+
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq(
+          "id",
+          offer.id
+        )
+        .eq(
+          "client_id",
+          tenantOfferId()
+        );
+
+    if (currentError) {
+      throw currentError;
+    }
 
     state.currentOffer =
       offer;
@@ -1070,13 +1608,11 @@
     state.sourceVersion =
       null;
 
-    state.editing = true;
-
     resetForm();
 
     setValue(
       "offerName",
-      tempName
+      name
     );
 
     await ensureOfferBinding(
@@ -1087,6 +1623,8 @@
     showEditor();
 
     await loadOffers();
+
+    updateVersionActions();
 
     notify(
       "Draft offer created.",
@@ -1104,7 +1642,10 @@
     const client =
       await getSupabaseClient();
 
-    const { data: offer, error } =
+    const {
+      data: offer,
+      error: offerError
+    } =
       await client
         .from("offers")
         .select("*")
@@ -1114,15 +1655,22 @@
         )
         .eq(
           "client_id",
-          state.client.id
+          tenantOfferId()
         )
         .single();
 
-    if (error) throw error;
+    if (offerError) {
+      throw offerError;
+    }
 
-    const { data: versions, error: versionError } =
+    const {
+      data: versions,
+      error: versionError
+    } =
       await client
-        .from("offer_versions")
+        .from(
+          "offer_versions"
+        )
         .select("*")
         .eq(
           "offer_id",
@@ -1130,29 +1678,21 @@
         )
         .order(
           "version_number",
-          { ascending: false }
+          {
+            ascending: false
+          }
         );
 
-    if (versionError)
+    if (versionError) {
       throw versionError;
+    }
 
-    let version =
-      versions.find(
-        (v) =>
-          String(v.id) ===
-          String(
-            offer.current_version_id
-          )
-      ) ||
-      versions.find(
-        (v) =>
-          v.status === "draft"
-      ) ||
-      versions.find(
-        (v) =>
-          v.status === "published"
-      ) ||
-      versions[0];
+    const version =
+      findCurrentVersion({
+        ...offer,
+        offer_versions:
+          versions || []
+      });
 
     if (!version) {
       throw new Error(
@@ -1169,8 +1709,6 @@
     state.sourceVersion =
       null;
 
-    state.editing = true;
-
     await loadOfferBinding(
       offer.id
     );
@@ -1181,12 +1719,12 @@
 
     await loadOfferIntoForm();
 
+    state.currentStep =
+      1;
+
     showEditor();
 
-    state.currentStep = 1;
-
     updateStepUI();
-
     updateVersionActions();
   }
 
@@ -1197,18 +1735,37 @@
   async function loadOfferBinding(
     offerId
   ) {
-    const rows =
-      await selectRows(
-        "offer_catalog_bindings",
-        "*",
-        {
-          offer_id: offerId,
-          client_id: state.client.id
-        }
+    try {
+      const rows =
+        await selectRows(
+          "offer_catalog_bindings",
+          "*",
+          {
+            offer_id:
+              offerId,
+
+            client_id:
+              tenantConfigId()
+          }
+        );
+
+      state.currentBinding =
+        rows[0] || null;
+
+      return state.currentBinding;
+    } catch (
+      error
+    ) {
+      console.warn(
+        "[GLIME] Binding load warning:",
+        error
       );
 
-    state.currentBinding =
-      rows[0] || null;
+      state.currentBinding =
+        null;
+
+      return null;
+    }
   }
 
   async function ensureOfferBinding(
@@ -1222,82 +1779,127 @@
       offerId
     );
 
-    if (state.currentBinding) {
+    if (
+      state.currentBinding
+    ) {
       return state.currentBinding;
     }
 
-    const industryId =
-      getValue("industrySelect");
+    let entityTypeId =
+      null;
 
-    let entityTypeId = null;
-
-    if (industryId) {
-      const entities =
+    try {
+      const entityTypes =
         await selectRows(
           "entity_types",
-          "*",
+          "id,name,slug",
           {}
         );
 
-      const serviceEntity =
-        entities.find(
-          (x) =>
-            ["service", "product", "offer"]
-              .includes(
-                safeText(
-                  x.slug ||
-                    x.name
-                ).toLowerCase()
-              )
+      const type =
+        entityTypes.find(
+          (item) => {
+            const value =
+              safeText(
+                item.slug ||
+                  item.name
+              ).toLowerCase();
+
+            return [
+              "service",
+              "product",
+              "offer"
+            ].includes(
+              value
+            );
+          }
         );
 
       entityTypeId =
-        serviceEntity?.id ||
-        null;
+        type?.id || null;
+    } catch (
+      error
+    ) {
+      console.warn(
+        "[GLIME] Entity type lookup:",
+        error
+      );
     }
 
     const payload = {
-      offer_id: offerId,
-      client_id: state.client.id,
-      entity_type_id: entityTypeId,
+      offer_id:
+        offerId,
+
+      client_id:
+        tenantConfigId(),
+
+      entity_type_id:
+        entityTypeId,
+
       template_configuration_id:
         null,
-      status: "draft",
-      custom_data: {},
-      metadata: {
-        source: "services-ui",
-        version_id: versionId
-      }
+
+      status:
+        "draft",
+
+      custom_data:
+        {
+          version_id:
+            versionId
+        },
+
+      metadata:
+        {
+          source:
+            "services-ui",
+
+          version_id:
+            versionId
+        }
     };
 
-    const { data, error } =
-      await client
-        .from("offer_catalog_bindings")
-        .insert(payload)
-        .select()
-        .single();
+    try {
+      const {
+        data,
+        error
+      } =
+        await client
+          .from(
+            "offer_catalog_bindings"
+          )
+          .insert(
+            payload
+          )
+          .select()
+          .single();
 
-    if (error) {
+      if (error) {
+        throw error;
+      }
+
+      state.currentBinding =
+        data;
+
+      return data;
+    } catch (
+      error
+    ) {
       /*
-        Binding is an architecture enhancement.
-        Existing offer editing should not break if a
-        legacy database temporarily lacks the binding.
+        Binding is important to the new architecture,
+        but a legacy offer must not become uneditable
+        because the binding is temporarily unavailable.
       */
+
       console.warn(
-        "[GLIME] Binding creation failed:",
+        "[GLIME] Binding creation warning:",
         error
       );
 
       return null;
     }
-
-    state.currentBinding =
-      data;
-
-    return data;
   }
 
-  /* =========================================================
+     /* =========================================================
      FORM LOAD
      ========================================================= */
 
@@ -1308,11 +1910,17 @@
     const version =
       state.currentVersion;
 
-    if (!offer || !version)
+    if (
+      !offer ||
+      !version
+    ) {
       return;
+    }
 
     const metadata =
-      getMetadata(version);
+      getMetadata(
+        version
+      );
 
     setValue(
       "offerName",
@@ -1329,8 +1937,8 @@
 
     setValue(
       "shortDescription",
-      metadata.short_description ||
-        offer.short_description ||
+      offer.short_description ||
+        metadata.short_description ||
         ""
     );
 
@@ -1341,14 +1949,11 @@
         ""
     );
 
-    const categoryId =
-      offer.category_id ||
-      metadata.category_id ||
-      "";
-
     setValue(
       "offerCategory",
-      categoryId
+      offer.category_id ||
+        metadata.category_id ||
+        ""
     );
 
     setValue(
@@ -1359,10 +1964,11 @@
 
     setValue(
       "eligibility",
-      metadata.eligibility ||
-        textFromArray(
-          version.customer_eligibility
-        )
+      textFromArray(
+        version.customer_eligibility
+      ) ||
+        metadata.eligibility ||
+        ""
     );
 
     setValue(
@@ -1375,10 +1981,6 @@
       "excluded",
       metadata.excluded ||
         ""
-    );
-
-    await loadOfferPricing(
-      version.id
     );
 
     setValue(
@@ -1470,6 +2072,10 @@
       )
     );
 
+    await loadOfferPricing(
+      version.id
+    );
+
     renderShareIdentity();
 
     renderAICheck(
@@ -1489,37 +2095,52 @@
     const client =
       await getSupabaseClient();
 
-    const { data: prices, error } =
+    const {
+      data,
+      error
+    } =
       await client
-        .from("offer_prices")
+        .from(
+          "offer_prices"
+        )
         .select("*")
         .eq(
           "offer_version_id",
           versionId
         )
         .eq(
-          "active",
+          "is_active",
           true
+        )
+        .is(
+          "variant_id",
+          null
         )
         .order(
           "created_at",
-          { ascending: true }
-        );
+          {
+            ascending: true
+          }
+        )
+        .limit(1);
 
     if (error) {
       console.warn(
         "[GLIME] Pricing load:",
         error
       );
+
+      return;
     }
 
     const price =
-      prices?.[0];
+      data?.[0];
 
     if (price) {
       setValue(
         "priceAmount",
-        price.amount ?? ""
+        price.amount ??
+          ""
       );
 
       setValue(
@@ -1551,9 +2172,33 @@
         price.max_amount ??
           ""
       );
+    } else {
+      setValue(
+        "priceCurrency",
+        "INR"
+      );
+
+      setValue(
+        "priceType",
+        "fixed"
+      );
     }
 
     renderRangeState();
+  }
+
+  function priceHasValue() {
+    return (
+      !!getValue(
+        "priceAmount"
+      ) ||
+      !!getValue(
+        "minAmount"
+      ) ||
+      !!getValue(
+        "maxAmount"
+      )
+    );
   }
 
   async function savePricing(
@@ -1562,28 +2207,23 @@
     const client =
       await getSupabaseClient();
 
-    const priceType =
-      getValue("priceType") ||
-      "fixed";
-
     const amount =
-      getValue("priceAmount");
-
-    const currency =
-      getValue("priceCurrency") ||
-      "INR";
-
-    const billingPeriod =
-      getValue("billingPeriod");
+      getValue(
+        "priceAmount"
+      );
 
     const minAmount =
-      getValue("minAmount");
+      getValue(
+        "minAmount"
+      );
 
     const maxAmount =
-      getValue("maxAmount");
+      getValue(
+        "maxAmount"
+      );
 
     /*
-      Don't create empty pricing records.
+      Do not create an empty price row.
     */
 
     if (
@@ -1594,21 +2234,74 @@
       return;
     }
 
-    /*
-      Update the existing active base price if
-      available. Otherwise insert one.
-    */
+    const payload = {
+      offer_version_id:
+        versionId,
 
-    const { data: existing, error } =
+      variant_id:
+        null,
+
+      amount:
+        amount
+          ? Number(
+              amount
+            )
+          : null,
+
+      currency:
+        getValue(
+          "priceCurrency"
+        ) ||
+        "INR",
+
+      price_type:
+        getValue(
+          "priceType"
+        ) ||
+        "fixed",
+
+      min_amount:
+        minAmount
+          ? Number(
+              minAmount
+            )
+          : null,
+
+      max_amount:
+        maxAmount
+          ? Number(
+              maxAmount
+            )
+          : null,
+
+      billing_period:
+        getValue(
+          "billingPeriod"
+        ) ||
+        null,
+
+      is_active:
+        true,
+
+      updated_at:
+        new Date().toISOString()
+    };
+
+    const {
+      data: existing,
+      error: findError
+    } =
       await client
-        .from("offer_prices")
-        .select("*")
+        .from(
+          "offer_prices"
+        )
+        .select("id")
         .eq(
           "offer_version_id",
           versionId
         )
         .eq(
-          "active",
+          "is_active",
           true
         )
         .is(
@@ -1617,71 +2310,74 @@
         )
         .order(
           "created_at",
-          { ascending: true }
+          {
+            ascending: true
+          }
         )
         .limit(1);
 
-    if (error) throw error;
+    if (findError) {
+      throw findError;
+    }
 
-    const payload = {
-      offer_version_id:
-        versionId,
-      variant_id: null,
-      amount:
-        amount
-          ? Number(amount)
-          : null,
-      currency,
-      price_type:
-        priceType,
-      min_amount:
-        minAmount
-          ? Number(minAmount)
-          : null,
-      max_amount:
-        maxAmount
-          ? Number(maxAmount)
-          : null,
-      billing_period:
-        billingPeriod ||
-        null,
-      active: true
-    };
+    if (
+      existing?.[0]
+    ) {
+      const {
+        error
+      } =
+        await client
+          .from(
+            "offer_prices"
+          )
+          .update(
+            payload
+          )
+          .eq(
+            "id",
+            existing[0].id
+          );
 
-    if (existing?.[0]) {
-      await client
-        .from("offer_prices")
-        .update(payload)
-        .eq(
-          "id",
-          existing[0].id
-        );
+      if (error) {
+        throw error;
+      }
     } else {
-      await client
-        .from("offer_prices")
-        .insert(payload);
+      const {
+        error
+      } =
+        await client
+          .from(
+            "offer_prices"
+          )
+          .insert(
+            payload
+          );
+
+      if (error) {
+        throw error;
+      }
     }
   }
 
   function renderRangeState() {
-    const type =
-      getValue("priceType");
-
     const row =
       $("rangeRow");
 
     if (!row) return;
 
-    const range =
-      [
+    const type =
+      getValue(
+        "priceType"
+      );
+
+    row.hidden =
+      ![
         "range",
         "starting_from",
         "from_to"
       ].includes(
         type
       );
-
-    row.hidden = !range;
   }
 
   /* =========================================================
@@ -1694,9 +2390,14 @@
     const client =
       await getSupabaseClient();
 
-    const { data, error } =
+    const {
+      data,
+      error
+    } =
       await client
-        .from("offer_availability")
+        .from(
+          "offer_availability"
+        )
         .select("*")
         .eq(
           "offer_version_id",
@@ -1704,7 +2405,15 @@
         )
         .order(
           "day_of_week",
-          { ascending: true }
+          {
+            ascending: true
+          }
+        )
+        .order(
+          "start_time",
+          {
+            ascending: true
+          }
         );
 
     if (error) {
@@ -1713,8 +2422,11 @@
         error
       );
 
-      state.availability = [];
+      state.availability =
+        [];
+
       renderAvailability();
+
       return;
     }
 
@@ -1730,13 +2442,26 @@
 
     if (!list) return;
 
-    if (!state.availability.length) {
+    if (
+      !state.availability.length
+    ) {
       list.innerHTML =
         `<div class="availability-empty">
           No availability rules added.
         </div>`;
+
       return;
     }
+
+    const days = [
+      [0, "Sunday"],
+      [1, "Monday"],
+      [2, "Tuesday"],
+      [3, "Wednesday"],
+      [4, "Thursday"],
+      [5, "Friday"],
+      [6, "Saturday"]
+    ];
 
     list.innerHTML =
       state.availability
@@ -1746,33 +2471,29 @@
               class="availability-row"
               data-index="${index}"
             >
+
               <select
                 class="availability-day"
               >
-                ${[
-                  [0, "Sunday"],
-                  [1, "Monday"],
-                  [2, "Tuesday"],
-                  [3, "Wednesday"],
-                  [4, "Thursday"],
-                  [5, "Friday"],
-                  [6, "Saturday"]
-                ]
+                ${days
                   .map(
-                    ([value, label]) =>
-                      `<option
+                    ([value, label]) => `
+                      <option
                         value="${value}"
                         ${
                           String(
                             item.day_of_week
                           ) ===
-                          String(value)
+                          String(
+                            value
+                          )
                             ? "selected"
                             : ""
                         }
                       >
                         ${label}
-                      </option>`
+                      </option>
+                    `
                   )
                   .join("")}
               </select>
@@ -1781,7 +2502,8 @@
                 type="time"
                 class="availability-start"
                 value="${escapeHtml(
-                  item.start_time || ""
+                  item.start_time ||
+                    ""
                 )}"
               />
 
@@ -1789,7 +2511,8 @@
                 type="time"
                 class="availability-end"
                 value="${escapeHtml(
-                  item.end_time || ""
+                  item.end_time ||
+                    ""
                 )}"
               />
 
@@ -1799,7 +2522,8 @@
                 class="availability-capacity"
                 placeholder="Capacity"
                 value="${escapeHtml(
-                  item.capacity ?? ""
+                  item.capacity ??
+                    ""
                 )}"
               />
 
@@ -1810,6 +2534,7 @@
               >
                 Remove
               </button>
+
             </div>
           `
         )
@@ -1818,57 +2543,88 @@
     qsa(
       ".remove-availability",
       list
-    ).forEach((button) => {
-      button.addEventListener(
-        "click",
-        async () => {
-          const index =
-            Number(
-              button.dataset.index
-            );
+    ).forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            try {
+              const index =
+                Number(
+                  button.dataset
+                    .index
+                );
 
-          const row =
-            state.availability[index];
+              const row =
+                state
+                  .availability[
+                  index
+                ];
 
-          if (row?.id) {
-            const client =
-              await getSupabaseClient();
+              if (row?.id) {
+                const client =
+                  await getSupabaseClient();
 
-            await client
-              .from(
-                "offer_availability"
-              )
-              .delete()
-              .eq(
-                "id",
-                row.id
+                const {
+                  error
+                } =
+                  await client
+                    .from(
+                      "offer_availability"
+                    )
+                    .delete()
+                    .eq(
+                      "id",
+                      row.id
+                    );
+
+                if (error) {
+                  throw error;
+                }
+              }
+
+              state.availability.splice(
+                index,
+                1
               );
+
+              renderAvailability();
+            } catch (
+              error
+            ) {
+              handleError(
+                error,
+                "Unable to remove availability."
+              );
+            }
           }
-
-          state.availability.splice(
-            index,
-            1
-          );
-
-          renderAvailability();
-        }
-      );
-    });
+        );
+      }
+    );
   }
 
   function addAvailabilityRow() {
     state.availability.push({
-      day_of_week: 1,
-      start_time: "09:00",
-      end_time: "17:00",
-      capacity: null,
+      day_of_week:
+        1,
+
+      start_time:
+        "09:00",
+
+      end_time:
+        "17:00",
+
       timezone:
-        Intl.DateTimeFormat()
-          .resolvedOptions()
-          .timeZone ||
-        "Asia/Kolkata",
-      is_available: true,
-      notes: null
+        localTimezone(),
+
+      capacity:
+        null,
+
+      is_available:
+        true,
+
+      notes:
+        null
     });
 
     renderAvailability();
@@ -1880,90 +2636,226 @@
     const client =
       await getSupabaseClient();
 
+    const container =
+      $("availabilityList");
+
+    if (!container) {
+      return;
+    }
+
     const rows =
       qsa(
         ".availability-row",
-        $("availabilityList")
+        container
       );
 
-    for (let i = 0; i < rows.length; i++) {
+    /*
+      If the user removed all rows,
+      delete existing rows for this version.
+    */
+
+    if (!rows.length) {
+      const {
+        error
+      } =
+        await client
+          .from(
+            "offer_availability"
+          )
+          .delete()
+          .eq(
+            "offer_version_id",
+            versionId
+          );
+
+      if (error) {
+        throw error;
+      }
+
+      state.availability =
+        [];
+
+      return;
+    }
+
+    const submittedIds =
+      new Set();
+
+    for (
+      let index = 0;
+      index < rows.length;
+      index++
+    ) {
       const row =
-        rows[i];
+        rows[index];
 
       const existing =
-        state.availability[i] ||
-        {};
+        state.availability[
+          index
+        ] || {};
+
+      const day =
+        Number(
+          qs(
+            ".availability-day",
+            row
+          )?.value || 0
+        );
+
+      const start =
+        qs(
+          ".availability-start",
+          row
+        )?.value ||
+        null;
+
+      const end =
+        qs(
+          ".availability-end",
+          row
+        )?.value ||
+        null;
+
+      const capacityValue =
+        qs(
+          ".availability-capacity",
+          row
+        )?.value;
 
       const payload = {
         offer_version_id:
           versionId,
+
         day_of_week:
-          Number(
-            qs(
-              ".availability-day",
-              row
-            )?.value || 0
-          ),
+          day,
+
         start_time:
-          qs(
-            ".availability-start",
-            row
-          )?.value ||
-          null,
+          start,
+
         end_time:
-          qs(
-            ".availability-end",
-            row
-          )?.value ||
-          null,
-        capacity:
-          qs(
-            ".availability-capacity",
-            row
-          )?.value
-            ? Number(
-                qs(
-                  ".availability-capacity",
-                  row
-                ).value
-              )
-            : null,
+          end,
+
         timezone:
           existing.timezone ||
-          Intl.DateTimeFormat()
-            .resolvedOptions()
-            .timeZone ||
-          "Asia/Kolkata",
+          localTimezone(),
+
+        capacity:
+          capacityValue !==
+            "" &&
+          capacityValue !=
+            null
+            ? Number(
+                capacityValue
+              )
+            : null,
+
         is_available:
           existing.is_available !==
           false,
+
         notes:
           existing.notes ||
-          null
+          null,
+
+        updated_at:
+          new Date().toISOString()
       };
 
-      if (existing.id) {
-        await client
-          .from(
-            "offer_availability"
-          )
-          .update(payload)
-          .eq(
-            "id",
-            existing.id
-          );
+      if (
+        existing.id
+      ) {
+        submittedIds.add(
+          existing.id
+        );
+
+        const {
+          error
+        } =
+          await client
+            .from(
+              "offer_availability"
+            )
+            .update(
+              payload
+            )
+            .eq(
+              "id",
+              existing.id
+            );
+
+        if (error) {
+          throw error;
+        }
       } else {
+        const {
+          data,
+          error
+        } =
+          await client
+            .from(
+              "offer_availability"
+            )
+            .insert(
+              payload
+            )
+            .select()
+            .single();
+
+        if (error) {
+          throw error;
+        }
+
+        state.availability[
+          index
+        ] = data;
+      }
+    }
+
+    /*
+      Remove database rows that are no longer present
+      in the editor.
+    */
+
+    const existingIds =
+      state.availability
+        .map(
+          (item) =>
+            item.id
+        )
+        .filter(Boolean);
+
+    const removedIds =
+      existingIds.filter(
+        (id) =>
+          !submittedIds.has(
+            id
+          )
+      );
+
+    if (
+      removedIds.length
+    ) {
+      const {
+        error
+      } =
         await client
           .from(
             "offer_availability"
           )
-          .insert(payload);
+          .delete()
+          .in(
+            "id",
+            removedIds
+          );
+
+      if (error) {
+        throw error;
       }
     }
   }
 
   /* =========================================================
-     SAVE VERSION DATA
+     METADATA COLLECTION
      ========================================================= */
 
   function collectVersionMetadata() {
@@ -1972,6 +2864,12 @@
         getValue(
           "shortDescription"
         ),
+
+      category_id:
+        getValue(
+          "offerCategory"
+        ) ||
+        null,
 
       duration:
         getValue(
@@ -1994,10 +2892,14 @@
         ),
 
       faqs:
-        getValue("faqs"),
+        getValue(
+          "faqs"
+        ),
 
       policies:
-        getValue("policies"),
+        getValue(
+          "policies"
+        ),
 
       qualification:
         getValue(
@@ -2077,27 +2979,59 @@
     };
   }
 
+  /* =========================================================
+     SAVE DRAFT
+     ========================================================= */
+
   async function saveCurrentDraft() {
-    if (!state.currentOffer ||
-        !state.currentVersion) {
+    if (
+      !state.currentOffer ||
+      !state.currentVersion
+    ) {
       throw new Error(
         "No offer is open."
       );
     }
 
-    const version =
-      state.currentVersion;
+    /*
+      Only a draft can be directly edited.
+
+      Published / approved / review versions are immutable.
+      Editing them automatically creates a new draft version.
+    */
 
     if (
-      version.status !== "draft"
+      state.currentVersion.status !==
+      "draft"
     ) {
       await createDraftFromCurrent();
-
-      return saveCurrentDraft();
     }
 
     const client =
       await getSupabaseClient();
+
+    const title =
+      getValue(
+        "offerName"
+      ) ||
+      "Untitled Offer";
+
+    const offerType =
+      getValue(
+        "offerType"
+      ) ||
+      "service";
+
+    const categoryId =
+      getValue(
+        "offerCategory"
+      ) ||
+      null;
+
+    const description =
+      getValue(
+        "offerDescription"
+      );
 
     const metadata =
       collectVersionMetadata();
@@ -2105,81 +3039,101 @@
     const arrays =
       collectVersionArrays();
 
-    const title =
-      getValue("offerName") ||
-      "Untitled Offer";
+    const slug =
+      `${slugify(
+        title
+      )}-${String(
+        state.currentOffer.id
+      ).slice(0, 8)}`;
 
-    const description =
-      getValue(
-        "offerDescription"
-      );
+    /*
+      IMPORTANT:
+      offers.client_id is TEXT in the current schema.
+    */
 
-    const offerType =
-      getValue("offerType") ||
-      "service";
-
-    const categoryId =
-      getValue(
-        "offerCategory"
-      );
-
-    const offerPayload = {
-      name: title,
-      slug:
-        slugify(title) +
-        `-${String(
-          state.currentOffer.id
-        ).slice(0, 8)}`,
-      offer_type:
-        offerType,
-      description,
-      category_id:
-        categoryId ||
-        null,
-      status: "draft",
-      updated_at:
-        new Date().toISOString()
-    };
-
-    const versionPayload = {
-      title,
-      description,
-      sales_talking_points:
-        arrays.sales_talking_points,
-      allowed_claims:
-        arrays.allowed_claims,
-      restrictions:
-        arrays.restrictions,
-      customer_eligibility:
-        arrays.customer_eligibility,
-      metadata
-    };
-
-    const { data: updatedOffer, error: offerError } =
+    const {
+      data: updatedOffer,
+      error: offerError
+    } =
       await client
         .from("offers")
-        .update(offerPayload)
+        .update({
+          name:
+            title,
+
+          slug,
+
+          offer_type:
+            offerType,
+
+          short_description:
+            metadata.short_description ||
+            null,
+
+          description:
+            description ||
+            null,
+
+          category_id:
+            categoryId,
+
+          status:
+            "draft",
+
+          current_version_id:
+            state.currentVersion.id,
+
+          updated_at:
+            new Date().toISOString()
+        })
         .eq(
           "id",
           state.currentOffer.id
         )
         .eq(
           "client_id",
-          state.client.id
+          tenantOfferId()
         )
         .select()
         .single();
 
-    if (offerError)
+    if (offerError) {
       throw offerError;
+    }
 
-    const { data: updatedVersion, error: versionError } =
+    const {
+      data: updatedVersion,
+      error: versionError
+    } =
       await client
-        .from("offer_versions")
-        .update(versionPayload)
+        .from(
+          "offer_versions"
+        )
+        .update({
+          title,
+
+          description,
+
+          sales_talking_points:
+            arrays.sales_talking_points,
+
+          allowed_claims:
+            arrays.allowed_claims,
+
+          restrictions:
+            arrays.restrictions,
+
+          customer_eligibility:
+            arrays.customer_eligibility,
+
+          metadata,
+
+          updated_at:
+            new Date().toISOString()
+        })
         .eq(
           "id",
-          version.id
+          state.currentVersion.id
         )
         .eq(
           "offer_id",
@@ -2188,8 +3142,9 @@
         .select()
         .single();
 
-    if (versionError)
+    if (versionError) {
       throw versionError;
+    }
 
     state.currentOffer =
       updatedOffer;
@@ -2214,14 +3169,23 @@
 
     await loadOffers();
 
+    updateVersionActions();
+
     notify(
       "Draft saved.",
       "success"
     );
+
+    /*
+      Runtime AI context can refresh after business truth
+      changes, but it never becomes the source of truth.
+    */
+
+    await refreshAIContextAddon();
   }
 
   /* =========================================================
-     CREATE DRAFT FROM PUBLISHED / APPROVED VERSION
+     CREATE NEW DRAFT VERSION
      ========================================================= */
 
   async function createDraftFromCurrent() {
@@ -2231,118 +3195,301 @@
     const source =
       state.currentVersion;
 
-    if (!source) {
+    const offer =
+      state.currentOffer;
+
+    if (
+      !source ||
+      !offer
+    ) {
       throw new Error(
         "No source version found."
       );
     }
 
+    /*
+      Always calculate next version from database,
+      not just from the currently loaded version.
+    */
+
+    const {
+      data: versions,
+      error:
+        versionsError
+    } =
+      await client
+        .from(
+          "offer_versions"
+        )
+        .select(
+          "version_number"
+        )
+        .eq(
+          "offer_id",
+          offer.id
+        )
+        .order(
+          "version_number",
+          {
+            ascending: false
+          }
+        )
+        .limit(1);
+
+    if (versionsError) {
+      throw versionsError;
+    }
+
     const nextNumber =
       Number(
-        source.version_number || 1
+        versions?.[0]
+          ?.version_number ||
+          source.version_number ||
+          0
       ) + 1;
 
     const metadata =
-      getMetadata(source);
+      getMetadata(
+        source
+      );
 
-    const arrays =
-      {
-        sales_talking_points:
-          source.sales_talking_points ||
-          [],
-
-        allowed_claims:
-          source.allowed_claims ||
-          [],
-
-        restrictions:
-          source.restrictions ||
-          [],
-
-        customer_eligibility:
-          source.customer_eligibility ||
-          []
-      };
-
-    const payload = {
-      offer_id:
-        state.currentOffer.id,
-      version_number:
-        nextNumber,
-      status: "draft",
-      title:
-        source.title ||
-        state.currentOffer.name,
-      description:
-        source.description ||
-        "",
-      sales_talking_points:
-        arrays.sales_talking_points,
-      allowed_claims:
-        arrays.allowed_claims,
-      restrictions:
-        arrays.restrictions,
-      customer_eligibility:
-        arrays.customer_eligibility,
-      metadata
-    };
-
-    const { data: draft, error } =
+    const {
+      data: draft,
+      error: draftError
+    } =
       await client
-        .from("offer_versions")
-        .insert(payload)
+        .from(
+          "offer_versions"
+        )
+        .insert({
+          offer_id:
+            offer.id,
+
+          version_number:
+            nextNumber,
+
+          status:
+            "draft",
+
+          title:
+            source.title ||
+            offer.name ||
+            "Untitled Offer",
+
+          description:
+            source.description ||
+            "",
+
+          sales_talking_points:
+            Array.isArray(
+              source.sales_talking_points
+            )
+              ? source.sales_talking_points
+              : [],
+
+          allowed_claims:
+            Array.isArray(
+              source.allowed_claims
+            )
+              ? source.allowed_claims
+              : [],
+
+          restrictions:
+            Array.isArray(
+              source.restrictions
+            )
+              ? source.restrictions
+              : [],
+
+          customer_eligibility:
+            Array.isArray(
+              source.customer_eligibility
+            )
+              ? source.customer_eligibility
+              : [],
+
+          metadata: {
+            ...metadata,
+
+            /*
+              AI check belongs to the old version.
+              New draft starts with a fresh check.
+            */
+            ai_check:
+              null
+          }
+        })
         .select()
         .single();
 
-    if (error) throw error;
+    if (draftError) {
+      throw draftError;
+    }
 
-    /*
-      Clone prices from source version.
-    */
+    /* =====================================================
+       CLONE VARIANTS
+       ===================================================== */
 
-    const { data: prices } =
+    const {
+      data: variants
+    } =
       await client
-        .from("offer_prices")
+        .from(
+          "offer_variants"
+        )
         .select("*")
         .eq(
           "offer_version_id",
           source.id
         );
 
-    if (prices?.length) {
-      await client
-        .from("offer_prices")
-        .insert(
-          prices.map(
-            (price) => ({
+    const variantMap =
+      new Map();
+
+    if (
+      variants?.length
+    ) {
+      for (
+        const variant of variants
+      ) {
+        const {
+          data: newVariant,
+          error
+        } =
+          await client
+            .from(
+              "offer_variants"
+            )
+            .insert({
               offer_version_id:
                 draft.id,
-              variant_id:
-                null,
-              amount:
-                price.amount,
-              currency:
-                price.currency,
-              price_type:
-                price.price_type,
-              min_amount:
-                price.min_amount,
-              max_amount:
-                price.max_amount,
-              billing_period:
-                price.billing_period,
-              active:
-                price.active
+
+              name:
+                variant.name,
+
+              sku:
+                variant.sku,
+
+              description:
+                variant.description,
+
+              attributes:
+                variant.attributes ||
+                {},
+
+              is_active:
+                variant.is_active !==
+                false,
+
+              sort_order:
+                variant.sort_order ||
+                0
             })
-          )
+            .select()
+            .single();
+
+        if (error) {
+          throw error;
+        }
+
+        variantMap.set(
+          String(
+            variant.id
+          ),
+          newVariant.id
         );
+      }
     }
 
-    /*
-      Clone availability.
-    */
+    /* =====================================================
+       CLONE PRICES
+       ===================================================== */
 
-    const { data: availability } =
+    const {
+      data: prices,
+      error: pricesError
+    } =
+      await client
+        .from(
+          "offer_prices"
+        )
+        .select("*")
+        .eq(
+          "offer_version_id",
+          source.id
+        );
+
+    if (pricesError) {
+      throw pricesError;
+    }
+
+    if (
+      prices?.length
+    ) {
+      const priceRows =
+        prices.map(
+          (price) => ({
+            offer_version_id:
+              draft.id,
+
+            variant_id:
+              price.variant_id
+                ? variantMap.get(
+                    String(
+                      price.variant_id
+                    )
+                  ) || null
+                : null,
+
+            amount:
+              price.amount,
+
+            currency:
+              price.currency,
+
+            price_type:
+              price.price_type,
+
+            min_amount:
+              price.min_amount,
+
+            max_amount:
+              price.max_amount,
+
+            billing_period:
+              price.billing_period,
+
+            is_active:
+              price.is_active !==
+              false
+          })
+        );
+
+      const {
+        error
+      } =
+        await client
+          .from(
+            "offer_prices"
+          )
+          .insert(
+            priceRows
+          );
+
+      if (error) {
+        throw error;
+      }
+    }
+
+    /* =====================================================
+       CLONE AVAILABILITY
+       ===================================================== */
+
+    const {
+      data: availability,
+      error:
+        availabilityError
+    } =
       await client
         .from(
           "offer_availability"
@@ -2353,57 +3500,94 @@
           source.id
         );
 
-    if (availability?.length) {
-      await client
-        .from(
-          "offer_availability"
-        )
-        .insert(
-          availability.map(
-            (item) => ({
-              offer_version_id:
-                draft.id,
-              day_of_week:
-                item.day_of_week,
-              start_time:
-                item.start_time,
-              end_time:
-                item.end_time,
-              timezone:
-                item.timezone,
-              capacity:
-                item.capacity,
-              is_available:
-                item.is_available,
-              notes:
-                item.notes
-            })
-          )
-        );
+    if (availabilityError) {
+      throw availabilityError;
     }
 
-    /*
-      Current version becomes the draft being edited.
-      We intentionally do not publish anything here.
-    */
+    if (
+      availability?.length
+    ) {
+      const rows =
+        availability.map(
+          (item) => ({
+            offer_version_id:
+              draft.id,
 
-    await client
-      .from("offers")
-      .update({
-        current_version_id:
-          draft.id,
-        status: "draft",
-        updated_at:
-          new Date().toISOString()
-      })
-      .eq(
-        "id",
-        state.currentOffer.id
-      )
-      .eq(
-        "client_id",
-        state.client.id
-      );
+            day_of_week:
+              item.day_of_week,
+
+            start_time:
+              item.start_time,
+
+            end_time:
+              item.end_time,
+
+            timezone:
+              item.timezone,
+
+            capacity:
+              item.capacity,
+
+            is_available:
+              item.is_available !==
+              false,
+
+            notes:
+              item.notes
+          })
+        );
+
+      const {
+        error
+      } =
+        await client
+          .from(
+            "offer_availability"
+          )
+          .insert(
+            rows
+          );
+
+      if (error) {
+        throw error;
+      }
+    }
+
+    /* =====================================================
+       MAKE NEW DRAFT CURRENT
+       ===================================================== */
+
+    const {
+      data: updatedOffer,
+      error:
+        offerError
+    } =
+      await client
+        .from("offers")
+        .update({
+          current_version_id:
+            draft.id,
+
+          status:
+            "draft",
+
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq(
+          "id",
+          offer.id
+        )
+        .eq(
+          "client_id",
+          tenantOfferId()
+        )
+        .select()
+        .single();
+
+    if (offerError) {
+      throw offerError;
+    }
 
     state.sourceVersion =
       source;
@@ -2411,18 +3595,15 @@
     state.currentVersion =
       draft;
 
-    state.currentOffer.current_version_id =
-      draft.id;
-
-    state.currentOffer.status =
-      "draft";
+    state.currentOffer =
+      updatedOffer;
 
     await loadOfferAvailability(
       draft.id
     );
 
     await loadOfferBinding(
-      state.currentOffer.id
+      offer.id
     );
 
     await loadOfferIntoForm();
@@ -2430,7 +3611,7 @@
     updateVersionActions();
 
     notify(
-      `Draft v${nextNumber} created from the current version.`,
+      `Draft v${nextNumber} created.`,
       "success"
     );
   }
@@ -2450,23 +3631,32 @@
           versionId
         );
 
-      if (!binding)
+      if (!binding) {
         return;
+      }
 
       const client =
         await getSupabaseClient();
 
+      const existingMetadata =
+        getMetadata(
+          binding
+        );
+
       const customData = {
         version_id:
           versionId,
+
         offer_type:
           getValue(
             "offerType"
           ),
+
         duration:
           getValue(
             "detailDuration"
           ),
+
         qualification:
           getValue(
             "qualification"
@@ -2474,40 +3664,47 @@
       };
 
       const metadata = {
-        ...(getMetadata(
-          binding
-        ) || {}),
+        ...existingMetadata,
+
         aliases:
           arrayFromText(
             getRawValue(
               "aliases"
             )
           ),
+
         media_urls:
           arrayFromText(
             getRawValue(
               "mediaUrls"
             )
           ),
+
         website_url:
           getValue(
             "websiteLink"
           ),
+
         booking_url:
           getValue(
             "bookingLink"
           ),
+
         instagram_url:
           getValue(
             "instagramLink"
           ),
+
         facebook_url:
           getValue(
             "facebookLink"
           )
       };
 
-      const { data, error } =
+      const {
+        data,
+        error
+      } =
         await client
           .from(
             "offer_catalog_bindings"
@@ -2515,9 +3712,12 @@
           .update({
             status:
               "draft",
+
             custom_data:
               customData,
+
             metadata,
+
             updated_at:
               new Date().toISOString()
           })
@@ -2527,20 +3727,20 @@
           )
           .eq(
             "client_id",
-            state.client.id
+            tenantConfigId()
           )
           .select()
           .single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       state.currentBinding =
         data;
-    } catch (error) {
-      /*
-        Don't break legacy offer editing if the
-        architecture binding isn't available.
-      */
+    } catch (
+      error
+    ) {
       console.warn(
         "[GLIME] Binding save warning:",
         error
@@ -2548,25 +3748,33 @@
     }
   }
 
-  /* =========================================================
-     REVIEW / APPROVAL / PUBLISH
+     /* =========================================================
+     REVIEW
      ========================================================= */
 
   async function submitForReview() {
+    /*
+      Save first. If currently published/approved/review,
+      saveCurrentDraft() creates a new draft automatically.
+    */
+
     await saveCurrentDraft();
 
     const versionId =
-      state.currentVersion.id;
+      state.currentVersion?.id;
+
+    if (!versionId) {
+      throw new Error(
+        "No current version available."
+      );
+    }
 
     const client =
       await getSupabaseClient();
 
-    /*
-      Existing server-side function is the source
-      of truth for review lifecycle.
-    */
-
-    const { data, error } =
+    const {
+      error
+    } =
       await client.rpc(
         "client_submit_offer_version_for_review",
         {
@@ -2575,16 +3783,19 @@
         }
       );
 
-    if (error)
+    if (error) {
       throw error;
+    }
 
-    /*
-      Refresh current version.
-    */
-
-    const { data: version, error: versionError } =
+    const {
+      data: version,
+      error:
+        versionError
+    } =
       await client
-        .from("offer_versions")
+        .from(
+          "offer_versions"
+        )
         .select("*")
         .eq(
           "id",
@@ -2592,11 +3803,16 @@
         )
         .single();
 
-    if (versionError)
+    if (versionError) {
       throw versionError;
+    }
 
     state.currentVersion =
       version;
+
+    await loadOfferBinding(
+      state.currentOffer.id
+    );
 
     updateVersionActions();
 
@@ -2606,37 +3822,64 @@
     );
   }
 
+  /* =========================================================
+     APPROVAL
+     ========================================================= */
+
   async function approveOffer() {
     const version =
       state.currentVersion;
 
-    if (!version) return;
+    if (!version) {
+      throw new Error(
+        "No offer version is open."
+      );
+    }
 
-    const client =
-      await getSupabaseClient();
+    if (
+      version.status !==
+      "review"
+    ) {
+      throw new Error(
+        "Only a version in review can be approved."
+      );
+    }
 
     const notes =
       window.prompt(
         "Approval note (optional):"
       ) || null;
 
-    const { data, error } =
+    const client =
+      await getSupabaseClient();
+
+    const {
+      error
+    } =
       await client.rpc(
         "client_approve_offer_version",
         {
           p_version_id:
             version.id,
+
           p_notes:
             notes
         }
       );
 
-    if (error)
+    if (error) {
       throw error;
+    }
 
-    const { data: updated } =
+    const {
+      data: updated,
+      error:
+        refreshError
+    } =
       await client
-        .from("offer_versions")
+        .from(
+          "offer_versions"
+        )
         .select("*")
         .eq(
           "id",
@@ -2644,8 +3887,12 @@
         )
         .single();
 
+    if (refreshError) {
+      throw refreshError;
+    }
+
     state.currentVersion =
-      updated || version;
+      updated;
 
     updateVersionActions();
 
@@ -2655,11 +3902,19 @@
     );
   }
 
+  /* =========================================================
+     PUBLISH
+     ========================================================= */
+
   async function publishOffer() {
     const version =
       state.currentVersion;
 
-    if (!version) return;
+    if (!version) {
+      throw new Error(
+        "No offer version is open."
+      );
+    }
 
     if (
       version.status !==
@@ -2673,7 +3928,13 @@
     const client =
       await getSupabaseClient();
 
-    const { error } =
+    /*
+      Server-side RPC remains the authority.
+    */
+
+    const {
+      error
+    } =
       await client.rpc(
         "client_publish_offer_version",
         {
@@ -2682,12 +3943,19 @@
         }
       );
 
-    if (error)
+    if (error) {
       throw error;
+    }
 
-    const { data: updated } =
+    const {
+      data: updatedVersion,
+      error:
+        versionError
+    } =
       await client
-        .from("offer_versions")
+        .from(
+          "offer_versions"
+        )
         .select("*")
         .eq(
           "id",
@@ -2695,15 +3963,106 @@
         )
         .single();
 
+    if (versionError) {
+      throw versionError;
+    }
+
     state.currentVersion =
-      updated || version;
+      updatedVersion;
 
-    if (state.currentOffer) {
-      state.currentOffer.status =
-        "published";
+    /*
+      Offer-level status and binding status are kept
+      synchronized with the published business truth.
+    */
 
-      state.currentOffer.current_version_id =
-        state.currentVersion.id;
+    const {
+      data: updatedOffer,
+      error:
+        offerError
+    } =
+      await client
+        .from("offers")
+        .update({
+          status:
+            "active",
+
+          current_version_id:
+            updatedVersion.id,
+
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq(
+          "id",
+          state.currentOffer.id
+        )
+        .eq(
+          "client_id",
+          tenantOfferId()
+        )
+        .select()
+        .single();
+
+    if (offerError) {
+      throw offerError;
+    }
+
+    state.currentOffer =
+      updatedOffer;
+
+    /*
+      Binding becomes active only after publish.
+      Draft/incomplete data therefore does not become
+      customer-facing AI truth.
+    */
+
+    if (
+      state.currentBinding?.id
+    ) {
+      const {
+        data: binding,
+        error:
+          bindingError
+      } =
+        await client
+          .from(
+            "offer_catalog_bindings"
+          )
+          .update({
+            status:
+              "active",
+
+            custom_data: {
+              ...(state.currentBinding
+                .custom_data ||
+                {}),
+              version_id:
+                updatedVersion.id
+            },
+
+            updated_at:
+              new Date().toISOString()
+          })
+          .eq(
+            "id",
+            state.currentBinding.id
+          )
+          .eq(
+            "client_id",
+            tenantConfigId()
+          )
+          .select()
+          .single();
+
+      if (bindingError) {
+        console.warn(
+          "[GLIME] Binding activation warning:",
+          bindingError
+        );
+      } else {
+        state.currentBinding =
+          binding;
+      }
     }
 
     updateVersionActions();
@@ -2712,65 +4071,44 @@
 
     await loadOffers();
 
+    await refreshAIContextAddon();
+
     notify(
       "Offer published successfully.",
       "success"
     );
-
-    /*
-      Notify the AI context addon if installed.
-    */
-
-    if (
-      window.GLIMEServicesAIContext &&
-      typeof window.GLIMEServicesAIContext.refresh ===
-        "function"
-    ) {
-      try {
-        await window.GLIMEServicesAIContext.refresh();
-      } catch (error) {
-        console.warn(
-          "[GLIME] AI context refresh:",
-          error
-        );
-      }
-    }
   }
 
   /* =========================================================
-     AI CHECK
+     AI COMPLETENESS CHECK
      ========================================================= */
 
   async function runAICheck() {
-    if (!state.currentVersion) {
+    if (
+      !state.currentVersion
+    ) {
       throw new Error(
         "Open an offer first."
       );
     }
 
-    const resultEl =
+    const result =
       $("aiCheck");
 
-    if (resultEl) {
-      resultEl.textContent =
+    if (result) {
+      result.textContent =
         "Running AI completeness check...";
-      resultEl.dataset.state =
+
+      result.dataset.state =
         "loading";
     }
-
-    /*
-      This is deliberately a local structural check.
-      The AI context resolver remains responsible for
-      runtime AI context.
-
-      Later this can call a dedicated AI quality function
-      without changing the services core UI.
-    */
 
     const missing = [];
 
     if (
-      !getValue("offerName")
+      !getValue(
+        "offerName"
+      )
     ) {
       missing.push(
         "Offer name"
@@ -2788,15 +4126,7 @@
     }
 
     if (
-      !getValue(
-        "priceAmount"
-      ) &&
-      !getValue(
-        "minAmount"
-      ) &&
-      !getValue(
-        "maxAmount"
-      )
+      !priceHasValue()
     ) {
       missing.push(
         "Pricing"
@@ -2804,7 +4134,9 @@
     }
 
     if (
-      !getValue("policies")
+      !getValue(
+        "policies"
+      )
     ) {
       missing.push(
         "Policies"
@@ -2812,10 +4144,36 @@
     }
 
     if (
-      !getValue("faqs")
+      !getValue(
+        "faqs"
+      )
     ) {
       missing.push(
         "FAQs"
+      );
+    }
+
+    if (
+      !getValue(
+        "qualification"
+      )
+    ) {
+      missing.push(
+        "Qualification rules"
+      );
+    }
+
+    if (
+      !getValue(
+        "detailDuration"
+      ) &&
+      getValue(
+        "offerType"
+      ) ===
+        "service"
+    ) {
+      missing.push(
+        "Duration"
       );
     }
 
@@ -2823,16 +4181,21 @@
       Math.max(
         0,
         100 -
-          missing.length * 15
+          missing.length *
+            12
       );
 
     const check = {
       score,
+
       status:
-        missing.length === 0
+        missing.length ===
+        0
           ? "ready"
           : "needs_attention",
+
       missing,
+
       checked_at:
         new Date().toISOString()
     };
@@ -2848,20 +4211,41 @@
     const client =
       await getSupabaseClient();
 
-    await client
-      .from("offer_versions")
-      .update({
-        metadata
-      })
-      .eq(
-        "id",
-        state.currentVersion.id
-      );
+    const {
+      data: updated,
+      error
+    } =
+      await client
+        .from(
+          "offer_versions"
+        )
+        .update({
+          metadata,
 
-    renderAICheck(check);
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq(
+          "id",
+          state.currentVersion.id
+        )
+        .select()
+        .single();
+
+    if (error) {
+      throw error;
+    }
+
+    state.currentVersion =
+      updated;
+
+    renderAICheck(
+      check
+    );
 
     if (
-      missing.length === 0
+      missing.length ===
+      0
     ) {
       notify(
         "AI check passed. Offer is structurally complete.",
@@ -2875,7 +4259,9 @@
     }
   }
 
-  function renderAICheck(check) {
+  function renderAICheck(
+    check
+  ) {
     const el =
       $("aiCheck");
 
@@ -2884,6 +4270,10 @@
     if (!check) {
       el.textContent =
         "AI check has not been run yet.";
+
+      el.dataset.state =
+        "idle";
+
       return;
     }
 
@@ -2894,24 +4284,40 @@
         ? check.missing
         : [];
 
-    if (!missing.length) {
+    if (
+      !missing.length
+    ) {
       el.innerHTML = `
         <strong>Ready</strong>
-        <div>All core offer information is present.</div>
-        <div>Score: ${escapeHtml(
-          check.score ?? 100
-        )}/100</div>
+        <div>
+          All core offer information is present.
+        </div>
+        <div>
+          Score:
+          ${escapeHtml(
+            check.score ??
+              100
+          )}/100
+        </div>
       `;
+
       el.dataset.state =
         "ready";
+
       return;
     }
 
     el.innerHTML = `
       <strong>Needs attention</strong>
-      <div>Score: ${escapeHtml(
-        check.score ?? ""
-      )}/100</div>
+
+      <div>
+        Score:
+        ${escapeHtml(
+          check.score ??
+            ""
+        )}/100
+      </div>
+
       <ul>
         ${missing
           .map(
@@ -2939,26 +4345,35 @@
     const version =
       state.currentVersion;
 
-    if (!offer) return "";
+    if (!offer) {
+      return "";
+    }
 
     const metadata =
       getMetadata(
         version || {}
       );
 
+    /*
+      Use an actual configured public URL if one exists.
+    */
+
     const existingUrl =
       metadata.share_url ||
       metadata.public_url ||
       metadata.share?.url;
 
-    if (existingUrl) {
+    if (
+      existingUrl
+    ) {
       return existingUrl;
     }
 
     /*
-      Stable internal/public recognition identity.
-      This is safer than inventing a public route that
-      may not exist yet.
+      Stable GLIME identity.
+
+      We deliberately DO NOT invent a website route here.
+      The actual public/share route can later resolve this ID.
     */
 
     return `GLIME:OFFER:${offer.id}`;
@@ -2984,13 +4399,37 @@
 
     if (!identity) {
       throw new Error(
-        "No offer identity available."
+        "No offer identity is available."
       );
     }
 
-    await navigator.clipboard.writeText(
-      identity
-    );
+    if (
+      navigator.clipboard?.writeText
+    ) {
+      await navigator.clipboard.writeText(
+        identity
+      );
+    } else {
+      const textarea =
+        document.createElement(
+          "textarea"
+        );
+
+      textarea.value =
+        identity;
+
+      document.body.appendChild(
+        textarea
+      );
+
+      textarea.select();
+
+      document.execCommand(
+        "copy"
+      );
+
+      textarea.remove();
+    }
 
     notify(
       "Offer share identity copied.",
@@ -2999,7 +4438,7 @@
   }
 
   /* =========================================================
-     FORM RESET / EDITOR
+     FORM RESET
      ========================================================= */
 
   function resetForm() {
@@ -3028,8 +4467,12 @@
       "facebookLink",
       "mediaUrls",
       "aliases"
-    ].forEach((id) =>
-      setValue(id, "")
+    ].forEach(
+      (id) =>
+        setValue(
+          id,
+          ""
+        )
     );
 
     setValue(
@@ -3047,13 +4490,25 @@
       "service"
     );
 
+    setValue(
+      "offerCategory",
+      ""
+    );
+
     state.availability =
       [];
 
     renderAvailability();
-    renderAICheck(null);
+    renderAICheck(
+      null
+    );
     renderShareIdentity();
+    renderRangeState();
   }
+
+  /* =========================================================
+     EDITOR
+     ========================================================= */
 
   function showEditor() {
     show(
@@ -3082,8 +4537,8 @@
     state.sourceVersion =
       null;
 
-    state.editing =
-      false;
+    state.availability =
+      [];
 
     show(
       $("offerForm"),
@@ -3115,8 +4570,9 @@
     const steps =
       getSteps();
 
-    if (!steps.length)
+    if (!steps.length) {
       return;
+    }
 
     steps.forEach(
       (step) => {
@@ -3125,14 +4581,16 @@
             step.dataset.step
           );
 
-        step.hidden =
-          number !==
+        const active =
+          number ===
           state.currentStep;
+
+        step.hidden =
+          !active;
 
         step.classList.toggle(
           "active",
-          number ===
-            state.currentStep
+          active
         );
       }
     );
@@ -3166,7 +4624,8 @@
 
     setDisabled(
       "prevStepBtn",
-      state.currentStep <= 1
+      state.currentStep <=
+        1
     );
 
     setDisabled(
@@ -3182,6 +4641,7 @@
       state.totalSteps
     ) {
       state.currentStep++;
+
       updateStepUI();
     }
   }
@@ -3192,6 +4652,7 @@
       1
     ) {
       state.currentStep--;
+
       updateStepUI();
     }
   }
@@ -3213,14 +4674,6 @@
       return;
     }
 
-    setText(
-      "editorStatus",
-      safeText(
-        version.status ||
-          "draft"
-      ).toUpperCase()
-    );
-
     const status =
       safeText(
         version.status ||
@@ -3238,6 +4691,10 @@
 
     const isPublished =
       status === "published";
+
+    /*
+      Action buttons.
+    */
 
     setDisabled(
       "saveDraftBtn",
@@ -3260,8 +4717,10 @@
     );
 
     /*
-      Published / review / approved versions are
-      read-only. User must create a new draft to edit.
+      Only draft versions are editable.
+
+      For non-draft versions the user can still click
+      Save Draft; that action creates a new draft.
     */
 
     const form =
@@ -3269,55 +4728,61 @@
 
     if (form) {
       const lock =
-        !isDraft &&
-        !state.sourceVersion;
+        !isDraft;
+
+      const actionIds = [
+        "prevStepBtn",
+        "nextStepBtn",
+        "closeEditorBtn",
+        "saveDraftBtn",
+        "submitReviewBtn",
+        "approveBtn",
+        "publishBtn",
+        "runCheckBtn",
+        "copyShareBtn",
+        "addAvailabilityBtn"
+      ];
 
       qsa(
         "input, textarea, select",
         form
-      ).forEach((element) => {
-        /*
-          Keep navigation / action buttons enabled.
-        */
-        if (
-          [
-            "prevStepBtn",
-            "nextStepBtn",
-            "closeEditorBtn",
-            "saveDraftBtn",
-            "submitReviewBtn",
-            "approveBtn",
-            "publishBtn",
-            "runCheckBtn",
-            "copyShareBtn",
-            "addAvailabilityBtn"
-          ].includes(
-            element.id
-          )
-        ) {
-          return;
-        }
+      ).forEach(
+        (element) => {
+          if (
+            actionIds.includes(
+              element.id
+            )
+          ) {
+            return;
+          }
 
-        element.disabled =
-          lock;
-      });
+          element.disabled =
+            lock;
+        }
+      );
     }
 
     /*
-      Explicit status message.
+      Status text.
     */
 
-    if (isPublished) {
+    if (
+      isPublished
+    ) {
       setText(
         "editorStatus",
         "PUBLISHED — create a new draft to edit"
       );
-    } else if (isApproved) {
+    } else if (
+      isApproved
+    ) {
       setText(
         "editorStatus",
         "APPROVED — ready to publish"
       );
-    } else if (isReview) {
+    } else if (
+      isReview
+    ) {
       setText(
         "editorStatus",
         "IN REVIEW — waiting for approval"
@@ -3327,6 +4792,33 @@
         "editorStatus",
         "DRAFT"
       );
+    }
+  }
+
+  /* =========================================================
+     AI CONTEXT ADDON
+     ========================================================= */
+
+  async function refreshAIContextAddon() {
+    if (
+      window.GLIMEServicesAIContext &&
+      typeof window
+        .GLIMEServicesAIContext
+        .refresh ===
+        "function"
+    ) {
+      try {
+        await window
+          .GLIMEServicesAIContext
+          .refresh();
+      } catch (
+        error
+      ) {
+        console.warn(
+          "[GLIME] AI context addon refresh failed:",
+          error
+        );
+      }
     }
   }
 
@@ -3341,7 +4833,9 @@
         async () => {
           try {
             await saveSetup();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "Unable to save business setup."
@@ -3356,12 +4850,17 @@
         async (event) => {
           try {
             await loadBusinessModels(
-              event.target.value
+              event.target
+                .value
             );
 
             updateSetupState();
-          } catch (error) {
-            handleError(error);
+          } catch (
+            error
+          ) {
+            handleError(
+              error
+            );
           }
         }
       );
@@ -3378,7 +4877,9 @@
         async () => {
           try {
             await createNewOffer();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "Unable to create offer."
@@ -3393,7 +4894,9 @@
         async () => {
           try {
             await createNewOffer();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "Unable to create offer."
@@ -3408,8 +4911,12 @@
         async () => {
           try {
             await refreshCatalog();
-          } catch (error) {
-            handleError(error);
+          } catch (
+            error
+          ) {
+            handleError(
+              error
+            );
           }
         }
       );
@@ -3420,7 +4927,9 @@
         async () => {
           try {
             await createCategory();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "Unable to create category."
@@ -3429,7 +4938,7 @@
         }
       );
 
-    $("closeEditorBtn")
+     $("closeEditorBtn")
       ?.addEventListener(
         "click",
         closeEditor
@@ -3465,8 +4974,12 @@
         async () => {
           try {
             await copyShareIdentity();
-          } catch (error) {
-            handleError(error);
+          } catch (
+            error
+          ) {
+            handleError(
+              error
+            );
           }
         }
       );
@@ -3477,7 +4990,9 @@
         async () => {
           try {
             await runAICheck();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "AI check failed."
@@ -3492,7 +5007,9 @@
         async () => {
           try {
             await saveCurrentDraft();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "Unable to save draft."
@@ -3507,7 +5024,9 @@
         async () => {
           try {
             await submitForReview();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "Unable to submit for review."
@@ -3522,7 +5041,9 @@
         async () => {
           try {
             await approveOffer();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "Unable to approve offer."
@@ -3537,7 +5058,9 @@
         async () => {
           try {
             await publishOffer();
-          } catch (error) {
+          } catch (
+            error
+          ) {
             handleError(
               error,
               "Unable to publish offer."
@@ -3548,11 +5071,12 @@
   }
 
   /* =========================================================
-     REFRESH
+     REFRESH CATALOG
      ========================================================= */
 
   async function refreshCatalog() {
     await loadCategories();
+
     await loadOffers();
 
     if (
@@ -3563,20 +5087,7 @@
       );
     }
 
-    if (
-      window.GLIMEServicesAIContext &&
-      typeof window.GLIMEServicesAIContext.refresh ===
-        "function"
-    ) {
-      try {
-        await window.GLIMEServicesAIContext.refresh();
-      } catch (error) {
-        console.warn(
-          "[GLIME] AI context addon refresh failed:",
-          error
-        );
-      }
-    }
+    await refreshAIContextAddon();
 
     notify(
       "Catalog refreshed.",
@@ -3585,33 +5096,29 @@
   }
 
   /* =========================================================
-     ESCAPE HTML
-     ========================================================= */
-
-  function escapeHtml(value) {
-    return safeText(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll(
-        "'",
-        "&#039;"
-      );
-  }
-
-  /* =========================================================
      INITIALIZATION
      ========================================================= */
 
   async function init() {
+    if (
+      state.initialized
+    ) {
+      return;
+    }
+
     try {
-      if (!$("offerForm")) {
+      if (
+        !$("offerForm")
+      ) {
         console.warn(
           "[GLIME Services] services.html not detected."
         );
+
         return;
       }
+
+      state.initialized =
+        true;
 
       bindEvents();
 
@@ -3627,10 +5134,7 @@
         true
       );
 
-      const client =
-        await loadClient();
-
-      if (!client) return;
+      await loadClient();
 
       await loadIndustries();
 
@@ -3642,14 +5146,21 @@
 
       await loadTemplates();
 
+      populateCategorySelect();
+
       renderRangeState();
 
       updateSetupState();
 
       console.log(
-        "[GLIME Services] initialized successfully."
+        "[GLIME Services] FINAL core initialized."
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
+      state.initialized =
+        false;
+
       handleError(
         error,
         "GLIME Services could not be initialized."
@@ -3692,9 +5203,9 @@
       })
   };
 
-  /*
-    Start after DOM is ready.
-  */
+  /* =========================================================
+     START
+     ========================================================= */
 
   if (
     document.readyState ===
@@ -3710,4 +5221,9 @@
   } else {
     init();
   }
+
 })();
+   
+
+   
+        
