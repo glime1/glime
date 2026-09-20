@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GLIME Billing</title>
+<link rel="icon" href="glime_logo_clean.svg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<style>
+:root{--bg:#05080c;--card:#111827;--line:#263140;--text:#fff;--muted:#9ca3af;--green:#00ff88;--cyan:#00f0ff;--warn:#ffd166;--danger:#ff667a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Poppins,Arial,sans-serif}.wrap{max-width:1150px;margin:auto;padding:28px 16px 60px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}.brand img{width:90px}.back{color:var(--muted);text-decoration:none}h1{margin:0 0 6px}.muted{color:var(--muted);font-size:13px}.notice{margin:18px 0;padding:12px;border:1px solid #17475a;background:#091923;border-radius:12px;color:#b9f7ff}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:22px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}.featured{border-color:#155c45}.tag{font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:1px}.price{font-size:30px;font-weight:700;margin:10px 0}.price small{font-size:12px;color:var(--muted)}.features{padding:0 0 0 18px;color:#dce2e8;font-size:13px;line-height:1.9}.btn{width:100%;padding:12px;border:0;border-radius:10px;background:linear-gradient(90deg,var(--green),var(--cyan));font-weight:700;cursor:pointer}.btn.secondary{background:#18212d;color:#fff;border:1px solid var(--line)}.btn.warn{background:#2a2412;color:#fff;border:1px solid #6b581b}.btn:disabled{opacity:.5;cursor:not-allowed}.section{margin-top:20px}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.row{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #202936;font-size:13px}.label{color:var(--muted)}.usage{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.usage div{border:1px solid var(--line);border-radius:12px;padding:14px}.usage strong{display:block;font-size:18px}.empty{color:var(--muted);font-size:13px}.wallet{border-color:#176448}.wallet-balance{font-size:38px;font-weight:800;margin:8px 0}.wallet-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.wallet-actions input{grid-column:1/-1;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0b1119;color:#fff}.wallet-warning{margin-top:12px;padding:10px;border-radius:10px;background:#2a2412;border:1px solid #6b581b;color:#ffe8a0;font-size:13px}.wallet-danger{margin-top:12px;padding:10px;border-radius:10px;background:#29151b;border:1px solid #6b2635;color:#ffc1ca;font-size:13px}.usage-table{overflow:auto}.usage-table table{width:100%;border-collapse:collapse;font-size:13px}.usage-table th,.usage-table td{text-align:left;padding:10px;border-bottom:1px solid #202936;white-space:nowrap}.usage-table th{color:var(--muted);font-weight:500}.qty{display:flex;align-items:center;gap:14px;margin:15px 0}.qty button{width:36px;height:36px;border:1px solid var(--line);background:#18212d;color:#fff;border-radius:8px}.toast{position:fixed;right:16px;bottom:16px;background:#101827;border:1px solid var(--line);padding:12px 15px;border-radius:10px;display:none;max-width:380px;z-index:20}
+@media(max-width:800px){.grid,.two{grid-template-columns:1fr}.usage{grid-template-columns:1fr 1fr}.wallet-actions{grid-template-columns:1fr}.wallet-actions input{grid-column:auto}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<div class="top"><a class="brand" href="dashboard.html"><img src="glime_logo_clean.svg"><span>Billing</span></a><a class="back" href="dashboard.html">← Dashboard</a></div>
+<h1>GLIME Billing</h1>
+<p class="muted">Plans, wallet, recurring add-ons and usage billing.</p>
+<div id="notice" class="notice">Loading billing account…</div>
+
+<section class="section card wallet">
+<h2>GLIME Prepaid Wallet</h2>
+<div id="walletBalance" class="wallet-balance">₹0</div>
+<div id="walletStatus" class="muted">Loading wallet…</div>
+<div class="wallet-actions">
+<input id="topupAmount" type="number" min="100" step="1" placeholder="Add money — minimum ₹100">
+<button class="btn" id="topupBtn">Add Money</button>
+<button class="btn secondary" id="refreshBtn">Refresh</button>
+</div>
+<div id="walletAlert"></div>
+<p class="muted">Usage charges are deducted immediately from this wallet. If the balance is insufficient, paid usage services automatically stop; your dashboard, billing and data remain available.</p>
+</section>
+
+<section id="plans" class="grid"></section>
+<section class="section two">
+<div class="card"><h2>Current subscription</h2><div id="subscription" class="empty">Loading…</div></div>
+<div class="card"><h2>Extra Storage</h2><p class="muted">Recurring storage addon. Quantity represents 50 MB blocks; there is no UI maximum.</p>
+<div class="qty"><button id="minus">−</button><strong id="qty">1</strong><button id="plus">+</button><span class="muted">× 50 MB</span></div>
+<p id="storageTotal" class="muted">Storage price will be shown from the active catalog.</p>
+<button class="btn secondary" id="storageBtn">Add storage</button>
+<p class="muted">Cashfree recurring addon mapping is handled separately. This control does not activate an addon until provider pricing is configured.</p></div>
+</section>
+
+<section class="section card"><h2>Usage & spending</h2><div id="usage" class="usage"></div><div id="usageTable" class="usage-table" style="margin-top:18px"></div><p class="muted">Usage rates are configured server-side. Current usage-rate prices remain inactive until GLIME finalizes provider/Meta costs.</p></section>
+<section class="section card"><h2>Wallet transactions</h2><div id="transactions" class="usage-table"></div></section>
+<section class="section card"><h2>Recent invoices</h2><div id="invoices"></div></section>
+</main><div id="toast" class="toast"></div>
+<script>
+(()=> {
+const SUPABASE_URL="https://ufoulgbiqgjriwapuopc.supabase.co";
+const SUPABASE_KEY="sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const fn=n=>SUPABASE_URL+"/functions/v1/"+n;let billing=null,qty=1;
+const $=id=>document.getElementById(id), money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
+function toast(x){const t=$("toast");t.textContent=x;t.style.display="block";setTimeout(()=>t.style.display="none",4500)}
+async function headers(){const {data:{session}}=await sb.auth.getSession();if(!session){location.replace("login.html");throw Error("login_required")}return {Authorization:"Bearer "+session.access_token,"Content-Type":"application/json"}}
+async function call(name,body={}){const h=await headers();const r=await fetch(fn(name),{method:"POST",headers:h,body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||d.message||"Request failed");return d}
+async function catalog(){const h=await headers();const r=await fetch(fn("glime-billing-catalog"),{headers:h});const d=await r.json();if(!r.ok)throw Error(d.error||"Catalog unavailable");return d.products||[]}
+async function renderPlans(){const ps=await catalog();$("plans").innerHTML=ps.filter(p=>["glime_growth","glime_omni"].includes(p.product_code)).map(p=>{const pr=p.current_price||p.price||(p.prices||[])[0]||{};const omni=p.product_code==="glime_omni";return `<article class="card ${omni?"featured":""}"><span class="tag">${omni?"OMNI":"GROWTH"}</span><h2>${p.name}</h2><div class="price">${money(pr.amount)} <small>/ ${pr.billing_interval||"month"}</small></div><ul class="features">${(omni?["Everything in Growth","Voice Agent included","ChatGPT + Claude connectors","Priority access to new agents"]:["Interconnected core agents","Business automation foundation","Monthly/yearly billing"]).map(x=>`<li>${x}</li>`).join("")}</ul><button class="btn choose" data-product="${p.product_code}" data-interval="${pr.billing_interval||"monthly"}">Choose plan</button></article>`}).join("");
+document.querySelectorAll(".choose").forEach(b=>b.onclick=()=>subscribe(b.dataset.product,b.dataset.interval))}
+async function subscribe(product_code,billing_interval){try{const d=await call("glime-cashfree-create-subscription",{product_code,billing_interval});if(!d.subscription_session_id)throw Error("Cashfree plan ID is not configured yet.");const cashfree=Cashfree({mode:(d.environment||"sandbox")==="production"?"production":"sandbox"});await cashfree.checkout({subscriptionSessionId:d.subscription_session_id})}catch(e){toast(e.message)}}
+async function topup(){const amount=Number($("topupAmount").value);if(!Number.isFinite(amount)||amount<100){toast("Minimum wallet top-up is ₹100.");return}try{$("topupBtn").disabled=true;const d=await call("glime-cashfree-create-wallet-topup",{amount});const session=d?.data?.payment_session_id;if(!session)throw Error("Cashfree wallet payment session was not created.");const cashfree=Cashfree({mode:"sandbox"});await cashfree.checkout({paymentSessionId:session});}catch(e){toast(e.message)}finally{$("topupBtn").disabled=false}}
+async function finalizeReturn(){const q=new URLSearchParams(location.search);if(q.get("billing_wallet_topup")!=="1")return;const order=q.get("order_id");if(!order)return;try{await call("glime-cashfree-finalize-wallet-topup",{order_number:order});toast("Wallet top-up verified successfully.");history.replaceState({},"",location.pathname)}catch(e){toast("Payment verification is still pending. The wallet will update when Cashfree confirms the payment.")}}
+function renderWallet(){const w=billing?.wallet;if(!w){$("walletBalance").textContent="₹0";$("walletStatus").textContent="Wallet will be created when you add money.";$("walletAlert").innerHTML="";return}$("walletBalance").textContent=money(w.balance);$("walletStatus").textContent=`Status: ${w.status} · Low-balance threshold: ${money(w.low_balance_threshold)}`;if(w.status!=="active"){$("walletAlert").innerHTML=`<div class="wallet-danger">Wallet is ${w.status}. Paid usage is unavailable until the wallet is active.</div>`}else if(w.low_balance){$("walletAlert").innerHTML=`<div class="wallet-warning">Wallet balance is at or below ₹${Number(w.low_balance_threshold).toLocaleString("en-IN")}. Add money before paid usage runs out.</div>`}else{$("walletAlert").innerHTML=""}}
+function renderUsage(){const summary=billing?.usage_summary||[];const names={whatsapp_message:"WhatsApp",sms_message:"SMS",ai_token:"AI tokens",voice_minute:"Voice minutes",api_call:"API calls",document_processed:"Documents"};$("usage").innerHTML=Object.keys(names).map(c=>{const r=summary.find(x=>x.usage_code===c)||{};return `<div><strong>${Number(r.quantity||0).toLocaleString("en-IN")}</strong><span class="muted">${names[c]} · ${money(r.amount||0)}</span></div>`}).join("");const ev=billing?.usage_events||[];$("usageTable").innerHTML=ev.length?`<table><thead><tr><th>Date</th><th>Usage</th><th>Qty</th><th>Charge</th></tr></thead><tbody>${ev.slice(0,30).map(e=>`<tr><td>${new Date(e.occurred_at||e.created_at).toLocaleString()}</td><td>${names[e.usage_code]||e.usage_code}</td><td>${Number(e.quantity||0).toLocaleString("en-IN")}</td><td>${money(e.charge_amount)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">No usage charges yet.</div>`}
+function renderTransactions(){const rows=billing?.wallet_transactions||[];$("transactions").innerHTML=rows.length?`<table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Balance</th><th>Description</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${x.transaction_type}</td><td>${x.amount>=0?"+":""}${money(x.amount)}</td><td>${money(x.balance_after)}</td><td>${x.description||"—"}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">No wallet transactions yet.</div>`}
+async function load(){billing=(await call("glime-billing-my-subscription")).data;const s=billing.current_subscription;$("subscription").innerHTML=s?`<div class="row"><span class="label">Plan</span><strong>${billing.current_product?.name||"GLIME"}</strong></div><div class="row"><span class="label">Status</span><strong>${s.status}</strong></div><div class="row"><span class="label">Amount</span><strong>${money(s.amount)}</strong></div><div class="row"><span class="label">Period</span><strong>${(s.current_period_start||"").slice(0,10)} → ${(s.current_period_end||"").slice(0,10)}</strong></div><div class="row"><span class="label">Auto-renew</span><strong>${s.auto_renew?"On":"Off"}</strong></div><button class="btn secondary" id="renew">${s.auto_renew?"Cancel auto-renew":"Resume auto-renew"}</button>`:`<div class="empty">No GLIME subscription yet.</div>`;if(s)$('renew').onclick=async()=>{try{await call("glime-cashfree-manage-subscription",{action:s.auto_renew?"cancel_auto_renew":"resume_auto_renew"});await load();toast("Billing setting updated.")}catch(e){toast(e.message)}};renderWallet();renderUsage();renderTransactions();const inv=billing.invoices||[];$("invoices").innerHTML=inv.length?inv.slice(0,8).map(i=>`<div class="row"><span>${i.invoice_number}<br><span class="muted">${i.status}</span></span><strong>${money(i.total_amount)}</strong></div>`).join(""):"<div class='empty'>No invoices yet.</div>"}
+function updateStorage(){$("qty").textContent=qty;$('storageTotal').textContent="Quantity: "+qty+" × 50 MB. Price is read from the billing catalog when the addon is activated."}$('minus').onclick=()=>{qty=Math.max(1,qty-1);updateStorage()};$('plus').onclick=()=>{qty++;updateStorage()};$('storageBtn').onclick=()=>toast("Storage addon checkout will be enabled after its recurring Cashfree provider mapping is configured.");$('topupBtn').onclick=topup;$('refreshBtn').onclick=async()=>{try{await load();toast("Billing refreshed.")}catch(e){toast(e.message)}};updateStorage();
+(async()=>{try{await finalizeReturn();await renderPlans();await load();$('notice').textContent="Billing account connected. Wallet and usage billing are active."}catch(e){$('notice').textContent=e.message;toast(e.message)}})();
+})();
+</script>
+</body></html>
