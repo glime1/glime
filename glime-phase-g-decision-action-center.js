@@ -745,6 +745,34 @@
                           </div>
 
                           ${
+                            row.impact_status === "pending" && row.observation_until
+                              ? `
+                                <div class="gG2-msg">
+                                  Observation window:
+                                  ${esc(
+                                    new Date(row.observation_until).toLocaleString()
+                                  )}
+                                </div>
+                              `
+                              : ""
+                          }
+
+                          ${
+                            row.selected_metrics &&
+                            Array.isArray(row.selected_metrics) &&
+                            row.selected_metrics.length
+                              ? `
+                                <div class="gG2-msg">
+                                  Metrics:
+                                  ${esc(
+                                    row.selected_metrics.join(", ")
+                                  )}
+                                </div>
+                              `
+                              : ""
+                          }
+
+                          ${
                             impact
                               ? `
                                 <div
@@ -799,6 +827,15 @@
                       row.action_status
                     )
                       ? `
+
+                        <button
+                          class="gG2-btn gG2-primary gG2-edit"
+                          data-request-id="${esc(
+                            row.action_request_id
+                          )}"
+                        >
+                          Edit Proposal
+                        </button>
 
                         <button
                           class="gG2-btn gG2-primary gG2-approve"
@@ -922,6 +959,144 @@
                   }`;
 
                 prepare.disabled =
+                  false;
+              }
+            };
+        }
+
+
+        // =============================================
+        // EDIT PROPOSAL
+        // =============================================
+
+        const edit =
+          item.querySelector(
+            ".gG2-edit"
+          );
+
+        if (edit) {
+
+          edit.onclick =
+            async () => {
+
+              edit.disabled = true;
+
+              message.textContent =
+                "Opening editable proposal fields…";
+
+              try {
+
+                const current =
+                  row.action_payload || {};
+
+                const editable =
+                  current?.contract?.editable_fields || [];
+
+                if (!editable.length) {
+                  throw new Error(
+                    "No editable proposal fields are available."
+                  );
+                }
+
+                const patch = {};
+
+                if (
+                  editable.includes("message")
+                ) {
+
+                  const value =
+                    window.prompt(
+                      "Edit proposed message:",
+                      current.message || ""
+                    );
+
+                  if (value === null) {
+                    return;
+                  }
+
+                  patch.message = value;
+                }
+
+                if (
+                  editable.includes(
+                    "target_reference"
+                  )
+                ) {
+
+                  const value =
+                    window.prompt(
+                      "Edit target reference:",
+                      current.target_reference || ""
+                    );
+
+                  if (value === null) {
+                    return;
+                  }
+
+                  patch.target_reference = value;
+                }
+
+                if (
+                  editable.includes(
+                    "scheduled_for"
+                  )
+                ) {
+
+                  const value =
+                    window.prompt(
+                      "Edit scheduled time (ISO format):",
+                      current.scheduled_for || ""
+                    );
+
+                  if (value === null) {
+                    return;
+                  }
+
+                  if (value.trim()) {
+                    patch.scheduled_for =
+                      value.trim();
+                  }
+                }
+
+                if (
+                  !Object.keys(patch).length
+                ) {
+
+                  message.textContent =
+                    "No proposal changes made.";
+
+                  return;
+                }
+
+                await rpc(
+                  "update_client_action_proposal",
+                  {
+                    p_action_request_id:
+                      edit.dataset.requestId,
+
+                    p_changes:
+                      patch
+                  }
+                );
+
+                message.textContent =
+                  "Proposal updated. Client approval is still required.";
+
+                await load();
+
+              } catch (
+                error
+              ) {
+
+                message.textContent =
+                  `Could not update proposal: ${
+                    error.message ||
+                    error
+                  }`;
+
+              } finally {
+
+                edit.disabled =
                   false;
               }
             };
