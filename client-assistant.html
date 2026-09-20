@@ -1,15 +1,13 @@
-<!DOCTYPE html>
-<html lang="hi">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="GLIME Client Data Assistant — secure business intelligence for your own client data.">
-  <title>Client Data Assistant | GLIME</title>
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GLIME Client Assistant</title>
+  <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="client-assistant.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -20,129 +18,102 @@
 
   <header class="glime-header">
     <a class="glime-brand" href="dashboard.html" aria-label="GLIME Dashboard">
-      <span class="brand-mark">G</span>
-      <span>GLIME</span>
+      <img class="brand-logo" src="glime_logo_clean.svg" alt="GLIME">
     </a>
 
     <div class="secure-pill">
       <span class="secure-dot"></span>
-      SECURE CLIENT ASSISTANT
+      <span>SECURE CLIENT SESSION</span>
     </div>
   </header>
 
   <main class="page-shell">
-
     <section class="hero">
       <div class="hero-copy">
-        <div class="eyebrow">GLIME INTELLIGENCE / CLIENT DATA</div>
-
-        <h1>
-          Your business,<br>
-          <span>understood.</span>
-        </h1>
-
+        <div class="eyebrow">GLIME CLIENT ASSISTANT</div>
+        <h1>Business clarity,<br><span>one question away.</span></h1>
         <p>
-          अपने business के data के बारे में पूछें — leads, customers,
-          orders, sales, products, appointments और performance।
-          GLIME आपको data समझने के साथ practical next steps भी बताएगा।
+          Ask about your business data — leads, customers, orders, sales,
+          products, appointments, and performance. GLIME turns your data
+          into clear insights and practical next steps.
         </p>
 
         <div class="hero-points">
-          <div class="hero-point">
-            <span class="point-icon">01</span>
-            <span>आपके client data तक सीमित</span>
-          </div>
-          <div class="hero-point">
-            <span class="point-icon">02</span>
-            <span>Business insights और recommendations</span>
-          </div>
-          <div class="hero-point">
-            <span class="point-icon">03</span>
-            <span>दूसरे clients का data inaccessible</span>
-          </div>
+          <div class="hero-point"><span class="point-icon">01</span> Authorized business data</div>
+          <div class="hero-point"><span class="point-icon">02</span> Clear recommendations</div>
+          <div class="hero-point"><span class="point-icon">03</span> Client-isolated access</div>
         </div>
       </div>
 
       <aside class="privacy-card">
-        <div class="privacy-icon">◎</div>
-        <div class="privacy-title">Private by design</div>
+        <div class="privacy-icon">◈</div>
+        <div class="privacy-title">Your business data</div>
         <p>
-          Assistant authenticated client identity से आपका
-          authorized <code>client_id</code> resolve करता है।
-          सवाल में किसी दूसरे client का नाम या ID देने से
-          उसका data access नहीं होगा।
+          The assistant resolves your authorized <code>client_id</code>
+          from your authenticated session. Requests cannot be used to
+          access another client’s data.
         </p>
         <div class="privacy-line"></div>
         <div class="privacy-status">
           <span class="status-dot"></span>
-          CLIENT-SCOPED SESSION
+          AUTHENTICATED CLIENT ACCESS
         </div>
       </aside>
     </section>
 
-    <section class="assistant-card">
-
+    <section class="assistant-card" aria-label="GLIME Client Assistant">
       <div class="assistant-topbar">
         <div class="assistant-identity">
-          <div class="ai-avatar">
-            <span>✦</span>
-          </div>
+          <div class="ai-avatar">✦</div>
           <div>
-            <div class="assistant-name">GLIME Assistant</div>
-            <div class="assistant-subtitle">
-              Business data + practical intelligence
-              <span id="clientName"></span>
-            </div>
+            <div class="assistant-name">GLIME Client Assistant</div>
+            <div class="assistant-subtitle" id="clientName">Business Intelligence</div>
           </div>
         </div>
 
-        <button id="clearBtn" class="clear-btn" type="button">
-          Clear chat
-        </button>
+        <button id="clearBtn" class="clear-btn" type="button">Clear chat</button>
       </div>
 
       <div id="messages" class="messages" aria-live="polite">
         <div class="message assistant">
           <div class="message-label">GLIME AI</div>
           <div class="bubble">
-            नमस्ते! मैं आपके GLIME business data को समझने में मदद कर सकता हूँ।
+            Hello. I can help you understand your GLIME business data.
             <br><br>
-            आप पूछ सकते हैं:
-            <br>• मेरे कितने customers हैं?
-            <br>• इस महीने कितनी sales हुई?
-            <br>• सबसे ज्यादा orders किस product के हैं?
-            <br>• इस customer का mobile number क्या है?
-            <br>• मेरे leads कितने हैं?
-            <br>• अब हमें business में क्या करना चाहिए?
+            You can ask things like:
+            <br>• How many customers do I have?
+            <br>• How much did I sell this month?
+            <br>• Which products have the most orders?
+            <br>• What are my current leads?
+            <br>• What should my business focus on next?
           </div>
         </div>
       </div>
 
       <div class="suggestions">
-        <button type="button" data-prompt="मेरे कितने customers हैं?">Customers count</button>
-        <button type="button" data-prompt="इस महीने मेरी total sales कितनी हुई?">Sales</button>
-        <button type="button" data-prompt="मेरे कितने leads हैं?">Leads</button>
-        <button type="button" data-prompt="मेरे business के लिए अभी सबसे जरूरी next step क्या होना चाहिए?">Next step</button>
+        <button type="button" data-prompt="How many customers do I have?">Customer count</button>
+        <button type="button" data-prompt="How much did I sell this month?">Monthly sales</button>
+        <button type="button" data-prompt="How many leads do I have?">Lead count</button>
+        <button type="button" data-prompt="What should my business focus on next?">Next step</button>
       </div>
 
       <form id="chatForm" class="composer">
         <div class="input-wrap">
           <textarea
             id="messageInput"
-            rows="2"
             maxlength="2000"
-            placeholder="अपने business के बारे में पूछें…"
-            autocomplete="off"
-            required
+            rows="2"
+            placeholder="Ask GLIME about your business…"
+            aria-label="Message"
           ></textarea>
           <div class="input-meta">
-            <span>GLIME uses only your authorized business data</span>
+            <span>Enter to send · Shift + Enter for a new line</span>
             <span id="charCount">0 / 2000</span>
           </div>
         </div>
 
         <button id="sendBtn" class="send-btn" type="submit">
-          <span>Ask GLIME</span>
+          <span>Send</span>
           <span class="send-arrow">→</span>
         </button>
       </form>
@@ -151,14 +122,15 @@
     </section>
 
     <footer class="page-footer">
-      <span>GLIME CLIENT DATA ASSISTANT</span>
+      <span>GLIME</span>
       <span>•</span>
-      <span>Private client-scoped intelligence</span>
+      <span>Business Intelligence Assistant</span>
+      <span>•</span>
+      <span>Client data remains access-controlled</span>
     </footer>
-
   </main>
 
   <script src="client-assistant.js"></script>
-<script src="client-assistant-action-addon.js"></script>
+  <script src="client-assistant-action-addon.js"></script>
 </body>
 </html>
