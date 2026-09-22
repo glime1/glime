@@ -66,14 +66,19 @@ async function authHeaders(){
  return {Authorization:`Bearer ${session.access_token}`,apikey:SUPABASE_KEY,'Content-Type':'application/json',Accept:'application/json'};
 }
 async function call(name,body=null,method='POST',query='',extraHeaders={}){
+ if(method!=='POST') throw Error(`Unsupported billing method: ${method}`);
  const h={...(await authHeaders()),...extraHeaders};
- let r;
- try{r=await fetch(fnUrl(name)+query,{method,headers:h,body:method==='GET'?undefined:JSON.stringify(body??{})});}
- catch(e){throw Error(`Billing connection failed: ${e?.message||'Network/CORS error'}`);}
- const text=await r.text();let d={};
- try{d=text?JSON.parse(text):{};}catch(_){d={raw:text};}
- if(!r.ok)throw Error(d.error||d.message||d.code||`Billing request failed (${r.status} ${r.statusText})`);
- return d;
+ try{
+  const payload=query?{...(body||{}),_query:query}:{...(body||{})};
+  const {data,error}=await sb.functions.invoke(name,{body:payload,headers:h});
+  if(error) throw error;
+  if(data==null) throw Error('Billing function returned no data.');
+  if(data.ok===false) throw Error(data.error||data.message||'Billing request failed.');
+  return data;
+ }catch(e){
+  const msg=e?.context?.status?`HTTP ${e.context.status}`:(e?.message||'Network/CORS error');
+  throw Error(`Billing connection failed: ${msg}`);
+ }
 }
 const newIntent=()=>crypto.randomUUID();
 function notice(msg,error=false){const n=$('notice');n.textContent=msg;n.classList.remove('hidden');n.classList.toggle('error',error);}
