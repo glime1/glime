@@ -43,6 +43,7 @@
 <div class="step-title">Verify your mobile number</div>
 <div class="group otp-box"><label for="phoneOtp">Mobile OTP</label><input id="phoneOtp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" maxlength="6"><div class="otp-note">Enter the 6-digit code sent to your mobile.</div></div>
 <button type="button" id="verifyPhoneBtn">Verify Mobile OTP & Finish Signup</button>
+<button type="button" id="resendPhoneBtn" class="secondary">Resend Mobile OTP</button>
 <button type="button" id="backToEmailBtn" class="secondary">Back</button>
 </div>
 
@@ -68,12 +69,61 @@ const phoneOtpStep=document.getElementById('phoneOtpStep');
 const startBtn=document.getElementById('startBtn');
 const verifyEmailBtn=document.getElementById('verifyEmailBtn');
 const verifyPhoneBtn=document.getElementById('verifyPhoneBtn');
+const resendPhoneBtn=document.getElementById('resendPhoneBtn');
 const errorMessage=document.getElementById('errorMessage');
 const successMessage=document.getElementById('successMessage');
 
 function showError(m){errorMessage.textContent=m;errorMessage.style.display='block';successMessage.style.display='none'}
 function showSuccess(m){successMessage.textContent=m;successMessage.style.display='block';errorMessage.style.display='none'}
 function normalizePhone(v){let p=v.trim().replace(/[^\d+]/g,'');if(p.startsWith('0')&&!p.startsWith('+'))p='+91'+p.slice(1);if(/^\d{10}$/.test(p))p='+91'+p;return p}
+
+let mobileVerificationId='';
+
+async function callSmsOtp(action,payload){
+ const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+ if(sessionError)throw sessionError;
+ const accessToken=sessionData?.session?.access_token;
+ if(!accessToken)throw new Error('Your email session is missing. Please restart signup.');
+ const response=await fetch(SUPABASE_URL+'/functions/v1/glime-sms-otp',{
+   method:'POST',
+   headers:{
+     'Content-Type':'application/json',
+     'Authorization':'Bearer '+accessToken,
+     'apikey':SUPABASE_KEY
+   },
+   body:JSON.stringify({action,...payload})
+ });
+ const body=await response.json().catch(()=>({}));
+ if(!response.ok||!body.ok)throw new Error(body.error||'Mobile OTP service is unavailable.');
+ return body;
+}
+
+async function sendMobileOtp(){
+ const d=getDetails();
+ const result=await callSmsOtp('send',{phone:d.phone});
+ mobileVerificationId=String(result.verificationId||'');
+ if(!mobileVerificationId)throw new Error('Mobile OTP could not be started.');
+ return result;
+}
+
+async function provisionClient(){
+ const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+ if(sessionError)throw sessionError;
+ const token=sessionData?.session?.access_token;
+ if(!token)throw new Error('Active login session is missing.');
+ const response=await fetch(SUPABASE_URL+'/functions/v1/glime-provision-self',{
+   method:'POST',
+   headers:{
+     'Content-Type':'application/json',
+     'Authorization':'Bearer '+token,
+     'apikey':SUPABASE_KEY
+   },
+   body:'{}'
+ });
+ const body=await response.json().catch(()=>({}));
+ if(!response.ok||!body.ok)throw new Error(body.error||'GLIME account setup could not be completed.');
+ return body;
+}
 
 function getDetails(){
  const fullName=document.getElementById('fullName').value.trim();
@@ -135,11 +185,7 @@ document.getElementById('verifyEmailBtn').addEventListener('click',async()=>{
    if(error)throw error;
    if(!data?.session)throw new Error('Email verification completed, but no login session was created.');
 
-   const {error:phoneError}=await supabaseClient.auth.updateUser({
-     phone:d.phone,
-     data:{full_name:d.fullName,business_name:d.businessName,phone:d.phone}
-   });
-   if(phoneError)throw phoneError;
+   await sendMobileOtp();
 
    emailOtpStep.classList.add('hidden');
    phoneOtpStep.classList.remove('hidden');
@@ -157,34 +203,57 @@ document.getElementById('verifyEmailBtn').addEventListener('click',async()=>{
 verifyPhoneBtn.addEventListener('click',async()=>{
  errorMessage.style.display='none';successMessage.style.display='none';
  try{
-   const d=getDetails(),token=document.getElementById('phoneOtp').value.trim();
+   const token=document.getElementById('phoneOtp').value.trim();
    if(!/^\d{6}$/.test(token))throw new Error('Please enter the 6-digit mobile OTP.');
+   if(!mobileVerificationId)throw new Error('Mobile OTP session is missing. Please resend the OTP.');
+
    verifyPhoneBtn.disabled=true;verifyPhoneBtn.textContent='Verifying mobile...';
 
-   const {data,error}=await supabaseClient.auth.verifyOtp({phone:d.phone,token,type:'phone_change'});
-   if(error)throw error;
-   if(!data?.session)throw new Error('Mobile verification completed, but no login session was created.');
+   await callSmsOtp('verify',{verificationId:mobileVerificationId,code:token});
 
-   showSuccess('Both email and mobile are verified. Preparing your GLIME account...');
-   await new Promise(r=>setTimeout(r,700));
+   showSuccess('Mobile verified. Preparing your GLIME account...');
+   verifyPhoneBtn.textContent='Setting up account...';
+
+   const provisioned=await provisionClient();
+   if(!provisioned?.client)throw new Error('GLIME client account could not be prepared.');
+
+   await new Promise(r=>setTimeout(r,500));
    window.location.replace('dashboard.html');
  }catch(error){
    console.error('Mobile OTP verification error:',error);
    const m=String(error?.message||'').toLowerCase();
    if(m.includes('invalid')||m.includes('expired'))showError('Invalid or expired mobile OTP. Please request a new code.');
    else showError(error.message||'Mobile OTP verification failed.');
- }finally{verifyPhoneBtn.disabled=false;verifyPhoneBtn.textContent='Verify Mobile OTP & Finish Signup'}
+ }finally{
+   verifyPhoneBtn.disabled=false;verifyPhoneBtn.textContent='Verify Mobile OTP & Finish Signup';
+ }
+});
+
+resendPhoneBtn.addEventListener('click',async()=>{
+ errorMessage.style.display='none';successMessage.style.display='none';
+ try{
+   resendPhoneBtn.disabled=true;resendPhoneBtn.textContent='Sending...';
+   await sendMobileOtp();
+   document.getElementById('phoneOtp').value='';
+   showSuccess('A new mobile OTP has been sent.');
+   document.getElementById('phoneOtp').focus();
+ }catch(error){
+   console.error('Mobile OTP resend error:',error);
+   showError(error.message||'Could not resend mobile OTP.');
+ }finally{
+   resendPhoneBtn.disabled=false;resendPhoneBtn.textContent='Resend Mobile OTP';
+ }
 });
 
 document.getElementById('changeDetailsBtn').addEventListener('click',async()=>{
  await supabaseClient.auth.signOut();
- emailOtpStep.classList.add('hidden');phoneOtpStep.classList.add('hidden');detailsStep.classList.remove('hidden');
+ mobileVerificationId='';emailOtpStep.classList.add('hidden');phoneOtpStep.classList.add('hidden');detailsStep.classList.remove('hidden');
  document.getElementById('emailOtp').value='';document.getElementById('phoneOtp').value='';
  showSuccess('You can change your signup details and start again.');
 });
 
 document.getElementById('backToEmailBtn').addEventListener('click',()=>{
- phoneOtpStep.classList.add('hidden');emailOtpStep.classList.remove('hidden');
+ mobileVerificationId='';phoneOtpStep.classList.add('hidden');emailOtpStep.classList.remove('hidden');
  document.getElementById('phoneOtp').value='';showSuccess('Enter your email OTP again.');
 });
 </script>
