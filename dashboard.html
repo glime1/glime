@@ -753,7 +753,7 @@
         </a>
 
         <a
-            href="billing.html"
+            href="#billingSection"
             class="nav-item"
         >
             💸 Billing
@@ -780,6 +780,19 @@
     ====================================================== -->
 
     <div class="main-content">
+
+        <div id="trialAccessCard" class="card" style="margin-bottom:30px;display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
+                <div>
+                    <div style="color:var(--cyan-blue);font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">GLIME Access</div>
+                    <h3 id="trialAccessTitle" style="margin-top:6px;color:white;">Checking your access...</h3>
+                    <p id="trialAccessText" style="margin-top:7px;color:var(--text-muted);font-size:.9rem;line-height:1.6;"></p>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <a href="billing.html" class="support-btn" style="background:linear-gradient(135deg,var(--neon-green),var(--cyan-blue));color:#061018;">Billing & Plans →</a>
+                </div>
+            </div>
+        </div>
 
         <div class="header">
 
@@ -1260,32 +1273,18 @@
                     ''
                 );
 
-                const hasClientAccess =
-                    await initDashboard(
-                        authenticatedEmail
-                    );
+                const access = await loadBillingAccess();
 
-                if (!hasClientAccess) {
-
-                    await supabaseClient.auth.signOut({
-                        scope: 'local'
-                    });
-
-                    localStorage.removeItem(
-                        'glime_client_email'
-                    );
-
-                    window.location.replace(
-                        'login.html'
-                    );
-
-                    return;
-
-                }
-
+                await initDashboard(
+                    authenticatedEmail
+                );
 
                 loadingScreen.style.display =
                     'none';
+
+                if (!access.allowed) {
+                    showAccessGate();
+                }
 
             } catch (error) {
 
@@ -1522,6 +1521,94 @@
            LOAD CLIENT DATA
         ====================================================== */
 
+        async function loadBillingAccess() {
+
+            const card = document.getElementById('trialAccessCard');
+            const title = document.getElementById('trialAccessTitle');
+            const text = document.getElementById('trialAccessText');
+
+            if (!card || !title || !text) return { allowed: true };
+
+            try {
+                const { data: sessionData, error: sessionError } =
+                    await supabaseClient.auth.getSession();
+
+                if (sessionError) throw sessionError;
+
+                const token = sessionData?.session?.access_token;
+                if (!token) return { allowed: true };
+
+                const response = await fetch(
+                    SUPABASE_URL + '/functions/v1/glime-billing-my-subscription',
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'apikey': SUPABASE_KEY
+                        }
+                    }
+                );
+
+                const body = await response.json().catch(function(){ return {}; });
+                if (!response.ok || !body.ok) {
+                    console.warn('Billing access check failed:', body);
+                    return { allowed: true };
+                }
+
+                const billing = body.data || {};
+                const account = billing.account_state || {};
+                const subscription = billing.current_subscription;
+                const endValue = account.free_trial_ends_at;
+                const end = endValue ? new Date(endValue) : null;
+                const hasPaidAccess = !!subscription &&
+                    ['active','past_due','paused'].includes(String(subscription.status || '').toLowerCase());
+
+                card.style.display = 'block';
+
+                if (account.account_status === 'suspended') {
+                    title.innerText = 'Account access is suspended';
+                    text.innerText = account.suspension_reason || 'Please open Billing & Plans to restore access.';
+                    card.style.borderColor = 'rgba(255,71,87,.45)';
+                    return { allowed: false };
+                }
+
+                if (hasPaidAccess) {
+                    const product = billing.current_product || {};
+                    title.innerText = 'Paid plan active';
+                    text.innerText = (product.name || 'GLIME subscription') + ' is active. Your dashboard access is controlled by your current plan and entitlements.';
+                    return { allowed: true };
+                }
+
+                if (end && end.getTime() > Date.now() && account.free_trial_status === 'active') {
+                    const left = end.getTime() - Date.now();
+                    const days = Math.floor(left / 86400000);
+                    const hours = Math.floor((left % 86400000) / 3600000);
+                    const minutes = Math.floor((left % 3600000) / 60000);
+                    title.innerText = '7-day free trial';
+                    text.innerText = days + 'd ' + hours + 'h ' + minutes + 'm remaining. You have direct access to the GLIME dashboard during your trial.';
+                    card.style.borderColor = 'rgba(0,255,136,.35)';
+                    return { allowed: true };
+                }
+
+                title.innerText = 'Free trial ended';
+                text.innerText = 'Your 7-day trial has ended. Choose a paid GLIME plan from Billing & Plans to continue using the dashboard.';
+                card.style.borderColor = 'rgba(255,71,87,.45)';
+                return { allowed: false };
+
+            } catch (error) {
+                console.error('Billing access check error:', error);
+                return { allowed: true };
+            }
+        }
+
+        function showAccessGate() {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:6000;background:rgba(5,8,12,.94);display:flex;align-items:center;justify-content:center;padding:24px;';
+            overlay.innerHTML = '<div style="max-width:520px;width:100%;background:#111827;border:1px solid rgba(255,71,87,.35);border-radius:18px;padding:30px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.55)"><div style="font-size:2rem;margin-bottom:12px">🔒</div><h2 style="color:white;margin-bottom:10px">Choose a GLIME plan to continue</h2><p style="color:#9ca3af;line-height:1.6;margin-bottom:22px">Your free trial has ended. Your account and existing data remain associated with your GLIME account.</p><a href="billing.html" style="display:inline-block;background:linear-gradient(135deg,#00ff88,#00f0ff);color:#061018;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700">Open Billing & Plans →</a><button id="gateLogout" style="display:block;margin:14px auto 0;background:transparent;border:0;color:#9ca3af;cursor:pointer">Secure Logout</button></div>';
+            document.body.appendChild(overlay);
+            document.getElementById('gateLogout').onclick = handleLogout;
+        }
+
         async function initDashboard(
             authenticatedEmail
         ) {
@@ -1559,7 +1646,7 @@
                         'Pending'
                     );
 
-                    return false;
+                    return;
 
                 }
 
@@ -1613,7 +1700,7 @@
                         ''
                     );
 
-                    return false;
+                    return;
 
                 }
 
@@ -1782,8 +1869,6 @@
                     step3
                 );
 
-                return true;
-
 
             } catch (error) {
 
@@ -1791,8 +1876,6 @@
                     'Dashboard loading error:',
                     error
                 );
-
-                return false;
 
             }
 
@@ -1832,19 +1915,6 @@
         initializeDashboard();
 
     </script>
-    
-
-    <script src="dashboard-modules-addon.js"></script>
-    <script src="voice-call-history-addon.js"></script>
-    <script src="glime-phase-e-proactive-insights.js"></script>
-    <script src="glime-phase-e-impact-analysis.js"></script>
-    <script src="glime-phase-g-decision-action-center.js"></script>
-    <script src="care-dashboard-addon.js"></script>
-    <script src="glime-phase-f-evidence-confidence.js"></script>
-    <script src="client-storage-addon.js"></script>
-    <script src="deep-analysis-addon.js"></script>
-    
-
 
 </body>
 </html>
