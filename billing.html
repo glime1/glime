@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <style>
-:root{--bg:#05080c;--panel:#0d151f;--line:rgba(255,255,255,.09);--text:#fff;--muted:#98a6b5;--green:#00ff88;--cyan:#00f0ff;--danger:#ff5364}
+:root{--bg:#05080c;--panel:#0d151f;--panel2:#09111a;--line:rgba(255,255,255,.09);--text:#fff;--muted:#98a6b5;--green:#00ff88;--cyan:#00f0ff;--danger:#ff5364}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,rgba(0,240,255,.08),transparent 34%),radial-gradient(circle at 0 0,rgba(0,255,136,.07),transparent 32%),var(--bg);color:var(--text);font-family:Poppins,Inter,system-ui,-apple-system,Segoe UI,sans-serif}
 .wrap{max-width:1220px;margin:auto;padding:22px 16px 70px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}.brand img{width:46px;height:46px;object-fit:contain}.brand b{font-size:22px}.brand span{display:block;color:var(--muted);font-size:12px}
@@ -25,8 +25,7 @@
 table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted)}
 .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);font-weight:800}.heroTitle{font-size:25px;margin:5px 0}.countdown{font-size:24px;font-weight:850;color:var(--green);margin-top:5px}
 .input{background:#08111a;border:1px solid var(--line);color:#fff;border-radius:10px;padding:10px}.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.mini{padding:13px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025)}
-.dialog{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:18px;z-index:50}.dialogBox{max-width:520px;width:100%;background:#0b131d;border:1px solid rgba(0,240,255,.25);border-radius:17px;padding:22px;box-shadow:0 20px 70px rgba(0,0,0,.5)}.dialogBox h3{margin-top:0}.dialogActions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
-@media(max-width:850px){.plans,.cols{grid-template-columns:1fr}.mini-grid{grid-template-columns:1fr}.top{align-items:flex-start}.price{font-size:27px}table{display:block;overflow-x:auto;white-space:nowrap}}
+@media(max-width:850px){.plans,.cols{grid-template-columns:1fr}.mini-grid{grid-template-columns:1fr}.top{align-items:flex-start}.price{font-size:27px}}
 </style>
 </head>
 <body>
@@ -42,11 +41,6 @@ table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;
   <div id="accountState" class="loader">Loading account status…</div>
 </section>
 
-<section class="section card" id="customerCard">
-  <div class="kicker">Customer</div>
-  <div id="customer" class="loader">Loading…</div>
-</section>
-
 <section class="section card" id="subscription">
   <div class="kicker">Subscription</div>
   <h2>Current plan</h2>
@@ -59,12 +53,12 @@ table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;
 </section>
 
 <section class="section grid cols">
-  <div class="card"><h3>Business Data & Storage</h3><div id="capacity" class="loader">Loading capacity…</div><div id="activeAddons" style="margin-top:12px"></div><div id="dataAddons" style="margin-top:12px" class="loader">Loading Business Data…</div><div id="storageAddons" style="margin-top:14px"></div></div>
-  <div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div id="creditHistory" style="margin-top:14px"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1,000 AI tokens. Input + output tokens are counted together.</div></div>
+  <div class="card"><h3>Business Data</h3><div id="capacity" class="loader">Loading capacity…</div><div id="dataAddons" style="margin-top:12px" class="loader">Loading add-ons…</div></div>
+  <div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1,000 AI tokens. Input + output tokens are counted together.</div></div>
 </section>
 
 <section class="section grid cols">
-  <div class="card"><h3>Wallet</h3><div id="wallet" class="loader">Loading…</div><div class="actions"><input id="walletAmount" class="input" type="number" min="100" step="1" value="100" style="flex:1;min-width:130px"><button class="btn primary" id="walletBtn">Add Balance</button></div><div class="small muted" style="margin-top:8px">Minimum balance addition: ₹100.</div><div id="walletHistory" style="margin-top:14px"></div></div>
+  <div class="card"><h3>Wallet</h3><div id="wallet" class="loader">Loading…</div><div class="actions"><input id="walletAmount" class="input" type="number" min="100" step="1" value="100" style="flex:1;min-width:130px"><button class="btn primary" id="walletBtn">Add Balance</button></div><div class="small muted" style="margin-top:8px">Minimum balance addition: ₹100.</div></div>
   <div class="card"><h3>Usage & Spending</h3><div id="usage" class="loader">Loading…</div></div>
 </section>
 
@@ -74,122 +68,97 @@ table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;
 <section class="section card"><h3>Invoices</h3><div id="invoices" class="loader">Loading…</div></section>
 </div>
 
-<div id="confirmDialog" class="dialog hidden" role="dialog" aria-modal="true">
-  <div class="dialogBox">
-    <h3 id="dialogTitle">Confirm action</h3>
-    <div id="dialogText" class="muted"></div>
-    <div class="dialogActions"><button class="btn" id="dialogCancel">Cancel</button><button class="btn primary" id="dialogConfirm">Confirm</button></div>
-  </div>
-</div>
-
 <script>
 const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const state={cycle:'monthly',catalog:{free:null,growth:null,omni:null,data:[],storage:[],credits:[]},billing:null,busy:false,checkoutIntent:null};
+const state={cycle:'monthly',catalog:{growth:null,omni:null,data:[],credits:[]},billing:null};
 const $=id=>document.getElementById(id);
+const featureLabels={core_agents:'Core Agents',voice_agent:'Voice Agent',whatsapp_agent:'WhatsApp Agent',instagram_agent:'Instagram Agent',lead_management:'Lead Management',sales_pipeline:'Sales Pipeline',customer_support:'Customer Support',appointment_booking:'Appointment & Booking',internal_operations:'Internal Operations',reporting_analytics:'Reporting & Analytics',document_data_processing:'Document & Data Processing',marketing_workflows:'Marketing Workflows',inventory_order_work:'Inventory & Order Work',business_data:'Business Data'};
+const featureLabel=v=>featureLabels[v]||String(v||'').replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>v==null?'—':new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(Number(v));
 const num=v=>Number(v||0).toLocaleString('en-IN');
-const dateText=v=>v?new Date(v).toLocaleString('en-IN'):'—';
 function fnUrl(name){return `${SUPABASE_URL}/functions/v1/${name}`}
 async function authHeaders(){const {data:{session},error}=await sb.auth.getSession();if(error||!session){location.replace('login.html');throw Error('LOGIN_REQUIRED')}return {Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'}}
-async function call(name,body=null,method='POST',query='',extraHeaders={}){const h={...(await authHeaders()),...extraHeaders};const r=await fetch(fnUrl(name)+query,{method,headers:h,body:method==='GET'?undefined:JSON.stringify(body??{})});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||d.message||'Request failed');return d}
+async function call(name,body=null,method='POST',query=''){const h=await authHeaders();const r=await fetch(fnUrl(name)+query,{method,headers:h,body:method==='GET'?undefined:JSON.stringify(body??{})});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||d.message||'Request failed');return d}
+function newIntent(){return crypto.randomUUID()}
 function notice(msg,error=false){const n=$('notice');n.textContent=msg;n.classList.remove('hidden');n.classList.toggle('error',error)}
-function pct(used,quota){return quota>0?Math.min(100,Math.max(0,(used/quota)*100)):0}
-function bytes(v){const n=Number(v||0);if(n<1024*1024)return `${num(Math.round(n/1024))} KB`;if(n<1024*1024*1024)return `${(n/1024/1024).toFixed(1)} MB`;return `${(n/1024/1024/1024).toFixed(2)} GB`}
-function priceFor(item,interval){return (item?.prices||[]).find(x=>x.billing_interval===interval)||null}
+async function product(code,cycle){return call('glime-billing-catalog',null,'GET',`?product_code=${encodeURIComponent(code)}&interval=${encodeURIComponent(cycle)}`)}
 async function loadCatalog(){
   const r=await call('glime-billing-catalog',null,'GET','?all=1');
-  const items=r?.data?.products||[];
-  const by={};for(const x of items)by[x.product?.product_code]=x;
-  state.catalog.free=by.glime_free||null;
-  state.catalog.growth=by.glime_growth?{...by.glime_growth,price:priceFor(by.glime_growth,state.cycle)}:null;
-  state.catalog.omni=by.glime_omni?{...by.glime_omni,price:priceFor(by.glime_omni,state.cycle)}:null;
-  state.catalog.data=['glime_business_data_50mb','glime_business_data_100mb'].map(c=>by[c]?{...by[c],price:priceFor(by[c],'monthly')}:null).filter(Boolean);
-  state.catalog.storage=['glime_storage_50mb','glime_storage_1gb'].map(c=>by[c]?{...by[c],price:priceFor(by[c],'monthly')}:null).filter(Boolean);
-  state.catalog.credits=['glime_ai_credits_10','glime_ai_credits_100','glime_ai_credits_500','glime_ai_credits_1000'].map(c=>by[c]?{...by[c],price:priceFor(by[c],'one_time')}:null).filter(Boolean);
+  const products=r?.data?.products||[];
+  const by=Object.fromEntries(products.map(x=>[x.product?.product_code,x]));
+  state.catalog.growth=by.glime_growth||null;
+  state.catalog.omni=by.glime_omni||null;
+  state.catalog.data=products.filter(x=>['glime_business_data_50mb','glime_business_data_100mb'].includes(x.product?.product_code));
+  state.catalog.credits=products.filter(x=>['glime_ai_credits_10','glime_ai_credits_100','glime_ai_credits_500','glime_ai_credits_1000'].includes(x.product?.product_code));
+  for(const x of products){x.price=(x.prices||[]).find(p=>p.billing_interval===state.cycle)||x.prices?.[0]||null}
 }
+
+function pct(used,quota){return quota>0?Math.min(100,Math.max(0,(used/quota)*100)):0}
+function bytes(v){const n=Number(v||0);if(n<1024*1024)return `${num(Math.round(n/1024))} KB`;if(n<1024*1024*1024)return `${(n/1024/1024).toFixed(1)} MB`;return `${(n/1024/1024/1024).toFixed(2)} GB`}
 function renderAccount(){
-  const a=state.billing?.account_state||{},status=String(a.account_status||'active').toLowerCase(),end=a.free_trial_ends_at;
-  if(status==='suspended'){$('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">Account suspended</div><div class="muted">${esc(a.suspension_reason||'Access is currently suspended.')}</div><div class="actions"><button class="btn primary" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">Choose a paid plan</button></div>`;return}
-  if(end&&(a.free_trial_status==='active'||!a.current_subscription)){const left=Math.max(0,new Date(end).getTime()-Date.now()),d=Math.floor(left/86400000),h=Math.floor(left%86400000/3600000),m=Math.floor(left%3600000/60000);$('accountState').innerHTML=`<div class="kicker">Free access</div><div class="heroTitle">7-day trial</div><div class="countdown" id="trialCountdown">${d}d ${h}h ${m}m remaining</div><div class="muted small">Trial ends ${esc(dateText(end))}. After expiry, the account is suspended unless a paid subscription is active.</div>`;return}
-  $('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">${esc(a.free_trial_status||status||'active')}</div><div class="muted">Your access and limits are controlled by your current GLIME billing configuration.</div>`;
+  const a=state.billing?.account_state||{};
+  const status=String(a.account_status||'active').toLowerCase();
+  const end=a.free_trial_ends_at;
+  if(status==='suspended'){ $('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">Account suspended</div><div class="muted">${esc(a.suspension_reason||'Access is currently suspended.')}</div><div class="actions"><button class="btn primary" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">Choose a paid plan</button></div>`;return}
+  if(end && (a.free_trial_status==='active'||!a.current_subscription)){
+    const t=new Date(end).getTime();const left=Math.max(0,t-Date.now());const d=Math.floor(left/86400000),h=Math.floor(left%86400000/3600000),m=Math.floor(left%3600000/60000);
+    $('accountState').innerHTML=`<div class="kicker">Free access</div><div class="heroTitle">7-day trial</div><div class="countdown" id="trialCountdown">${d}d ${h}h ${m}m remaining</div><div class="muted small">Trial ends ${esc(new Date(end).toLocaleString('en-IN'))}. After expiry, the account is suspended unless a paid subscription is active.</div>`;
+  }else{
+    $('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">${esc(a.free_trial_status||status||'active')}</div><div class="muted">Your access and limits are controlled by your current GLIME billing configuration.</div>`;
+  }
 }
-function renderCustomer(){
-  const c=state.billing?.customer||{};
-  $('customer').innerHTML=`<div class="stat"><span>Name</span><b>${esc(c.name||'GLIME Customer')}</b></div><div class="stat"><span>Email</span><span>${esc(c.email||'—')}</span></div>`;
-}
-function planSavings(code,cycle,amount){
-  if(cycle!=='yearly')return '';
-  const monthly=code==='glime_growth'?799:code==='glime_omni'?1999:null;if(!monthly)return '';
-  const annualMonthly=monthly*12,saved=annualMonthly-Number(amount),pctSaved=annualMonthly?Math.round(saved/annualMonthly*100):0;
-  return saved>0?`<div class="small success">Save ${money(saved)}/year (${pctSaved}%)</div>`:'';
-}
-const featureLabels={core_agents:'Core agents',agent_bundle:'Agent bundle',voice_agent:'Voice AI agent',voice_agent_included:'Voice AI agent included',future_agent_priority:'Priority access to future agents',lead_management:'Lead management',sales_pipeline:'Sales pipeline',customer_support:'Customer support',appointment_booking:'Appointments & bookings',internal_operations:'Internal operations',reporting_analytics:'Reporting & analytics',document_data_processing:'Document & data processing',marketing_workflows:'Marketing workflows',inventory_order_work:'Inventory & order workflows',business_data_mb:'Business data',storage_mb:'Storage',ai_credits:'AI credits'};
-function featureLabel(code){const c=String(code||'');return featureLabels[c]||c.replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())}
 function renderPlans(){
-  const current=state.billing?.current_product?.product_code;
   const arr=[state.catalog.growth,state.catalog.omni].filter(Boolean);
-  const free=state.catalog.free?.product;
-  const freeCard=free?`<article class="card"><span class="badge">FREE</span><h2 style="margin-top:10px">${esc(free.name||'GLIME Free')}</h2><div class="muted">7-day free trial. No GST/tax charged.</div><div class="price">₹0 <small>/ trial</small></div><ul class="features"><li>7-day trial access</li><li>Basic GLIME access during trial</li><li>After trial, choose a paid plan to continue</li></ul><button class="btn" disabled>${current?'Available after downgrade/cancellation':'Included at signup'}</button></article>`:'';
-  const cards=arr.map(p=>{const pr=p.price||{},ents=p.entitlements||[],code=p.product?.product_code||'',isCurrent=current===code;const currentAmount=Number(state.billing?.current_price?.amount||state.billing?.current_subscription?.amount||0),targetAmount=Number(pr.amount||0);const lower=current&&current!==code&&targetAmount<currentAmount;return `<article class="card"><span class="badge">${esc(code.replace('glime_','').toUpperCase())}</span><h2 style="margin-top:10px">${esc(p.product?.name||'GLIME Plan')}</h2><div class="muted">${esc(p.product?.description||'')}</div><div class="price">${money(pr.amount)} <small>/ ${esc(pr.billing_interval||state.cycle)}</small></div>${planSavings(code,state.cycle,pr.amount)}<ul class="features">${ents.slice(0,10).map(e=>`<li>${esc(featureLabel(e.entitlement_code))}${e.quantity!=null?` — ${esc(e.quantity)} ${esc(e.unit||'')}`:''}</li>`).join('')}</ul><button class="btn primary planBtn" data-product="${esc(code)}" data-interval="${esc(pr.billing_interval||state.cycle)}" data-downgrade="${lower?'1':'0'}" ${isCurrent?'disabled':''}>${isCurrent?'Current plan':lower?'Schedule downgrade':'Start plan'}</button>${lower?`<div class="small muted" style="margin-top:7px">New plan starts at the end of the current billing period.</div>`:''}</article>`}).join('');
-  $('plans').innerHTML=freeCard+cards||'<div class="card empty">Plans are unavailable right now.</div>';
+  const current=state.billing?.current_product?.product_code;
+  $('plans').innerHTML=arr.map(p=>{
+    const pr=p.price||{},ents=p.entitlements||[],code=p.product?.product_code||'';
+    const isCurrent=current===code;
+    const storage=(p.storage_options||[]).filter(o=>Number(o.storage_blocks)>0&&o.initial_checkout_enabled);
+    const storageHtml=code==='glime_growth'&&storage.length?`<div class="mini-grid" style="margin-top:12px">${storage.map(o=>{const configured=!!o.provider_plan_code;return `<div class="mini"><b>+${esc(o.storage_mb)} MB</b><div class="small muted">${money(o.monthly_amount)}/month total</div><button class="btn" style="margin-top:8px;width:100%" data-product="${esc(code)}" data-interval="${esc(pr.billing_interval||state.cycle)}" data-storage-blocks="${esc(o.storage_blocks)}" ${!configured||isCurrent?'disabled':''}>${configured?'Start with storage':'Cashfree plan pending'}</button></div>`}).join('')}</div>`:'';
+    return `<article class="card"><span class="badge">${esc(code.replace('glime_','').toUpperCase())}</span><h2 style="margin-top:10px">${esc(p.product?.name||'GLIME Plan')}</h2><div class="muted">${esc(p.product?.description||'')}</div><div class="price">${money(pr.amount)} <small>/ ${esc(pr.billing_interval||state.cycle)}</small></div><ul class="features">${ents.slice(0,10).map(e=>`<li>${esc(featureLabel(e.entitlement_code))}${e.quantity!=null?` — ${esc(e.quantity)} ${esc(e.unit||'')}`:''}</li>`).join('')}</ul><button class="btn primary planBtn" data-product="${esc(code)}" data-interval="${esc(pr.billing_interval||state.cycle)}" data-storage-blocks="0" ${isCurrent?'disabled':''}>${isCurrent?'Current plan':current?'Change plan':'Start plan'}</button>${storageHtml}</article>`
+  }).join('')||'<div class="card empty">Plans are unavailable right now.</div>'
 }
 function renderSubscription(){
   const b=state.billing||{},s=b.current_subscription,p=b.current_product||{};
   if(!s){$('subBody').innerHTML='<div class="empty">No paid subscription is active. Your account is using its available free/trial access.</div>';return}
-  const status=String(s.status||'').toLowerCase();
-  $('subBody').innerHTML=`<div class="stat"><span>Plan</span><b>${esc(p.name||p.product_code||'GLIME')}</b></div><div class="stat"><span>Status</span><span class="badge">${esc(s.status)}</span></div><div class="stat"><span>Amount</span><b>${money(s.amount)}</b></div><div class="stat"><span>Billing cycle</span><span>${esc(b.current_price?.billing_interval||'—')}</span></div><div class="stat"><span>Current period</span><span>${esc((s.current_period_start||'').slice(0,10))} → ${esc((s.current_period_end||'').slice(0,10))}</span></div><div class="stat"><span>Auto-renew</span><span>${s.auto_renew?'On':'Off'}</span></div><div class="actions"><button class="btn primary" id="changePlan">Change Plan</button>${status!=='cancelled'&&status!=='expired'?`<button class="btn" id="renewBtn">${s.auto_renew?'Cancel auto-renew':'Resume subscription'}</button>`:''}</div>${s.cancel_at_period_end?`<div class="small muted" style="margin-top:10px">Auto-renew is scheduled to stop at the end of the current period: ${esc(dateText(s.current_period_end))}.</div>`:''}`;
+  $('subBody').innerHTML=`<div class="stat"><span>Plan</span><b>${esc(p.name||p.product_code||'GLIME')}</b></div><div class="stat"><span>Status</span><span class="badge">${esc(s.status)}</span></div><div class="stat"><span>Amount</span><b>${money(s.amount)}</b></div><div class="stat"><span>Billing cycle</span><span>${esc(b.current_price?.billing_interval||'—')}</span></div><div class="stat"><span>Current period</span><span>${esc((s.current_period_start||'').slice(0,10))} → ${esc((s.current_period_end||'').slice(0,10))}</span></div><div class="stat"><span>Auto-renew</span><span>${s.auto_renew?'On':'Off'}</span></div><div class="actions"><button class="btn primary" id="changePlan">Change Plan</button><button class="btn" id="renewBtn">${s.auto_renew?'Cancel auto-renew':'Resume subscription'}</button></div>`;
+  $('renewBtn').onclick=async()=>{try{await call('glime-cashfree-manage-subscription',{action:s.auto_renew?'cancel_auto_renew':'resume_auto_renew'});await loadAll();notice('Subscription setting updated.')}catch(e){notice(e.message,true)}};
   $('changePlan').onclick=()=>document.getElementById('plans').scrollIntoView({behavior:'smooth'});
-  const rb=$('renewBtn');if(rb)rb.onclick=async()=>{
-    const cancel=s.auto_renew;
-    const ok=await confirmAction(cancel?'Cancel auto-renew?':'Resume subscription?',cancel?`Your current plan will remain active until ${dateText(s.current_period_end)}. Future automatic renewal will be stopped.`:'Automatic renewal will be resumed for this subscription.');
-    if(!ok)return;
-    try{rb.disabled=true;await call('glime-cashfree-manage-subscription',{subscription_id:s.id,action:cancel?'cancel_auto_renew':'resume_auto_renew'});await loadAll();notice(cancel?'Auto-renew cancellation scheduled.':'Auto-renew resumed.')}catch(e){notice(e.message,true)}finally{rb.disabled=false}
-  };
 }
 function renderCapacity(){
-  const c=state.billing?.capacity||{},fq=Number(c.file_storage_quota_bytes||0),fu=Number(c.file_storage_used_bytes||0),dq=Number(c.database_quota_bytes||0),du=Number(c.database_used_bytes||0);
+  const c=state.billing?.capacity||{};
+  const fq=Number(c.file_storage_quota_bytes||0),fu=Number(c.file_storage_used_bytes||0),dq=Number(c.database_quota_bytes||0),du=Number(c.database_used_bytes||0);
   $('capacity').innerHTML=`<div class="stat"><span>Business Data</span><b>${bytes(du)} / ${bytes(dq)}</b></div><div class="bar"><i style="width:${pct(du,dq)}%"></i></div><div class="small muted">Business data limit: ${bytes(dq)}</div><div class="stat" style="margin-top:10px"><span>Files & Photos</span><b>${bytes(fu)} / ${bytes(fq)}</b></div><div class="bar"><i style="width:${pct(fu,fq)}%"></i></div><div class="small muted">Files & photos limit: ${bytes(fq)}</div>`;
-}
-function renderActiveAddons(){
-  const arr=(state.billing?.addons||[]).filter(x=>String(x.status||'').toLowerCase()==='active');
-  $('activeAddons').innerHTML=arr.length?`<div class="kicker">Active add-ons</div>${arr.map(x=>`<div class="row"><div><b>${esc(x.addon_code||'Add-on')}</b><div class="small muted">${esc(x.quantity??1)} × ${money(x.unit_amount)} ${esc(x.currency||'INR')} ${x.effective_until?`· until ${esc(dateText(x.effective_until))}`:''}</div></div><span class="badge">${esc(x.status)}</span></div>`).join('')}`:'';
 }
 function renderAddons(){
   const arr=state.catalog.data;
-  $('dataAddons').innerHTML=arr.length?`<div class="kicker">Business Data add-ons</div>${arr.map(x=>{const p=x.product,pr=x.price||{},configured=!!pr.provider_configured;return `<div class="row"><div><b>${esc(p.name)}</b><div class="muted small">${esc(p.description||'Additional business data capacity')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month · GST ₹0</div><button class="btn" style="margin-top:7px" data-data-code="${esc(p.product_code)}" ${configured?'':'disabled'}>Add</button></div></div>`}).join('')}`:'<div class="empty">Business Data add-ons are not available right now.</div>';
-  const st=state.catalog.storage;
-  $('storageAddons').innerHTML=st.length?`<div class="kicker">Storage add-ons</div>${st.map(x=>{const p=x.product,pr=x.price||{},configured=!!pr.provider_configured;return `<div class="row"><div><b>${esc(p.name)}</b><div class="muted small">Extra file/photo storage</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month · GST ₹0</div><button class="btn" style="margin-top:7px" data-storage-code="${esc(p.product_code)}" ${configured?'':'disabled'}>${configured?'Add':'Awaiting Cashfree plan'}</button></div></div>`}).join('')}`:'<div class="empty">Storage add-ons are not available right now.</div>';
+  $('dataAddons').innerHTML=arr.length?arr.map(x=>{const p=x.product,pr=x.price||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="muted small">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month</div><button class="btn" style="margin-top:7px" data-data-code="${esc(p.product_code)}">Add</button></div></div>`}).join(''):'<div class="empty">Business Data add-ons are unavailable in the current catalog.</div>';
 }
 function renderCredits(){
   const tx=state.billing?.ai_credits||{},credits=Number(tx.balance_credits||0),tokens=Number(tx.remaining_tokens??credits*1000);
   $('credits').innerHTML=`<div class="stat"><span>Credits remaining</span><b class="cyan">${num(credits)}</b></div><div class="stat"><span>AI tokens remaining</span><b>${num(tokens)}</b></div><div class="stat"><span>Credits granted</span><span>${num(tx.granted_credits||0)}</span></div><div class="stat"><span>Credits used</span><span>${num(tx.used_credits||0)}</span></div>`;
-  $('creditPacks').innerHTML=state.catalog.credits.length?'<div class="small muted" style="margin-bottom:8px">Add credits</div>'+state.catalog.credits.map(x=>{const p=x.product,pr=x.price||{};return '<div class="row"><div><b>'+esc(p.name)+'</b><div class="small muted">'+esc(p.description||'')+'</div></div><div style="text-align:right"><b>'+money(pr.amount)+'</b><br><button class="btn" style="margin-top:6px" data-credit-code="'+esc(p.product_code)+'">Buy</button></div></div>'}).join(''):'';
-  const hist=tx.transactions||[];
-  $('creditHistory').innerHTML=hist.length?'<div class="small muted" style="margin-bottom:6px">Recent credit activity</div>'+hist.slice(0,10).map(x=>'<div class="row"><span>'+esc(x.description||x.transaction_type||'Credit activity')+'<br><span class="small muted">'+esc(dateText(x.created_at))+'</span></span><b class="'+(Number(x.credits_delta)>=0?'success':'danger')+'">'+(Number(x.credits_delta)>=0?'+':'')+num(x.credits_delta)+'</b></div>').join(''):'';
-
+  $('creditPacks').innerHTML=state.catalog.credits.length?`<div class="small muted" style="margin-bottom:8px">Add credits</div>${state.catalog.credits.map(x=>{const p=x.product,pr=x.price||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="small muted">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><br><button class="btn" style="margin-top:6px" data-credit-code="${esc(p.product_code)}">Buy</button></div></div>`}).join('')}`:'';
 }
-function renderWallet(){
-  const w=state.billing?.wallet;
-  if(!w){$('wallet').innerHTML='<div class="empty">Wallet balance is not available yet.</div>'}
-  else $('wallet').innerHTML=`<div class="stat"><span>Balance</span><b class="success">${money(w.balance)}</b></div><div class="stat"><span>Status</span><span class="badge">${esc(w.status||'active')}</span></div>${w.low_balance?'<div class="small" style="color:var(--danger);margin-top:8px">Low balance warning: please add balance before usage is blocked.</div>':''}`;
-  const rows=state.billing?.wallet_transactions||[];
-  $('walletHistory').innerHTML=rows.length?`<div class="small muted" style="margin-bottom:6px">Recent wallet activity</div>${rows.slice(0,10).map(x=>`<div class="row"><span>${esc(x.description||x.transaction_type||'Wallet activity')}<br><span class="small muted">${esc(dateText(x.created_at))}</span></span><b>${money(x.amount)}</b></div>`).join('')}`:'';
-}
+function renderWallet(){const w=state.billing?.wallet;if(!w){$('wallet').innerHTML='<div class="empty">Wallet balance is not available yet.</div>';return}$('wallet').innerHTML=`<div class="stat"><span>Balance</span><b class="success">${money(w.balance)}</b></div><div class="stat"><span>Status</span><span class="badge">${esc(w.status||'active')}</span></div>`}
 function renderUsage(){
-  const rows=state.billing?.usage_summary||[],labels={voice_minute:'Voice AI',sms_message:'SMS',email_message:'Email',instagram_message:'Instagram',whatsapp_message:'WhatsApp',whatsapp_marketing_24h:'WhatsApp 24h follow-up / marketing',lead_processing:'Lead processing',ai_token:'AI tokens'};
+  const rows=state.billing?.usage_summary||[];
+  const labels={voice_minute:'Voice AI',sms_message:'SMS',email_message:'Email',instagram_message:'Instagram',whatsapp_message:'WhatsApp',whatsapp_marketing_24h:'WhatsApp 24h follow-up / marketing',lead_processing:'Lead processing',ai_token:'AI tokens'};
   $('usage').innerHTML=rows.length?rows.map(r=>`<div class="stat"><span>${esc(labels[r.usage_code]||r.usage_code)}</span><span>${num(r.quantity)} · ${money(r.amount||0)}</span></div>`).join(''):'<div class="empty">No usage recorded yet.</div>';
 }
 function renderAgents(){
-  const rows=state.billing?.entitlements||[],agents=rows.filter(x=>x.entitlement_code&&(/agent|voice|whatsapp|instagram|lead|follow|marketing/i.test(x.entitlement_code))),limit=rows.find(x=>/agent.*limit|limit.*agent/i.test(x.entitlement_code));
+  const rows=state.billing?.entitlements||[];
+  const agents=rows.filter(x=>x.entitlement_code&&(/agent|voice|whatsapp|instagram|lead|follow|marketing/i.test(x.entitlement_code)));
+  const limit=rows.find(x=>/agent.*limit|limit.*agent/i.test(x.entitlement_code));
   $('agents').innerHTML=`<div class="mini-grid"><div class="mini"><div class="small muted">Agent limit</div><b>${limit?.quantity!=null?esc(limit.quantity):'Configured by plan'}</b></div><div class="mini"><div class="small muted">Included access</div><b>${agents.length} entitlement(s)</b></div><div class="mini"><div class="small muted">Future agents</div><b>Plan-controlled</b></div></div><div style="margin-top:12px">${agents.length?agents.map(x=>`<div class="row"><span>${esc(x.entitlement_code)}</span><span class="badge">${esc(x.status||'active')}</span></div>`).join(''):'<div class="empty">Agent access is controlled by your active GLIME entitlements.</div>'}</div>`;
 }
 function renderGrants(){
   const rows=state.billing?.promotional_grants||state.billing?.grants||[];
   if(!rows.length){$('grantsCard').classList.add('hidden');return}
-  $('grantsCard').classList.remove('hidden');$('grants').innerHTML=rows.map(x=>`<div class="row"><div><b>${esc(x.grant_code||x.entitlement_code||x.grant_type||'GLIME grant')}</b><div class="small muted">${esc(x.reason||x.description||x.source_type||'Promotional benefit')}</div></div><span class="badge">${esc(x.quantity??'')} ${esc(x.unit||'')}</span></div>`).join('');
+  $('grantsCard').classList.remove('hidden');
+  $('grants').innerHTML=rows.map(x=>`<div class="row"><div><b>${esc(x.grant_code||x.grant_type||'GLIME grant')}</b><div class="small muted">${esc(x.reason||x.description||'Promotional benefit')}</div></div><span class="badge">${esc(x.quantity)} ${esc(x.unit||'')}</span></div>`).join('');
 }
 function renderPayments(){
   const rows=state.billing?.payments?.length?state.billing.payments:state.billing?.orders||[];
@@ -197,73 +166,63 @@ function renderPayments(){
 }
 function renderInvoices(){
   const rows=state.billing?.invoices||[];
-  $('invoices').innerHTML=rows.length?`<table><thead><tr><th>Date</th><th>Invoice</th><th>Total</th><th>GST/Tax</th><th>Download</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc((x.created_at||'').slice(0,10))}</td><td>${esc(x.invoice_number||'Invoice')}</td><td>${money(x.total_amount??x.amount)}</td><td>${money(0)}</td><td><button class="btn invoiceBtn" data-invoice-id="${esc(x.id)}">Download PDF</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No invoices yet.</div>';
+  $('invoices').innerHTML=rows.length?`<table><thead><tr><th>Date</th><th>Invoice</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${rows.map((x,i)=>{return `<tr><td>${esc((x.created_at||'').slice(0,10))}</td><td>${esc(x.invoice_number||'Invoice')}</td><td>${money(x.total_amount??x.amount)}</td><td>${esc(x.status||'—')}</td><td><button class="btn" data-invoice-id="${esc(x.id)}">Download</button></td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No invoices yet.</div>';
 }
-async function checkoutPaymentSession(d){const session=d?.data?.payment_session_id||d?.payment_session_id;if(!session)throw Error('Payment checkout is not ready.');const env=(d.environment||d.data?.environment||'sandbox').toLowerCase();if(env!=='production')throw Error('GLIME billing is not configured for Production yet.');const cf=Cashfree({mode:'production'});await cf.checkout({paymentSessionId:session});}
-function newIntent(){state.checkoutIntent=crypto.randomUUID();return state.checkoutIntent}
-async function subscribe(code,interval){const key=newIntent();const d=await call('glime-cashfree-create-subscription',{product_code:code,billing_interval:interval},'POST','',{'x-idempotency-key':key});const session=d?.subscription_session_id||d?.data?.subscription_session_id;if(!session)throw Error('Subscription checkout is not ready.');const env=(d.environment||d.data?.environment||'sandbox').toLowerCase();if(env!=='production')throw Error('GLIME billing is not configured for Production yet.');const cf=Cashfree({mode:'production'});await cf.checkout({subscriptionSessionId:session});}
-async function upgrade(code,interval){const q=await call('glime-billing-upgrade-quote',{target_product_code:code,billing_interval:interval}),quote=q.data||q,charge=Number(quote.charge_now??quote.proration?.charge_now??quote.amount_due??0);if(!Number.isFinite(charge)||charge<=0)throw Error('This plan change has no payable upgrade amount right now.');const ok=await confirmAction('Confirm plan upgrade',`You are upgrading to ${quote.target?.product_name||code}. The calculated amount payable now is ${money(charge)}. GST/Tax today: ₹0.`);if(!ok)return;const d=await call('glime-cashfree-create-upgrade-payment',{product_code:code,billing_interval:interval});await checkoutPaymentSession(d);}
-async function downgrade(code,interval){const current=state.billing?.current_subscription;if(!current)throw Error('No active subscription found.');const target=state.catalog.growth?.product?.product_code===code?state.catalog.growth:state.catalog.omni?.product?.product_code===code?state.catalog.omni:null;const amount=Number(target?.price?.amount||0);const ok=await confirmAction('Schedule downgrade',`Your current plan stays active until ${dateText(current.current_period_end)}. Then ${target?.product?.name||code} will apply at ${money(amount)} per ${interval}. No refund or mid-cycle charge. GST/Tax: ₹0.`);if(!ok)return;await call('glime-cashfree-manage-subscription',{subscription_id:current.id,action:'schedule_downgrade',target_product_code:code,billing_interval:interval});await loadAll();notice('Downgrade scheduled for the next renewal.');}
-async function buyAddon(code,type){const key=newIntent();const name=type==='storage'?'Storage':'Business Data';const d=type==='storage'?await call('glime-cashfree-create-storage-addon',{product_code:code},'POST','',{'x-idempotency-key':key}):await call('glime-cashfree-create-business-data-addon',{product_code:code},'POST','',{'x-idempotency-key':key});const session=d?.data?.subscription_session_id;if(!session)throw Error(`${name} checkout is not ready.`);const env=(d.environment||d.data?.environment||'sandbox').toLowerCase();if(env!=='production')throw Error('GLIME billing is not configured for Production yet.');await Cashfree({mode:'production'}).checkout({subscriptionSessionId:session});}
+async function checkoutPaymentSession(d){
+  const session=d?.data?.payment_session_id||d?.payment_session_id;
+  if(!session)throw Error('Payment checkout is not ready.');
+  const cf=Cashfree({mode:'production'});
+  await cf.checkout({paymentSessionId:session});
+}
+async function checkoutSubscriptionSession(d){const session=d?.data?.subscription_session_id||d?.subscription_session_id;if(!session)throw Error('Subscription checkout is not ready.');const cf=Cashfree({mode:'production'});await cf.checkout({subscriptionSessionId:session})}
+async function subscribe(code,interval,storageBlocks=0){
+  const d=await call('glime-cashfree-create-subscription',{product_code:code,billing_interval:interval,storage_blocks:Number(storageBlocks||0)},'POST','',{'x-idempotency-key':newIntent()});
+  const session=d?.subscription_session_id||d?.data?.subscription_session_id;
+  if(!session)throw Error('Subscription checkout is not ready.');
+  await checkoutSubscriptionSession(d);
+}
+async function upgrade(code,interval){
+  const q=await call('glime-billing-upgrade-quote',{target_product_code:code,billing_interval:interval});
+  const quote=q.data||q,charge=Number(quote.charge_now??quote.amount_due??0);
+  if(!charge)throw Error('This plan change has no payable upgrade amount right now.');
+  const d=await call('glime-cashfree-create-upgrade-payment',{product_code:code,billing_interval:interval},'POST','',{'x-idempotency-key':newIntent()});
+  await checkoutPaymentSession(d);
+}
 async function walletTopup(){
-  const amount=Number($('walletAmount').value);if(!Number.isFinite(amount)||amount<100){notice('Minimum wallet balance addition is ₹100.',true);return}
-  const ok=await confirmAction('Add wallet balance',`Add ${money(amount)} to your GLIME wallet?`);if(!ok)return;
-  const d=await call('glime-cashfree-create-wallet-topup',{amount});await checkoutPaymentSession(d);
+  const amount=Number($('walletAmount').value);
+  if(!Number.isFinite(amount)||amount<100){notice('Minimum wallet balance addition is ₹100.',true);return}
+  const d=await call('glime-cashfree-create-wallet-topup',{amount},'POST','',{'x-idempotency-key':newIntent()});await checkoutPaymentSession(d);
 }
 async function buyCredits(code){
-  const item=state.catalog.credits.find(x=>x.product?.product_code===code),amount=item?.price?.amount,credits=item?.product?.metadata?.credits;
-  const ok=await confirmAction('Buy AI credits',`Purchase ${esc(item?.product?.name||code)} for ${money(amount)}${credits?` and receive ${num(credits)} credits`:''}?`);if(!ok)return;
-  const d=await call('glime-cashfree-create-ai-credit-purchase',{product_code:code});await checkoutPaymentSession(d);
-}
-async function downloadInvoice(id){const h=await authHeaders();const r=await fetch(fnUrl('glime-billing-invoice-download')+'?invoice_id='+encodeURIComponent(id),{headers:h});if(!r.ok){const d=await r.json().catch(()=>({}));throw Error(d.error||'Invoice download failed.')}const blob=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='GLIME-Invoice.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function confirmAction(title,text){
-  return new Promise(resolve=>{const d=$('confirmDialog');$('dialogTitle').textContent=title;$('dialogText').textContent=text;d.classList.remove('hidden');const done=v=>{d.classList.add('hidden');$('dialogCancel').onclick=null;$('dialogConfirm').onclick=null;resolve(v)};$('dialogCancel').onclick=()=>done(false);$('dialogConfirm').onclick=()=>done(true);});
-}
-async function handleBillingReturn(){
-  const u=new URL(location.href),p=u.searchParams;
-  const subId=p.get('subscription_id'),isSub=!!(p.get('billing_return')==='1'||subId);
-  const oneTime=!!(p.get('billing_wallet_topup')||p.get('billing_ai_credit_purchase')||p.get('billing_upgrade'));
-  if(!isSub&&!oneTime)return;
-  notice(isSub?'Payment return received. Verifying your subscription with Cashfree…':'Payment return received. Refreshing your billing records…');
-  if(isSub&&subId){
-    let finalStatus=null;
-    for(let i=0;i<8;i++){
-      try{const r=await call('glime-cashfree-sync-subscription',{subscription_id:subId});finalStatus=r?.data?.status||null;if(['active','past_due','paused','cancelled','expired'].includes(String(finalStatus)))break}catch(e){}
-      await new Promise(r=>setTimeout(r,2000));
-    }
-    if(finalStatus==='active')notice('Payment verified. Your subscription is active.');
-    else if(finalStatus==='past_due')notice('Payment return received, but Cashfree reports the subscription as past due.',true);
-    else if(finalStatus==='cancelled'||finalStatus==='expired')notice(`Payment return received. Subscription status: ${finalStatus}.`,true);
-    else notice('Payment was received by the checkout flow. Final subscription status is still being confirmed; refresh again shortly.');
-  }
-  for(let i=0;i<3;i++){try{await loadAll();break}catch(e){}if(i<2)await new Promise(r=>setTimeout(r,1500))}
-  ['billing_return','subscription_id','status','billing_wallet_topup','billing_ai_credit_purchase','billing_upgrade','order_id'].forEach(k=>p.delete(k));
-  history.replaceState({},document.title,u.pathname+(p.toString()?`?${p.toString()}`:'')+u.hash);
+  const d=await call('glime-cashfree-create-ai-credit-purchase',{product_code:code},'POST','',{'x-idempotency-key':newIntent()});await checkoutPaymentSession(d);
 }
 async function loadAll(){
   const {data:{session}}=await sb.auth.getSession();if(!session){location.replace('login.html');return}
   const b=await call('glime-billing-my-subscription',null,'GET');state.billing=b.data||b;
   await loadCatalog();
-  renderAccount();renderCustomer();renderSubscription();renderPlans();renderCapacity();renderActiveAddons();renderAddons();renderCredits();renderWallet();renderUsage();renderAgents();renderGrants();renderPayments();renderInvoices();
+  renderAccount();renderSubscription();renderPlans();renderCapacity();renderAddons();renderCredits();renderWallet();renderUsage();renderAgents();renderGrants();renderPayments();renderInvoices();
 }
-async function guarded(fn){
-  if(state.busy)return;state.busy=true;
-  try{await fn()}catch(e){notice(e.message||'Billing action failed.',true)}finally{state.busy=false}
-}
-$('monthly').onclick=()=>guarded(async()=>{state.cycle='monthly';$('monthly').classList.add('active');$('yearly').classList.remove('active');await loadCatalog();renderPlans()});
-$('yearly').onclick=()=>guarded(async()=>{state.cycle='yearly';$('yearly').classList.add('active');$('monthly').classList.remove('active');await loadCatalog();renderPlans()});
-$('refresh').onclick=()=>guarded(async()=>{await loadAll();notice('Billing refreshed.')});
-$('walletBtn').onclick=()=>guarded(walletTopup);
+$('monthly').onclick=async()=>{state.cycle='monthly';$('monthly').classList.add('active');$('yearly').classList.remove('active');try{await loadCatalog();renderPlans()}catch(e){notice(e.message,true)}};
+$('yearly').onclick=async()=>{state.cycle='yearly';$('yearly').classList.add('active');$('monthly').classList.remove('active');try{await loadCatalog();renderPlans()}catch(e){notice(e.message,true)}};
+$('refresh').onclick=async()=>{try{await loadAll();notice('Billing refreshed.')}catch(e){notice(e.message,true)}};
+$('walletBtn').onclick=async()=>{try{await walletTopup()}catch(e){notice(e.message,true)}};
 document.addEventListener('click',async e=>{
-  const b=e.target.closest('button');if(!b||state.busy)return;
-  if(b.classList.contains('planBtn')&&!b.disabled){await guarded(async()=>{const code=b.dataset.product,interval=b.dataset.interval,current=state.billing?.current_product?.product_code;if(!current)await subscribe(code,interval);else if(b.dataset.downgrade==='1')await downgrade(code,interval);else if(current!==code)await upgrade(code,interval)})}
-  else if(b.dataset.creditCode)await guarded(()=>buyCredits(b.dataset.creditCode));
-  else if(b.dataset.dataCode)await guarded(()=>buyAddon(b.dataset.dataCode,'data'));
-  else if(b.dataset.storageCode)await guarded(()=>buyAddon(b.dataset.storageCode,'storage'));
-  else if(b.classList.contains('invoiceBtn'))await guarded(()=>downloadInvoice(b.dataset.invoiceId));
+  const b=e.target.closest('button');if(!b)return;
+  try{
+    if(b.classList.contains('planBtn')&&!b.disabled){
+      const code=b.dataset.product,interval=b.dataset.interval,storageBlocks=Number(b.dataset.storageBlocks||0),current=state.billing?.current_product?.product_code;
+      if(!current)await subscribe(code,interval,storageBlocks);else if(current!==code)await upgrade(code,interval);
+    }else if(b.dataset.dataCode){
+      const d=await call('glime-cashfree-create-business-data-addon',{product_code:b.dataset.dataCode},'POST','',{'x-idempotency-key':newIntent()});await checkoutSubscriptionSession(d);
+    }else if(b.dataset.creditCode){
+      await buyCredits(b.dataset.creditCode);
+    }else if(b.dataset.invoiceId){
+      const h=await authHeaders();const r=await fetch(fnUrl('glime-billing-invoice-download')+'?invoice_id='+encodeURIComponent(b.dataset.invoiceId),{headers:{Authorization:h.Authorization}});if(!r.ok)throw Error('Invoice download is not available yet.');const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='GLIME-Invoice.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+  }catch(err){notice(err.message,true)}
 });
-setInterval(()=>{const a=state.billing?.account_state,end=a?.free_trial_ends_at,el=$('trialCountdown');if(!end||!el)return;const left=Math.max(0,new Date(end).getTime()-Date.now()),d=Math.floor(left/86400000),h=Math.floor(left%86400000/3600000),m=Math.floor(left%3600000/60000);el.textContent=`${d}d ${h}h ${m}m remaining`;},60000);
-(async()=>{try{await loadAll();await handleBillingReturn()}catch(e){notice(e.message||'Billing could not be loaded.',true)}})();
+setInterval(()=>{const a=state.billing?.account_state,end=a?.free_trial_ends_at;if(!end)return;const el=$('trialCountdown');if(!el)return;const left=Math.max(0,new Date(end).getTime()-Date.now()),d=Math.floor(left/86400000),h=Math.floor(left%86400000/3600000),m=Math.floor(left%3600000/60000);el.textContent=`${d}d ${h}h ${m}m remaining`;},60000);
+(async()=>{try{await loadAll()}catch(e){notice(e.message||'Billing could not be loaded.',true)}})();
 </script>
 </body>
 </html>
