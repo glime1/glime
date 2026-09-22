@@ -961,6 +961,13 @@ Log In to Portal
 Forgot Password?
 </a>
 
+<a
+  href="signup.html"
+  class="secondary-link"
+>
+Create Account
+</a>
+
 
 </form>
 
@@ -1209,6 +1216,89 @@ const supabaseClient =
       }
     }
   );
+
+/* ==================================================
+   GLIME SELF-SERVICE ACCOUNT PROVISIONING
+   Creates/updates the authenticated user's client_data
+   record and prepares the 7-day trial.
+================================================== */
+
+async function provisionClient(){
+
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabaseClient.auth.getSession();
+
+  if(sessionError){
+    throw sessionError;
+  }
+
+  const token =
+    sessionData?.session?.access_token;
+
+  if(!token){
+    throw new Error(
+      'Active login session is missing.'
+    );
+  }
+
+  const response =
+    await fetch(
+      SUPABASE_URL +
+        '/functions/v1/glime-provision-self',
+      {
+        method:'POST',
+
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':'Bearer ' + token,
+          'apikey':SUPABASE_KEY
+        },
+
+        body:'{}'
+      }
+    );
+
+  const body =
+    await response
+      .json()
+      .catch(function(){
+        return {};
+      });
+
+  if(
+    !response.ok ||
+    !body.ok
+  ){
+    throw new Error(
+      body.error ||
+      'GLIME account setup could not be completed.'
+    );
+  }
+
+  return body;
+}
+
+
+async function continueToDashboard(){
+
+  const provisioned =
+    await provisionClient();
+
+  if(
+    !provisioned ||
+    !provisioned.client
+  ){
+    throw new Error(
+      'GLIME client account could not be prepared.'
+    );
+  }
+
+  window.location.href =
+    'dashboard.html';
+}
 
 
 /* ==================================================
@@ -1727,23 +1817,15 @@ loginForm.addEventListener(
 
 
       showSuccess(
-        'Login successful. Opening your portal...'
+        'Login successful. Preparing your GLIME account...'
       );
 
 
       loginBtn.textContent =
-        'Success! Opening Portal...';
+        'Setting up account...';
 
 
-      setTimeout(
-        function(){
-
-          window.location.href =
-            'dashboard.html';
-
-        },
-        700
-      );
+      await continueToDashboard();
 
 
     }catch(error){
@@ -1781,6 +1863,26 @@ loginForm.addEventListener(
           'Too many login attempts. Please try again later.'
         );
 
+
+      }else if(
+        message.includes(
+          'client account'
+        ) ||
+        message.includes(
+          'glime account'
+        ) ||
+        message.includes(
+          'account setup'
+        ) ||
+        message.includes(
+          'provision'
+        )
+      ){
+
+        showError(
+          error?.message ||
+          'Login succeeded, but your GLIME account setup could not be completed. Please try again.'
+        );
 
       }else{
 
@@ -2265,8 +2367,24 @@ async function initializePage(){
       );
 
 
-      window.location.href =
-        'dashboard.html';
+      try{
+
+        await continueToDashboard();
+
+      }catch(error){
+
+        console.error(
+          'Existing session provisioning error:',
+          error
+        );
+
+        showError(
+          error?.message ||
+          'Your GLIME account could not be prepared. Please try again.'
+        );
+
+        return;
+      }
 
 
       return;
@@ -2330,6 +2448,6 @@ confirmPasswordInput.addEventListener(
 initializePage();
 
 </script>
-<script src="leads.js"></script>
+
 </body>
 </html>
