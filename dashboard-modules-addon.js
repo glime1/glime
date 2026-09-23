@@ -50,21 +50,21 @@
        },
        
         instagram_ai_sales_agent: {
-            name: 'AI Sales Agent',
-            icon: '🤖',
-            href: 'instagram-agent.html'
-        },
+           name: 'Instagram Sales Specialist',
+           icon: '◎',
+           href: 'instagram-sales-specialist.html'
+       },
+
+       whatsapp_ai_sales_agent: {
+          name: 'WhatsApp Sales Specialist',
+          icon: '◉',
+          href: 'whatsapp-sales-specialist.html'
+      },
 
         voice_ai: {
             name: 'Voice AI',
             icon: '🎙️',
             href: 'voice-ai.html'
-        },
-
-        gallery: {
-            name: 'Lookbook',
-            icon: '📖',
-            href: 'lookbook.html'
         },
 
         appointments: {
