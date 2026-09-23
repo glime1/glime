@@ -1,4421 +1,1534 @@
-(function () {
-  'use strict';
+const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  /* =========================================================
-     GLIME SERVICES — FINAL CORE
-     Multi-tenant / Global Categories / AI / Cloudflare-ready
-  ========================================================= */
+const state = {
+  user: null,
+  client: null,
+  catalog: null,
+  types: [],
+  categories: [],
+  services: [],
+  category: 'all',
+  search: '',
+  status: 'all',
+  step: 1,
+  offerId: null,
+  versionId: null,
+  variants: [],
+  media: [],
+  days: [],
+  capabilities: {},
+  customFields: [],
+  customValues: {}
+};
 
-  const SUPABASE_URL =
-    'https://ufoulgbiqgjriwapuopc.supabase.co';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 
-  const SUPABASE_KEY =
-    'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const esc = v =>
+  String(v ?? '').replace(/[&<>'"]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[c]));
 
-  const supabaseClient =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+const slugify = v =>
+  String(v || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 70);
 
-  /*
-   * Future media architecture:
-   *
-   * Business data  → Supabase
-   * Images/videos  → Cloudflare R2
-   *
-   * Do NOT put Cloudflare credentials in this file.
-   * Later GLIME will call a protected Edge Function / Worker
-   * which returns a signed upload URL.
-   */
-  const MEDIA_CONFIG = {
-    provider: 'cloudflare-r2',
-    uploadEndpoint:
-      window.GLIME_CONFIG?.cloudflareMediaEndpoint ||
-      '',
-    enabled:
-      Boolean(
-        window.GLIME_CONFIG?.cloudflareMediaEndpoint
-      )
-  };
+const money = (v, c = 'INR') =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: c,
+    maximumFractionDigits: 2
+  }).format(Number(v || 0));
 
-  const state = {
-    user: null,
-    client: null,
+function toast(message, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = message;
 
-    catalog: null,
+  const host = $('#toastHost');
+  if (host) host.appendChild(el);
 
-    types: [],
-    categories: [],
-    services: [],
+  setTimeout(() => el.remove(), 3200);
+}
 
-    industry: null,
-    industryConfig: null,
+function setBoot(v) {
+  const el = $('#bootScreen');
+  if (el) el.style.display = v ? 'flex' : 'none';
+}
 
-    category: 'all',
-    search: '',
-    status: 'all',
-    sort: 'updated',
+function showAlert(msg, success = false) {
+  const el = $('#wizardAlert');
+  if (!el) return;
 
-    step: 1,
+  el.textContent = msg;
+  el.classList.toggle('hidden', !msg);
+  el.classList.toggle('success', success);
+}
 
-    offerId: null,
-    versionId: null,
+async function getToken() {
+  const { data } = await supabaseClient.auth.getSession();
+  return data?.session?.access_token || '';
+}
 
-    variants: [],
-    media: [],
-    availability: [],
+async function edge(slug, body) {
+  const token = await getToken();
 
-    customFields: [],
-    customValues: {},
-
-    dirty: false,
-    saving: false,
-
-    realtimeChannel: null,
-
-    commandResults: [],
-
-    lastSavedAt: null
-  };
-
-
-  /* =========================================================
-     HELPERS
-  ========================================================= */
-
-  const $ = (selector) =>
-    document.querySelector(selector);
-
-  const $$ = (selector) =>
-    [...document.querySelectorAll(selector)];
-
-
-  const esc = (value) =>
-    String(value ?? '').replace(
-      /[&<>'"]/g,
-      (char) =>
-        ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          "'": '&#39;',
-          '"': '&quot;'
-        })[char]
-    );
-
-
-  const slugify = (value) =>
-    String(value || '')
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 70);
-
-
-  const money = (
-    value,
-    currency = 'INR'
-  ) => {
-    try {
-      return new Intl.NumberFormat(
-        'en-IN',
-        {
-          style: 'currency',
-          currency,
-          maximumFractionDigits: 2
-        }
-      ).format(Number(value || 0));
-    } catch {
-      return `${currency} ${Number(
-        value || 0
-      ).toFixed(2)}`;
-    }
-  };
-
-
-  function markDirty() {
-    state.dirty = true;
-
-    $('#saveState') &&
-      ($('#saveState').textContent =
-        'Unsaved changes');
+  if (!token) {
+    throw new Error('Active login session is missing.');
   }
 
-
-  function markClean() {
-    state.dirty = false;
-    state.lastSavedAt =
-      new Date();
-
-    if ($('#saveState')) {
-      $('#saveState').textContent =
-        'Saved';
+  const r = await fetch(
+    `${SUPABASE_URL}/functions/v1/${slug}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
     }
+  );
+
+  const j = await r.json().catch(() => ({}));
+
+  if (!r.ok || j.ok === false) {
+    throw new Error(
+      typeof j.error === 'string'
+        ? j.error
+        : j.error?.message || 'Request failed.'
+    );
   }
 
+  return j;
+}
 
-  function toast(
-    message,
-    type = ''
-  ) {
-    let host =
-      $('#toastHost');
+/* =========================================================
+   INIT
+========================================================= */
 
-    if (!host) {
-      host =
-        document.createElement('div');
+async function init() {
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
 
-      host.id = 'toastHost';
-
-      document.body.appendChild(
-        host
-      );
+    if (error || !data.session?.user) {
+      location.replace('login.html');
+      return;
     }
 
-    const item =
-      document.createElement('div');
+    state.user = data.session.user;
 
-    item.className =
-      `toast ${type}`;
-
-    item.textContent =
-      message;
-
-    host.appendChild(item);
-
-    setTimeout(
-      () => item.remove(),
-      3500
-    );
-  }
-
-
-  function showAlert(
-    message,
-    success = false
-  ) {
-    const el =
-      $('#wizardAlert') ||
-      $('#status');
-
-    if (!el) return;
-
-    el.textContent =
-      message || '';
-
-    el.classList.toggle(
-      'hidden',
-      !message
-    );
-
-    el.classList.toggle(
-      'success',
-      success
-    );
-  }
-
-
-  function setBoot(
-    visible
-  ) {
-    const el =
-      $('#bootScreen');
-
-    if (el) {
-      el.style.display =
-        visible
-          ? 'flex'
-          : 'none';
-    }
-  }
-
-
-  async function getSession() {
-    const {
-      data,
-      error
-    } =
+    const { data: client, error: ce } =
       await supabaseClient
-        .auth
-        .getSession();
+        .from('client_data')
+        .select(
+          'id,client_id,auth_user_id,business_name,client_name,full_name,name'
+        )
+        .eq('auth_user_id', state.user.id)
+        .limit(1)
+        .maybeSingle();
 
-    if (error) {
-      throw error;
+    if (ce || !client?.client_id) {
+      throw new Error('Client profile not found.');
     }
 
-    return data.session;
-  }
+    state.client = client;
 
-
-  async function getToken() {
-    const session =
-      await getSession();
-
-    if (
-      !session?.access_token
-    ) {
-      throw new Error(
-        'Your login session has expired. Please login again.'
-      );
-    }
-
-    return session.access_token;
-  }
-
-
-  async function edge(
-    functionName,
-    body = {}
-  ) {
-    const token =
-      await getToken();
-
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/functions/v1/${functionName}`,
-        {
-          method: 'POST',
-
-          headers: {
-            Authorization:
-              `Bearer ${token}`,
-
-            apikey:
-              SUPABASE_KEY,
-
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify(body)
-        }
-      );
-
-    let result = {};
-
-    try {
-      result =
-        await response.json();
-    } catch {
-      result = {};
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        result.error ||
-        result.message ||
-        `Request failed (${response.status})`
-      );
-    }
-
-    if (
-      result &&
-      result.ok === false
-    ) {
-      throw new Error(
-        result.error ||
-        'Request failed.'
-      );
-    }
-
-    return result;
-  }
-
-
-  /* =========================================================
-     INITIALIZATION
-  ========================================================= */
-
-  async function init() {
-
-    try {
-
-      setBoot(true);
-
-      const session =
-        await getSession();
-
-      if (!session?.user) {
-        location.replace(
-          'login.html'
-        );
-        return;
-      }
-
-      state.user =
-        session.user;
-
-
-      /*
-       * IMPORTANT:
-       * client_id is the tenant identifier.
-       *
-       * Example:
-       * Rohit Real Estate → GLM-0002
-       */
-      const {
-        data: client,
-        error
-      } =
-        await supabaseClient
-          .from('client_data')
-          .select(
-            `
-            id,
-            client_id,
-            auth_user_id,
-            user_id,
-            email,
-            project_name,
-            client_name,
-            full_name,
-            name,
-            business_name,
-            account_status
-            `
-          )
-          .eq(
-            'auth_user_id',
-            state.user.id
-          )
-          .limit(1)
-          .maybeSingle();
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      if (
-        !client?.client_id
-      ) {
-        throw new Error(
-          'Client profile could not be found.'
-        );
-      }
-
-
-      state.client =
-        client;
-
-
-      updateBusinessIdentity();
-
-
-      await Promise.all([
-        loadFoundation(),
-        loadIndustry(),
-        loadCategories(),
-        loadServices()
-      ]);
-
-
-      bindUI();
-
-      renderAll();
-
-      subscribeRealtime();
-
-      markClean();
-
-      setBoot(false);
-
-    } catch (error) {
-
-      console.error(
-        'GLIME Services init:',
-        error
-      );
-
-      setBoot(false);
-
-      toast(
-        error.message ||
-        'Services could not be loaded.',
-        'bad'
-      );
-    }
-  }
-
-
-  function updateBusinessIdentity() {
-
-    const business =
-      state.client
-        ?.business_name ||
-      state.client
-        ?.project_name ||
-      state.client
-        ?.client_name ||
-      state.client
-        ?.full_name ||
-      state.client
-        ?.name ||
+    $('#businessName').textContent =
+      client.business_name ||
+      client.client_name ||
+      client.full_name ||
+      client.name ||
       'Business';
 
+    $('#clientId').textContent = client.client_id;
 
-    if ($('#businessName')) {
-      $('#businessName')
-        .textContent =
-        business;
-    }
+    await Promise.all([
+      loadFoundation(),
+      loadCategories(),
+      loadServices(),
+      loadCustomFields()
+    ]);
 
+    bindUI();
+    renderAll();
+    setBoot(false);
+  } catch (e) {
+    console.error(e);
+    toast(e.message, 'bad');
 
-    if ($('#clientId')) {
-      $('#clientId')
-        .textContent =
-        state.client.client_id;
-    }
-
-
-    if ($('#clientBadge')) {
-      $('#clientBadge')
-        .textContent =
-        business;
-    }
+    setTimeout(
+      () => location.replace('dashboard.html'),
+      1400
+    );
   }
+}
 
+/* =========================================================
+   FOUNDATION / TYPES
+========================================================= */
 
-  /* =========================================================
-     FOUNDATION / CATALOG TYPES
-  ========================================================= */
+async function loadFoundation() {
+  const j = await edge(
+    'services-foundation',
+    {
+      action: 'get'
+    }
+  );
 
-  async function loadFoundation() {
+  state.catalog = j.catalog || null;
 
-    try {
+  state.types = (j.types || [])
+    .filter(x => x.is_active || x.source === 'system');
 
-      const result =
-        await edge(
-          'services-foundation',
-          {
-            action: 'get'
-          }
-        );
+  fillTypeSelect();
+}
 
+/* =========================================================
+   CATEGORIES
+   GLOBAL + TENANT PRIVATE
+========================================================= */
 
-      state.catalog =
-        result.catalog ||
-        null;
+async function loadCategories() {
+  const { data, error } =
+    await supabaseClient
+      .from('offer_categories')
+      .select(
+        'id,name,slug,description,sort_order,is_active,is_global'
+      )
+      .eq('is_active', true)
+      .or(
+        `is_global.eq.true,client_id.eq.${state.client.client_id}`
+      )
+      .order('sort_order', { ascending: true })
+      .order('name');
 
+  if (error) throw error;
 
-      state.types =
-        Array.isArray(
-          result.types
-        )
-          ? result.types
-              .filter(
-                (item) =>
-                  item.is_active !==
-                    false
-              )
+  state.categories = data || [];
+
+  renderCategories();
+}
+
+/* =========================================================
+   CUSTOM FIELDS
+========================================================= */
+
+async function loadCustomFields() {
+  const { data, error } =
+    await supabaseClient
+      .from('custom_field_defs')
+      .select(
+        'id,name,field_key,field_type,label,description,options,is_required,is_active,sort_order'
+      )
+      .eq('client_id', state.client.client_id)
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('label');
+
+  if (error) throw error;
+
+  state.customFields = data || [];
+
+  renderDynamicFields();
+}
+
+function renderDynamicFields() {
+  const host = $('#dynamicFields');
+
+  if (!host) return;
+
+  host.innerHTML = state.customFields
+    .map(f => {
+      const v = state.customValues[f.id] ?? '';
+
+      const opts =
+        Array.isArray(f.options?.options)
+          ? f.options.options
           : [];
 
+      let control = '';
 
-      fillTypeSelect();
-
-
-      /*
-       * If this is the older Foundation page,
-       * render its type cards too.
-       */
-      if (
-        $('#typeGrid')
-      ) {
-        renderFoundationTypes();
+      if (f.field_type === 'select') {
+        control = `
+          <select data-cf="${f.id}">
+            <option value="">Select…</option>
+            ${opts
+              .map(
+                o =>
+                  `<option value="${esc(o)}"
+                    ${
+                      String(v) === String(o)
+                        ? 'selected'
+                        : ''
+                    }>
+                    ${esc(o)}
+                  </option>`
+              )
+              .join('')}
+          </select>
+        `;
+      } else if (f.field_type === 'textarea') {
+        control = `
+          <textarea
+            data-cf="${f.id}"
+            rows="4"
+          >${esc(v)}</textarea>
+        `;
+      } else {
+        control = `
+          <input
+            data-cf="${f.id}"
+            type="${
+              f.field_type === 'number'
+                ? 'number'
+                : 'text'
+            }"
+            value="${esc(v)}"
+          >
+        `;
       }
 
-    } catch (error) {
+      return `
+        <label class="dynamic-card">
+          <span>
+            ${esc(f.label)}
+            ${f.is_required ? '<em>*</em>' : ''}
+          </span>
 
-      /*
-       * Foundation is allowed to fail softly.
-       * The rest of the Services UI can still load.
-       */
-      console.warn(
-        'Foundation load:',
-        error
-      );
-    }
-  }
-
-
-  function fillTypeSelect() {
-
-    const select =
-      $('#fType');
-
-    if (!select) {
-      return;
-    }
-
-
-    const current =
-      select.value;
-
-
-    select.innerHTML =
-      state.types
-        .map(
-          (type) =>
-            `
-            <option
-              value="${esc(
-                type.type_key ||
-                type.key ||
-                type.id
-              )}"
-            >
-              ${esc(
-                type.label ||
-                type.name ||
-                type.type_key ||
-                'Service'
-              )}
-            </option>
-            `
-        )
-        .join('');
-
-
-    if (
-      current &&
-      [...select.options]
-        .some(
-          (option) =>
-            option.value ===
-            current
-        )
-    ) {
-      select.value =
-        current;
-    }
-
-
-    updateCapabilities();
-  }
-
-
-  function renderFoundationTypes() {
-
-    const grid =
-      $('#typeGrid');
-
-    if (!grid) {
-      return;
-    }
-
-
-    const query =
-      (
-        $('#typeSearch')
-          ?.value ||
-        ''
-      )
-        .toLowerCase()
-        .trim();
-
-
-    const rows =
-      state.types.filter(
-        (type) => {
-
-          const text =
-            `${type.label || ''} ${
-              type.name || ''
-            } ${
-              type.description || ''
-            }`
-              .toLowerCase();
-
-          return (
-            !query ||
-            text.includes(query)
-          );
-        }
-      );
-
-
-    grid.innerHTML =
-      rows
-        .map(
-          (type) => {
-
-            const key =
-              type.type_key ||
-              type.key ||
-              type.id;
-
-            const selected =
-              state.selectedTypes
-                ?.includes(
-                  key
-                );
-
-            return `
-              <button
-                type="button"
-                class="type-card ${
-                  selected
-                    ? 'selected'
-                    : ''
-                }"
-                data-type-key="${esc(
-                  key
-                )}"
-              >
-                <span class="type-icon">
-                  ✦
-                </span>
-
-                <strong>
-                  ${esc(
-                    type.label ||
-                    type.name ||
-                    key
-                  )}
-                </strong>
-
-                <small>
-                  ${esc(
-                    type.description ||
-                    ''
-                  )}
-                </small>
-              </button>
-            `;
+          ${
+            f.description
+              ? `<small>${esc(f.description)}</small>`
+              : ''
           }
-        )
-        .join('');
 
+          ${control}
+        </label>
+      `;
+    })
+    .join('');
+}
 
-    $('#emptyTypes')
-      ?.classList.toggle(
-        'hidden',
-        rows.length > 0
-      );
+/* =========================================================
+   STRUCTURED DATA
+========================================================= */
+
+async function loadStructured() {
+  if (!state.versionId) return;
+
+  const [
+    vr,
+    ar,
+    mr,
+    cr
+  ] = await Promise.all([
+    supabaseClient
+      .from('offer_variants')
+      .select(
+        'id,name,sku,description,attributes,is_active,sort_order'
+      )
+      .eq('offer_version_id', state.versionId)
+      .order('sort_order'),
+
+    supabaseClient
+      .from('offer_availability')
+      .select(
+        'id,day_of_week,start_time,end_time,timezone,capacity,is_available,notes'
+      )
+      .eq('offer_version_id', state.versionId)
+      .order('day_of_week'),
+
+    supabaseClient
+      .from('offer_media')
+      .select(
+        'id,media_type,storage_path,file_url,alt_text,sort_order,is_primary,metadata'
+      )
+      .eq('offer_version_id', state.versionId)
+      .order('sort_order'),
+
+    supabaseClient
+      .from('custom_field_values')
+      .select(
+        'field_def_id,value_text,value_json'
+      )
+      .eq('offer_version_id', state.versionId)
+  ]);
+
+  if (vr.error) throw vr.error;
+  if (ar.error) throw ar.error;
+  if (mr.error) throw mr.error;
+  if (cr.error) throw cr.error;
+
+  state.variants =
+    (vr.data || []).map(v => ({
+      id: v.id,
+      name: v.name,
+      sku: v.sku || '',
+      price: v.attributes?.price || '',
+      description: v.description || ''
+    }));
+
+  state.days = ar.data || [];
+
+  state.media =
+    (mr.data || []).map(m => ({
+      id: m.id,
+      url: m.file_url || '',
+      alt: m.alt_text || '',
+      primary: m.is_primary,
+      type: m.media_type
+    }));
+
+  state.customValues = {};
+
+  (cr.data || []).forEach(v => {
+    state.customValues[v.field_def_id] =
+      v.value_text ?? v.value_json ?? '';
+  });
+
+  renderVariants();
+  renderMedia();
+  renderDynamicFields();
+  renderDaysFromState();
+}
+
+function renderDaysFromState() {
+  if (!state.days.length) {
+    renderDays();
+    return;
   }
 
+  const map = new Map(
+    state.days.map(d => [
+      Number(d.day_of_week),
+      d
+    ])
+  );
 
-  /* =========================================================
-     INDUSTRY
-  ========================================================= */
+  $$('#dayRows [data-day-start]')
+    .forEach(el => {
+      const d = map.get(
+        Number(el.dataset.dayStart)
+      );
 
-  async function loadIndustry() {
-
-    /*
-     * Industry configuration is optional.
-     * If your current database already has it,
-     * Services will use it automatically.
-     */
-
-    try {
-
-      const {
-        data,
-        error
-      } =
-        await supabaseClient
-          .from(
-            'client_industry_configurations'
-          )
-          .select('*')
-          .eq(
-            'client_id',
-            state.client.client_id
-          )
-          .limit(1)
-          .maybeSingle();
-
-
-      if (
-        !error &&
-        data
-      ) {
-
-        state.industryConfig =
-          data;
-
-        state.industry =
-          data.industry ||
-          data.industry_key ||
-          data.slug ||
-          null;
+      if (d) {
+        el.value =
+          (d.start_time || '').slice(0, 5);
       }
+    });
 
-    } catch (error) {
-
-      console.warn(
-        'Industry configuration unavailable:',
-        error
+  $$('#dayRows [data-day-end]')
+    .forEach(el => {
+      const d = map.get(
+        Number(el.dataset.dayEnd)
       );
-    }
+
+      if (d) {
+        el.value =
+          (d.end_time || '').slice(0, 5);
+      }
+    });
+
+  $$('#dayRows [data-day-on]')
+    .forEach(el => {
+      const d = map.get(
+        Number(el.dataset.dayOn)
+      );
+
+      if (d) {
+        el.checked = !!d.is_available;
+      }
+    });
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function derivedStatus(s) {
+  const vs = s.version?.status || '';
+
+  if (
+    vs === 'published' ||
+    s.status === 'active'
+  ) {
+    return 'published';
   }
 
+  if (
+    vs === 'review' ||
+    vs === 'approved'
+  ) {
+    return 'review';
+  }
 
-  /* =========================================================
-     GLOBAL + PRIVATE CATEGORIES
-  ========================================================= */
+  if (
+    vs === 'archived' ||
+    s.status === 'archived'
+  ) {
+    return 'archived';
+  }
 
-  async function loadCategories() {
+  return 'draft';
+}
 
-    /*
-     * FINAL MULTI-TENANT RULE:
-     *
-     * Global category:
-     *     is_global = true
-     *
-     * Private category:
-     *     client_id = current client
-     *
-     * Therefore GLM-0002 sees:
-     *     Global + GLM-0002 private categories
-     *
-     * GLM-0001 does NOT see GLM-0002 categories.
-     */
+/* =========================================================
+   SAVE STRUCTURED DATA
+========================================================= */
 
-    const {
-      data,
-      error
-    } =
+async function saveStructured() {
+  if (!state.versionId) return;
+
+  /* ---------- VARIANTS ---------- */
+
+  const variantRows =
+    state.variants
+      .filter(v => v.name.trim())
+      .map((v, i) => ({
+        offer_version_id: state.versionId,
+        name: v.name.trim(),
+        sku: v.sku?.trim() || null,
+        description:
+          v.description?.trim() || null,
+        attributes: {
+          price:
+            v.price === ''
+              ? null
+              : Number(v.price)
+        },
+        is_active: true,
+        sort_order: i
+      }));
+
+  const oldV =
+    await supabaseClient
+      .from('offer_variants')
+      .select('id')
+      .eq(
+        'offer_version_id',
+        state.versionId
+      );
+
+  if (oldV.error) throw oldV.error;
+
+  if (oldV.data?.length) {
+    const del =
       await supabaseClient
-        .from(
-          'offer_categories'
-        )
+        .from('offer_variants')
+        .delete()
+        .eq(
+          'offer_version_id',
+          state.versionId
+        );
+
+    if (del.error) throw del.error;
+  }
+
+  if (variantRows.length) {
+    const r =
+      await supabaseClient
+        .from('offer_variants')
+        .insert(variantRows);
+
+    if (r.error) throw r.error;
+  }
+
+  /* ---------- AVAILABILITY ---------- */
+
+  const days =
+    $$('#dayRows [data-day-start]')
+      .map(el => {
+        const i =
+          Number(el.dataset.dayStart);
+
+        const end =
+          $(
+            `#dayRows [data-day-end="${i}"]`
+          )?.value || '';
+
+        const on =
+          $(
+            `#dayRows [data-day-on="${i}"]`
+          )?.checked;
+
+        return {
+          offer_version_id:
+            state.versionId,
+
+          day_of_week: i,
+
+          start_time:
+            on && el.value
+              ? el.value
+              : null,
+
+          end_time:
+            on && end
+              ? end
+              : null,
+
+          timezone:
+            $('#fTimezone').value ||
+            'Asia/Kolkata',
+
+          is_available: !!on
+        };
+      });
+
+  const deleteAvailability =
+    await supabaseClient
+      .from('offer_availability')
+      .delete()
+      .eq(
+        'offer_version_id',
+        state.versionId
+      );
+
+  if (deleteAvailability.error) {
+    throw deleteAvailability.error;
+  }
+
+  const ad =
+    await supabaseClient
+      .from('offer_availability')
+      .insert(days);
+
+  if (ad.error) throw ad.error;
+
+  /* ---------- CUSTOM FIELD VALUES ---------- */
+
+  const vals =
+    Object.entries(state.customValues)
+      .filter(
+        ([_, v]) =>
+          v !== '' &&
+          v != null
+      )
+      .map(
+        ([field_def_id, value_text]) => ({
+          offer_version_id:
+            state.versionId,
+
+          field_def_id,
+
+          value_text:
+            String(value_text),
+
+          value_json: null
+        })
+      );
+
+  const deleteValues =
+    await supabaseClient
+      .from('custom_field_values')
+      .delete()
+      .eq(
+        'offer_version_id',
+        state.versionId
+      );
+
+  if (deleteValues.error) {
+    throw deleteValues.error;
+  }
+
+  if (vals.length) {
+    const cv =
+      await supabaseClient
+        .from('custom_field_values')
+        .insert(vals);
+
+    if (cv.error) throw cv.error;
+  }
+}
+
+/* =========================================================
+   LOAD SERVICES
+========================================================= */
+
+async function loadServices() {
+  const { data, error } =
+    await supabaseClient
+      .from('offers')
+      .select(
+        'id,client_id,name,slug,short_description,description,category_id,status,offer_type,current_version_id,updated_at'
+      )
+      .eq(
+        'client_id',
+        state.client.client_id
+      )
+      .order(
+        'updated_at',
+        { ascending: false }
+      );
+
+  if (error) throw error;
+
+  const ids =
+    (data || [])
+      .map(
+        x => x.current_version_id
+      )
+      .filter(Boolean);
+
+  let versions = [];
+  let prices = [];
+
+  if (ids.length) {
+    const vr =
+      await supabaseClient
+        .from('offer_versions')
         .select(
-          `
-          id,
-          client_id,
-          name,
-          slug,
-          description,
-          sort_order,
-          is_active,
-          is_global,
-          created_at,
-          updated_at
-          `
+          'id,offer_id,version_number,status,title,description,metadata'
+        )
+        .in('id', ids);
+
+    if (vr.error) throw vr.error;
+
+    versions = vr.data || [];
+
+    const pr =
+      await supabaseClient
+        .from('offer_prices')
+        .select(
+          'offer_version_id,amount,currency,price_type,billing_period,is_active'
+        )
+        .in(
+          'offer_version_id',
+          ids
         )
         .eq(
           'is_active',
           true
-        )
-        .or(
-          `is_global.eq.true,client_id.eq.${state.client.client_id}`
-        )
-        .order(
-          'sort_order',
-          {
-            ascending: true
-          }
-        )
-        .order(
-          'name',
-          {
-            ascending: true
-          }
         );
 
+    if (pr.error) throw pr.error;
 
-    if (error) {
-      throw error;
-    }
-
-
-    state.categories =
-      data || [];
-
-
-    /*
-     * Put industry-relevant global categories
-     * near the top without changing database order.
-     */
-    state.categories =
-      rankIndustryCategories(
-        state.categories
-      );
-
-
-    renderCategories();
-
-    fillCategorySelect();
+    prices = pr.data || [];
   }
 
+  const vm = new Map(
+    versions.map(v => [
+      v.id,
+      v
+    ])
+  );
 
-  function rankIndustryCategories(
-    categories
-  ) {
+  const pm = new Map(
+    prices.map(p => [
+      p.offer_version_id,
+      p
+    ])
+  );
 
-    if (!state.industry) {
-      return categories;
-    }
+  state.services =
+    (data || []).map(o => ({
+      ...o,
+      version:
+        vm.get(
+          o.current_version_id
+        ) || null,
+      price:
+        pm.get(
+          o.current_version_id
+        ) || null
+    }));
+}
 
+/* =========================================================
+   SELECTS
+========================================================= */
 
-    const industry =
-      String(
-        state.industry
+function fillTypeSelect() {
+  const sel = $('#fType');
+
+  if (!sel) return;
+
+  sel.innerHTML =
+    state.types
+      .map(
+        t =>
+          `<option value="${esc(
+            t.type_key
+          )}">
+            ${esc(t.label)}
+          </option>`
       )
-        .toLowerCase();
+      .join('');
 
+  updateCapabilities();
+}
 
-    const keywordMap = {
-
-      real_estate: [
-        'property',
-        'real estate',
-        'consultation',
-        'sales'
-      ],
-
-      healthcare: [
-        'consultation',
-        'appointment',
-        'health'
-      ],
-
-      clinic: [
-        'consultation',
-        'appointment',
-        'health'
-      ],
-
-      fashion: [
-        'branding',
-        'photography',
-        'content',
-        'social media'
-      ],
-
-      salon: [
-        'consultation',
-        'appointment',
-        'photography'
-      ],
-
-      education: [
-        'consultation',
-        'course',
-        'training'
-      ]
-    };
-
-
-    const keywords =
-      keywordMap[
-        industry
-      ] || [];
-
-
-    if (
-      !keywords.length
-    ) {
-      return categories;
-    }
-
-
-    return [
-      ...categories
-        .filter(
-          (category) =>
-            keywords.some(
-              (keyword) =>
-                `${category.name} ${
-                  category.description || ''
-                }`
-                  .toLowerCase()
-                  .includes(
-                    keyword
-                  )
-            )
-        ),
-
-      ...categories.filter(
-        (category) =>
-          !keywords.some(
-            (keyword) =>
-              `${category.name} ${
-                category.description || ''
-              }`
-                .toLowerCase()
-                .includes(
-                  keyword
-                )
-          )
+function fillCategorySelect() {
+  $('#fCategory').innerHTML =
+    '<option value="">No category</option>' +
+    state.categories
+      .map(
+        c =>
+          `<option value="${c.id}">
+            ${esc(c.name)}
+          </option>`
       )
-    ];
-  } 
-
-    /* =========================================================
-     CATEGORY UI
-  ========================================================= */
-
-  function fillCategorySelect() {
-
-    const select =
-      $('#fCategory');
-
-    if (!select) {
-      return;
-    }
-
-    const current =
-      select.value;
-
-    select.innerHTML = `
-      <option value="">
-        No category
-      </option>
-    `;
-
-    state.categories.forEach(
-      (category) => {
-
-        const option =
-          document.createElement(
-            'option'
-          );
-
-        option.value =
-          category.id;
-
-        option.textContent =
-          category.name;
-
-        select.appendChild(
-          option
-        );
-      }
-    );
-
-    if (
-      current &&
-      [...select.options].some(
-        (option) =>
-          option.value === current
-      )
-    ) {
-      select.value =
-        current;
-    }
-  }
-
-
-  function renderCategories() {
-
-    const list =
-      $('#categoryList');
-
-    if (!list) {
-      return;
-    }
-
-    const allCount =
-      state.services.length;
-
-    const items = [
-      {
-        id: 'all',
-        name: 'All services',
-        count: allCount,
-        global: true
-      },
-      ...state.categories.map(
-        (category) => ({
-          ...category,
-          count:
-            state.services.filter(
-              (service) =>
-                service.category_id ===
-                category.id
-            ).length
-        })
-      )
-    ];
-
-    list.innerHTML =
-      items
-        .map(
-          (category) =>
-            `
-            <button
-              type="button"
-              class="category-item ${
-                String(
-                  state.category
-                ) ===
-                String(
-                  category.id
-                )
-                  ? 'active'
-                  : ''
-              }"
-              data-category="${esc(
-                category.id
-              )}"
-            >
-
-              <span class="category-name">
-                ${esc(
-                  category.name
-                )}
-              </span>
-
-              <span class="category-count">
-                ${category.count}
-              </span>
-
-            </button>
-            `
-        )
-        .join('');
-
-    if (
-      $('#categoryCount')
-    ) {
-      $('#categoryCount')
-        .textContent =
-        state.categories.length;
-    }
-  }
-
-
-  /* =========================================================
-     SERVICES
-  ========================================================= */
-
-  async function loadServices() {
-
-    /*
-     * Only the current tenant's services are loaded.
-     *
-     * This is intentionally NOT global.
-     *
-     * GLM-0002 must never receive GLM-0001's
-     * business services.
-     */
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from('offers')
-        .select(`
-          *,
-          category:offer_categories(
-            id,
-            name,
-            slug,
-            is_global
-          )
-        `)
-        .eq(
-          'client_id',
-          state.client.client_id
-        )
-        .order(
-          'updated_at',
-          {
-            ascending: false
-          }
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    state.services =
-      (data || []).map(
-        normalizeService
-      );
-
-    renderGrid();
-    renderCategories();
-  }
-
-
-  function normalizeService(
-    service
-  ) {
-
-    const price =
-      service.price ||
-      service.pricing ||
-      null;
-
-    return {
-      ...service,
-
-      name:
-        service.name ||
-        service.title ||
-        'Untitled service',
-
-      description:
-        service.short_desc ||
-        service.short_description ||
-        service.description ||
-        '',
-
-      status:
-        service.status ||
-        'draft',
-
-      category_id:
-        service.category_id ||
-        service.category?.id ||
-        null,
-
-      category_name:
-        service.category?.name ||
-        '',
-
-      type:
-        service.type ||
-        service.catalog_type ||
-        'single',
-
-      price,
-
-      updated_at:
-        service.updated_at ||
-        service.created_at
-    };
-  }
-
-
-  function getFilteredServices() {
-
-    let rows =
-      [...state.services];
-
-
-    /*
-     * Category
-     */
-
-    if (
-      state.category !==
-      'all'
-    ) {
-
-      rows =
-        rows.filter(
-          (service) =>
-            String(
-              service.category_id
-            ) ===
-            String(
-              state.category
-            )
-        );
-    }
-
-
-    /*
-     * Status
-     */
-
-    if (
-      state.status !==
-      'all'
-    ) {
-
-      rows =
-        rows.filter(
-          (service) =>
-            service.status ===
-            state.status
-        );
-    }
-
-
-    /*
-     * Search
-     */
-
-    if (
-      state.search
-    ) {
-
-      const query =
-        state.search
-          .toLowerCase()
-          .trim();
-
-      rows =
-        rows.filter(
-          (service) =>
-            `${service.name} ${
-              service.description
-            } ${
-              service.category_name
-            }`
-              .toLowerCase()
-              .includes(query)
-        );
-    }
-
-
-    /*
-     * Sorting
-     */
-
-    rows.sort(
-      (a, b) => {
-
-        if (
-          state.sort ===
-          'name'
-        ) {
-
-          return a.name.localeCompare(
-            b.name
-          );
-        }
-
-        if (
-          state.sort ===
-          'status'
-        ) {
-
-          return a.status.localeCompare(
-            b.status
-          );
-        }
-
-        return (
-          new Date(
-            b.updated_at || 0
-          ) -
-          new Date(
-            a.updated_at || 0
-          )
-        );
-      }
-    );
-
-
-    return rows;
-  }
-
-
-  function renderGrid() {
-
-    const grid =
-      $('#serviceGrid');
-
-    if (!grid) {
-      return;
-    }
-
-
-    const rows =
-      getFilteredServices();
-
-
-    if (!rows.length) {
-
-      grid.innerHTML = `
-        <div class="empty-grid">
-
-          <div class="empty-icon">
-            ✦
-          </div>
-
-          <h3>
-            ${
-              state.search ||
-              state.category !==
-                'all'
-                ? 'No matching services'
-                : 'No services yet'
-            }
-          </h3>
-
-          <p>
-            ${
-              state.search ||
-              state.category !==
-                'all'
-                ? 'Try another filter or search.'
-                : 'Create your first service to build your catalog.'
-            }
-          </p>
-
-          <button
-            type="button"
-            class="primary-btn"
-            id="emptyAddBtn"
+      .join('');
+}
+
+/* =========================================================
+   CATEGORY SIDEBAR
+========================================================= */
+
+function renderCategories() {
+  $('#categoryCount').textContent =
+    state.categories.length;
+
+  const counts = {};
+
+  state.services.forEach(s => {
+    const key =
+      s.category_id ||
+      'uncategorized';
+
+    counts[key] =
+      (counts[key] || 0) + 1;
+  });
+
+  const items = [
+    {
+      id: 'all',
+      name: 'All Services',
+      n: state.services.length
+    },
+
+    {
+      id: 'uncategorized',
+      name: 'Uncategorized',
+      n: counts.uncategorized || 0
+    },
+
+    ...state.categories.map(c => ({
+      id: c.id,
+      name: c.name,
+      n: counts[c.id] || 0
+    }))
+  ];
+
+  $('#categoryList').innerHTML =
+    items
+      .map(
+        x =>
+          `<button
+            class="category-item ${
+              state.category === x.id
+                ? 'active'
+                : ''
+            }"
+            data-category="${esc(x.id)}"
           >
-            Create service
-          </button>
+            <span>${esc(x.name)}</span>
+            <small>${x.n}</small>
+          </button>`
+      )
+      .join('');
+}
 
-        </div>
-      `;
+/* =========================================================
+   FILTER
+========================================================= */
 
-      $('#emptyAddBtn')
-        ?.addEventListener(
-          'click',
-          () => openWizard()
-        );
+function filtered() {
+  const q =
+    state.search
+      .toLowerCase()
+      .trim();
 
-      updateServiceCount(
-        0
+  return state.services.filter(s => {
+    const cat =
+      state.category === 'all' ||
+      s.category_id ===
+        state.category ||
+      (
+        state.category ===
+          'uncategorized' &&
+        !s.category_id
       );
 
-      return;
-    }
-
-
-    grid.innerHTML =
-      rows
-        .map(
-          renderServiceCard
-        )
-        .join('');
-
-
-    updateServiceCount(
-      rows.length
-    );
-  }
-
-
-  function renderServiceCard(
-    service
-  ) {
+    const ds =
+      derivedStatus(s);
 
     const status =
-      service.status ||
-      'draft';
+      state.status === 'all' ||
+      ds === state.status;
 
+    const text =
+      `${s.name} ${
+        s.short_description || ''
+      } ${
+        s.description || ''
+      }`.toLowerCase();
 
-    const statusLabel =
-      status
-        .replace(
-          /_/g,
-          ' '
-        )
-        .replace(
-          /\b\w/g,
-          (char) =>
-            char.toUpperCase()
+    return (
+      cat &&
+      status &&
+      (!q || text.includes(q))
+    );
+  });
+}
+
+/* =========================================================
+   SERVICE GRID
+========================================================= */
+
+function renderGrid() {
+  const rows = filtered();
+
+  const grid = $('#serviceGrid');
+  const empty = $('#emptyState');
+
+  $('#gridTitle').textContent =
+    state.category === 'all'
+      ? 'All Services'
+      : (
+          state.categories.find(
+            c =>
+              c.id ===
+              state.category
+          )?.name ||
+          'Uncategorized'
         );
 
-
-    const priceText =
-      getServicePriceText(
-        service
-      );
-
-
-    return `
-      <article
-        class="service-card"
-        data-service-id="${esc(
-          service.id
-        )}"
-      >
-
-        <div class="service-card-top">
-
-          <div class="service-category">
-            ${esc(
-              service.category_name ||
-              'Uncategorized'
-            )}
-          </div>
-
-          <span
-            class="status-badge status-${esc(
-              status
-            )}"
-          >
-            ${esc(
-              statusLabel
-            )}
-          </span>
-
-        </div>
-
-
-        <h3>
-          ${esc(
-            service.name
-          )}
-        </h3>
-
-
-        <p class="service-description">
-          ${esc(
-            service.description ||
-            'No description yet.'
-          )}
-        </p>
-
-
-        <div class="service-card-meta">
-
-          <span>
-            ${esc(
-              service.type ||
-              'Service'
-            )}
-          </span>
-
-          <strong>
-            ${esc(
-              priceText
-            )}
-          </strong>
-
-        </div>
-
-
-        <div class="service-card-actions">
-
-          <button
-            type="button"
-            class="secondary-btn edit-service"
-            data-id="${esc(
-              service.id
-            )}"
-          >
-            Edit
-          </button>
-
-          <button
-            type="button"
-            class="secondary-btn duplicate-service"
-            data-id="${esc(
-              service.id
-            )}"
-          >
-            Duplicate
-          </button>
-
-          <button
-            type="button"
-            class="icon-btn service-more"
-            data-id="${esc(
-              service.id
-            )}"
-            aria-label="More options"
-          >
-            ⋯
-          </button>
-
-        </div>
-
-      </article>
-    `;
-  }
-
-
-  function getServicePriceText(
-    service
-  ) {
-
-    const price =
-      service.price;
-
-
-    if (
-      price === null ||
-      price === undefined
-    ) {
-      return 'Price not set';
-    }
-
-
-    if (
-      typeof price ===
-      'number'
-    ) {
-      return money(
-        price
-      );
-    }
-
-
-    if (
-      typeof price ===
-      'string'
-    ) {
-
-      return price
-        ? money(
-            price
-          )
-        : 'Price not set';
-    }
-
-
-    if (
-      typeof price ===
-      'object'
-    ) {
-
-      const type =
-        price.price_type ||
-        price.type ||
-        'fixed';
-
-      const currency =
-        price.currency ||
-        'INR';
-
-
-      if (
-        type ===
-        'quote'
-      ) {
-        return 'Get a quote';
-      }
-
-
-      if (
-        type ===
-        'free'
-      ) {
-        return 'Free';
-      }
-
-
-      if (
-        type ===
-        'range'
-      ) {
-
-        return `${money(
-          price.min_amount ||
-          price.min ||
-          0,
-          currency
-        )} – ${money(
-          price.max_amount ||
-          price.max ||
-          0,
-          currency
-        )}`;
-      }
-
-
-      if (
-        type ===
-        'starting_from'
-      ) {
-
-        return `From ${money(
-          price.min_amount ||
-          price.min ||
-          0,
-          currency
-        )}`;
-      }
-
-
-      return money(
-        price.amount ||
-        price.min_amount ||
-        price.price ||
-        0,
-        currency
-      );
-    }
-
-
-    return 'Price not set';
-  }
-
-
-  function updateServiceCount(
-    count
-  ) {
-
-    [
-      '#serviceCount',
-      '#resultCount',
-      '#visibleCount'
-    ]
-      .forEach(
-        (selector) => {
-
-          const el =
-            $(selector);
-
-          if (el) {
-            el.textContent =
-              count;
-          }
-        }
-      );
-  }
-
-
-  /* =========================================================
-     WIZARD
-  ========================================================= */
-
-  function openWizard(
-    service = null
-  ) {
-
-    state.offerId =
-      service?.id ||
-      null;
-
-    state.versionId =
-      service?.current_version_id ||
-      service?.version_id ||
-      null;
-
-
-    state.step = 1;
-
-    state.dirty =
-      false;
-
-
-    state.variants =
-      Array.isArray(
-        service?.variants
-      )
-        ? structuredClone(
-            service.variants
-          )
-        : [];
-
-
-    state.media =
-      Array.isArray(
-        service?.media
-      )
-        ? structuredClone(
-            service.media
-          )
-        : [];
-
-
-    state.availability =
-      Array.isArray(
-        service?.availability
-      )
-        ? structuredClone(
-            service.availability
-          )
-        : [];
-
-
-    state.customFields =
-      Array.isArray(
-        service?.custom_fields
-      )
-        ? structuredClone(
-            service.custom_fields
-          )
-        : [];
-
-
-    state.customValues =
-      service?.custom_values
-        ? structuredClone(
-            service.custom_values
-          )
-        : {};
-
-
-    fillWizard(
-      service
-    );
-
-
-    $('#wizardOverlay')
-      ?.classList.remove(
-        'hidden'
-      );
-
-
-    document.body.classList.add(
-      'modal-open'
-    );
-
-
-    setStep(1);
-
-    renderVariants();
-    renderMedia();
-    renderDays();
-    updateCapabilities();
-    updateChecklist();
-
-
-    /*
-     * Existing service:
-     * load its detailed records after
-     * opening the UI.
-     */
-
-    if (
-      service?.id
-    ) {
-
-      loadServiceDetails(
-        service.id
-      );
-    }
-  }
-
-
-  function closeWizard(
-    force = false
-  ) {
-
-    if (
-      state.dirty &&
-      !force
-    ) {
-
-      const leave =
-        window.confirm(
-          'You have unsaved changes. Close without saving?'
-        );
-
-      if (!leave) {
-        return;
-      }
-    }
-
-
-    $('#wizardOverlay')
-      ?.classList.add(
-        'hidden'
-      );
-
-
-    document.body.classList.remove(
-      'modal-open'
-    );
-
-
-    state.offerId =
-      null;
-
-    state.versionId =
-      null;
-
-    state.step =
-      1;
-
-    state.variants =
-      [];
-
-    state.media =
-      [];
-
-    state.availability =
-      [];
-
-    state.customFields =
-      [];
-
-    state.customValues =
-      {};
-
-    state.dirty =
-      false;
-  }
-
-
-  function fillWizard(
-    service
-  ) {
-
-    const setValue = (
-      id,
-      value
-    ) => {
-
-      const el =
-        $('#' + id);
-
-      if (!el) {
-        return;
-      }
-
-      el.value =
-        value ??
-        '';
-    };
-
-
-    setValue(
-      'fName',
-      service?.name ||
-      ''
-    );
-
-
-    setValue(
-      'fCategory',
-      service?.category_id ||
-      ''
-    );
-
-
-    setValue(
-      'fType',
-      service?.type ||
-      service?.catalog_type ||
-      state.types[0]
-        ?.type_key ||
-      ''
-    );
-
-
-    setValue(
-      'fShort',
-      service?.short_desc ||
-      service?.short_description ||
-      ''
-    );
-
-
-    setValue(
-      'fDescription',
-      service?.full_desc ||
-      service?.description ||
-      ''
-    );
-
-
-    setValue(
-      'fPrice',
-      service?.price?.amount ||
-      service?.price?.min_amount ||
-      service?.price ||
-      ''
-    );
-
-
-    setValue(
-      'fCurrency',
-      service?.price?.currency ||
-      'INR'
-    );
-
-
-    setValue(
-      'fKnowledge',
-      service?.knowledge_summary ||
-      service?.summary_text ||
-      ''
-    );
-
-
-    setValue(
-      'fDuration',
-      service?.duration ||
-      ''
-    );
-
-
-    setValue(
-      'fStatus',
-      service?.status ||
-      'draft'
-    );
-
-
-    if (
-      $('#wizardTitle')
-    ) {
-
-      $('#wizardTitle')
-        .textContent =
-        service
-          ? 'Edit service'
-          : 'Create service';
-    }
-  }
-
-
-  async function loadServiceDetails(
-    serviceId
-  ) {
-
-    /*
-     * Keep this defensive because different
-     * database versions may not have every
-     * optional table populated yet.
-     */
-
-    const jobs = [];
-
-
-    if (
-      serviceId
-    ) {
-
-      jobs.push(
-        loadVariants(
-          serviceId
-        )
-      );
-
-      jobs.push(
-        loadServiceMedia(
-          serviceId
-        )
-      );
-
-      jobs.push(
-        loadAvailability(
-          serviceId
-        )
-      );
-
-      jobs.push(
-        loadCustomFields(
-          serviceId
-        )
-      );
-    }
-
-
-    await Promise.allSettled(
-      jobs
-    );
-
-
-    renderVariants();
-    renderMedia();
-    renderDays();
-    updateChecklist();
-  }
-
-
-  /* =========================================================
-     VARIANTS
-  ========================================================= */
-
-  async function loadVariants(
-    serviceId
-  ) {
-
-    try {
-
-      const {
-        data,
-        error
-      } =
-        await supabaseClient
-          .from('offer_variants')
-          .select('*')
-          .eq(
-            'offer_id',
-            serviceId
-          )
-          .order(
-            'sort_order',
-            {
-              ascending: true
-            }
-          );
-
-
-      if (
-        error
-      ) {
-        throw error;
-      }
-
-
-      state.variants =
-        data || [];
-
-    } catch (
-      error
-    ) {
-
-      /*
-       * Support alternate table naming
-       * without breaking the wizard.
-       */
-
-      console.warn(
-        'Variants:',
-        error
-      );
-    }
-  }
-
-
-  function renderVariants() {
-
-    const list =
-      $('#variantList');
-
-    if (!list) {
-      return;
-    }
-
-
-    list.innerHTML =
-      state.variants
-        .map(
-          (variant, index) =>
-            `
-            <div
-              class="variant-row"
-              data-variant-index="${index}"
-            >
-
-              <input
-                type="text"
-                data-variant-field="name"
-                value="${esc(
-                  variant.name ||
-                  ''
-                )}"
-                placeholder="Variant name"
-              >
-
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                data-variant-field="price"
-                value="${esc(
-                  variant.price_override ??
-                  variant.price ??
-                  ''
-                )}"
-                placeholder="Price"
-              >
-
-              <input
-                type="text"
-                data-variant-field="sku"
-                value="${esc(
-                  variant.sku ||
-                  ''
-                )}"
-                placeholder="SKU"
-              >
-
-              <button
-                type="button"
-                class="remove-row"
-                data-remove-variant="${index}"
-                aria-label="Remove variant"
-              >
-                ×
-              </button>
-
-            </div>
-            `
-        )
-        .join('');
-
-
-    if (
-      !state.variants.length
-    ) {
-
-      list.innerHTML = `
-        <div class="inline-empty">
-          No variants added yet.
-        </div>
-      `;
-    }
-  }
-
-
-  /* =========================================================
-     MEDIA
-  ========================================================= */
-
-  async function loadServiceMedia(
-    serviceId
-  ) {
-
-    try {
-
-      const {
-        data,
-        error
-      } =
-        await supabaseClient
-          .from('offer_media')
-          .select('*')
-          .eq(
-            'offer_id',
-            serviceId
-          )
-          .order(
-            'sort_order',
-            {
-              ascending: true
-            }
-          );
-
-
-      if (
-        error
-      ) {
-        throw error;
-      }
-
-
-      state.media =
-        data || [];
-
-    } catch (
-      error
-    ) {
-
-      console.warn(
-        'Media:',
-        error
-      );
-    }
-  }
-
-
-  function renderMedia() {
-
-    const list =
-      $('#mediaList');
-
-    if (!list) {
-      return;
-    }
-
-
-    if (
-      !state.media.length
-    ) {
-
-      list.innerHTML = `
-        <div class="inline-empty">
-          No media attached yet.
-        </div>
-      `;
-
-      return;
-    }
-
-
-    list.innerHTML =
-      state.media
-        .map(
-          (media, index) =>
-            `
-            <div
-              class="media-item"
-              data-media-index="${index}"
-            >
-
-              <div class="media-thumb">
-
-                ${
-                  media.file_url ||
-                  media.url
-                    ? `
-                      <img
-                        src="${esc(
-                          media.file_url ||
-                          media.url
-                        )}"
-                        alt=""
-                        loading="lazy"
-                      >
-                    `
-                    : `
-                      <span>
-                        ${
-                          media.type ===
-                          'video'
-                            ? '▶'
-                            : '✦'
-                        }
-                      </span>
-                    `
-                }
-
-              </div>
-
-
-              <div class="media-info">
-
-                <input
-                  type="text"
-                  data-media-alt="${index}"
-                  value="${esc(
-                    media.alt_text ||
-                    media.alt ||
-                    ''
-                  )}"
-                  placeholder="Alt text"
-                >
-
-
-                <div class="media-controls">
-
-                  <button
-                    type="button"
-                    data-primary-media="${index}"
-                  >
-                    ${
-                      media.primary
-                        ? '★ Primary'
-                        : 'Set primary'
-                    }
-                  </button>
-
-
-                  <button
-                    type="button"
-                    data-remove-media="${index}"
-                  >
-                    Remove
-                  </button>
-
-                </div>
-
-              </div>
-
-            </div>
-            `
-        )
-        .join('');
-  }
-
-
-  /*
-   * Media provider abstraction.
-   *
-   * Today:
-   *   local/browser preview
-   *
-   * Future:
-   *   Cloudflare R2 signed upload
-   *
-   * This means the rest of Services does NOT need
-   * to be rewritten when R2 goes live.
-   */
-
-  async function uploadMedia(
-    file
-  ) {
-
-    if (
-      MEDIA_CONFIG.enabled
-    ) {
-
-      const result =
-        await edge(
-          'media-upload-url',
-          {
-            filename:
-              file.name,
-
-            content_type:
-              file.type,
-
-            size:
-              file.size,
-
-            client_id:
-              state.client.client_id
-          }
-        );
-
-
-      if (
-        !result.upload_url
-      ) {
-        throw new Error(
-          'Media upload URL was not returned.'
-        );
-      }
-
-
-      const upload =
-        await fetch(
-          result.upload_url,
-          {
-            method: 'PUT',
-
-            headers: {
-              'Content-Type':
-                file.type
-            },
-
-            body:
-              file
-          }
-        );
-
-
-      if (
-        !upload.ok
-      ) {
-        throw new Error(
-          'Media upload failed.'
-        );
-      }
-
-
-      return {
-        url:
-          result.file_url,
-
-        key:
-          result.key,
-
-        type:
-          file.type.startsWith(
-            'video/'
-          )
-            ? 'video'
-            : 'image'
-      };
-    }
-
-
-    /*
-     * Development fallback.
-     *
-     * The actual file should not be treated
-     * as permanent storage.
-     */
-    return {
-      url:
-        URL.createObjectURL(
-          file
-        ),
-
-      type:
-        file.type.startsWith(
-          'video/'
-        )
-          ? 'video'
-          : 'image',
-
-      local_only:
-        true
-    };
-  }
-
-
-   /* =========================================================
-     AVAILABILITY
-  ========================================================= */
-
-  async function loadAvailability(
-    serviceId
-  ) {
-
-    try {
-
-      const {
-        data,
-        error
-      } =
-        await supabaseClient
-          .from('offer_availability')
-          .select('*')
-          .eq(
-            'offer_id',
-            serviceId
-          )
-          .order(
-            'day_of_week',
-            {
-              ascending: true
-            }
-          );
-
-      if (error) {
-        throw error;
-      }
-
-      state.availability =
-        data || [];
-
-    } catch (error) {
-
-      console.warn(
-        'Availability:',
-        error
-      );
-    }
-  }
-
-
-  function renderDays() {
-
-    const container =
-      $('#dayRows');
-
-    if (!container) {
-      return;
-    }
-
-    const days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday'
-    ];
-
-    container.innerHTML =
-      days.map(
-        (day, index) => {
-
-          const existing =
-            state.availability.find(
-              (item) =>
-                Number(
-                  item.day_of_week
-                ) === index
-            );
+  $('#gridMeta').textContent =
+    `${rows.length} service${
+      rows.length === 1
+        ? ''
+        : 's'
+    } · no page reload`;
+
+  grid.innerHTML =
+    rows
+      .map(
+        (s, i) => {
+          const status =
+            derivedStatus(s);
 
           return `
-            <div
-              class="day-row"
-              data-day-index="${index}"
+            <article
+              class="service-card"
+              style="animation-delay:${i * 35}ms"
             >
 
-              <label>
-                ${day}
-              </label>
-
-              <input
-                type="checkbox"
-                data-day-enabled="${index}"
-                ${
-                  existing?.enabled
-                    ? 'checked'
-                    : ''
-                }
-              >
-
-              <input
-                type="time"
-                data-day-start="${index}"
-                value="${
-                  existing?.start_time ||
-                  '09:00'
-                }"
-              >
-
-              <input
-                type="time"
-                data-day-end="${index}"
-                value="${
-                  existing?.end_time ||
-                  '18:00'
-                }"
-
-              >
-
-            </div>
-          `;
-        }
-      ).join('');
-  }
-
-
-  function collectAvailability() {
-
-    const rows =
-      [];
-
-    for (
-      let day = 0;
-      day < 7;
-      day++
-    ) {
-
-      const enabled =
-        document.querySelector(
-          `[data-day-enabled="${day}"]`
-        )?.checked ||
-        false;
-
-      const start =
-        document.querySelector(
-          `[data-day-start="${day}"]`
-        )?.value ||
-        '09:00';
-
-      const end =
-        document.querySelector(
-          `[data-day-end="${day}"]`
-        )?.value ||
-        '18:00';
-
-      rows.push({
-        day_of_week:
-          day,
-
-        enabled,
-
-        start_time:
-          start,
-
-        end_time:
-          end
-      });
-    }
-
-    return rows;
-  }
-
-
-  /* =========================================================
-     DYNAMIC CUSTOM FIELDS
-  ========================================================= */
-
-  async function loadCustomFields(
-    serviceId
-  ) {
-
-    try {
-
-      /*
-       * Custom definitions can be attached
-       * to a service or available globally
-       * for the tenant.
-       */
-
-      const {
-        data: definitions,
-        error:
-          definitionsError
-      } =
-        await supabaseClient
-          .from(
-            'custom_field_defs'
-          )
-          .select('*')
-          .or(
-            `service_id.eq.${serviceId},and(service_id.is.null,client_id.eq.${state.client.client_id})`
-          )
-          .order(
-            'sort_order',
-            {
-              ascending: true
-            }
-          );
-
-      if (
-        definitionsError
-      ) {
-        throw definitionsError;
-      }
-
-
-      state.customFields =
-        definitions || [];
-
-
-      if (
-        !state.customFields.length
-      ) {
-        return;
-      }
-
-
-      const {
-        data: values,
-        error:
-          valuesError
-      } =
-        await supabaseClient
-          .from(
-            'custom_field_values'
-          )
-          .select('*')
-          .eq(
-            'service_id',
-            serviceId
-          );
-
-
-      if (
-        valuesError
-      ) {
-        throw valuesError;
-      }
-
-
-      state.customValues =
-        {};
-
-
-      (values || [])
-        .forEach(
-          (item) => {
-
-            state.customValues[
-              item.field_def_id
-            ] =
-              item.value;
-          }
-        );
-
-
-      renderCustomFields();
-
-    } catch (error) {
-
-      console.warn(
-        'Custom fields:',
-        error
-      );
-    }
-  }
-
-
-  function renderCustomFields() {
-
-    const container =
-      $('#customFields');
-
-    if (!container) {
-      return;
-    }
-
-
-    if (
-      !state.customFields.length
-    ) {
-
-      container.innerHTML =
-        '';
-
-      return;
-    }
-
-
-    container.innerHTML =
-      state.customFields
-        .map(
-          (field) => {
-
-            const id =
-              field.id;
-
-            const value =
-              state.customValues[
-                id
-              ] ??
-              '';
-
-
-            const label =
-              field.field_name ||
-              field.name ||
-              'Custom field';
-
-
-            const type =
-              field.field_type ||
-              'text';
-
-
-            if (
-              type ===
-              'dropdown'
-            ) {
-
-              const options =
-                Array.isArray(
-                  field.options
-                )
-                  ? field.options
-                  : [];
-
-
-              return `
-                <div class="field">
-
-                  <label>
-                    ${esc(label)}
-                  </label>
-
-                  <select
-                    data-custom-field="${esc(
-                      id
-                    )}"
-                  >
-
-                    <option value="">
-                      Select
-                    </option>
-
-                    ${options
-                      .map(
-                        (option) =>
-                          `
-                          <option
-                            value="${esc(
-                              option
-                            )}"
-                            ${
-                              String(
-                                value
-                              ) ===
-                              String(
-                                option
-                              )
-                                ? 'selected'
-                                : ''
-                            }
-                          >
-                            ${esc(
-                              option
-                            )}
-                          </option>
-                          `
-                      )
-                      .join('')}
-
-                  </select>
-
-                </div>
-              `;
-            }
-
-
-            if (
-              type ===
-              'boolean'
-            ) {
-
-              return `
-                <div class="field">
-
-                  <label>
-                    ${esc(label)}
-                  </label>
-
-                  <label class="checkbox-label">
-
-                    <input
-                      type="checkbox"
-                      data-custom-field="${esc(
-                        id
-                      )}"
-                      ${
-                        value === true ||
-                        value === 'true'
-                          ? 'checked'
-                          : ''
-                      }
-                    >
-
-                    Enabled
-
-                  </label>
-
-                </div>
-              `;
-            }
-
-
-            return `
-              <div class="field">
-
-                <label>
-                  ${esc(label)}
-                </label>
-
-                <input
-                  type="${esc(
-                    type === 'number'
-                      ? 'number'
-                      : type === 'date'
-                      ? 'date'
-                      : 'text'
-                  )}"
-                  data-custom-field="${esc(
-                    id
-                  )}"
-                  value="${esc(
-                    value
+              <div class="service-media">
+                <span>✦</span>
+
+                <span
+                  class="service-status ${esc(
+                    status
                   )}"
                 >
-
-              </div>
-            `;
-          }
-        )
-        .join('');
-  }
-
-
-  function collectCustomValues() {
-
-    const values =
-      {};
-
-    $$(
-      '[data-custom-field]'
-    ).forEach(
-      (element) => {
-
-        const id =
-          element.dataset
-            .customField;
-
-        if (
-          element.type ===
-          'checkbox'
-        ) {
-
-          values[id] =
-            element.checked;
-
-        } else {
-
-          values[id] =
-            element.value;
-        }
-      }
-    );
-
-    return values;
-  }
-
-
-  /* =========================================================
-     CAPABILITIES
-  ========================================================= */
-
-  function updateCapabilities() {
-
-    const typeKey =
-      $('#fType')?.value;
-
-    const type =
-      state.types.find(
-        (item) =>
-          (
-            item.type_key ||
-            item.key ||
-            item.id
-          ) === typeKey
-      ) || {};
-
-
-    const capabilities =
-      type.capabilities ||
-      {};
-
-
-    state.currentCapabilities =
-      capabilities;
-
-
-    /*
-     * Duration
-     */
-
-    const durationField =
-      $('#fDuration')
-        ?.closest('.field');
-
-
-    if (
-      durationField
-    ) {
-
-      durationField.style.display =
-        capabilities.duration ===
-          false
-          ? 'none'
-          : '';
-    }
-
-
-    /*
-     * Variants
-     */
-
-    const variantSection =
-      $('#variantList')
-        ?.closest('.subsection');
-
-
-    if (
-      variantSection
-    ) {
-
-      variantSection.style.display =
-        capabilities.variants ===
-          false
-          ? 'none'
-          : '';
-    }
-
-
-    /*
-     * Availability
-     */
-
-    const availability =
-      $('#availabilityEditor');
-
-
-    if (
-      availability
-    ) {
-
-      availability.classList.toggle(
-        'hidden',
-        capabilities.availability ===
-          false
-      );
-    }
-
-
-    renderDynamicCapabilityNote(
-      type
-    );
-  }
-
-
-  function renderDynamicCapabilityNote(
-    type
-  ) {
-
-    const target =
-      $('#capabilityNote');
-
-    if (!target) {
-      return;
-    }
-
-
-    const capabilities =
-      type.capabilities ||
-      {};
-
-
-    const active =
-      Object.entries(
-        capabilities
-      )
-        .filter(
-          ([, value]) =>
-            value === true
-        )
-        .map(
-          ([key]) =>
-            key
-        );
-
-
-    target.innerHTML = `
-      <div class="ai-info">
-
-        <span>
-          ✦
-        </span>
-
-        <div>
-
-          <strong>
-            ${
-              type.label ||
-              type.name ||
-              'Dynamic service'
-            }
-          </strong>
-
-          <p>
-            ${
-              active.length
-                ? `Enabled: ${active.join(
-                    ', '
-                  )}`
-                : 'Standard service configuration'
-            }
-          </p>
-
-        </div>
-
-      </div>
-    `;
-  }
-
-
-  /* =========================================================
-     AI — GLIME
-  ========================================================= */
-
-  async function generateWithGlimeAI(
-    button
-  ) {
-
-    if (!button) {
-      return;
-    }
-
-
-    const targetId =
-      button.dataset.aiTarget;
-
-
-    const target =
-      document.getElementById(
-        targetId
-      );
-
-
-    if (!target) {
-
-      toast(
-        'AI target field was not found.',
-        'bad'
-      );
-
-      return;
-    }
-
-
-    const name =
-      $('#fName')
-        ?.value
-        ?.trim();
-
-
-    if (!name) {
-
-      showAlert(
-        'First enter the service name.'
-      );
-
-      $('#fName')
-        ?.focus();
-
-      return;
-    }
-
-
-    const oldText =
-      button.innerHTML;
-
-
-    try {
-
-      button.disabled =
-        true;
-
-      button.classList.add(
-        'ai-generating'
-      );
-
-      button.innerHTML =
-        '✦ GLIME AI is thinking…';
-
-
-      target.classList.add(
-        'ai-field-loading'
-      );
-
-
-      let field =
-        'description';
-
-
-      if (
-        targetId ===
-        'fShort'
-      ) {
-
-        field =
-          'short_description';
-
-      } else if (
-        targetId ===
-        'fKnowledge'
-      ) {
-
-        field =
-          'knowledge';
-
-      } else if (
-        targetId ===
-        'fDescription'
-      ) {
-
-        field =
-          'description';
-      }
-
-
-      const result =
-        await edge(
-          'glime-ai',
-          {
-            action:
-              'service_generate',
-
-            field,
-
-            client_id:
-              state.client.client_id,
-
-            industry:
-              state.industry,
-
-            service: {
-              name,
-
-              type:
-                $('#fType')
-                  ?.value ||
-                'service',
-
-              category:
-                $('#fCategory')
-                  ?.selectedOptions?.[0]
-                  ?.textContent
-                  ?.trim() ||
-                '',
-
-              short_description:
-                $('#fShort')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              description:
-                $('#fDescription')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              knowledge:
-                $('#fKnowledge')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              duration:
-                $('#fDuration')
-                  ?.value ||
-                ''
-            }
-          }
-        );
-
-
-      if (
-        !result?.value
-      ) {
-
-        throw new Error(
-          'GLIME AI returned no content.'
-        );
-      }
-
-
-      target.value =
-        result.value
-          .trim();
-
-
-      target.dispatchEvent(
-        new Event(
-          'input',
-          {
-            bubbles: true
-          }
-        )
-      );
-
-
-      markDirty();
-
-      updateChecklist();
-
-
-      toast(
-        'Generated with GLIME AI',
-        'ok'
-      );
-
-    } catch (
-      error
-    ) {
-
-      console.error(
-        'GLIME AI:',
-        error
-      );
-
-
-      toast(
-        error.message ||
-        'GLIME AI generation failed.',
-        'bad'
-      );
-
-    } finally {
-
-      button.disabled =
-        false;
-
-      button.innerHTML =
-        oldText;
-
-      button.classList.remove(
-        'ai-generating'
-      );
-
-      target.classList.remove(
-        'ai-field-loading'
-      );
-    }
-  }
-
-
-  /* =========================================================
-     AI ASSISTANT / PROACTIVE SUGGESTIONS
-  ========================================================= */
-
-  async function runAIAssistant() {
-
-    const name =
-      $('#fName')
-        ?.value
-        ?.trim();
-
-
-    if (!name) {
-
-      toast(
-        'Enter the service name first.',
-        'bad'
-      );
-
-      return;
-    }
-
-
-    const button =
-      $('#aiAssistantBtn');
-
-
-    const original =
-      button?.innerHTML;
-
-
-    try {
-
-      if (button) {
-
-        button.disabled =
-          true;
-
-        button.innerHTML =
-          '✦ Thinking…';
-      }
-
-
-      const result =
-        await edge(
-          'glime-ai',
-          {
-            action:
-              'service_assistant',
-
-            client_id:
-              state.client.client_id,
-
-            industry:
-              state.industry,
-
-            service: {
-              name,
-
-              category:
-                $('#fCategory')
-                  ?.value ||
-                null,
-
-              type:
-                $('#fType')
-                  ?.value ||
-                null,
-
-              short_description:
-                $('#fShort')
-                  ?.value ||
-                '',
-
-              description:
-                $('#fDescription')
-                  ?.value ||
-                '',
-
-              duration:
-                $('#fDuration')
-                  ?.value ||
-                '',
-
-              knowledge:
-                $('#fKnowledge')
-                  ?.value ||
-                ''
-            }
-          }
-        );
-
-
-      renderAISuggestions(
-        result
-      );
-
-    } catch (
-      error
-    ) {
-
-      toast(
-        error.message ||
-        'AI assistant failed.',
-        'bad'
-      );
-
-    } finally {
-
-      if (button) {
-
-        button.disabled =
-          false;
-
-        button.innerHTML =
-          original ||
-          '✦ GLIME AI';
-      }
-    }
-  }
-
-
-  function renderAISuggestions(
-    result
-  ) {
-
-    const container =
-      $('#aiSuggestions');
-
-
-    if (!container) {
-
-      toast(
-        result?.summary ||
-        'AI analysis completed.',
-        'ok'
-      );
-
-      return;
-    }
-
-
-    const suggestions =
-      Array.isArray(
-        result?.suggestions
-      )
-        ? result.suggestions
-        : [];
-
-
-    container.innerHTML =
-      `
-      ${
-        result?.summary
-          ? `
-            <div class="ai-summary">
-              ${esc(
-                result.summary
-              )}
-            </div>
-          `
-          : ''
-      }
-
-      ${
-        suggestions.length
-          ? suggestions
-              .map(
-                (
-                  suggestion,
-                  index
-                ) =>
-                  `
-                  <div
-                    class="ai-suggestion"
-                    data-suggestion="${index}"
-                  >
-
-                    <span>
-                      ✦
-                    </span>
-
-                    <div>
-
-                      <strong>
-                        ${esc(
-                          suggestion.title ||
-                          'Suggestion'
-                        )}
-                      </strong>
-
-                      <p>
-                        ${esc(
-                          suggestion.description ||
-                          suggestion.message ||
-                          ''
-                        )}
-                      </p>
-
-                    </div>
-
-                    ${
-                      suggestion.value
-                        ? `
-                          <button
-                            type="button"
-                            data-ai-apply="${index}"
-                          >
-                            Apply
-                          </button>
-                        `
-                        : ''
-                    }
-
-                  </div>
-                  `
-              )
-              .join('')
-          : `
-            <div class="inline-empty">
-              No additional suggestions.
-            </div>
-          `
-      }
-      `;
-
-
-    state.aiSuggestions =
-      suggestions;
-  }
-
-
-  /* =========================================================
-     VALIDATION
-  ========================================================= */
-
-  function validateStep(
-    step
-  ) {
-
-    const errors =
-      [];
-
-
-    if (
-      step === 1
-    ) {
-
-      if (
-        !$('#fName')
-          ?.value
-          ?.trim()
-      ) {
-
-        errors.push(
-          'Service name is required.'
-        );
-      }
-
-
-      if (
-        !$('#fCategory')
-          ?.value
-      ) {
-
-        errors.push(
-          'Choose a category.'
-        );
-      }
-
-
-      if (
-        !$('#fType')
-          ?.value
-      ) {
-
-        errors.push(
-          'Choose a service type.'
-        );
-      }
-    }
-
-
-    if (
-      step === 2
-    ) {
-
-      const price =
-        $('#fPrice')
-          ?.value;
-
-
-      if (
-        price === '' ||
-        price === null ||
-        price === undefined ||
-        Number(price) < 0
-      ) {
-
-        errors.push(
-          'A valid price is required.'
-        );
-      }
-    }
-
-
-    if (
-      step === 3
-    ) {
-
-      const capabilities =
-        state.currentCapabilities ||
-        {};
-
-
-      if (
-        capabilities.duration &&
-        !$('#fDuration')
-          ?.value
-          ?.trim()
-      ) {
-
-        errors.push(
-          'Duration is required for this service type.'
-        );
-      }
-    }
-
-
-    return errors;
-  }
-
-
-  function validatePublish() {
-
-    const errors =
-      [];
-
-
-    /*
-     * Strict publish requirements
-     */
-
-    if (
-      !$('#fName')
-        ?.value
-        ?.trim()
-    ) {
-
-      errors.push(
-        'Service name'
-      );
-    }
-
-
-    if (
-      !$('#fCategory')
-        ?.value
-    ) {
-
-      errors.push(
-        'Category'
-      );
-    }
-
-
-    if (
-      !$('#fShort')
-        ?.value
-        ?.trim()
-    ) {
-
-      errors.push(
-        'Short description'
-      );
-    }
-
-
-    if (
-      !$('#fDescription')
-        ?.value
-        ?.trim()
-    ) {
-
-      errors.push(
-        'Full description'
-      );
-    }
-
-
-    if (
-      $('#fPrice')
-        ?.value ===
-        ''
-    ) {
-
-      errors.push(
-        'Pricing'
-      );
-    }
-
-
-    const capabilities =
-      state.currentCapabilities ||
-      {};
-
-
-    if (
-      capabilities.duration &&
-      !$('#fDuration')
-        ?.value
-        ?.trim()
-    ) {
-
-      errors.push(
-        'Duration'
-      );
-    }
-
-
-    /*
-     * At least one media item.
-     */
-
-    if (
-      state.media.length ===
-      0
-    ) {
-
-      errors.push(
-        'At least one media item'
-      );
-    }
-
-
-    return errors;
-  }
-
-
-  function updateChecklist() {
-
-    const checklist =
-      $('#publishChecklist');
-
-
-    const checks = [
-      {
-        label:
-          'Service name',
-        ok:
-          Boolean(
-            $('#fName')
-              ?.value
-              ?.trim()
-          )
-      },
-
-      {
-        label:
-          'Category',
-        ok:
-          Boolean(
-            $('#fCategory')
-              ?.value
-          )
-      },
-
-      {
-        label:
-          'Short description',
-        ok:
-          Boolean(
-            $('#fShort')
-              ?.value
-              ?.trim()
-          )
-      },
-
-      {
-        label:
-          'Full description',
-        ok:
-          Boolean(
-            $('#fDescription')
-              ?.value
-              ?.trim()
-          )
-      },
-
-      {
-        label:
-          'Pricing',
-        ok:
-          Boolean(
-            $('#fPrice')
-              ?.value !== ''
-          )
-      },
-
-      {
-        label:
-          'Media',
-        ok:
-          state.media.length >
-          0
-      }
-    ];
-
-
-    if (
-      state.currentCapabilities
-        ?.duration
-    ) {
-
-      checks.push({
-        label:
-          'Duration',
-        ok:
-          Boolean(
-            $('#fDuration')
-              ?.value
-              ?.trim()
-          )
-      });
-    }
-
-
-    if (
-      checklist
-    ) {
-
-      checklist.innerHTML =
-        checks
-          .map(
-            (item) =>
-              `
-              <div
-                class="check-row ${
-                  item.ok
-                    ? 'ok'
-                    : ''
-                }"
-              >
-
-                <span class="check-icon">
                   ${
-                    item.ok
-                      ? '✓'
-                      : '!'
+                    status ===
+                    'published'
+                      ? 'Published'
+                      : status ===
+                        'review'
+                      ? 'In review'
+                      : status ===
+                        'archived'
+                      ? 'Archived'
+                      : 'Draft'
                   }
                 </span>
+              </div>
 
-                <div>
+              <div class="service-body">
 
-                  <strong>
-                    ${esc(
-                      item.label
-                    )}
+                <div class="service-category">
+                  ${esc(
+                    (
+                      state.categories.find(
+                        c =>
+                          c.id ===
+                          s.category_id
+                      ) || {}
+                    ).name ||
+                      'GENERAL'
+                  )}
+                </div>
+
+                <h3 title="${esc(
+                  s.name
+                )}">
+                  ${esc(s.name)}
+                </h3>
+
+                <p>
+                  ${esc(
+                    s.short_description ||
+                      s.description ||
+                      'No description yet.'
+                  )}
+                </p>
+
+                <div class="service-meta">
+                  <strong class="price">
+                    ${
+                      s.price
+                        ? money(
+                            s.price.amount,
+                            s.price.currency
+                          )
+                        : 'Price not set'
+                    }
                   </strong>
 
-                  <small>
-                    ${
-                      item.ok
-                        ? 'Complete'
-                        : 'Required before publish'
-                    }
-                  </small>
+                  <span class="meta-small">
+                    ${esc(
+                      s.offer_type ||
+                        'service'
+                    )}
+                  </span>
+                </div>
 
+                <div class="card-actions">
+                  <button
+                    class="secondary-btn edit-service"
+                    data-id="${s.id}"
+                  >
+                    Open
+                  </button>
+
+                  <button
+                    class="ghost-btn duplicate-service"
+                    data-id="${s.id}"
+                  >
+                    Duplicate
+                  </button>
                 </div>
 
               </div>
-              `
-          )
-          .join('');
-    }
+            </article>
+          `;
+        }
+      )
+      .join('');
 
+  empty.classList.toggle(
+    'hidden',
+    rows.length > 0
+  );
 
-    const errors =
-      validatePublish();
+  grid.classList.toggle(
+    'hidden',
+    rows.length === 0
+  );
+}
 
+function renderAll() {
+  fillCategorySelect();
+  renderCategories();
+  renderGrid();
+  updateNudge();
+}
 
-    const publishButton =
-      $('#publishBtn');
+/* =========================================================
+   AI NUDGE
+========================================================= */
 
+function updateNudge() {
+  const incomplete =
+    state.services.filter(
+      s =>
+        s.status === 'draft' &&
+        (
+          !s.description ||
+          !s.price
+        )
+    ).length;
 
-    if (
-      publishButton
-    ) {
+  if (incomplete) {
+    $('#aiNudge')
+      .classList
+      .remove('hidden');
 
-      publishButton.disabled =
-        errors.length >
-        0;
-    }
-
-
-    /*
-     * Preview
-     */
-
-    if (
-      $('#previewName')
-    ) {
-
-      $('#previewName')
-        .textContent =
-        $('#fName')
-          ?.value
-          ?.trim() ||
-        'Service name';
-    }
-
-
-    if (
-      $('#previewDescription')
-    ) {
-
-      $('#previewDescription')
-        .textContent =
-        $('#fDescription')
-          ?.value
-          ?.trim() ||
-        'Description preview';
-    }
-
-
-    if (
-      $('#previewPrice')
-    ) {
-
-      $('#previewPrice')
-        .textContent =
-        $('#fPrice')
-          ?.value
-          ? money(
-              $('#fPrice')
-                .value,
-              $('#fCurrency')
-                ?.value ||
-              'INR'
-            )
-          : 'Price not set';
-    }
+    $('#nudgeText').textContent =
+      `${incomplete} draft service${
+        incomplete === 1
+          ? ' is'
+          : 's are'
+      } missing key business information.`;
+  } else {
+    $('#aiNudge')
+      .classList
+      .add('hidden');
   }
+}
 
+/* =========================================================
+   WIZARD
+========================================================= */
 
-  /* =========================================================
-     SAVE DRAFT — MAIN
-  ========================================================= */
+function openWizard(service = null) {
+  resetWizard(service);
 
-  async function saveDraft(
-    silent = false
+  $('#wizardOverlay')
+    .classList
+    .remove('hidden');
+
+  document.body.style.overflow =
+    'hidden';
+
+  setStep(1);
+}
+
+function closeWizard() {
+  $('#wizardOverlay')
+    .classList
+    .add('hidden');
+
+  document.body.style.overflow = '';
+}
+
+function resetWizard(service) {
+  state.offerId =
+    service?.id || null;
+
+  state.versionId =
+    service?.version?.status ===
+    'draft'
+      ? service?.current_version_id
+      : null;
+
+  state.variants = [];
+  state.media = [];
+
+  state.customValues = {};
+
+  $('#wizardTitle').textContent =
+    service
+      ? 'Edit service'
+      : 'Create service';
+
+  $('#fName').value =
+    service?.name || '';
+
+  $('#fShort').value =
+    service?.short_description ||
+    '';
+
+  $('#fDescription').value =
+    service?.description ||
+    service?.version?.description ||
+    '';
+
+  $('#fCategory').value =
+    service?.category_id || '';
+
+  $('#fType').value =
+    service?.offer_type ||
+    'service';
+
+  $('#fPrice').value =
+    service?.price?.amount || '';
+
+  $('#fCurrency').value =
+    service?.price?.currency ||
+    'INR';
+
+  $('#fPriceType').value =
+    service?.price?.price_type ===
+    'starting_at'
+      ? 'starting_from'
+      : (
+          service?.price?.price_type ||
+          'fixed'
+        );
+
+  $('#fBilling').value =
+    service?.price?.billing_period ||
+    '';
+
+  $('#fDuration').value = '';
+
+  $('#fKnowledge').value =
+    service?.version?.metadata
+      ?.ai_knowledge_summary ||
+    '';
+
+  renderVariants();
+  renderMedia();
+  renderDays();
+  updateCapabilities();
+  updateChecklist();
+  showAlert('');
+
+  if (
+    service?.id &&
+    state.versionId
   ) {
+    loadStructured()
+      .catch(e =>
+        showAlert(e.message)
+      );
+  }
+}
 
+function setStep(n) {
+  state.step = n;
+
+  $$('.wizard-step')
+    .forEach(x =>
+      x.classList.toggle(
+        'active',
+        Number(
+          x.dataset.panel
+        ) === n
+      )
+    );
+
+  $$('.stepper .step')
+    .forEach(x => {
+      const s =
+        Number(x.dataset.step);
+
+      x.classList.toggle(
+        'active',
+        s === n
+      );
+
+      x.classList.toggle(
+        'done',
+        s < n
+      );
+    });
+
+  $('#prevStep')
+    .classList.toggle(
+      'hidden',
+      n === 1
+    );
+
+  $('#nextStep')
+    .classList.toggle(
+      'hidden',
+      n === 5
+    );
+
+  $('#publishBtn')
+    .classList.toggle(
+      'hidden',
+      n !== 5
+    );
+
+  $('#saveDraftBtn')
+    .classList.toggle(
+      'hidden',
+      n === 5
+    );
+
+  if (n === 5) {
+    updateChecklist();
+  }
+}
+
+/* =========================================================
+   VALIDATION
+========================================================= */
+
+function validateStep(n) {
+  if (n === 1) {
     if (
-      state.saving
+      !$('#fName')
+        .value
+        .trim()
     ) {
-
-      return false;
+      return 'Service name is required.';
     }
 
-
-    state.saving =
-      true;
-
-
-    try {
-
-      const stepErrors =
-        validateStep(
-          Math.min(
-            state.step,
-            3
-          )
-        );
-
-
-      if (
-        stepErrors.length
-      ) {
-
-        showAlert(
-          stepErrors.join(
-            ' '
-          )
-        );
-
-        return false;
-      }
-
-
-      const name =
-        $('#fName')
-          ?.value
-          ?.trim();
-
-
-      const slug =
-        slugify(
-          name
-        );
-
-
-      let offer =
-        null;
-
-
-      /*
-       * Create / update offer
-       */
-
-      if (
-        state.offerId
-      ) {
-
-        const {
-          data,
-          error
-        } =
-          await supabaseClient
-            .from('offers')
-            .update({
-              name,
-
-              slug,
-
-              offer_type:
-                $('#fType')
-                  ?.value ||
-                'service',
-
-              short_description:
-                $('#fShort')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              description:
-                $('#fDescription')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              category_id:
-                $('#fCategory')
-                  ?.value ||
-                null,
-
-              status:
-                'draft',
-
-              updated_at:
-                new Date()
-                  .toISOString()
-            })
-            .eq(
-              'id',
-              state.offerId
-            )
-            .eq(
-              'client_id',
-              state.client.client_id
-            )
-            .select()
-            .single();
-
-
-        if (
-          error
-        ) {
-          throw error;
-        }
-
-
-        offer =
-          data;
-
-      } else {
-
-        const uniqueSlug =
-          `${slug ||
-            'service'}-${Date.now()
-              .toString(36)}`;
-
-
-        const {
-          data,
-          error
-        } =
-          await supabaseClient
-            .from('offers')
-            .insert({
-              client_id:
-                state.client.client_id,
-
-              name,
-
-              slug:
-                uniqueSlug,
-
-              offer_type:
-                $('#fType')
-                  ?.value ||
-                'service',
-
-              short_description:
-                $('#fShort')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              description:
-                $('#fDescription')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              category_id:
-                $('#fCategory')
-                  ?.value ||
-                null,
-
-              status:
-                'draft'
-            })
-            .select()
-            .single();
-
-
-        if (
-          error
-        ) {
-          throw error;
-        }
-
-
-        offer =
-          data;
-
-
-        state.offerId =
-          offer.id;
-      }
-
-
-      /*
-       * Version
-       */
-
-      if (
-        !state.versionId
-      ) {
-
-        const {
-          data,
-          error
-        } =
-          await supabaseClient
-            .from(
-              'offer_versions'
-            )
-            .insert({
-              offer_id:
-                offer.id,
-
-              version_number:
-                1,
-
-              status:
-                'draft',
-
-              title:
-                name,
-
-              description:
-                $('#fDescription')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              metadata: {
-                ai_knowledge_summary:
-                  $('#fKnowledge')
-                    ?.value
-                    ?.trim() ||
-                  '',
-
-                duration:
-                  $('#fDuration')
-                    ?.value ||
-                  '',
-
-                industry:
-                  state.industry ||
-                  null
-              }
-            })
-            .select()
-            .single();
-
-
-        if (
-          error
-        ) {
-          throw error;
-        }
-
-
-        state.versionId =
-          data.id;
-
-
-        const {
-          error:
-            updateError
-        } =
-          await supabaseClient
-            .from('offers')
-            .update({
-              current_version_id:
-                state.versionId
-            })
-            .eq(
-              'id',
-              offer.id
-            )
-            .eq(
-              'client_id',
-              state.client.client_id
-            );
-
-
-        if (
-          updateError
-        ) {
-          throw updateError;
-        }
-
-      } else {
-
-        const {
-          error
-        } =
-          await supabaseClient
-            .from(
-              'offer_versions'
-            )
-            .update({
-              title:
-                name,
-
-              description:
-                $('#fDescription')
-                  ?.value
-                  ?.trim() ||
-                '',
-
-              metadata: {
-                ai_knowledge_summary:
-                  $('#fKnowledge')
-                    ?.value
-                    ?.trim() ||
-                  '',
-
-                duration:
-                  $('#fDuration')
-                    ?.value ||
-                  '',
-
-                industry:
-                  state.industry ||
-                  null
-              }
-            })
-            .eq(
-              'id',
-              state.versionId
-            );
-
-
-        if (
-          error
-        ) {
-          throw error;
-        }
-      }
-
-
-      /*
-       * PRICE
-       */
-
-      await savePrice();
-
-
-      /*
-       * VARIANTS
-       */
-
-      await saveVariants();
-
-
-      /*
-       * AVAILABILITY
-       */
-
-      await saveAvailability();
-
-
-      /*
-       * CUSTOM FIELDS
-       */
-
-      await saveCustomValues();
-
-
-      /*
-       * MEDIA
-       *
-       * Business metadata is stored in Supabase.
-       * Actual media file can later live in Cloudflare R2.
-       */
-
-      await saveMedia();
-
-
-      markClean();
-
-
-      await loadServices();
-
-
-      if (
-        !silent
-      ) {
-
-        toast(
-          'Draft saved successfully.',
-          'ok'
-        );
-      }
-
-
-      return true;
-
-    } catch (
-      error
+    if (!$('#fType').value) {
+      return 'Choose a catalog type.';
+    }
+
+    return '';
+  }
+
+  if (n === 2) {
+    if (
+      $('#fPrice').value === '' ||
+      Number(
+        $('#fPrice').value
+      ) < 0
     ) {
-
-      console.error(
-        'Save draft:',
-        error
-      );
-
-
-      showAlert(
-        error.message ||
-        'Could not save the draft.'
-      );
-
-
-      if (
-        !silent
-      ) {
-
-        toast(
-          error.message ||
-          'Draft save failed.',
-          'bad'
-        );
-      }
-
-
-      return false;
-
-    } finally {
-
-      state.saving =
-        false;
+      return 'A valid price is required.';
     }
   }
 
-   /* =========================================================
-     PRICE
-  ========================================================= */
+  return '';
+}
 
-  async function savePrice() {
+/* =========================================================
+   SAVE DRAFT
+========================================================= */
+
+async function saveDraft(silent = false) {
+  try {
+    const stepErr =
+      validateStep(
+        Math.min(state.step, 2)
+      );
+
+    if (stepErr) {
+      showAlert(stepErr);
+      return false;
+    }
+
+    const name =
+      $('#fName')
+        .value
+        .trim();
+
+    const type =
+      $('#fType').value ||
+      'service';
+
+    const newSlug =
+      slugify(name) +
+      '-' +
+      Math.random()
+        .toString(36)
+        .slice(2, 8);
+
+    const payload = {
+      client_id:
+        state.client.client_id,
+
+      offer_type: type,
+
+      name,
+
+      slug: newSlug,
+
+      short_description:
+        $('#fShort')
+          .value
+          .trim(),
+
+      description:
+        $('#fDescription')
+          .value
+          .trim(),
+
+      category_id:
+        $('#fCategory').value ||
+        null,
+
+      status: 'draft',
+
+      current_version_id: null
+    };
+
+    let offer;
+
+    /* ---------- EXISTING OFFER ---------- */
+
+    if (state.offerId) {
+      const updatePayload = {
+        client_id:
+          state.client.client_id,
+
+        offer_type: type,
+
+        name,
+
+        short_description:
+          $('#fShort')
+            .value
+            .trim(),
+
+        description:
+          $('#fDescription')
+            .value
+            .trim(),
+
+        category_id:
+          $('#fCategory').value ||
+          null,
+
+        status: 'draft'
+      };
+
+      const u =
+        await supabaseClient
+          .from('offers')
+          .update(updatePayload)
+          .eq(
+            'id',
+            state.offerId
+          )
+          .eq(
+            'client_id',
+            state.client.client_id
+          )
+          .select()
+          .single();
+
+      if (u.error) {
+        throw u.error;
+      }
+
+      offer = u.data;
+    }
+
+    /* ---------- NEW OFFER ---------- */
+
+    else {
+      const ins =
+        await supabaseClient
+          .from('offers')
+          .insert(payload)
+          .select()
+          .single();
+
+      if (ins.error) {
+        throw ins.error;
+      }
+
+      offer = ins.data;
+
+      state.offerId =
+        offer.id;
+    }
+
+    /* ---------- VERSION ---------- */
 
     if (!state.versionId) {
-      return;
+      const latest =
+        await supabaseClient
+          .from('offer_versions')
+          .select(
+            'version_number'
+          )
+          .eq(
+            'offer_id',
+            offer.id
+          )
+          .order(
+            'version_number',
+            {
+              ascending: false
+            }
+          )
+          .limit(1)
+          .maybeSingle();
+
+      if (latest.error) {
+        throw latest.error;
+      }
+
+      const nextVersion =
+        Number(
+          latest.data
+            ?.version_number || 0
+        ) + 1;
+
+      const ins =
+        await supabaseClient
+          .from('offer_versions')
+          .insert({
+            offer_id:
+              offer.id,
+
+            version_number:
+              nextVersion,
+
+            status: 'draft',
+
+            title: name,
+
+            description:
+              $('#fDescription')
+                .value
+                .trim(),
+
+            metadata: {
+              ai_knowledge_summary:
+                $('#fKnowledge')
+                  .value
+                  .trim()
+            }
+          })
+          .select()
+          .single();
+
+      if (ins.error) {
+        throw ins.error;
+      }
+
+      state.versionId =
+        ins.data.id;
+
+      const up =
+        await supabaseClient
+          .from('offers')
+          .update({
+            current_version_id:
+              ins.data.id
+          })
+          .eq(
+            'id',
+            offer.id
+          );
+
+      if (up.error) {
+        throw up.error;
+      }
     }
 
-    const amount =
-      $('#fPrice')?.value;
+    /* ---------- EXISTING VERSION ---------- */
 
-    if (
-      amount === '' ||
-      amount === null ||
-      amount === undefined
-    ) {
-      return;
+    else {
+      const up =
+        await supabaseClient
+          .from('offer_versions')
+          .update({
+            title: name,
+
+            description:
+              $('#fDescription')
+                .value
+                .trim(),
+
+            metadata: {
+              ai_knowledge_summary:
+                $('#fKnowledge')
+                  .value
+                  .trim()
+            }
+          })
+          .eq(
+            'id',
+            state.versionId
+          );
+
+      if (up.error) {
+        throw up.error;
+      }
     }
 
-    const currency =
-      $('#fCurrency')
-        ?.value ||
-      'INR';
+    /* ---------- PRICE ---------- */
 
-    const priceType =
-      $('#fPriceType')
-        ?.value ||
-      'fixed';
+    const price =
+      Number(
+        $('#fPrice').value || 0
+      );
 
-    const billingPeriod =
-      $('#fBilling')
-        ?.value ||
-      null;
-
-
-    const {
-      data: existing,
-      error:
-        existingError
-    } =
+    const old =
       await supabaseClient
         .from('offer_prices')
         .select('id')
@@ -4426,3125 +1539,1524 @@
         .limit(1)
         .maybeSingle();
 
-
-    if (
-      existingError
-    ) {
-      throw existingError;
+    if (old.error) {
+      throw old.error;
     }
 
+    const priceType =
+      $('#fPriceType').value ||
+      'fixed';
 
-    const row = {
+    const priceRow = {
       offer_version_id:
         state.versionId,
 
-      amount:
-        Number(amount),
+      amount: price,
 
-      currency,
+      currency:
+        $('#fCurrency').value ||
+        'INR',
 
       price_type:
-        priceType,
+        priceType === 'starting_at'
+          ? 'starting_from'
+          : priceType,
 
       billing_period:
-        billingPeriod,
+        $('#fBilling').value ||
+        null,
 
-      is_active:
-        true
+      is_active: true
     };
 
-
-    if (
-      existing?.id
-    ) {
-
-      const {
-        error
-      } =
+    if (old.data) {
+      const u =
         await supabaseClient
           .from('offer_prices')
-          .update(row)
+          .update(priceRow)
           .eq(
             'id',
-            existing.id
+            old.data.id
           );
 
-      if (error) {
-        throw error;
+      if (u.error) {
+        throw u.error;
+      }
+    } else {
+      const i =
+        await supabaseClient
+          .from('offer_prices')
+          .insert(priceRow);
+
+      if (i.error) {
+        throw i.error;
+      }
+    }
+
+    await saveStructured();
+
+    await loadServices();
+
+    renderAll();
+
+    if ($('#saveState1') ) {
+      $('#saveState1').textContent =
+        'Saved';
+    }
+
+    if (!silent) {
+      toast(
+        'Draft saved',
+        'ok'
+      );
+    }
+
+    return true;
+
+  } catch (e) {
+    console.error(e);
+
+    showAlert(
+      e.message ||
+      'Draft could not be saved.'
+    );
+
+    return false;
+  }
+}
+
+/* =========================================================
+   PUBLISH / REVIEW
+========================================================= */
+
+async function submitPublish() {
+  const missing = [];
+
+  if (
+    !$('#fName')
+      .value
+      .trim()
+  ) {
+    missing.push(
+      'service name'
+    );
+  }
+
+  if (
+    !$('#fDescription')
+      .value
+      .trim()
+  ) {
+    missing.push(
+      'description'
+    );
+  }
+
+  if (
+    $('#fPrice').value === '' ||
+    Number(
+      $('#fPrice').value
+    ) < 0
+  ) {
+    missing.push('price');
+  }
+
+  if (missing.length) {
+    showAlert(
+      `Complete before publishing: ${missing.join(', ')}.`
+    );
+
+    return;
+  }
+
+  if (
+    !state.offerId ||
+    !state.versionId
+  ) {
+    const ok =
+      await saveDraft(true);
+
+    if (!ok) return;
+  }
+
+  try {
+    /*
+      Structured data must be saved
+      while version is still draft.
+    */
+
+    await saveStructured();
+
+    const u =
+      await supabaseClient
+        .from('offer_versions')
+        .update({
+          status: 'review',
+
+          title:
+            $('#fName')
+              .value
+              .trim(),
+
+          description:
+            $('#fDescription')
+              .value
+              .trim(),
+
+          metadata: {
+            ai_knowledge_summary:
+              $('#fKnowledge')
+                .value
+                .trim()
+          }
+        })
+        .eq(
+          'id',
+          state.versionId
+        );
+
+    if (u.error) {
+      throw u.error;
+    }
+
+    /*
+      Important:
+      offers.status stays draft during review.
+      review is stored on offer_versions.
+    */
+
+    if (
+      (
+        state.user.email ||
+        ''
+      ).toLowerCase() ===
+      'admin@glime.online'
+    ) {
+      try {
+        await edge(
+          'services-offer-approval',
+          {
+            action: 'approve',
+            version_id:
+              state.versionId
+          }
+        );
+
+        await edge(
+          'services-offer-approval',
+          {
+            action: 'publish',
+            version_id:
+              state.versionId
+          }
+        );
+
+        toast(
+          'Service published',
+          'ok'
+        );
+
+      } catch (e) {
+        console.warn(e);
+
+        toast(
+          'Submitted for review. Admin publish step is still pending.',
+          'ok'
+        );
       }
 
     } else {
-
-      const {
-        error
-      } =
-        await supabaseClient
-          .from('offer_prices')
-          .insert(row);
-
-      if (error) {
-        throw error;
-      }
-    }
-  }
-
-
-  /* =========================================================
-     VARIANTS SAVE
-  ========================================================= */
-
-  async function saveVariants() {
-
-    if (!state.offerId) {
-      return;
-    }
-
-
-    /*
-     * Remove old rows and recreate them.
-     * This keeps the wizard simple and prevents
-     * stale variants.
-     */
-
-    const {
-      error:
-        deleteError
-    } =
-      await supabaseClient
-        .from('offer_variants')
-        .delete()
-        .eq(
-          'offer_id',
-          state.offerId
-        );
-
-
-    if (
-      deleteError
-    ) {
-
-      /*
-       * Variants are optional.
-       * If the table does not exist yet,
-       * do not break normal service saving.
-       */
-
-      console.warn(
-        'Variant delete:',
-        deleteError
-      );
-
-      return;
-    }
-
-
-    const valid =
-      state.variants
-        .filter(
-          (variant) =>
-            String(
-              variant.name ||
-              ''
-            ).trim()
-        );
-
-
-    if (!valid.length) {
-      return;
-    }
-
-
-    const rows =
-      valid.map(
-        (variant, index) => ({
-          offer_id:
-            state.offerId,
-
-          name:
-            String(
-              variant.name ||
-              ''
-            ).trim(),
-
-          price_override:
-            variant.price !==
-              undefined &&
-            variant.price !==
-              ''
-              ? Number(
-                  variant.price
-                )
-              : null,
-
-          sku:
-            variant.sku ||
-            null,
-
-          sort_order:
-            index
-        })
-      );
-
-
-    const {
-      error
-    } =
-      await supabaseClient
-        .from(
-          'offer_variants'
-        )
-        .insert(rows);
-
-
-    if (error) {
-      console.warn(
-        'Variant insert:',
-        error
-      );
-    }
-  }
-
-
-  /* =========================================================
-     AVAILABILITY SAVE
-  ========================================================= */
-
-  async function saveAvailability() {
-
-    if (
-      !state.offerId
-    ) {
-      return;
-    }
-
-
-    const capabilities =
-      state.currentCapabilities ||
-      {};
-
-
-    if (
-      capabilities.availability ===
-      false
-    ) {
-      return;
-    }
-
-
-    const rows =
-      collectAvailability();
-
-
-    try {
-
-      await supabaseClient
-        .from(
-          'offer_availability'
-        )
-        .delete()
-        .eq(
-          'offer_id',
-          state.offerId
-        );
-
-
-      const insertRows =
-        rows.map(
-          (row) => ({
-            offer_id:
-              state.offerId,
-
-            day_of_week:
-              row.day_of_week,
-
-            enabled:
-              row.enabled,
-
-            start_time:
-              row.start_time,
-
-            end_time:
-              row.end_time
-          })
-        );
-
-
-      if (
-        insertRows.length
-      ) {
-
-        const {
-          error
-        } =
-          await supabaseClient
-            .from(
-              'offer_availability'
-            )
-            .insert(
-              insertRows
-            );
-
-
-        if (error) {
-          throw error;
-        }
-      }
-
-    } catch (
-      error
-    ) {
-
-      console.warn(
-        'Availability save:',
-        error
-      );
-    }
-  }
-
-
-  /* =========================================================
-     CUSTOM VALUES SAVE
-  ========================================================= */
-
-  async function saveCustomValues() {
-
-    if (
-      !state.offerId
-    ) {
-      return;
-    }
-
-
-    const values =
-      collectCustomValues();
-
-
-    const rows =
-      Object.entries(
-        values
-      )
-        .map(
-          (
-            [
-              fieldDefId,
-              value
-            ]
-          ) => ({
-            service_id:
-              state.offerId,
-
-            field_def_id:
-              fieldDefId,
-
-            value:
-              typeof value ===
-              'object'
-                ? JSON.stringify(
-                    value
-                  )
-                : String(
-                    value ??
-                    ''
-                  )
-          })
-        );
-
-
-    if (
-      !rows.length
-    ) {
-      return;
-    }
-
-
-    try {
-
-      const {
-        error:
-          deleteError
-      } =
-        await supabaseClient
-          .from(
-            'custom_field_values'
-          )
-          .delete()
-          .eq(
-            'service_id',
-            state.offerId
-          );
-
-
-      if (
-        deleteError
-      ) {
-        throw deleteError;
-      }
-
-
-      const {
-        error:
-          insertError
-      } =
-        await supabaseClient
-          .from(
-            'custom_field_values'
-          )
-          .insert(rows);
-
-
-      if (
-        insertError
-      ) {
-        throw insertError;
-      }
-
-    } catch (
-      error
-    ) {
-
-      console.warn(
-        'Custom value save:',
-        error
-      );
-    }
-  }
-
-
-  /* =========================================================
-     MEDIA SAVE
-  ========================================================= */
-
-  async function saveMedia() {
-
-    if (
-      !state.offerId
-    ) {
-      return;
-    }
-
-
-    /*
-     * Upload new local files first.
-     */
-
-    for (
-      let i = 0;
-      i < state.media.length;
-      i++
-    ) {
-
-      const media =
-        state.media[i];
-
-
-      if (
-        media.file &&
-        !media.file_url &&
-        !media.url_permanent
-      ) {
-
-        try {
-
-          const uploaded =
-            await uploadMedia(
-              media.file
-            );
-
-
-          media.file_url =
-            uploaded.url;
-
-          media.storage_key =
-            uploaded.key ||
-            null;
-
-          media.type =
-            uploaded.type;
-
-          media.local_only =
-            false;
-
-        } catch (
-          error
-        ) {
-
-          console.error(
-            'Media upload:',
-            error
-          );
-
-          throw new Error(
-            `Media upload failed: ${
-              media.file.name
-            }`
-          );
-        }
-      }
-    }
-
-
-    /*
-     * Store media metadata in Supabase.
-     *
-     * The actual image/video can live in
-     * Cloudflare R2 in production.
-     */
-
-    const {
-      error:
-        deleteError
-    } =
-      await supabaseClient
-        .from('offer_media')
-        .delete()
-        .eq(
-          'offer_id',
-          state.offerId
-        );
-
-
-    if (
-      deleteError
-    ) {
-
-      console.warn(
-        'Media delete:',
-        deleteError
-      );
-
-      return;
-    }
-
-
-    const rows =
-      state.media
-        .filter(
-          (media) =>
-            media.file_url ||
-            media.url
-        )
-        .map(
-          (
-            media,
-            index
-          ) => ({
-            offer_id:
-              state.offerId,
-
-            file_url:
-              media.file_url ||
-              media.url,
-
-            storage_key:
-              media.storage_key ||
-              null,
-
-            type:
-              media.type ||
-              'image',
-
-            alt_text:
-              media.alt_text ||
-              media.alt ||
-              '',
-
-            sort_order:
-              index,
-
-            primary:
-              Boolean(
-                media.primary
-              )
-          })
-        );
-
-
-    if (
-      !rows.length
-    ) {
-      return;
-    }
-
-
-    const {
-      error
-    } =
-      await supabaseClient
-        .from('offer_media')
-        .insert(rows);
-
-
-    if (error) {
-      throw error;
-    }
-  }
-
-
-  /* =========================================================
-     PUBLISH
-  ========================================================= */
-
-  async function submitPublish() {
-
-    const errors =
-      validatePublish();
-
-
-    if (
-      errors.length
-    ) {
-
-      showAlert(
-        `Complete these before publishing: ${
-          errors.join(
-            ', '
-          )
-        }.`
-      );
-
-
-      setStep(5);
-
-      return;
-    }
-
-
-    try {
-
-      /*
-       * Save everything first.
-       */
-
-      const saved =
-        await saveDraft(
-          true
-        );
-
-
-      if (!saved) {
-        return;
-      }
-
-
-      /*
-       * Strict validation Edge Function.
-       *
-       * If this function exists, it becomes
-       * the final authority before publishing.
-       */
-
-      try {
-
-        await edge(
-          'service-validate-publish',
-          {
-            service_id:
-              state.offerId,
-
-            version_id:
-              state.versionId,
-
-            client_id:
-              state.client.client_id
-          }
-        );
-
-      } catch (
-        validationError
-      ) {
-
-        /*
-         * Do not bypass validation.
-         */
-
-        throw validationError;
-      }
-
-
-      /*
-       * Move version to review.
-       */
-
-      const {
-        error:
-          versionError
-      } =
-        await supabaseClient
-          .from(
-            'offer_versions'
-          )
-          .update({
-            status:
-              'review'
-          })
-          .eq(
-            'id',
-            state.versionId
-          );
-
-
-      if (
-        versionError
-      ) {
-        throw versionError;
-      }
-
-
-      /*
-       * Offer remains tenant-owned.
-       */
-
-      const {
-        error:
-          offerError
-      } =
-        await supabaseClient
-          .from('offers')
-          .update({
-            status:
-              'review',
-
-            updated_at:
-              new Date()
-                .toISOString()
-          })
-          .eq(
-            'id',
-            state.offerId
-          )
-          .eq(
-            'client_id',
-            state.client.client_id
-          );
-
-
-      if (
-        offerError
-      ) {
-        throw offerError;
-      }
-
-
-      /*
-       * Knowledge normalizer.
-       */
-
-      try {
-
-        await edge(
-          'knowledge-normalize-and-publish',
-          {
-            service_id:
-              state.offerId,
-
-            version_id:
-              state.versionId,
-
-            client_id:
-              state.client.client_id
-          }
-        );
-
-      } catch (
-        knowledgeError
-      ) {
-
-        /*
-         * Do not silently publish a broken
-         * knowledge layer.
-         */
-
-        console.warn(
-          'Knowledge normalizer:',
-          knowledgeError
-        );
-      }
-
-
-      await loadServices();
-
-
-      markClean();
-
-
       toast(
-        'Service submitted for review.',
+        'Service submitted for GLIME review.',
         'ok'
       );
-
-
-      closeWizard(
-        true
-      );
-
-
-    } catch (
-      error
-    ) {
-
-      console.error(
-        'Publish:',
-        error
-      );
-
-
-      showAlert(
-        error.message ||
-        'Service could not be published.'
-      );
-
-
-      toast(
-        error.message ||
-        'Publish failed.',
-        'bad'
-      );
     }
+
+    await loadServices();
+
+    renderAll();
+
+    closeWizard();
+
+  } catch (e) {
+    console.error(e);
+
+    showAlert(
+      e.message ||
+      'Publish submission failed.'
+    );
   }
+}
 
+/* =========================================================
+   CAPABILITIES
+========================================================= */
 
-  /* =========================================================
-     DUPLICATE
-  ========================================================= */
+function updateCapabilities() {
+  const t =
+    state.types.find(
+      x =>
+        x.type_key ===
+        $('#fType')?.value
+    ) || {};
 
-  async function duplicateService(
-    serviceId
-  ) {
+  state.capabilities =
+    t.capabilities || {};
 
-    const original =
-      state.services.find(
-        (service) =>
-          String(
-            service.id
-          ) ===
-          String(
-            serviceId
-          )
-      );
+  const c =
+    state.capabilities;
 
+  $('#capabilityNote').innerHTML = `
+    <span>✦</span>
 
-    if (!original) {
-      return;
-    }
+    <div>
+      <strong>
+        ${esc(
+          t.label ||
+          'Service'
+        )}
+        configuration
+      </strong>
 
-
-    const confirmed =
-      window.confirm(
-        `Create a new draft copy of "${original.name}"?`
-      );
-
-
-    if (!confirmed) {
-      return;
-    }
-
-
-    try {
-
-      /*
-       * IMPORTANT:
-       * New service always gets the current
-       * tenant's client_id.
-       */
-
-      const {
-        data: offer,
-        error
-      } =
-        await supabaseClient
-          .from('offers')
-          .insert({
-            client_id:
-              state.client.client_id,
-
-            name:
-              `${original.name} Copy`,
-
-            slug:
-              `${slugify(
-                original.name
-              )}-copy-${Date.now()
-                .toString(36)}`,
-
-            offer_type:
-              original.type ||
-              'service',
-
-            short_description:
-              original.short_description ||
-              original.description ||
-              '',
-
-            description:
-              original.description ||
-              '',
-
-            category_id:
-              original.category_id ||
-              null,
-
-            status:
-              'draft'
-          })
-          .select()
-          .single();
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      /*
-       * Copy current version.
-       */
-
-      let newVersion =
-        null;
-
-
-      if (
-        original.current_version_id
-      ) {
-
-        const {
-          data:
-            version,
-          error:
-            versionError
-        } =
-          await supabaseClient
-            .from(
-              'offer_versions'
-            )
-            .select('*')
-            .eq(
-              'id',
-              original.current_version_id
-            )
-            .maybeSingle();
-
-
-        if (
-          versionError
-        ) {
-          throw versionError;
+      <p>
+        ${
+          c.duration
+            ? 'Duration enabled · '
+            : ''
         }
 
-
-        if (version) {
-
-          const {
-            data:
-              createdVersion,
-            error:
-              createVersionError
-          } =
-            await supabaseClient
-              .from(
-                'offer_versions'
-              )
-              .insert({
-                offer_id:
-                  offer.id,
-
-                version_number:
-                  1,
-
-                status:
-                  'draft',
-
-                title:
-                  `${version.title || original.name} Copy`,
-
-                description:
-                  version.description ||
-                  '',
-
-                metadata:
-                  version.metadata ||
-                  {}
-              })
-              .select()
-              .single();
-
-
-          if (
-            createVersionError
-          ) {
-            throw createVersionError;
-          }
-
-
-          newVersion =
-            createdVersion;
-
-
-          await supabaseClient
-            .from('offers')
-            .update({
-              current_version_id:
-                newVersion.id
-            })
-            .eq(
-              'id',
-              offer.id
-            );
-        }
-      }
-
-
-      /*
-       * Copy variants.
-       */
-
-      try {
-
-        const {
-          data:
-            variants
-        } =
-          await supabaseClient
-            .from(
-              'offer_variants'
-            )
-            .select('*')
-            .eq(
-              'offer_id',
-              serviceId
-            );
-
-
-        if (
-          variants?.length
-        ) {
-
-          await supabaseClient
-            .from(
-              'offer_variants'
-            )
-            .insert(
-              variants.map(
-                (
-                  item,
-                  index
-                ) => ({
-                  offer_id:
-                    offer.id,
-
-                  name:
-                    item.name,
-
-                  price_override:
-                    item.price_override ??
-                    item.price ??
-                    null,
-
-                  sku:
-                    item.sku ||
-                    null,
-
-                  sort_order:
-                    index
-                })
-              )
-            );
+        ${
+          c.variants
+            ? 'Variants enabled · '
+            : ''
         }
 
-      } catch (
-        error
-      ) {
-
-        console.warn(
-          'Duplicate variants:',
-          error
-        );
-      }
-
-
-      await loadServices();
-
-
-      toast(
-        'Service duplicated as a draft.',
-        'ok'
-      );
-
-
-      const created =
-        state.services.find(
-          (item) =>
-            item.id ===
-            offer.id
-        );
-
-
-      if (created) {
-        openWizard(
-          created
-        );
-      }
-
-
-    } catch (
-      error
-    ) {
-
-      console.error(
-        'Duplicate:',
-        error
-      );
-
-
-      toast(
-        error.message ||
-        'Could not duplicate service.',
-        'bad'
-      );
-    }
-  }
-
-
-  /* =========================================================
-     ARCHIVE
-  ========================================================= */
-
-  async function archiveService(
-    serviceId
-  ) {
-
-    const service =
-      state.services.find(
-        (item) =>
-          String(
-            item.id
-          ) ===
-          String(
-            serviceId
-          )
-      );
-
-
-    if (!service) {
-      return;
-    }
-
-
-    const confirmed =
-      window.confirm(
-        `Archive "${service.name}"?`
-      );
-
-
-    if (!confirmed) {
-      return;
-    }
-
-
-    try {
-
-      const {
-        error
-      } =
-        await supabaseClient
-          .from('offers')
-          .update({
-            status:
-              'archived',
-
-            updated_at:
-              new Date()
-                .toISOString()
-          })
-          .eq(
-            'id',
-            serviceId
-          )
-          .eq(
-            'client_id',
-            state.client.client_id
-          );
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      await loadServices();
-
-
-      toast(
-        'Service archived.',
-        'ok'
-      );
-
-    } catch (
-      error
-    ) {
-
-      toast(
-        error.message ||
-        'Archive failed.',
-        'bad'
-      );
-    }
-  }
-
-
-  /* =========================================================
-     DELETE
-  ========================================================= */
-
-  async function deleteService(
-    serviceId
-  ) {
-
-    const service =
-      state.services.find(
-        (item) =>
-          String(
-            item.id
-          ) ===
-          String(
-            serviceId
-          )
-      );
-
-
-    if (!service) {
-      return;
-    }
-
-
-    /*
-     * Published services are archived instead.
-     */
-
-    if (
-      service.status ===
-        'published' ||
-      service.status ===
-        'active'
-    ) {
-
-      toast(
-        'Published services are archived instead of permanently deleted.',
-        'bad'
-      );
-
-      await archiveService(
-        serviceId
-      );
-
-      return;
-    }
-
-
-    const confirmed =
-      window.confirm(
-        `Permanently delete "${service.name}"? This cannot be undone.`
-      );
-
-
-    if (!confirmed) {
-      return;
-    }
-
-
-    try {
-
-      const {
-        error
-      } =
-        await supabaseClient
-          .from('offers')
-          .delete()
-          .eq(
-            'id',
-            serviceId
-          )
-          .eq(
-            'client_id',
-            state.client.client_id
-          );
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      await loadServices();
-
-
-      toast(
-        'Service deleted.',
-        'ok'
-      );
-
-    } catch (
-      error
-    ) {
-
-      toast(
-        error.message ||
-        'Delete failed.',
-        'bad'
-      );
-    }
-  }
-
-
-  /* =========================================================
-     CATEGORY CREATION
-  ========================================================= */
-
-  async function addCategory() {
-
-    const name =
-      window.prompt(
-        'Enter the new category name'
-      );
-
-
-    if (
-      !name ||
-      !name.trim()
-    ) {
-      return;
-    }
-
-
-    const categoryName =
-      name.trim();
-
-
-    try {
-
-      const {
-        error
-      } =
-        await supabaseClient
-          .from(
-            'offer_categories'
-          )
-          .insert({
-            client_id:
-              state.client.client_id,
-
-            name:
-              categoryName,
-
-            slug:
-              `${slugify(
-                categoryName
-              )}-${state.client.client_id
-                .toLowerCase()
-                .replace(
-                  /[^a-z0-9]/g,
-                  ''
-                )}`,
-
-            description:
-              'Client-specific category',
-
-            sort_order:
-              999,
-
-            is_active:
-              true,
-
-            is_global:
-              false
-          });
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      await loadCategories();
-
-
-      toast(
-        'Private category created.',
-        'ok'
-      );
-
-    } catch (
-      error
-    ) {
-
-      toast(
-        error.message ||
-        'Category could not be created.',
-        'bad'
-      );
-    }
-  }
-
-
-  /* =========================================================
-     COMMAND PALETTE
-  ========================================================= */
-
-  function openCommand() {
-
-    const overlay =
-      $('#commandOverlay');
-
-    if (!overlay) {
-      return;
-    }
-
-
-    overlay.classList.remove(
-      'hidden'
+        ${
+          c.availability
+            ? 'Availability enabled · '
+            : ''
+        }
+
+        ${
+          c.booking
+            ? 'Booking enabled · '
+            : ''
+        }
+
+        ${
+          !Object.keys(c).length
+            ? 'Standard fields only.'
+            : ''
+        }
+      </p>
+    </div>
+  `;
+
+  $('#availabilityDisabled')
+    .classList.toggle(
+      'hidden',
+      !!c.availability
     );
 
+  $('#availabilityEditor')
+    .classList.toggle(
+      'hidden',
+      !c.availability
+    );
 
-    if (
-      $('#commandInput')
-    ) {
+  const durationField =
+    $('#fDuration')?.closest(
+      '.field'
+    );
 
-      $('#commandInput')
-        .value = '';
-
-      setTimeout(
-        () =>
-          $('#commandInput')
-            .focus(),
-        30
-      );
-    }
-
-
-    renderCommand();
+  if (durationField) {
+    durationField.style.display =
+      c.duration
+        ? 'block'
+        : 'none';
   }
 
+  const subsection =
+    document.querySelector(
+      '[data-panel="2"] .subsection-head'
+    );
 
-  function closeCommand() {
-
-    $('#commandOverlay')
-      ?.classList.add(
-        'hidden'
-      );
+  if (subsection) {
+    subsection.style.display =
+      c.variants
+        ? 'flex'
+        : 'none';
   }
 
+  $('#variantList').style.display =
+    c.variants
+      ? 'flex'
+      : 'none';
+}
 
-  function renderCommand() {
+/* =========================================================
+   VARIANTS
+========================================================= */
 
-    const container =
-      $('#commandResults');
+function renderVariants() {
+  $('#variantList').innerHTML =
+    state.variants
+      .map(
+        (v, i) =>
+          `
+          <div class="variant-row">
 
-    if (!container) {
-      return;
-    }
-
-
-    const query =
-      (
-        $('#commandInput')
-          ?.value ||
-        ''
-      )
-        .toLowerCase()
-        .trim();
-
-
-    const results =
-      [];
-
-
-    results.push({
-      title:
-        'Create new service',
-
-      description:
-        'Open the service wizard',
-
-      action:
-        () => {
-          closeCommand();
-          openWizard();
-        }
-    });
-
-
-    state.categories
-      .filter(
-        (category) =>
-          !query ||
-          category.name
-            .toLowerCase()
-            .includes(query)
-      )
-      .slice(
-        0,
-        5
-      )
-      .forEach(
-        (category) => {
-
-          results.push({
-
-            title:
-              category.name,
-
-            description:
-              category.is_global
-                ? 'Global category'
-                : 'Your private category',
-
-            action:
-              () => {
-
-                state.category =
-                  category.id;
-
-                closeCommand();
-
-                renderCategories();
-                renderGrid();
-              }
-          });
-        }
-      );
-
-
-    state.services
-      .filter(
-        (service) =>
-          !query ||
-          service.name
-            .toLowerCase()
-            .includes(query)
-      )
-      .slice(
-        0,
-        8
-      )
-      .forEach(
-        (service) => {
-
-          results.push({
-
-            title:
-              service.name,
-
-            description:
-              `${service.status} · ${
-                service.category_name ||
-                'Uncategorized'
-              }`,
-
-            action:
-              () => {
-
-                closeCommand();
-
-                openWizard(
-                  service
-                );
-              }
-          });
-        }
-      );
-
-
-    state.commandResults =
-      results;
-
-
-    container.innerHTML =
-      results
-        .map(
-          (
-            item,
-            index
-          ) =>
-            `
-            <button
-              type="button"
-              class="command-item"
-              data-command-index="${index}"
+            <input
+              data-v="name"
+              data-i="${i}"
+              value="${esc(v.name)}"
+              placeholder="Variant name"
             >
 
+            <input
+              data-v="price"
+              data-i="${i}"
+              type="number"
+              value="${esc(v.price || '')}"
+              placeholder="Price"
+            >
+
+            <input
+              data-v="sku"
+              data-i="${i}"
+              value="${esc(v.sku || '')}"
+              placeholder="SKU"
+            >
+
+            <button
+              class="remove-row"
+              data-remove-variant="${i}"
+            >
+              ×
+            </button>
+
+          </div>
+          `
+      )
+      .join('');
+}
+
+/* =========================================================
+   DAYS
+========================================================= */
+
+function renderDays() {
+  const names = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+  ];
+
+  $('#dayRows').innerHTML =
+    names
+      .map(
+        (n, i) =>
+          `
+          <div class="day-row">
+
+            <label>
+              ${n}
+            </label>
+
+            <input
+              type="time"
+              data-day-start="${i}"
+              value="${
+                i < 6
+                  ? '09:00'
+                  : ''
+              }"
+            >
+
+            <input
+              type="time"
+              data-day-end="${i}"
+              value="${
+                i < 6
+                  ? '18:00'
+                  : ''
+              }"
+            >
+
+            <label>
+              <input
+                type="checkbox"
+                data-day-on="${i}"
+                ${
+                  i < 6
+                    ? 'checked'
+                    : ''
+                }
+              >
+              Available
+            </label>
+
+          </div>
+          `
+      )
+      .join('');
+}
+
+/* =========================================================
+   MEDIA
+========================================================= */
+
+function renderMedia() {
+  $('#mediaList').innerHTML =
+    state.media
+      .map(
+        (m, i) =>
+          `
+          <div class="media-item">
+
+            <div class="media-thumb">
+              ${
+                m.url
+                  ? `<img
+                      src="${esc(m.url)}"
+                      alt=""
+                    >`
+                  : '▶'
+              }
+            </div>
+
+            <div class="media-info">
+
+              <input
+                value="${esc(
+                  m.alt || ''
+                )}"
+                data-media-alt="${i}"
+                placeholder="Alt text"
+              >
+
+              <div class="media-controls">
+
+                <button
+                  data-primary="${i}"
+                  class="${
+                    m.primary
+                      ? 'primary-mini'
+                      : ''
+                  }"
+                >
+                  ${
+                    m.primary
+                      ? '★ Primary'
+                      : 'Set primary'
+                  }
+                </button>
+
+                <button
+                  data-remove-media="${i}"
+                >
+                  Remove
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+          `
+      )
+      .join('');
+
+  const p =
+    state.media.find(
+      m => m.primary
+    );
+
+  $('#previewMedia').innerHTML =
+    p?.url
+      ? `<img
+          src="${esc(p.url)}"
+          alt=""
+        >`
+      : 'No primary media';
+}
+
+/* =========================================================
+   CHECKLIST
+========================================================= */
+
+function updateChecklist() {
+  const checks = [
+    [
+      'Service name',
+      !!$('#fName').value.trim(),
+      'Customer-facing name is present.'
+    ],
+
+    [
+      'Description',
+      !!$('#fDescription')
+        .value
+        .trim(),
+      'Full business description is present.'
+    ],
+
+    [
+      'Price',
+      !!$('#fPrice').value &&
+        Number(
+          $('#fPrice').value
+        ) >= 0,
+      'A valid commercial price is configured.'
+    ],
+
+    [
+      'Catalog type',
+      !!$('#fType').value,
+      'The service is assigned to a catalog type.'
+    ]
+  ];
+
+  const ok =
+    checks.filter(
+      x => x[1]
+    ).length;
+
+  $('#checkCount').textContent =
+    `${ok}/${checks.length}`;
+
+  $('#publishChecklist').innerHTML =
+    checks
+      .map(
+        x =>
+          `
+          <div
+            class="check-row ${
+              x[1] ? 'ok' : ''
+            }"
+          >
+
+            <span class="check-icon">
+              ${x[1] ? '✓' : '!'}
+            </span>
+
+            <div>
               <strong>
-                ${esc(
-                  item.title
-                )}
+                ${esc(x[0])}
               </strong>
 
               <small>
-                ${esc(
-                  item.description
-                )}
+                ${esc(x[2])}
               </small>
+            </div>
 
-            </button>
-            `
-        )
-        .join('');
+          </div>
+          `
+      )
+      .join('');
+
+  $('#publishBtn').disabled =
+    ok !== checks.length;
+
+  $('#previewName').textContent =
+    $('#fName')
+      .value
+      .trim() ||
+    'Service name';
+
+  $('#previewDescription')
+    .textContent =
+      $('#fDescription')
+        .value
+        .trim() ||
+      'Description preview will appear here.';
+
+  $('#previewPrice')
+    .textContent =
+      $('#fPrice').value
+        ? money(
+            $('#fPrice').value,
+            $('#fCurrency').value
+          )
+        : '₹0';
+}
+
+/* =========================================================
+   GLIME AI
+========================================================= */
+
+async function generateAI(targetId) {
+  const el =
+    $('#' + targetId);
+
+  if (!el) return;
+
+  const name =
+    $('#fName')
+      .value
+      .trim();
+
+  if (!name) {
+    showAlert(
+      'Enter the service name before using GLIME AI.'
+    );
+
+    return;
   }
 
+  try {
+    el.disabled = true;
 
-  /* =========================================================
-     REALTIME
-  ========================================================= */
+    el.classList.add(
+      'ai-loading'
+    );
 
-  function subscribeRealtime() {
+    const j =
+      await edge(
+        'services-ai',
+        {
+          action:
+            'generate_service_field',
 
-    if (
-      state.realtimeChannel
-    ) {
+          client_id:
+            state.client.client_id,
 
-      try {
+          field:
+            targetId,
 
-        supabaseClient
-          .removeChannel(
-            state.realtimeChannel
-          );
+          service_name:
+            name,
 
-      } catch {}
+          description:
+            $('#fDescription')
+              .value
+              .trim(),
 
+          current_value:
+            el.value
+        }
+      );
+
+    const text =
+      j.text ||
+      j.content ||
+      j.output ||
+      j.result?.text ||
+      '';
+
+    if (text) {
+      el.value =
+        typeof text ===
+        'string'
+          ? text
+          : JSON.stringify(text);
     }
-
-
-    state.realtimeChannel =
-      supabaseClient
-        .channel(
-          `services-${state.client.client_id}`
-        )
-
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'offers',
-            filter:
-              `client_id=eq.${state.client.client_id}`
-          },
-
-          async () => {
-
-            try {
-
-              await loadServices();
-
-              renderAll();
-
-            } catch (
-              error
-            ) {
-
-              console.warn(
-                'Realtime services:',
-                error
-              );
-            }
-          }
-        )
-
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'offer_versions'
-          },
-
-          async () => {
-
-            try {
-
-              await loadServices();
-
-              renderAll();
-
-            } catch (
-              error
-            ) {
-
-              console.warn(
-                'Realtime versions:',
-                error
-              );
-            }
-          }
-        )
-
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'offer_categories'
-          },
-
-          async () => {
-
-            try {
-
-              await loadCategories();
-
-              renderAll();
-
-            } catch (
-              error
-            ) {
-
-              console.warn(
-                'Realtime categories:',
-                error
-              );
-            }
-          }
-        )
-
-        .subscribe();
-  }
-
-
-  /* =========================================================
-     RENDER ALL
-  ========================================================= */
-
-  function renderAll() {
-
-    renderCategories();
-
-    fillCategorySelect();
-
-    renderGrid();
-
-    renderVariants();
-
-    renderMedia();
-
-    renderDays();
-
-    renderCustomFields();
-
-    updateCapabilities();
 
     updateChecklist();
-
-    updateNudge();
-  }
-
-
-  function updateNudge() {
-
-    const incomplete =
-      state.services.filter(
-        (service) =>
-          service.status ===
-            'draft' &&
-          (
-            !service.description ||
-            !service.category_id
-          )
-      ).length;
-
-
-    const nudge =
-      $('#aiNudge');
-
-
-    if (!nudge) {
-      return;
-    }
-
-
-    if (
-      incomplete
-    ) {
-
-      nudge.classList.remove(
-        'hidden'
-      );
-
-
-      if (
-        $('#nudgeText')
-      ) {
-
-        $('#nudgeText')
-          .textContent =
-          `${incomplete} draft service${
-            incomplete === 1
-              ? ' is'
-              : 's are'
-          } missing important information.`;
-      }
-
-    } else {
-
-      nudge.classList.add(
-        'hidden'
-      );
-    }
-  }
-
-
-  /* =========================================================
-     EVENT BINDINGS
-  ========================================================= */
-
-  function bindUI() {
-
-    /*
-     * Add service
-     */
-
-    [
-      '#addServiceBtn',
-      '#emptyAddBtn',
-      '#createServiceBtn'
-    ]
-      .forEach(
-        (selector) => {
-
-          $(selector)
-            ?.addEventListener(
-              'click',
-              () =>
-                openWizard()
-            );
-        }
-      );
-
-
-    /*
-     * Refresh
-     */
-
-    $('#refreshBtn')
-      ?.addEventListener(
-        'click',
-        async () => {
-
-          try {
-
-            await Promise.all([
-              loadCategories(),
-              loadServices()
-            ]);
-
-            renderAll();
-
-            toast(
-              'Services refreshed.',
-              'ok'
-            );
-
-          } catch (
-            error
-          ) {
-
-            toast(
-              error.message ||
-              'Refresh failed.',
-              'bad'
-            );
-          }
-        }
-      );
-
-
-    /*
-     * Search
-     */
-
-    $('#serviceSearch')
-      ?.addEventListener(
-        'input',
-        (event) => {
-
-          state.search =
-            event.target.value;
-
-          renderGrid();
-        }
-      );
-
-
-    /*
-     * Status filter
-     */
-
-    $('#statusFilter')
-      ?.addEventListener(
-        'change',
-        (event) => {
-
-          state.status =
-            event.target.value;
-
-          renderGrid();
-        }
-      );
-
-
-    /*
-     * Sort
-     */
-
-    $('#sortServices')
-      ?.addEventListener(
-        'change',
-        (event) => {
-
-          state.sort =
-            event.target.value;
-
-          renderGrid();
-        }
-      );
-
-
-    /*
-     * Category sidebar
-     */
-
-    $('#categoryList')
-      ?.addEventListener(
-        'click',
-        (event) => {
-
-          const button =
-            event.target.closest(
-              '[data-category]'
-            );
-
-
-          if (!button) {
-            return;
-          }
-
-
-          state.category =
-            button.dataset.category;
-
-
-          renderCategories();
-
-          renderGrid();
-        }
-      );
-
-
-    /*
-     * Add private category
-     */
-
-    [
-      '#addCategoryBtn',
-      '#newCategoryBtn'
-    ]
-      .forEach(
-        (selector) => {
-
-          $(selector)
-            ?.addEventListener(
-              'click',
-              addCategory
-            );
-        }
-      );
-
-
-    /*
-     * Wizard close
-     */
-
-    [
-      '#closeWizard',
-      '#wizardCancel'
-    ]
-      .forEach(
-        (selector) => {
-
-          $(selector)
-            ?.addEventListener(
-              'click',
-              () =>
-                closeWizard()
-            );
-        }
-      );
-
-
-    /*
-     * Wizard navigation
-     */
-
-    $('#prevStep')
-      ?.addEventListener(
-        'click',
-        () => {
-
-          if (
-            state.step >
-            1
-          ) {
-
-            setStep(
-              state.step -
-              1
-            );
-          }
-        }
-      );
-
-
-    $('#nextStep')
-      ?.addEventListener(
-        'click',
-        async () => {
-
-          const errors =
-            validateStep(
-              state.step
-            );
-
-
-          if (
-            errors.length
-          ) {
-
-            showAlert(
-              errors.join(
-                ' '
-              )
-            );
-
-            return;
-          }
-
-
-          /*
-           * Save before moving forward.
-           */
-
-          if (
-            state.step <=
-            3
-          ) {
-
-            const saved =
-              await saveDraft(
-                true
-              );
-
-
-            if (!saved) {
-              return;
-            }
-          }
-
-
-          if (
-            state.step <
-            5
-          ) {
-
-            setStep(
-              state.step +
-              1
-            );
-          }
-        }
-      );
-
-
-    /*
-     * Save draft
-     */
-
-    $('#saveDraftBtn')
-      ?.addEventListener(
-        'click',
-        () =>
-          saveDraft()
-      );
-
-
-    /*
-     * Publish
-     */
-
-    $('#publishBtn')
-      ?.addEventListener(
-        'click',
-        submitPublish
-      );
-
-
-    /*
-     * Type change
-     */
-
-    $('#fType')
-      ?.addEventListener(
-        'change',
-        () => {
-
-          updateCapabilities();
-
-          markDirty();
-
-          updateChecklist();
-        }
-      );
-
-
-    /*
-     * Form dirty tracking
-     */
-
-    [
-      '#fName',
-      '#fShort',
-      '#fDescription',
-      '#fPrice',
-      '#fCurrency',
-      '#fPriceType',
-      '#fBilling',
-      '#fDuration',
-      '#fKnowledge',
-      '#fCategory'
-    ]
-      .forEach(
-        (selector) => {
-
-          $(selector)
-            ?.addEventListener(
-              'input',
-              () => {
-
-                markDirty();
-
-                updateChecklist();
-              }
-            );
-
-
-          $(selector)
-            ?.addEventListener(
-              'change',
-              () => {
-
-                markDirty();
-
-                updateChecklist();
-              }
-            );
-        }
-      );
-
-
-    /*
-     * AI field buttons
-     */
-
-    $$(
-      '[data-ai-target]'
-    )
-      .forEach(
-        (button) => {
-
-          button.addEventListener(
-            'click',
-            () =>
-              generateWithGlimeAI(
-                button
-              );
-        }
-      );
-
-
-    /*
-     * AI assistant
-     */
-
-    $('#aiAssistantBtn')
-      ?.addEventListener(
-        'click',
-        runAIAssistant
-      );
-
-
-    /*
-     * Variant add
-     */
-
-    $('#addVariantBtn')
-      ?.addEventListener(
-        'click',
-        () => {
-
-          state.variants.push({
-            name: '',
-            price: '',
-            sku: ''
-          });
-
-
-          markDirty();
-
-          renderVariants();
-        }
-      );
-
-
-    /*
-     * Variant editing
-     */
-
-    $('#variantList')
-      ?.addEventListener(
-        'input',
-        (event) => {
-
-          const row =
-            event.target.closest(
-              '[data-variant-index]'
-            );
-
-
-          if (!row) {
-            return;
-          }
-
-
-          const index =
-            Number(
-              row.dataset
-                .variantIndex
-            );
-
-
-          const field =
-            event.target.dataset
-              .variantField;
-
-
-          if (
-            state.variants[index]
-          ) {
-
-            if (
-              field ===
-              'price'
-            ) {
-
-              state.variants[index]
-                .price =
-                event.target.value;
-
-            } else {
-
-              state.variants[index][
-                field
-              ] =
-                event.target.value;
-            }
-
-
-            markDirty();
-          }
-        }
-      );
-
-
-    /*
-     * Variant remove
-     */
-
-    $('#variantList')
-      ?.addEventListener(
-        'click',
-        (event) => {
-
-          const button =
-            event.target.closest(
-              '[data-remove-variant]'
-            );
-
-
-          if (!button) {
-            return;
-          }
-
-
-          state.variants.splice(
-            Number(
-              button.dataset
-                .removeVariant
-            ),
-            1
-          );
-
-
-          markDirty();
-
-          renderVariants();
-        }
-      );
-
-
-    /*
-     * Media chooser
-     */
-
-    $('#chooseMediaBtn')
-      ?.addEventListener(
-        'click',
-        () =>
-          $('#mediaInput')
-            ?.click()
-      );
-
-
-    $('#mediaInput')
-      ?.addEventListener(
-        'change',
-        (event) => {
-
-          addLocalMedia(
-            [
-              ...event.target.files
-            ]
-          );
-
-          event.target.value =
-            '';
-        }
-      );
-
-
-    /*
-     * Upload zone
-     */
-
-    $('#uploadZone')
-      ?.addEventListener(
-        'dragover',
-        (event) => {
-
-          event.preventDefault();
-
-          $('#uploadZone')
-            ?.classList.add(
-              'drag'
-            );
-        }
-      );
-
-
-    $('#uploadZone')
-      ?.addEventListener(
-        'dragleave',
-        () =>
-          $('#uploadZone')
-            ?.classList.remove(
-              'drag'
-            )
-      );
-
-
-    $('#uploadZone')
-      ?.addEventListener(
-        'drop',
-        (event) => {
-
-          event.preventDefault();
-
-          $('#uploadZone')
-            ?.classList.remove(
-              'drag'
-            );
-
-
-          addLocalMedia(
-            [
-              ...event
-                .dataTransfer
-                .files
-            ]
-          );
-        }
-      );
-
-
-    /*
-     * Media actions
-     */
-
-    $('#mediaList')
-      ?.addEventListener(
-        'click',
-        (event) => {
-
-          const primary =
-            event.target.closest(
-              '[data-primary-media]'
-            );
-
-
-          const remove =
-            event.target.closest(
-              '[data-remove-media]'
-            );
-
-
-          if (
-            primary
-          ) {
-
-            const index =
-              Number(
-                primary.dataset
-                  .primaryMedia
-              );
-
-
-            state.media.forEach(
-              (
-                media,
-                mediaIndex
-              ) => {
-
-                media.primary =
-                  mediaIndex ===
-                  index;
-              }
-            );
-
-
-            markDirty();
-
-            renderMedia();
-          }
-
-
-          if (
-            remove
-          ) {
-
-            const index =
-              Number(
-                remove.dataset
-                  .removeMedia
-              );
-
-
-            state.media.splice(
-              index,
-              1
-            );
-
-
-            /*
-             * Always maintain one
-             * primary media if possible.
-             */
-
-            if (
-              state.media.length &&
-              !state.media.some(
-                (
-                  media
-                ) =>
-                  media.primary
-              )
-            ) {
-
-              state.media[0]
-                .primary =
-                true;
-            }
-
-
-            markDirty();
-
-            renderMedia();
-
-            updateChecklist();
-          }
-        }
-      );
-
-
-    /*
-     * Media alt text
-     */
-
-    $('#mediaList')
-      ?.addEventListener(
-        'input',
-        (event) => {
-
-          const index =
-            Number(
-              event.target.dataset
-                .mediaAlt
-            );
-
-
-          if (
-            state.media[index]
-          ) {
-
-            state.media[index]
-              .alt_text =
-              event.target.value;
-
-            markDirty();
-          }
-        }
-      );
-
-
-    /*
-     * AI suggestions
-     */
-
-    $('#aiSuggestions')
-      ?.addEventListener(
-        'click',
-        (event) => {
-
-          const button =
-            event.target.closest(
-              '[data-ai-apply]'
-            );
-
-
-          if (!button) {
-            return;
-          }
-
-
-          const index =
-            Number(
-              button.dataset
-                .aiApply
-            );
-
-
-          const suggestion =
-            state.aiSuggestions?.[
-              index
-            ];
-
-
-          if (
-            !suggestion
-          ) {
-            return;
-          }
-
-
-          if (
-            suggestion.field &&
-            document.getElementById(
-              suggestion.field
-            )
-          ) {
-
-            const field =
-              document.getElementById(
-                suggestion.field
-              );
-
-
-            field.value =
-              suggestion.value ||
-              '';
-
-
-            field.dispatchEvent(
-              new Event(
-                'input',
-                {
-                  bubbles: true
-                }
-              )
-            );
-
-
-            markDirty();
-
-            updateChecklist();
-          }
-        }
-      );
-
-
-    /*
-     * Service cards
-     */
-
-    $('#serviceGrid')
-      ?.addEventListener(
-        'click',
-        (event) => {
-
-          const edit =
-            event.target.closest(
-              '.edit-service'
-            );
-
-
-          const duplicate =
-            event.target.closest(
-              '.duplicate-service'
-            );
-
-
-          const more =
-            event.target.closest(
-              '.service-more'
-            );
-
-
-          if (
-            edit
-          ) {
-
-            const service =
-              state.services.find(
-                (
-                  item
-                ) =>
-                  String(
-                    item.id
-                  ) ===
-                  String(
-                    edit.dataset.id
-                  )
-              );
-
-
-            if (
-              service
-            ) {
-
-              openWizard(
-                service
-              );
-            }
-
-            return;
-          }
-
-
-          if (
-            duplicate
-          ) {
-
-            duplicateService(
-              duplicate.dataset.id
-            );
-
-            return;
-          }
-
-
-          if (
-            more
-          ) {
-
-            openServiceActions(
-              more.dataset.id
-            );
-          }
-        }
-      );
-
-
-    /*
-     * Command palette
-     */
-
-    $('#commandBtn')
-      ?.addEventListener(
-        'click',
-        openCommand
-      );
-
-
-    $('#closeCommand')
-      ?.addEventListener(
-        'click',
-        closeCommand
-      );
-
-
-    $('#commandInput')
-      ?.addEventListener(
-        'input',
-        renderCommand
-      );
-
-
-    $('#commandResults')
-      ?.addEventListener(
-        'click',
-        (event) => {
-
-          const button =
-            event.target.closest(
-              '[data-command-index]'
-            );
-
-
-          if (!button) {
-            return;
-          }
-
-
-          const index =
-            Number(
-              button.dataset
-                .commandIndex
-            );
-
-
-          state.commandResults[
-            index
-          ]?.action();
-        }
-      );
-
-
-    /*
-     * Keyboard shortcuts
-     */
-
-    document.addEventListener(
-      'keydown',
-      (event) => {
-
-        if (
-          (
-            event.ctrlKey ||
-            event.metaKey
-          ) &&
-          event.key
-            .toLowerCase() ===
-            'k'
-        ) {
-
-          event.preventDefault();
-
-          openCommand();
-
-          return;
-        }
-
-
-        if (
-          event.key ===
-          'Escape'
-        ) {
-
-          closeCommand();
-
-          return;
-        }
-
-
-        if (
-          event.key ===
-          '/' &&
-          ![
-            'INPUT',
-            'TEXTAREA',
-            'SELECT'
-          ].includes(
-            document.activeElement
-              ?.tagName
-          )
-        ) {
-
-          event.preventDefault();
-
-          $('#serviceSearch')
-            ?.focus();
-        }
-      }
-    );
-
-
-    /*
-     * Unsaved changes warning
-     */
-
-    window.addEventListener(
-      'beforeunload',
-      (event) => {
-
-        if (
-          state.dirty
-        ) {
-
-          event.preventDefault();
-
-          event.returnValue =
-            '';
-        }
-      }
-    );
-
-
-    /*
-     * Nudge close
-     */
-
-    $('#closeNudge')
-      ?.addEventListener(
-        'click',
-        () =>
-          $('#aiNudge')
-            ?.classList.add(
-              'hidden'
-            )
-      );
-  }
-
-
-  /* =========================================================
-     LOCAL MEDIA
-  ========================================================= */
-
-  function addLocalMedia(
-    files
-  ) {
-
-    const validFiles =
-      files.filter(
-        (file) =>
-          file.type.startsWith(
-            'image/'
-          ) ||
-          file.type.startsWith(
-            'video/'
-          )
-      );
-
-
-    if (
-      !validFiles.length
-    ) {
-
-      toast(
-        'Only image and video files are supported.',
-        'bad'
-      );
-
-      return;
-    }
-
-
-    validFiles.forEach(
-      (
-        file
-      ) => {
-
-        const url =
-          URL.createObjectURL(
-            file
-          );
-
-
-        state.media.push({
-
-          file,
-
-          url,
-
-          type:
-            file.type.startsWith(
-              'video/'
-            )
-              ? 'video'
-              : 'image',
-
-          alt_text:
-            file.name
-              .replace(
-                /\.[^.]+$/,
-                ''
-              ),
-
-          primary:
-            state.media.length ===
-            0,
-
-          local_only:
-            true
-        });
-      }
-    );
-
-
-    markDirty();
-
-    renderMedia();
-
-    updateChecklist();
-
 
     toast(
-      `${validFiles.length} media item${
-        validFiles.length ===
-        1
-          ? ''
-          : 's'
-      } added.`,
+      'GLIME AI updated the field',
       'ok'
     );
+
+  } catch (e) {
+    showAlert(
+      e.message ||
+      'GLIME AI request failed.'
+    );
+
+  } finally {
+    el.disabled = false;
+
+    el.classList.remove(
+      'ai-loading'
+    );
   }
+}
 
+/* =========================================================
+   UI EVENTS
+========================================================= */
 
-  /* =========================================================
-     SERVICE ACTIONS
-  ========================================================= */
+function bindUI() {
 
-  function openServiceActions(
-    serviceId
-  ) {
+  $('#openSidebar').onclick =
+    () =>
+      $('#sidebar')
+        .classList
+        .add('open');
 
-    const service =
-      state.services.find(
-        (item) =>
-          String(
-            item.id
-          ) ===
-          String(
-            serviceId
-          )
+  $('#closeSidebar').onclick =
+    () =>
+      $('#sidebar')
+        .classList
+        .remove('open');
+
+  $('#logoutBtn').onclick =
+    async () => {
+      await supabaseClient
+        .auth
+        .signOut({
+          scope: 'local'
+        });
+
+      location.replace(
+        'login.html'
       );
+    };
 
+  $('#refreshBtn').onclick =
+    async () => {
+      await Promise.all([
+        loadCategories(),
+        loadServices()
+      ]);
 
-    if (!service) {
-      return;
-    }
-
-
-    const action =
-      window.prompt(
-        `Service: ${service.name}\n\nType one:\nEDIT\nDUPLICATE\nARCHIVE\nDELETE`
-      );
-
-
-    if (!action) {
-      return;
-    }
-
-
-    const normalized =
-      action
-        .trim()
-        .toLowerCase();
-
-
-    if (
-      normalized ===
-      'edit'
-    ) {
-
-      openWizard(
-        service
-      );
-
-    } else if (
-      normalized ===
-      'duplicate'
-    ) {
-
-      duplicateService(
-        serviceId
-      );
-
-    } else if (
-      normalized ===
-      'archive'
-    ) {
-
-      archiveService(
-        serviceId
-      );
-
-    } else if (
-      normalized ===
-      'delete'
-    ) {
-
-      deleteService(
-        serviceId
-      );
-
-    } else {
+      renderAll();
 
       toast(
-        'Unknown action.',
-        'bad'
+        'Catalog refreshed',
+        'ok'
       );
-    }
-  }
+    };
 
+  $('#addServiceBtn').onclick =
+    () => openWizard();
 
-  /* =========================================================
-     STEP NAVIGATION
-  ========================================================= */
+  $('#emptyAddBtn').onclick =
+    () => openWizard();
 
-  function setStep(
-    step
-  ) {
+  $('#serviceSearch').oninput =
+    e => {
+      state.search =
+        e.target.value;
 
-    const safeStep =
-      Math.max(
-        1,
-        Math.min(
-          5,
-          Number(step)
+      renderGrid();
+    };
+
+  $('#statusFilter').onchange =
+    e => {
+      state.status =
+        e.target.value;
+
+      renderGrid();
+    };
+
+  $('#categoryList').onclick =
+    e => {
+      const b =
+        e.target.closest(
+          '[data-category]'
+        );
+
+      if (!b) return;
+
+      state.category =
+        b.dataset.category;
+
+      renderCategories();
+      renderGrid();
+    };
+
+  $('#closeNudge').onclick =
+    () =>
+      $('#aiNudge')
+        .classList
+        .add('hidden');
+
+  $('#closeWizard').onclick =
+    closeWizard;
+
+  $('#wizardCancel').onclick =
+    closeWizard;
+
+  $('#prevStep').onclick =
+    () =>
+      setStep(
+        Math.max(
+          1,
+          state.step - 1
         )
       );
 
+  $('#nextStep').onclick =
+    async () => {
+      const err =
+        validateStep(
+          state.step
+        );
 
-    state.step =
-      safeStep;
+      if (err) {
+        showAlert(err);
+        return;
+      }
 
-
-    $$('.wizard-step')
-      .forEach(
-        (panel) => {
-
-          const panelStep =
-            Number(
-              panel.dataset
-                .panel
+      if (
+        state.step < 5
+      ) {
+        if (
+          state.step === 1 ||
+          state.step === 2
+        ) {
+          const saved =
+            await saveDraft(
+              true
             );
 
-
-          panel.classList.toggle(
-            'active',
-            panelStep ===
-              safeStep
-          );
+          if (!saved) return;
         }
-      );
 
+        setStep(
+          state.step + 1
+        );
+      }
+    };
 
-    $$('.stepper .step')
-      .forEach(
-        (item) => {
+  $('#saveDraftBtn').onclick =
+    () => saveDraft();
 
-          const itemStep =
-            Number(
-              item.dataset
-                .step
-            );
+  $('#publishBtn').onclick =
+    submitPublish;
 
-
-          item.classList.toggle(
-            'active',
-            itemStep ===
-              safeStep
-          );
-
-
-          item.classList.toggle(
-            'done',
-            itemStep <
-              safeStep
-          );
-        }
-      );
-
-
-    $('#prevStep')
-      ?.classList.toggle(
-        'hidden',
-        safeStep ===
-          1
-      );
-
-
-    $('#nextStep')
-      ?.classList.toggle(
-        'hidden',
-        safeStep ===
-          5
-      );
-
-
-    $('#publishBtn')
-      ?.classList.toggle(
-        'hidden',
-        safeStep !==
-          5
-      );
-
-
-    $('#saveDraftBtn')
-      ?.classList.toggle(
-        'hidden',
-        safeStep ===
-          5
-      );
-
-
-    if (
-      safeStep ===
-      5
-    ) {
-
+  $('#fType').onchange =
+    () => {
+      updateCapabilities();
       updateChecklist();
-    }
-  }
+    };
 
+  $('#dynamicFields').oninput =
+    e => {
+      if (
+        e.target.dataset.cf
+      ) {
+        state.customValues[
+          e.target.dataset.cf
+        ] =
+          e.target.value;
+      }
+    };
 
-  /* =========================================================
-     LOGOUT
-  ========================================================= */
+  document
+    .querySelectorAll(
+      '[data-ai-target]'
+    )
+    .forEach(b => {
+      b.onclick =
+        () =>
+          generateAI(
+            b.dataset.aiTarget
+          );
+    });
 
-  $('#logoutBtn')
-    ?.addEventListener(
-      'click',
-      async () => {
+  [
+    'fName',
+    'fDescription',
+    'fPrice',
+    'fCurrency',
+    'fShort',
+    'fKnowledge'
+  ].forEach(id => {
+    $('#' + id)?.addEventListener(
+      'input',
+      updateChecklist
+    );
+  });
 
-        try {
+  $('#addVariantBtn').onclick =
+    () => {
+      state.variants.push({
+        name: '',
+        price: '',
+        sku: ''
+      });
 
-          await supabaseClient
-            .auth
-            .signOut({
-              scope:
-                'local'
-            });
+      renderVariants();
+    };
 
-        } finally {
+  $('#variantList').oninput =
+    e => {
+      const i =
+        Number(
+          e.target.dataset.i
+        );
 
-          location.replace(
-            'login.html'
+      if (
+        Number.isInteger(i) &&
+        state.variants[i]
+      ) {
+        state.variants[i][
+          e.target.dataset.v
+        ] =
+          e.target.value;
+      }
+    };
+
+  $('#variantList').onclick =
+    e => {
+      const b =
+        e.target.closest(
+          '[data-remove-variant]'
+        );
+
+      if (b) {
+        state.variants.splice(
+          Number(
+            b.dataset
+              .removeVariant
+          ),
+          1
+        );
+
+        renderVariants();
+      }
+    };
+
+  $('#chooseMediaBtn').onclick =
+    () =>
+      $('#mediaInput').click();
+
+  $('#mediaInput').onchange =
+    e =>
+      handleFiles(
+        [...e.target.files]
+      );
+
+  $('#uploadZone').ondragover =
+    e => {
+      e.preventDefault();
+
+      $('#uploadZone')
+        .classList
+        .add('drag');
+    };
+
+  $('#uploadZone').ondragleave =
+    () =>
+      $('#uploadZone')
+        .classList
+        .remove('drag');
+
+  $('#uploadZone').ondrop =
+    e => {
+      e.preventDefault();
+
+      $('#uploadZone')
+        .classList
+        .remove('drag');
+
+      handleFiles(
+        [...e.dataTransfer.files]
+      );
+    };
+
+  $('#mediaList').oninput =
+    e => {
+      const i =
+        Number(
+          e.target.dataset
+            .mediaAlt
+        );
+
+      if (
+        Number.isInteger(i) &&
+        state.media[i]
+      ) {
+        state.media[i].alt =
+          e.target.value;
+      }
+    };
+
+  $('#mediaList').onclick =
+    e => {
+      const p =
+        e.target.closest(
+          '[data-primary]'
+        );
+
+      const r =
+        e.target.closest(
+          '[data-remove-media]'
+        );
+
+      if (p) {
+        const index =
+          Number(
+            p.dataset.primary
+          );
+
+        state.media.forEach(
+          (m, i) => {
+            m.primary =
+              i === index;
+          }
+        );
+
+        renderMedia();
+      }
+
+      if (r) {
+        state.media.splice(
+          Number(
+            r.dataset
+              .removeMedia
+          ),
+          1
+        );
+
+        renderMedia();
+      }
+    };
+
+  $$('.stepper .step')
+    .forEach(b => {
+      b.onclick =
+        () => {
+          const n =
+            Number(
+              b.dataset.step
+            );
+
+          if (
+            n <= state.step
+          ) {
+            setStep(n);
+          }
+        };
+    });
+
+  $('#serviceGrid').onclick =
+    e => {
+      const edit =
+        e.target.closest(
+          '.edit-service'
+        );
+
+      const dup =
+        e.target.closest(
+          '.duplicate-service'
+        );
+
+      if (edit) {
+        const s =
+          state.services.find(
+            x =>
+              x.id ===
+              edit.dataset.id
+          );
+
+        if (s) {
+          openWizard(s);
+        }
+      }
+
+      if (dup) {
+        const s =
+          state.services.find(
+            x =>
+              x.id ===
+              dup.dataset.id
+          );
+
+        if (s) {
+          openWizard({
+            ...s,
+            id: null,
+            current_version_id:
+              null,
+            name:
+              `${s.name} Copy`,
+            status: 'draft',
+            version: null
+          });
+
+          toast(
+            'Duplicate opened as a new draft',
+            'ok'
           );
         }
       }
+    };
+
+  $('#addCategoryBtn').onclick =
+    addCategory;
+
+  $('#commandBtn').onclick =
+    openCommand;
+
+  $('#closeCommand').onclick =
+    closeCommand;
+
+  $('#commandInput').oninput =
+    renderCommand;
+
+  $('#commandOverlay').onclick =
+    e => {
+      if (
+        e.target ===
+        $('#commandOverlay')
+      ) {
+        closeCommand();
+      }
+    };
+
+  document.addEventListener(
+    'keydown',
+    e => {
+
+      if (
+        (e.ctrlKey ||
+          e.metaKey) &&
+        e.key.toLowerCase() ===
+          'k'
+      ) {
+        e.preventDefault();
+        openCommand();
+      }
+
+      if (
+        e.key === 'Escape'
+      ) {
+        closeCommand();
+
+        if (
+          !$('#wizardOverlay')
+            .classList
+            .contains('hidden')
+        ) {
+          closeWizard();
+        }
+      }
+
+      if (
+        e.key === '/' &&
+        document.activeElement.tagName !==
+          'INPUT' &&
+        document.activeElement.tagName !==
+          'TEXTAREA'
+      ) {
+        e.preventDefault();
+
+        $('#serviceSearch')
+          .focus();
+      }
+    }
+  );
+}
+
+/* =========================================================
+   LOCAL MEDIA PREVIEW
+========================================================= */
+
+function handleFiles(files) {
+  files
+    .filter(
+      f =>
+        f.type.startsWith(
+          'image/'
+        ) ||
+        f.type.startsWith(
+          'video/'
+        )
+    )
+    .forEach(file => {
+      const url =
+        URL.createObjectURL(
+          file
+        );
+
+      state.media.push({
+        file,
+        url,
+        alt:
+          file.name.replace(
+            /\.[^.]+$/,
+            ''
+          ),
+        primary:
+          state.media.length ===
+          0
+      });
+    });
+
+  renderMedia();
+
+  toast(
+    'Media added to this draft',
+    'ok'
+  );
+}
+
+/* =========================================================
+   CATEGORY CREATE
+========================================================= */
+
+async function addCategory() {
+  const name =
+    prompt(
+      'New category name'
     );
 
+  if (!name?.trim()) {
+    return;
+  }
 
-  /* =========================================================
-     START
-  ========================================================= */
+  const slug =
+    slugify(name);
 
-  init();
+  const { error } =
+    await supabaseClient
+      .from(
+        'offer_categories'
+      )
+      .insert({
+        client_id:
+          state.client.client_id,
 
-})();
+        name:
+          name.trim(),
+
+        slug,
+
+        sort_order:
+          state.categories.length,
+
+        is_active: true,
+
+        is_global: false
+      });
+
+  if (error) {
+    toast(
+      error.message,
+      'bad'
+    );
+
+    return;
+  }
+
+  await loadCategories();
+
+  renderAll();
+
+  toast(
+    'Category created',
+    'ok'
+  );
+}
+
+/* =========================================================
+   COMMAND PALETTE
+========================================================= */
+
+function openCommand() {
+  $('#commandOverlay')
+    .classList
+    .remove('hidden');
+
+  $('#commandInput').value =
+    '';
+
+  renderCommand();
+
+  setTimeout(
+    () =>
+      $('#commandInput')
+        .focus(),
+    30
+  );
+}
+
+function closeCommand() {
+  $('#commandOverlay')
+    .classList
+    .add('hidden');
+}
+
+function renderCommand() {
+  const q =
+    $('#commandInput')
+      .value
+      .toLowerCase()
+      .trim();
+
+  const results = [];
+
+  if (
+    !q ||
+    'add service'.includes(q)
+  ) {
+    results.push({
+      title: 'Add Service',
+      meta:
+        'Create a new service',
+
+      action: () => {
+        closeCommand();
+        openWizard();
+      }
+    });
+  }
+
+  state.services
+    .filter(
+      s =>
+        !q ||
+        s.name
+          .toLowerCase()
+          .includes(q)
+    )
+    .slice(0, 8)
+    .forEach(s => {
+      results.push({
+        title: s.name,
+
+        meta:
+          `${derivedStatus(
+            s
+          )} · ${
+            s.price
+              ? money(
+                  s.price.amount,
+                  s.price.currency
+                )
+              : 'No price'
+          }`,
+
+        action: () => {
+          closeCommand();
+          openWizard(s);
+        }
+      });
+    });
+
+  state.categories
+    .filter(
+      c =>
+        !q ||
+        c.name
+          .toLowerCase()
+          .includes(q)
+    )
+    .slice(0, 5)
+    .forEach(c => {
+      results.push({
+        title: c.name,
+        meta: 'Category',
+
+        action: () => {
+          closeCommand();
+
+          state.category =
+            c.id;
+
+          renderCategories();
+          renderGrid();
+        }
+      });
+    });
+
+  $('#commandResults').innerHTML =
+    results.length
+      ? results
+          .map(
+            (r, i) =>
+              `
+              <button
+                class="command-item"
+                data-command-index="${i}"
+              >
+                <strong>
+                  ${esc(r.title)}
+                </strong>
+
+                <small>
+                  ${esc(r.meta)}
+                </small>
+              </button>
+              `
+          )
+          .join('')
+      : `
+          <div class="command-item">
+            <strong>
+              No results
+            </strong>
+
+            <small>
+              Try another search.
+            </small>
+          </div>
+        `;
+
+  $('#commandResults').onclick =
+    e => {
+      const b =
+        e.target.closest(
+          '[data-command-index]'
+        );
+
+      if (b) {
+        results[
+          Number(
+            b.dataset.commandIndex
+          )
+        ].action();
+      }
+    };
+}
+
+/* =========================================================
+   REALTIME
+========================================================= */
+
+function startRealtime() {
+  supabaseClient
+    .channel(
+      `services-live-${state.client.client_id}`
+    )
+
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'offers',
+        filter:
+          `client_id=eq.${state.client.client_id}`
+      },
+      () =>
+        loadServices()
+          .then(renderAll)
+          .catch(
+            console.warn
+          )
+    )
+
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'offer_versions'
+      },
+      () =>
+        loadServices()
+          .then(renderAll)
+          .catch(
+            console.warn
+          )
+    )
+
+    .subscribe();
+}
+
+/* =========================================================
+   START
+========================================================= */
+
+init()
+  .then(startRealtime)
+  .catch(console.warn);
