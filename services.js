@@ -1,125 +1,166 @@
 const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
 const state = {
-  user:null, client:null, catalog:null, types:[], categories:[], services:[],
-  category:'all', search:'', status:'all', step:1, offerId:null, versionId:null,
-  variants:[], media:[], days:[], capabilities:{}
+  user: null,
+  client: null,
+  catalog: null,
+  types: [],
+  categories: [],
+  services: [],
+  category: 'all',
+  search: '',
+  status: 'all',
+  step: 1,
+  offerId: null,
+  versionId: null,
+  variants: [],
+  media: [],
+  days: [],
+  capabilities: {}
 };
 
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
 
-const esc = v => String(v ?? '').replace(/[&<>'"]/g,c=>({
-  '&':'&amp;',
-  '<':'&lt;',
-  '>':'&gt;',
-  "'":'&#39;',
-  '"':'&quot;'
-}[c]));
+const esc = (v) =>
+  String(v ?? '').replace(/[&<>'"]/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[c]));
 
-const slugify = v => String(v||'')
-  .toLowerCase()
-  .trim()
-  .replace(/[^a-z0-9]+/g,'-')
-  .replace(/^-+|-+$/g,'')
-  .slice(0,70);
+const slugify = (v) =>
+  String(v || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 70);
 
-const money = (v,c='INR') =>
-  new Intl.NumberFormat('en-IN',{
-    style:'currency',
-    currency:c,
-    maximumFractionDigits:2
-  }).format(Number(v||0));
+const money = (v, c = 'INR') =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: c,
+    maximumFractionDigits: 2
+  }).format(Number(v || 0));
 
-function toast(message,type=''){
-  const el=document.createElement('div');
-  el.className='toast '+type;
-  el.textContent=message;
-  $('#toastHost').appendChild(el);
-  setTimeout(()=>el.remove(),3200);
+function toast(message, type = '') {
+  const host = $('#toastHost');
+  if (!host) return;
+
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = message;
+
+  host.appendChild(el);
+
+  setTimeout(() => el.remove(), 3200);
 }
 
-function setBoot(v){
-  $('#bootScreen').style.display=v?'flex':'none';
+function setBoot(v) {
+  if ($('#bootScreen')) {
+    $('#bootScreen').style.display = v ? 'flex' : 'none';
+  }
 }
 
-function showAlert(msg,success=false){
-  const el=$('#wizardAlert');
-  el.textContent=msg;
-  el.classList.toggle('hidden',!msg);
-  el.classList.toggle('success',success);
+function showAlert(msg, success = false) {
+  const el = $('#wizardAlert');
+  if (!el) return;
+
+  el.textContent = msg;
+  el.classList.toggle('hidden', !msg);
+  el.classList.toggle('success', success);
 }
 
-function getToken(){
-  return supabaseClient.auth.getSession()
-    .then(({data})=>data?.session?.access_token||'');
+async function getToken() {
+  const { data } = await supabaseClient.auth.getSession();
+  return data?.session?.access_token || '';
 }
 
-async function edge(slug,body){
-  const token=await getToken();
+async function edge(slug, body) {
+  const token = await getToken();
 
-  if(!token){
+  if (!token) {
     throw new Error('Active login session is missing.');
   }
 
-  const r=await fetch(
+  const response = await fetch(
     `${SUPABASE_URL}/functions/v1/${slug}`,
     {
-      method:'POST',
-      headers:{
-        Authorization:`Bearer ${token}`,
-        apikey:SUPABASE_KEY,
-        'Content-Type':'application/json'
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: SUPABASE_KEY,
+        'Content-Type': 'application/json'
       },
-      body:JSON.stringify(body)
+      body: JSON.stringify(body)
     }
   );
 
-  const j=await r.json().catch(()=>({}));
+  const result = await response.json().catch(() => ({}));
 
-  if(!r.ok || j.ok===false){
-    throw new Error(j.error||'Request failed.');
+  if (!response.ok || result.ok === false) {
+    throw new Error(result.error || 'Request failed.');
   }
 
-  return j;
+  return result;
 }
 
-async function init(){
-  try{
-    const {data,error}=await supabaseClient.auth.getSession();
 
-    if(error || !data.session?.user){
+/* =========================================================
+   INIT
+========================================================= */
+
+async function init() {
+  try {
+    const { data, error } =
+      await supabaseClient.auth.getSession();
+
+    if (error || !data.session?.user) {
       location.replace('login.html');
       return;
     }
 
-    state.user=data.session.user;
+    state.user = data.session.user;
 
-    const {data:client,error:ce}=await supabaseClient
+    const {
+      data: client,
+      error: clientError
+    } = await supabaseClient
       .from('client_data')
       .select(
         'id,client_id,auth_user_id,business_name,client_name,full_name,name'
       )
-      .eq('auth_user_id',state.user.id)
+      .eq('auth_user_id', state.user.id)
       .limit(1)
       .maybeSingle();
 
-    if(ce || !client?.client_id){
+    if (clientError || !client?.client_id) {
       throw new Error('Client profile not found.');
     }
 
-    state.client=client;
+    state.client = client;
 
-    $('#businessName').textContent =
-      client.business_name ||
-      client.client_name ||
-      client.full_name ||
-      client.name ||
-      'Business';
+    if ($('#businessName')) {
+      $('#businessName').textContent =
+        client.business_name ||
+        client.client_name ||
+        client.full_name ||
+        client.name ||
+        'Business';
+    }
 
-    $('#clientId').textContent=client.client_id;
+    if ($('#clientId')) {
+      $('#clientId').textContent = client.client_id;
+    }
 
     await Promise.all([
       loadFoundation(),
@@ -129,528 +170,642 @@ async function init(){
 
     bindUI();
     renderAll();
+
     setBoot(false);
 
-  }catch(e){
-    console.error(e);
-    toast(e.message,'bad');
+  } catch (error) {
+    console.error('Services init error:', error);
 
-    setTimeout(
-      ()=>location.replace('dashboard.html'),
-      1400
+    toast(
+      error.message || 'Services could not be loaded.',
+      'bad'
     );
+
+    setTimeout(() => {
+      location.replace('dashboard.html');
+    }, 1400);
   }
 }
 
-async function loadFoundation(){
-  const j=await edge(
+
+/* =========================================================
+   FOUNDATION
+========================================================= */
+
+async function loadFoundation() {
+  const result = await edge(
     'services-foundation',
-    {action:'get'}
+    {
+      action: 'get'
+    }
   );
 
-  state.catalog=j.catalog||null;
+  state.catalog = result.catalog || null;
 
-  state.types=(j.types||[])
-    .filter(x=>x.is_active||x.source==='system');
+  state.types = (result.types || [])
+    .filter(
+      (item) =>
+        item.is_active ||
+        item.source === 'system'
+    );
 
   fillTypeSelect();
 }
 
-async function loadCategories(){
-
-  const {data,error}=await supabaseClient
+async function loadCategories() {
+  const {
+    data,
+    error
+  } = await supabaseClient
     .from('offer_categories')
     .select(
       'id,name,slug,description,sort_order,is_active'
     )
-    .eq('client_id',state.client.client_id)
-    .eq('is_active',true)
-    .order('sort_order',{ascending:true})
+    .eq(
+      'client_id',
+      state.client.client_id
+    )
+    .eq('is_active', true)
+    .order('sort_order', {
+      ascending: true
+    })
     .order('name');
 
-  if(error){
-    throw error;
-  }
+  if (error) throw error;
 
-  state.categories=data||[];
+  state.categories = data || [];
 
   renderCategories();
 }
 
-async function loadServices(){
-
-  const {data,error}=await supabaseClient
+async function loadServices() {
+  const {
+    data,
+    error
+  } = await supabaseClient
     .from('offers')
     .select(
       'id,client_id,name,slug,short_description,description,category_id,status,offer_type,current_version_id,updated_at'
     )
-    .eq('client_id',state.client.client_id)
-    .order('updated_at',{ascending:false});
+    .eq(
+      'client_id',
+      state.client.client_id
+    )
+    .order('updated_at', {
+      ascending: false
+    });
 
-  if(error){
-    throw error;
-  }
+  if (error) throw error;
 
-  const ids=(data||[])
-    .map(x=>x.current_version_id)
+  const ids = (data || [])
+    .map((item) => item.current_version_id)
     .filter(Boolean);
 
-  let versions=[];
-  let prices=[];
+  let versions = [];
+  let prices = [];
 
-  if(ids.length){
+  if (ids.length) {
+    const versionResult =
+      await supabaseClient
+        .from('offer_versions')
+        .select(
+          'id,offer_id,version_number,status,title,description,metadata'
+        )
+        .in('id', ids);
 
-    const vr=await supabaseClient
-      .from('offer_versions')
-      .select(
-        'id,offer_id,version_number,status,title,description,metadata'
-      )
-      .in('id',ids);
-
-    if(vr.error){
-      throw vr.error;
+    if (versionResult.error) {
+      throw versionResult.error;
     }
 
-    versions=vr.data||[];
+    versions = versionResult.data || [];
 
-    const pr=await supabaseClient
-      .from('offer_prices')
-      .select(
-        'offer_version_id,amount,currency,price_type,billing_period,is_active'
-      )
-      .in('offer_version_id',ids)
-      .eq('is_active',true);
+    const priceResult =
+      await supabaseClient
+        .from('offer_prices')
+        .select(
+          'offer_version_id,amount,currency,price_type,billing_period,is_active'
+        )
+        .in('offer_version_id', ids)
+        .eq('is_active', true);
 
-    if(pr.error){
-      throw pr.error;
+    if (priceResult.error) {
+      throw priceResult.error;
     }
 
-    prices=pr.data||[];
+    prices = priceResult.data || [];
   }
 
-  const vm=new Map(
-    versions.map(v=>[v.id,v])
-  );
+  const versionMap =
+    new Map(
+      versions.map((item) => [
+        item.id,
+        item
+      ])
+    );
 
-  const pm=new Map(
-    prices.map(p=>[p.offer_version_id,p])
-  );
+  const priceMap =
+    new Map(
+      prices.map((item) => [
+        item.offer_version_id,
+        item
+      ])
+    );
 
-  state.services=(data||[]).map(o=>({
-    ...o,
-    version:vm.get(o.current_version_id)||null,
-    price:pm.get(o.current_version_id)||null
-  }));
+  state.services = (data || []).map(
+    (offer) => ({
+      ...offer,
+      version:
+        versionMap.get(
+          offer.current_version_id
+        ) || null,
+
+      price:
+        priceMap.get(
+          offer.current_version_id
+        ) || null
+    })
+  );
 }
 
-function fillTypeSelect(){
 
-  const sel=$('#fType');
+/* =========================================================
+   TYPE / CATEGORY UI
+========================================================= */
 
-  sel.innerHTML=state.types
-    .map(t=>
-      `<option value="${esc(t.type_key)}">
-        ${esc(t.label)}
-      </option>`
-    )
-    .join('');
+function fillTypeSelect() {
+  const select = $('#fType');
+
+  if (!select) return;
+
+  select.innerHTML =
+    state.types
+      .map(
+        (type) =>
+          `<option value="${esc(type.type_key)}">${esc(type.label)}</option>`
+      )
+      .join('');
 
   updateCapabilities();
 }
 
-function fillCategorySelect(){
+function fillCategorySelect() {
+  const select = $('#fCategory');
 
-  $('#fCategory').innerHTML=
-    '<option value="">No category</option>'+
+  if (!select) return;
+
+  select.innerHTML =
+    '<option value="">No category</option>' +
     state.categories
-      .map(c=>
-        `<option value="${c.id}">
-          ${esc(c.name)}
-        </option>`
+      .map(
+        (category) =>
+          `<option value="${category.id}">
+            ${esc(category.name)}
+          </option>`
       )
       .join('');
 }
 
-function renderCategories(){
+function renderCategories() {
+  if (!$('#categoryCount')) return;
 
-  $('#categoryCount').textContent=
+  $('#categoryCount').textContent =
     state.categories.length;
 
-  const counts={};
+  const counts = {};
 
-  state.services.forEach(s=>{
-    const key=s.category_id||'uncategorized';
+  state.services.forEach((service) => {
+    const key =
+      service.category_id ||
+      'uncategorized';
 
-    counts[key]=
-      (counts[key]||0)+1;
+    counts[key] =
+      (counts[key] || 0) + 1;
   });
 
-  const items=[
+  const items = [
     {
-      id:'all',
-      name:'All Services',
-      n:state.services.length
+      id: 'all',
+      name: 'All Services',
+      n: state.services.length
     },
     {
-      id:'uncategorized',
-      name:'Uncategorized',
-      n:counts.uncategorized||0
+      id: 'uncategorized',
+      name: 'Uncategorized',
+      n: counts.uncategorized || 0
     },
-    ...state.categories.map(c=>({
-      id:c.id,
-      name:c.name,
-      n:counts[c.id]||0
-    }))
+    ...state.categories.map(
+      (category) => ({
+        id: category.id,
+        name: category.name,
+        n: counts[category.id] || 0
+      })
+    )
   ];
 
-  $('#categoryList').innerHTML=
-    items.map(x=>`
-      <button
-        class="category-item ${state.category===x.id?'active':''}"
-        data-category="${esc(x.id)}"
-      >
-        <span>${esc(x.name)}</span>
-        <small>${x.n}</small>
-      </button>
-    `).join('');
+  $('#categoryList').innerHTML =
+    items
+      .map(
+        (item) =>
+          `<button
+            class="category-item ${
+              state.category === item.id
+                ? 'active'
+                : ''
+            }"
+            data-category="${esc(item.id)}"
+          >
+            <span>${esc(item.name)}</span>
+            <small>${item.n}</small>
+          </button>`
+      )
+      .join('');
 }
 
-function filtered(){
 
-  const q=state.search.toLowerCase().trim();
+/* =========================================================
+   SERVICE GRID
+========================================================= */
 
-  return state.services.filter(s=>{
+function filtered() {
+  const query =
+    state.search.toLowerCase().trim();
 
-    const cat=
-      state.category==='all' ||
-      s.category_id===state.category ||
-      (
-        state.category==='uncategorized' &&
-        !s.category_id
+  return state.services.filter(
+    (service) => {
+      const categoryMatch =
+        state.category === 'all' ||
+        service.category_id ===
+          state.category ||
+        (
+          state.category ===
+            'uncategorized' &&
+          !service.category_id
+        );
+
+      const statusMatch =
+        state.status === 'all' ||
+        service.status === state.status ||
+        service.version?.status ===
+          state.status;
+
+      const text =
+        `${service.name} ${
+          service.short_description || ''
+        } ${
+          service.description || ''
+        }`.toLowerCase();
+
+      return (
+        categoryMatch &&
+        statusMatch &&
+        (!query ||
+          text.includes(query))
       );
-
-    const status=
-      state.status==='all' ||
-      s.status===state.status ||
-      s.version?.status===state.status;
-
-    const text=
-      `${s.name} ${s.short_description||''} ${s.description||''}`
-      .toLowerCase();
-
-    return cat &&
-      status &&
-      (!q || text.includes(q));
-  });
+    }
+  );
 }
 
-function renderGrid(){
+function renderGrid() {
+  const rows = filtered();
 
-  const rows=filtered();
+  const grid = $('#serviceGrid');
+  const empty = $('#emptyState');
 
-  const grid=$('#serviceGrid');
-  const empty=$('#emptyState');
+  if (!grid || !empty) return;
 
-  $('#gridTitle').textContent=
-    state.category==='all'
+  $('#gridTitle').textContent =
+    state.category === 'all'
       ? 'All Services'
       : (
-        state.categories.find(
-          c=>c.id===state.category
-        )?.name ||
-        'Uncategorized'
-      );
+          state.categories.find(
+            (category) =>
+              category.id ===
+              state.category
+          )?.name ||
+          'Uncategorized'
+        );
 
-  $('#gridMeta').textContent=
-    `${rows.length} service${rows.length===1?'':'s'} · no page reload`;
+  $('#gridMeta').textContent =
+    `${rows.length} service${
+      rows.length === 1 ? '' : 's'
+    } · no page reload`;
 
-  grid.innerHTML=rows.map((s,i)=>`
-
-    <article
-      class="service-card"
-      style="animation-delay:${i*35}ms"
-    >
-
-      <div class="service-media">
-
-        <span>✦</span>
-
-        <span
-          class="service-status ${esc(s.status)}"
-        >
-          ${
-            s.status==='active'
-              ? 'Published'
-              : s.status==='review'
-                ? 'In review'
-                : 'Draft'
-          }
-        </span>
-
-      </div>
-
-      <div class="service-body">
-
-        <div class="service-category">
-          ${esc(
-            (state.categories.find(
-              c=>c.id===s.category_id
-            )||{}).name ||
-            'GENERAL'
-          )}
-        </div>
-
-        <h3 title="${esc(s.name)}">
-          ${esc(s.name)}
-        </h3>
-
-        <p>
-          ${esc(
-            s.short_description ||
-            s.description ||
-            'No description yet.'
-          )}
-        </p>
-
-        <div class="service-meta">
-
-          <strong class="price">
-            ${
-              s.price
-                ? money(
-                    s.price.amount,
-                    s.price.currency
-                  )
-                : 'Price not set'
-            }
-          </strong>
-
-          <span class="meta-small">
-            ${esc(s.offer_type||'service')}
-          </span>
-
-        </div>
-
-        <div class="card-actions">
-
-          <button
-            class="secondary-btn edit-service"
-            data-id="${s.id}"
+  grid.innerHTML =
+    rows
+      .map(
+        (service, index) =>
+          `
+          <article
+            class="service-card"
+            style="animation-delay:${index * 35}ms"
           >
-            Open
-          </button>
 
-          <button
-            class="ghost-btn duplicate-service"
-            data-id="${s.id}"
-          >
-            Duplicate
-          </button>
+            <div class="service-media">
+              <span>✦</span>
 
-        </div>
+              <span
+                class="service-status ${esc(
+                  service.status
+                )}"
+              >
+                ${
+                  service.status === 'active'
+                    ? 'Published'
+                    : service.status === 'review'
+                    ? 'In review'
+                    : 'Draft'
+                }
+              </span>
+            </div>
 
-      </div>
+            <div class="service-body">
 
-    </article>
+              <div class="service-category">
+                ${esc(
+                  (
+                    state.categories.find(
+                      (category) =>
+                        category.id ===
+                        service.category_id
+                    ) || {}
+                  ).name ||
+                    'GENERAL'
+                )}
+              </div>
 
-  `).join('');
+              <h3 title="${esc(service.name)}">
+                ${esc(service.name)}
+              </h3>
+
+              <p>
+                ${esc(
+                  service.short_description ||
+                    service.description ||
+                    'No description yet.'
+                )}
+              </p>
+
+              <div class="service-meta">
+
+                <strong class="price">
+                  ${
+                    service.price
+                      ? money(
+                          service.price.amount,
+                          service.price.currency
+                        )
+                      : 'Price not set'
+                  }
+                </strong>
+
+                <span class="meta-small">
+                  ${esc(
+                    service.offer_type ||
+                      'service'
+                  )}
+                </span>
+
+              </div>
+
+              <div class="card-actions">
+
+                <button
+                  class="secondary-btn edit-service"
+                  data-id="${service.id}"
+                >
+                  Open
+                </button>
+
+                <button
+                  class="ghost-btn duplicate-service"
+                  data-id="${service.id}"
+                >
+                  Duplicate
+                </button>
+
+              </div>
+
+            </div>
+
+          </article>
+          `
+      )
+      .join('');
 
   empty.classList.toggle(
     'hidden',
-    rows.length>0
+    rows.length > 0
   );
 
   grid.classList.toggle(
     'hidden',
-    rows.length===0
+    rows.length === 0
   );
 }
 
-function renderAll(){
+function renderAll() {
   fillCategorySelect();
   renderCategories();
   renderGrid();
   updateNudge();
 }
 
-function updateNudge(){
-
-  const incomplete=
+function updateNudge() {
+  const incomplete =
     state.services.filter(
-      s =>
-        s.status==='draft' &&
-        (!s.description || !s.price)
+      (service) =>
+        service.status === 'draft' &&
+        (
+          !service.description ||
+          !service.price
+        )
     ).length;
 
-  if(incomplete){
+  if (incomplete) {
+    $('#aiNudge')?.classList.remove(
+      'hidden'
+    );
 
-    $('#aiNudge').classList.remove('hidden');
-
-    $('#nudgeText').textContent=
-      `${incomplete} draft service${
-        incomplete===1?' is':'s are'
-      } missing key business information.`;
-
-  }else{
-
-    $('#aiNudge').classList.add('hidden');
-
+    if ($('#nudgeText')) {
+      $('#nudgeText').textContent =
+        `${incomplete} draft service${
+          incomplete === 1
+            ? ' is'
+            : 's are'
+        } missing key business information.`;
+    }
+  } else {
+    $('#aiNudge')?.classList.add(
+      'hidden'
+    );
   }
 }
 
-function openWizard(service=null){
 
+/* =========================================================
+   WIZARD
+========================================================= */
+
+function openWizard(service = null) {
   resetWizard(service);
 
   $('#wizardOverlay')
-    .classList.remove('hidden');
+    ?.classList.remove('hidden');
 
-  document.body.style.overflow='hidden';
+  document.body.style.overflow = 'hidden';
 
   setStep(1);
 }
 
-function closeWizard(){
-
+function closeWizard() {
   $('#wizardOverlay')
-    .classList.add('hidden');
+    ?.classList.add('hidden');
 
-  document.body.style.overflow='';
+  document.body.style.overflow = '';
 }
 
-function resetWizard(service){
+function resetWizard(service) {
+  state.offerId =
+    service?.id || null;
 
-  state.offerId=service?.id||null;
-  state.versionId=service?.current_version_id||null;
+  state.versionId =
+    service?.current_version_id ||
+    null;
 
-  state.variants=[];
-  state.media=[];
+  state.variants = [];
+  state.media = [];
 
-  $('#wizardTitle').textContent=
-    service
-      ? 'Edit service'
-      : 'Create service';
+  if ($('#wizardTitle')) {
+    $('#wizardTitle').textContent =
+      service
+        ? 'Edit service'
+        : 'Create service';
+  }
 
-  $('#fName').value=
-    service?.name||'';
+  $('#fName').value =
+    service?.name || '';
 
-  $('#fShort').value=
-    service?.short_description||'';
+  $('#fShort').value =
+    service?.short_description || '';
 
-  $('#fDescription').value=
+  $('#fDescription').value =
     service?.description ||
     service?.version?.description ||
     '';
 
-  $('#fCategory').value=
-    service?.category_id||'';
+  $('#fCategory').value =
+    service?.category_id || '';
 
-  $('#fType').value=
-    service?.offer_type||'service';
+  $('#fType').value =
+    service?.offer_type ||
+    'service';
 
-  $('#fPrice').value=
-    service?.price?.amount||'';
+  $('#fPrice').value =
+    service?.price?.amount || '';
 
-  $('#fCurrency').value=
-    service?.price?.currency||'INR';
+  $('#fCurrency').value =
+    service?.price?.currency ||
+    'INR';
 
-  $('#fPriceType').value=
-    service?.price?.price_type||'fixed';
+  $('#fPriceType').value =
+    service?.price?.price_type ||
+    'fixed';
 
-  $('#fBilling').value=
-    service?.price?.billing_period||'';
-
-  $('#fDuration').value='';
-
-  $('#fKnowledge').value=
-    service?.version?.metadata?.ai_knowledge_summary ||
+  $('#fBilling').value =
+    service?.price?.billing_period ||
     '';
+
+  $('#fDuration').value = '';
+
+  $('#fKnowledge').value =
+    service?.version?.metadata
+      ?.ai_knowledge_summary || '';
 
   renderVariants();
   renderMedia();
   renderDays();
+
   updateCapabilities();
   updateChecklist();
+
   showAlert('');
 }
 
-function setStep(n){
+function setStep(n) {
+  state.step = n;
 
-  state.step=n;
-
-  $$('.wizard-step').forEach(x=>
-    x.classList.toggle(
-      'active',
-      Number(x.dataset.panel)===n
-    )
-  );
-
-  $$('.stepper .step').forEach(x=>{
-
-    const s=Number(x.dataset.step);
-
-    x.classList.toggle(
-      'active',
-      s===n
+  $$('.wizard-step')
+    .forEach(
+      (element) =>
+        element.classList.toggle(
+          'active',
+          Number(
+            element.dataset.panel
+          ) === n
+        )
     );
 
-    x.classList.toggle(
-      'done',
-      s<n
-    );
+  $$('.stepper .step')
+    .forEach((element) => {
+      const step =
+        Number(element.dataset.step);
 
-  });
+      element.classList.toggle(
+        'active',
+        step === n
+      );
+
+      element.classList.toggle(
+        'done',
+        step < n
+      );
+    });
 
   $('#prevStep')
-    .classList.toggle(
+    ?.classList.toggle(
       'hidden',
-      n===1
+      n === 1
     );
 
   $('#nextStep')
-    .classList.toggle(
+    ?.classList.toggle(
       'hidden',
-      n===5
+      n === 5
     );
 
   $('#publishBtn')
-    .classList.toggle(
+    ?.classList.toggle(
       'hidden',
-      n!==5
+      n !== 5
     );
 
   $('#saveDraftBtn')
-    .classList.toggle(
+    ?.classList.toggle(
       'hidden',
-      n===5
+      n === 5
     );
 
-  if(n===5){
+  if (n === 5) {
     updateChecklist();
   }
 }
 
-function validateStep(n){
-
-  if(n===1){
-
-    if(!$('#fName').value.trim()){
+function validateStep(n) {
+  if (n === 1) {
+    if (!$('#fName').value.trim()) {
       return 'Service name is required.';
     }
 
-    if(!$('#fType').value){
+    if (!$('#fType').value) {
       return 'Choose a catalog type.';
     }
-
-    return '';
   }
 
-  if(n===2){
-
-    if(
-      $('#fPrice').value==='' ||
-      Number($('#fPrice').value)<0
-    ){
+  if (n === 2) {
+    if (
+      $('#fPrice').value === '' ||
+      Number($('#fPrice').value) < 0
+    ) {
       return 'A valid price is required.';
     }
   }
@@ -658,60 +813,55 @@ function validateStep(n){
   return '';
 }
 
-async function saveDraft(silent=false){
 
-  try{
+/* =========================================================
+   SAVE DRAFT
+========================================================= */
 
-    const stepErr=
+async function saveDraft(silent = false) {
+  try {
+    const stepError =
       validateStep(
-        Math.min(state.step,2)
+        Math.min(state.step, 2)
       );
 
-    if(stepErr){
-
-      showAlert(stepErr);
-
+    if (stepError) {
+      showAlert(stepError);
       return false;
     }
 
-    const name=
+    const name =
       $('#fName').value.trim();
 
-    const type=
-      $('#fType').value||'service';
-
-    const payload={
-      client_id:state.client.client_id,
-      offer_type:type,
-      name,
-      slug:
-        slugify(name)+
-        '-'+
-        Math.random()
-          .toString(36)
-          .slice(2,8),
-      short_description:
-        $('#fShort').value.trim(),
-      description:
-        $('#fDescription').value.trim(),
-      category_id:
-        $('#fCategory').value||null,
-      status:'draft',
-      current_version_id:null
-    };
+    const type =
+      $('#fType').value ||
+      'service';
 
     let offer;
 
-    if(state.offerId){
+    if (state.offerId) {
 
-      const u=
+      const updateData = {
+        offer_type: type,
+        name,
+        short_description:
+          $('#fShort').value.trim(),
+        description:
+          $('#fDescription').value.trim(),
+        category_id:
+          $('#fCategory').value ||
+          null,
+        status: 'draft'
+      };
+
+      const result =
         await supabaseClient
           .from('offers')
-          .update({
-            ...payload,
-            slug:undefined
-          })
-          .eq('id',state.offerId)
+          .update(updateData)
+          .eq(
+            'id',
+            state.offerId
+          )
           .eq(
             'client_id',
             state.client.client_id
@@ -719,103 +869,149 @@ async function saveDraft(silent=false){
           .select()
           .single();
 
-      if(u.error){
-        throw u.error;
+      if (result.error) {
+        throw result.error;
       }
 
-      offer=u.data;
+      offer = result.data;
 
-    }else{
+    } else {
 
-      const ins=
+      const baseSlug =
+        slugify(name) ||
+        'service';
+
+      const uniqueSlug =
+        `${baseSlug}-${Math.random()
+          .toString(36)
+          .slice(2, 8)}`;
+
+      const insertData = {
+        client_id:
+          state.client.client_id,
+
+        offer_type: type,
+
+        name,
+
+        slug: uniqueSlug,
+
+        short_description:
+          $('#fShort').value.trim(),
+
+        description:
+          $('#fDescription').value.trim(),
+
+        category_id:
+          $('#fCategory').value ||
+          null,
+
+        status: 'draft'
+      };
+
+      const result =
         await supabaseClient
           .from('offers')
-          .insert(payload)
+          .insert(insertData)
           .select()
           .single();
 
-      if(ins.error){
-        throw ins.error;
+      if (result.error) {
+        throw result.error;
       }
 
-      offer=ins.data;
-      state.offerId=offer.id;
+      offer = result.data;
+
+      state.offerId =
+        offer.id;
     }
 
-    if(!state.versionId){
 
-      const ins=
+    /* VERSION */
+
+    if (!state.versionId) {
+
+      const versionResult =
         await supabaseClient
           .from('offer_versions')
           .insert({
-            offer_id:offer.id,
-            version_number:1,
-            status:'draft',
-            title:name,
+            offer_id: offer.id,
+            version_number: 1,
+            status: 'draft',
+            title: name,
             description:
               $('#fDescription')
-                .value
-                .trim(),
-            metadata:{
+                .value.trim(),
+
+            metadata: {
               ai_knowledge_summary:
                 $('#fKnowledge')
-                  .value
-                  .trim()
+                  .value.trim()
             }
           })
           .select()
           .single();
 
-      if(ins.error){
-        throw ins.error;
+      if (versionResult.error) {
+        throw versionResult.error;
       }
 
-      state.versionId=ins.data.id;
+      state.versionId =
+        versionResult.data.id;
 
-      const up=
+      const updateOffer =
         await supabaseClient
           .from('offers')
           .update({
             current_version_id:
-              ins.data.id
+              state.versionId
           })
-          .eq('id',offer.id);
+          .eq(
+            'id',
+            offer.id
+          );
 
-      if(up.error){
-        throw up.error;
+      if (updateOffer.error) {
+        throw updateOffer.error;
       }
 
-    }else{
+    } else {
 
-      const up=
+      const versionUpdate =
         await supabaseClient
           .from('offer_versions')
           .update({
-            title:name,
+            title: name,
+
             description:
               $('#fDescription')
-                .value
-                .trim(),
-            metadata:{
+                .value.trim(),
+
+            metadata: {
               ai_knowledge_summary:
                 $('#fKnowledge')
-                  .value
-                  .trim()
+                  .value.trim()
             }
           })
-          .eq('id',state.versionId);
+          .eq(
+            'id',
+            state.versionId
+          );
 
-      if(up.error){
-        throw up.error;
+      if (versionUpdate.error) {
+        throw versionUpdate.error;
       }
     }
 
-    const price=
+
+    /* PRICE */
+
+    const price =
       Number(
-        $('#fPrice').value||0
+        $('#fPrice').value || 0
       );
 
-    const old=
+    const oldPrice =
       await supabaseClient
         .from('offer_prices')
         .select('id')
@@ -826,54 +1022,68 @@ async function saveDraft(silent=false){
         .limit(1)
         .maybeSingle();
 
-    if(old.error){
-      throw old.error;
+    if (oldPrice.error) {
+      throw oldPrice.error;
     }
 
-    const priceRow={
+    const priceRow = {
       offer_version_id:
         state.versionId,
-      amount:price,
+
+      amount: price,
+
       currency:
-        $('#fCurrency').value||'INR',
+        $('#fCurrency').value ||
+        'INR',
+
       price_type:
-        $('#fPriceType').value||'fixed',
+        $('#fPriceType').value ||
+        'fixed',
+
       billing_period:
-        $('#fBilling').value||null,
-      is_active:true
+        $('#fBilling').value ||
+        null,
+
+      is_active: true
     };
 
-    if(old.data){
+    if (oldPrice.data) {
 
-      const u=
+      const updatePrice =
         await supabaseClient
           .from('offer_prices')
           .update(priceRow)
-          .eq('id',old.data.id);
+          .eq(
+            'id',
+            oldPrice.data.id
+          );
 
-      if(u.error){
-        throw u.error;
+      if (updatePrice.error) {
+        throw updatePrice.error;
       }
 
-    }else{
+    } else {
 
-      const i=
+      const insertPrice =
         await supabaseClient
           .from('offer_prices')
           .insert(priceRow);
 
-      if(i.error){
-        throw i.error;
+      if (insertPrice.error) {
+        throw insertPrice.error;
       }
     }
 
-    await loadServices();
 
+    await loadServices();
     renderAll();
 
-    $('#saveState1').textContent='Saved';
+    if ($('#saveState1')) {
+      $('#saveState1').textContent =
+        'Saved';
+    }
 
-    if(!silent){
+    if (!silent) {
       toast(
         'Draft saved',
         'ok'
@@ -882,12 +1092,15 @@ async function saveDraft(silent=false){
 
     return true;
 
-  }catch(e){
+  } catch (error) {
 
-    console.error(e);
+    console.error(
+      'saveDraft error:',
+      error
+    );
 
     showAlert(
-      e.message ||
+      error.message ||
       'Draft could not be saved.'
     );
 
@@ -895,107 +1108,106 @@ async function saveDraft(silent=false){
   }
 }
 
-async function submitPublish(){
 
-  const missing=[];
+/* =========================================================
+   PUBLISH
+========================================================= */
 
-  if(!$('#fName').value.trim()){
+async function submitPublish() {
+
+  const missing = [];
+
+  if (!$('#fName').value.trim()) {
     missing.push('service name');
   }
 
-  if(!$('#fDescription').value.trim()){
+  if (!$('#fDescription').value.trim()) {
     missing.push('description');
   }
 
-  if(
-    $('#fPrice').value==='' ||
-    Number($('#fPrice').value)<0
-  ){
+  if (
+    $('#fPrice').value === '' ||
+    Number($('#fPrice').value) < 0
+  ) {
     missing.push('price');
   }
 
-  if(missing.length){
+  if (missing.length) {
 
     showAlert(
-      `Complete before publishing: ${missing.join(', ')}.`
+      `Complete before publishing: ${
+        missing.join(', ')
+      }.`
     );
 
     return;
   }
 
-  if(
+  if (
     !state.offerId ||
     !state.versionId
-  ){
+  ) {
 
-    const ok=
+    const saved =
       await saveDraft(true);
 
-    if(!ok){
-      return;
-    }
+    if (!saved) return;
   }
 
-  try{
+  try {
 
-    const u=
+    const versionUpdate =
       await supabaseClient
         .from('offer_versions')
         .update({
-          status:'review',
+          status: 'review',
+
           title:
             $('#fName')
-              .value
-              .trim(),
+              .value.trim(),
+
           description:
             $('#fDescription')
-              .value
-              .trim(),
-          metadata:{
+              .value.trim(),
+
+          metadata: {
             ai_knowledge_summary:
               $('#fKnowledge')
-                .value
-                .trim()
+                .value.trim()
           }
         })
-        .eq('id',state.versionId);
+        .eq(
+          'id',
+          state.versionId
+        );
 
-    if(u.error){
-      throw u.error;
+    if (versionUpdate.error) {
+      throw versionUpdate.error;
     }
 
-    const o=
-      await supabaseClient
-        .from('offers')
-        .update({
-          status:'review'
-        })
-        .eq('id',state.offerId);
+    if (
+      (state.user.email || '')
+        .toLowerCase() ===
+      'admin@glime.online'
+    ) {
 
-    if(o.error){
-      throw o.error;
-    }
-
-    if(
-      (state.user.email||'')
-        .toLowerCase()==='admin@glime.online'
-    ){
-
-      try{
+      try {
 
         await edge(
           'services-offer-approval',
           {
-            action:'approve',
-            version_id:state.versionId
+            action: 'approve',
+            version_id:
+              state.versionId
           }
         );
 
         await edge(
           'services-offer-approval',
           {
-            action:'publish',
-            version_id:state.versionId
+            action: 'publish',
+            version_id:
+              state.versionId
           }
         );
 
@@ -1004,7 +1216,12 @@ async function submitPublish(){
           'ok'
         );
 
-      }catch(e){
+      } catch (error) {
+
+        console.error(
+          'Admin publish:',
+          error
+        );
 
         toast(
           'Submitted for review. Admin publish step is still pending.',
@@ -1012,7 +1229,7 @@ async function submitPublish(){
         );
       }
 
-    }else{
+    } else {
 
       toast(
         'Service submitted for GLIME review.',
@@ -1026,158 +1243,378 @@ async function submitPublish(){
 
     closeWizard();
 
-  }catch(e){
+  } catch (error) {
 
-    console.error(e);
+    console.error(
+      'Publish error:',
+      error
+    );
 
     showAlert(
-      e.message ||
+      error.message ||
       'Publish submission failed.'
     );
   }
 }
 
-function updateCapabilities(){
 
-  const t=
+/* =========================================================
+   GLIME AI
+========================================================= */
+
+async function generateWithGlimeAI(button) {
+
+  if (!button) return;
+
+  const targetId =
+    button.dataset.aiTarget;
+
+  const target =
+    document.getElementById(
+      targetId
+    );
+
+  if (!target) {
+    toast(
+      'AI target field not found.',
+      'bad'
+    );
+    return;
+  }
+
+  const serviceName =
+    $('#fName')?.value.trim();
+
+  if (!serviceName) {
+
+    showAlert(
+      'First enter the service name, then use Generate with GLIME AI.'
+    );
+
+    $('#fName')?.focus();
+
+    return;
+  }
+
+  const originalText =
+    button.innerHTML;
+
+  const originalDisabled =
+    button.disabled;
+
+  try {
+
+    button.disabled = true;
+
+    button.classList.add(
+      'ai-generating'
+    );
+
+    button.innerHTML =
+      '✦ GLIME AI is thinking…';
+
+    target.classList.add(
+      'ai-field-loading'
+    );
+
+    const field =
+      targetId === 'fShort'
+        ? 'short_description'
+        : targetId === 'fDescription'
+        ? 'description'
+        : targetId === 'fKnowledge'
+        ? 'knowledge'
+        : null;
+
+    if (!field) {
+      throw new Error(
+        'Unsupported AI field.'
+      );
+    }
+
+    const result =
+      await edge(
+        'glime-ai',
+        {
+          action: 'service_generate',
+
+          field,
+
+          service: {
+            name:
+              serviceName,
+
+            type:
+              $('#fType')?.value ||
+              'service',
+
+            short_description:
+              $('#fShort')?.value.trim() ||
+              '',
+
+            description:
+              $('#fDescription')?.value.trim() ||
+              '',
+
+            knowledge:
+              $('#fKnowledge')?.value.trim() ||
+              ''
+          }
+        }
+      );
+
+    if (
+      !result?.value
+    ) {
+      throw new Error(
+        'GLIME AI did not return any content.'
+      );
+    }
+
+    target.value =
+      result.value.trim();
+
+    target.dispatchEvent(
+      new Event(
+        'input',
+        {
+          bubbles: true
+        }
+      )
+    );
+
+    target.dispatchEvent(
+      new Event(
+        'change',
+        {
+          bubbles: true
+        }
+      )
+    );
+
+    updateChecklist();
+
+    toast(
+      'Generated with GLIME AI',
+      'ok'
+    );
+
+  } catch (error) {
+
+    console.error(
+      'GLIME AI generation error:',
+      error
+    );
+
+    toast(
+      error.message ||
+      'GLIME AI generation failed.',
+      'bad'
+    );
+
+  } finally {
+
+    button.disabled =
+      originalDisabled;
+
+    button.innerHTML =
+      originalText;
+
+    button.classList.remove(
+      'ai-generating'
+    );
+
+    target.classList.remove(
+      'ai-field-loading'
+    );
+  }
+}
+
+/* =========================================================
+   CAPABILITIES
+========================================================= */
+
+function updateCapabilities() {
+
+  const selectedType =
+    $('#fType')?.value;
+
+  const type =
     state.types.find(
-      x =>
-        x.type_key===
-        $('#fType')?.value
-    )||{};
+      (item) =>
+        item.type_key ===
+        selectedType
+    ) || {};
 
-  state.capabilities=
-    t.capabilities||{};
+  state.capabilities =
+    type.capabilities || {};
 
-  const c=
+  const capabilities =
     state.capabilities;
 
-  $('#capabilityNote').innerHTML=`
-    <span>✦</span>
-    <div>
-      <strong>
-        ${esc(t.label||'Service')} configuration
-      </strong>
+  if ($('#capabilityNote')) {
 
-      <p>
-        ${
-          c.duration
-            ? 'Duration enabled · '
-            : ''
-        }
+    $('#capabilityNote').innerHTML =
+      `
+      <span>✦</span>
 
-        ${
-          c.variants
-            ? 'Variants enabled · '
-            : ''
-        }
+      <div>
 
-        ${
-          c.availability
-            ? 'Availability enabled · '
-            : ''
-        }
+        <strong>
+          ${esc(
+            type.label ||
+            'Service'
+          )}
+          configuration
+        </strong>
 
-        ${
-          c.booking
-            ? 'Booking enabled · '
-            : ''
-        }
+        <p>
+          ${
+            capabilities.duration
+              ? 'Duration enabled · '
+              : ''
+          }
 
-        ${
-          !Object.keys(c).length
-            ? 'Standard fields only.'
-            : ''
-        }
-      </p>
-    </div>
-  `;
+          ${
+            capabilities.variants
+              ? 'Variants enabled · '
+              : ''
+          }
+
+          ${
+            capabilities.availability
+              ? 'Availability enabled · '
+              : ''
+          }
+
+          ${
+            capabilities.booking
+              ? 'Booking enabled · '
+              : ''
+          }
+
+          ${
+            !Object.keys(
+              capabilities
+            ).length
+              ? 'Standard fields only.'
+              : ''
+          }
+        </p>
+
+      </div>
+      `;
+  }
 
   $('#availabilityDisabled')
-    .classList.toggle(
+    ?.classList.toggle(
       'hidden',
-      !!c.availability
+      !!capabilities.availability
     );
 
   $('#availabilityEditor')
-    .classList.toggle(
+    ?.classList.toggle(
       'hidden',
-      !c.availability
+      !capabilities.availability
     );
 
-  $('#fDuration')
-    .closest('.field')
-    .style.display=
-      c.duration
+  const durationField =
+    $('#fDuration')?.closest(
+      '.field'
+    );
+
+  if (durationField) {
+
+    durationField.style.display =
+      capabilities.duration
         ? 'block'
         : 'none';
+  }
 
-  $('#variantList')
-    .closest('.wizard-step') &&
-    (
-      document
-        .querySelector(
-          '[data-panel="2"] .subsection-head'
-        )
-        .style.display=
-          c.variants
-            ? 'flex'
-            : 'none'
+  const variantHeader =
+    document.querySelector(
+      '[data-panel="2"] .subsection-head'
     );
 
-  $('#variantList')
-    .style.display=
-      c.variants
+  if (variantHeader) {
+
+    variantHeader.style.display =
+      capabilities.variants
         ? 'flex'
         : 'none';
+  }
+
+  if ($('#variantList')) {
+
+    $('#variantList').style.display =
+      capabilities.variants
+        ? 'flex'
+        : 'none';
+  }
 }
 
-function renderVariants(){
 
-  $('#variantList').innerHTML=
+/* =========================================================
+   VARIANTS
+========================================================= */
+
+function renderVariants() {
+
+  if (!$('#variantList')) return;
+
+  $('#variantList').innerHTML =
     state.variants
-      .map((v,i)=>`
+      .map(
+        (variant, index) =>
+          `
+          <div class="variant-row">
 
-        <div class="variant-row">
+            <input
+              data-v="name"
+              data-i="${index}"
+              value="${esc(variant.name)}"
+              placeholder="Variant name"
+            >
 
-          <input
-            data-v="name"
-            data-i="${i}"
-            value="${esc(v.name)}"
-            placeholder="Variant name"
-          >
+            <input
+              data-v="price"
+              data-i="${index}"
+              type="number"
+              value="${esc(variant.price || '')}"
+              placeholder="Price"
+            >
 
-          <input
-            data-v="price"
-            data-i="${i}"
-            type="number"
-            value="${esc(v.price||'')}"
-            placeholder="Price"
-          >
+            <input
+              data-v="sku"
+              data-i="${index}"
+              value="${esc(variant.sku || '')}"
+              placeholder="SKU"
+            >
 
-          <input
-            data-v="sku"
-            data-i="${i}"
-            value="${esc(v.sku||'')}"
-            placeholder="SKU"
-          >
+            <button
+              class="remove-row"
+              data-remove-variant="${index}"
+              type="button"
+            >
+              ×
+            </button>
 
-          <button
-            class="remove-row"
-            data-remove-variant="${i}"
-          >
-            ×
-          </button>
-
-        </div>
-
-      `)
+          </div>
+          `
+      )
       .join('');
 }
 
-function renderDays(){
 
-  const names=[
+/* =========================================================
+   AVAILABILITY
+========================================================= */
+
+function renderDays() {
+
+  if (!$('#dayRows')) return;
+
+  const names = [
     'Monday',
     'Tuesday',
     'Wednesday',
@@ -1187,112 +1624,161 @@ function renderDays(){
     'Sunday'
   ];
 
-  $('#dayRows').innerHTML=
-    names.map((n,i)=>`
+  $('#dayRows').innerHTML =
+    names
+      .map(
+        (name, index) =>
+          `
+          <div class="day-row">
 
-      <div class="day-row">
-
-        <label>${n}</label>
-
-        <input
-          type="time"
-          data-day-start="${i}"
-          value="${i<6?'09:00':''}"
-        >
-
-        <input
-          type="time"
-          data-day-end="${i}"
-          value="${i<6?'18:00':''}"
-        >
-
-        <label>
-          <input
-            type="checkbox"
-            data-day-on="${i}"
-            ${i<6?'checked':''}
-          >
-          Available
-        </label>
-
-      </div>
-
-    `)
-    .join('');
-}
-
-function renderMedia(){
-
-  $('#mediaList').innerHTML=
-    state.media
-      .map((m,i)=>`
-
-        <div class="media-item">
-
-          <div class="media-thumb">
-            ${
-              m.url
-                ? `<img
-                    src="${esc(m.url)}"
-                    alt=""
-                   >`
-                : '▶'
-            }
-          </div>
-
-          <div class="media-info">
+            <label>
+              ${name}
+            </label>
 
             <input
-              value="${esc(m.alt||'')}"
-              data-media-alt="${i}"
-              placeholder="Alt text"
+              type="time"
+              data-day-start="${index}"
+              value="${
+                index < 6
+                  ? '09:00'
+                  : ''
+              }"
             >
 
-            <div class="media-controls">
+            <input
+              type="time"
+              data-day-end="${index}"
+              value="${
+                index < 6
+                  ? '18:00'
+                  : ''
+              }"
+            >
 
-              <button
-                data-primary="${i}"
-                class="${m.primary?'primary-mini':''}"
-              >
+            <label>
+
+              <input
+                type="checkbox"
+                data-day-on="${index}"
                 ${
-                  m.primary
-                    ? '★ Primary'
-                    : 'Set primary'
+                  index < 6
+                    ? 'checked'
+                    : ''
                 }
-              </button>
-
-              <button
-                data-remove-media="${i}"
               >
-                Remove
-              </button>
+
+              Available
+
+            </label>
+
+          </div>
+          `
+      )
+      .join('');
+}
+
+
+/* =========================================================
+   MEDIA
+========================================================= */
+
+function renderMedia() {
+
+  if (!$('#mediaList')) return;
+
+  $('#mediaList').innerHTML =
+    state.media
+      .map(
+        (media, index) =>
+          `
+          <div class="media-item">
+
+            <div class="media-thumb">
+
+              ${
+                media.url
+                  ? `
+                    <img
+                      src="${esc(media.url)}"
+                      alt=""
+                    >
+                  `
+                  : '▶'
+              }
+
+            </div>
+
+            <div class="media-info">
+
+              <input
+                value="${esc(media.alt || '')}"
+                data-media-alt="${index}"
+                placeholder="Alt text"
+              >
+
+              <div class="media-controls">
+
+                <button
+                  type="button"
+                  data-primary="${index}"
+                  class="${
+                    media.primary
+                      ? 'primary-mini'
+                      : ''
+                  }"
+                >
+                  ${
+                    media.primary
+                      ? '★ Primary'
+                      : 'Set primary'
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  data-remove-media="${index}"
+                >
+                  Remove
+                </button>
+
+              </div>
 
             </div>
 
           </div>
-
-        </div>
-
-      `)
+          `
+      )
       .join('');
 
-  const p=
+  const primary =
     state.media.find(
-      m=>m.primary
+      (media) => media.primary
     );
 
-  $('#previewMedia').innerHTML=
-    p?.url
-      ? `<img
-          src="${esc(p.url)}"
-          alt=""
-         >`
-      : 'No primary media';
+  if ($('#previewMedia')) {
+
+    $('#previewMedia').innerHTML =
+      primary?.url
+        ? `
+          <img
+            src="${esc(primary.url)}"
+            alt=""
+          >
+        `
+        : 'No primary media';
+  }
 }
 
-function updateChecklist(){
 
-  const checks=[
+/* =========================================================
+   CHECKLIST
+========================================================= */
+
+function updateChecklist() {
+
+  if (!$('#fName')) return;
+
+  const checks = [
 
     [
       'Service name',
@@ -1309,7 +1795,7 @@ function updateChecklist(){
     [
       'Price',
       !!$('#fPrice').value &&
-      Number($('#fPrice').value)>=0,
+        Number($('#fPrice').value) >= 0,
       'A valid commercial price is configured.'
     ],
 
@@ -1321,189 +1807,301 @@ function updateChecklist(){
 
   ];
 
-  const ok=
+  const completed =
     checks.filter(
-      x=>x[1]
+      (item) => item[1]
     ).length;
 
-  $('#checkCount').textContent=
-    `${ok}/${checks.length}`;
+  if ($('#checkCount')) {
 
-  $('#publishChecklist').innerHTML=
-    checks.map(x=>`
+    $('#checkCount').textContent =
+      `${completed}/${checks.length}`;
+  }
 
-      <div
-        class="check-row ${x[1]?'ok':''}"
-      >
+  if ($('#publishChecklist')) {
 
-        <span class="check-icon">
-          ${x[1]?'✓':'!'}
-        </span>
+    $('#publishChecklist').innerHTML =
+      checks
+        .map(
+          (item) =>
+            `
+            <div
+              class="check-row ${
+                item[1]
+                  ? 'ok'
+                  : ''
+              }"
+            >
 
-        <div>
+              <span class="check-icon">
+                ${
+                  item[1]
+                    ? '✓'
+                    : '!'
+                }
+              </span>
 
-          <strong>
-            ${esc(x[0])}
-          </strong>
+              <div>
 
-          <small>
-            ${esc(x[2])}
-          </small>
+                <strong>
+                  ${esc(item[0])}
+                </strong>
 
-        </div>
+                <small>
+                  ${esc(item[2])}
+                </small>
 
-      </div>
+              </div>
 
-    `).join('');
-
-  $('#publishBtn').disabled=
-    ok!==checks.length;
-
-  $('#previewName').textContent=
-    $('#fName').value.trim() ||
-    'Service name';
-
-  $('#previewDescription').textContent=
-    $('#fDescription').value.trim() ||
-    'Description preview will appear here.';
-
-  $('#previewPrice').textContent=
-    $('#fPrice').value
-      ? money(
-          $('#fPrice').value,
-          $('#fCurrency').value
+            </div>
+            `
         )
-      : '₹0';
+        .join('');
+  }
+
+  if ($('#publishBtn')) {
+
+    $('#publishBtn').disabled =
+      completed !==
+      checks.length;
+  }
+
+  if ($('#previewName')) {
+
+    $('#previewName').textContent =
+      $('#fName').value.trim() ||
+      'Service name';
+  }
+
+  if ($('#previewDescription')) {
+
+    $('#previewDescription').textContent =
+      $('#fDescription').value.trim() ||
+      'Description preview will appear here.';
+  }
+
+  if ($('#previewPrice')) {
+
+    $('#previewPrice').textContent =
+      $('#fPrice').value
+        ? money(
+            $('#fPrice').value,
+            $('#fCurrency').value
+          )
+        : '₹0';
+  }
 }
 
-function bindUI(){
 
-  $('#openSidebar').onclick=
-    ()=>$('#sidebar')
-      .classList.add('open');
+/* =========================================================
+   UI EVENTS
+========================================================= */
 
-  $('#closeSidebar').onclick=
-    ()=>$('#sidebar')
-      .classList.remove('open');
+function bindUI() {
 
-  $('#logoutBtn').onclick=
-    async()=>{
+  $('#openSidebar')?.addEventListener(
+    'click',
+    () =>
+      $('#sidebar')
+        ?.classList.add('open')
+  );
+
+  $('#closeSidebar')?.addEventListener(
+    'click',
+    () =>
+      $('#sidebar')
+        ?.classList.remove('open')
+  );
+
+
+  $('#logoutBtn')?.addEventListener(
+    'click',
+    async () => {
+
       await supabaseClient.auth.signOut({
-        scope:'local'
+        scope: 'local'
       });
 
-      location.replace('login.html');
-    };
-
-  $('#refreshBtn').onclick=
-    async()=>{
-      await Promise.all([
-        loadCategories(),
-        loadServices()
-      ]);
-
-      renderAll();
-
-      toast(
-        'Catalog refreshed',
-        'ok'
+      location.replace(
+        'login.html'
       );
-    };
+    }
+  );
 
-  $('#addServiceBtn').onclick=
-    ()=>openWizard();
 
-  $('#emptyAddBtn').onclick=
-    ()=>openWizard();
+  $('#refreshBtn')?.addEventListener(
+    'click',
+    async () => {
 
-  $('#serviceSearch').oninput=
-    e=>{
-      state.search=e.target.value;
+      try {
+
+        await Promise.all([
+          loadCategories(),
+          loadServices()
+        ]);
+
+        renderAll();
+
+        toast(
+          'Catalog refreshed',
+          'ok'
+        );
+
+      } catch (error) {
+
+        toast(
+          error.message,
+          'bad'
+        );
+      }
+    }
+  );
+
+
+  $('#addServiceBtn')?.addEventListener(
+    'click',
+    () => openWizard()
+  );
+
+  $('#emptyAddBtn')?.addEventListener(
+    'click',
+    () => openWizard()
+  );
+
+
+  $('#serviceSearch')?.addEventListener(
+    'input',
+    (event) => {
+
+      state.search =
+        event.target.value;
+
       renderGrid();
-    };
+    }
+  );
 
-  $('#statusFilter').onchange=
-    e=>{
-      state.status=e.target.value;
+
+  $('#statusFilter')?.addEventListener(
+    'change',
+    (event) => {
+
+      state.status =
+        event.target.value;
+
       renderGrid();
-    };
+    }
+  );
 
-  $('#categoryList').onclick=
-    e=>{
 
-      const b=
-        e.target.closest(
+  $('#categoryList')?.addEventListener(
+    'click',
+    (event) => {
+
+      const button =
+        event.target.closest(
           '[data-category]'
         );
 
-      if(!b){
-        return;
-      }
+      if (!button) return;
 
-      state.category=
-        b.dataset.category;
+      state.category =
+        button.dataset.category;
 
       renderCategories();
       renderGrid();
-    };
+    }
+  );
 
-  $('#closeNudge').onclick=
-    ()=>$('#aiNudge')
-      .classList.add('hidden');
 
-  $('#closeWizard').onclick=
-    closeWizard;
+  $('#closeNudge')?.addEventListener(
+    'click',
+    () =>
+      $('#aiNudge')
+        ?.classList.add('hidden')
+  );
 
-  $('#wizardCancel').onclick=
-    closeWizard;
 
-  $('#prevStep').onclick=
-    ()=>setStep(
-      Math.max(
-        1,
-        state.step-1
+  $('#closeWizard')?.addEventListener(
+    'click',
+    closeWizard
+  );
+
+  $('#wizardCancel')?.addEventListener(
+    'click',
+    closeWizard
+  );
+
+
+  $('#prevStep')?.addEventListener(
+    'click',
+    () =>
+      setStep(
+        Math.max(
+          1,
+          state.step - 1
+        )
       )
-    );
+  );
 
-  $('#nextStep').onclick=
-    async()=>{
 
-      const err=
+  $('#nextStep')?.addEventListener(
+    'click',
+    async () => {
+
+      const error =
         validateStep(
           state.step
         );
 
-      if(err){
-        showAlert(err);
+      if (error) {
+
+        showAlert(error);
+
         return;
       }
 
-      if(state.step<5){
+      if (state.step < 5) {
 
-        if(
-          state.step===1 ||
-          state.step===2
-        ){
-          await saveDraft(true);
+        if (
+          state.step === 1 ||
+          state.step === 2
+        ) {
+
+          const saved =
+            await saveDraft(true);
+
+          if (!saved) return;
         }
 
         setStep(
-          state.step+1
+          state.step + 1
         );
       }
-    };
+    }
+  );
 
-  $('#saveDraftBtn').onclick=
-    ()=>saveDraft();
 
-  $('#publishBtn').onclick=
-    submitPublish;
+  $('#saveDraftBtn')?.addEventListener(
+    'click',
+    () => saveDraft()
+  );
 
-  $('#fType').onchange=
-    ()=>{
+
+  $('#publishBtn')?.addEventListener(
+    'click',
+    submitPublish
+  );
+
+
+  $('#fType')?.addEventListener(
+    'change',
+    () => {
+
       updateCapabilities();
       updateChecklist();
-    };
+    }
+  );
+
 
   [
     'fName',
@@ -1512,203 +2110,323 @@ function bindUI(){
     'fCurrency',
     'fShort',
     'fKnowledge'
-  ].forEach(id=>
-    $('#'+id)?.addEventListener(
-      'input',
-      updateChecklist
-    )
+  ].forEach(
+    (id) => {
+
+      const element =
+        $('#' + id);
+
+      if (!element) return;
+
+      element.addEventListener(
+        'input',
+        updateChecklist
+      );
+    }
   );
 
-  $('#addVariantBtn').onclick=
-    ()=>{
+
+  /* =====================================================
+     GLIME AI BUTTONS
+  ===================================================== */
+
+  $$('[data-ai-target]')
+    .forEach(
+      (button) => {
+
+        button.addEventListener(
+          'click',
+          () =>
+            generateWithGlimeAI(
+              button
+            )
+        );
+      }
+    );
+
+
+  /* =====================================================
+     VARIANTS
+  ===================================================== */
+
+  $('#addVariantBtn')?.addEventListener(
+    'click',
+    () => {
+
       state.variants.push({
-        name:'',
-        price:'',
-        sku:''
+        name: '',
+        price: '',
+        sku: ''
       });
 
       renderVariants();
-    };
+    }
+  );
 
-  $('#variantList').oninput=
-    e=>{
 
-      const i=
+  $('#variantList')?.addEventListener(
+    'input',
+    (event) => {
+
+      const index =
         Number(
-          e.target.dataset.i
+          event.target.dataset.i
         );
 
-      if(Number.isInteger(i)){
-        state.variants[i][
-          e.target.dataset.v
-        ]=e.target.value;
+      if (
+        Number.isInteger(index) &&
+        state.variants[index]
+      ) {
+
+        state.variants[index][
+          event.target.dataset.v
+        ] =
+          event.target.value;
       }
-    };
+    }
+  );
 
-  $('#variantList').onclick=
-    e=>{
 
-      const b=
-        e.target.closest(
+  $('#variantList')?.addEventListener(
+    'click',
+    (event) => {
+
+      const button =
+        event.target.closest(
           '[data-remove-variant]'
         );
 
-      if(b){
+      if (!button) return;
 
-        state.variants.splice(
-          Number(
-            b.dataset.removeVariant
-          ),
-          1
-        );
-
-        renderVariants();
-      }
-    };
-
-  $('#chooseMediaBtn').onclick=
-    ()=>$('#mediaInput').click();
-
-  $('#mediaInput').onchange=
-    e=>
-      handleFiles(
-        [...e.target.files]
+      state.variants.splice(
+        Number(
+          button.dataset.removeVariant
+        ),
+        1
       );
 
-  $('#uploadZone').ondragover=
-    e=>{
-      e.preventDefault();
+      renderVariants();
+    }
+  );
+
+
+  /* =====================================================
+     MEDIA
+  ===================================================== */
+
+  $('#chooseMediaBtn')?.addEventListener(
+    'click',
+    () =>
+      $('#mediaInput')?.click()
+  );
+
+
+  $('#mediaInput')?.addEventListener(
+    'change',
+    (event) => {
+
+      handleFiles(
+        [
+          ...event.target.files
+        ]
+      );
+    }
+  );
+
+
+  $('#uploadZone')?.addEventListener(
+    'dragover',
+    (event) => {
+
+      event.preventDefault();
+
       $('#uploadZone')
         .classList.add('drag');
-    };
+    }
+  );
 
-  $('#uploadZone').ondragleave=
-    ()=>{
-      $('#uploadZone')
-        .classList.remove('drag');
-    };
 
-  $('#uploadZone').ondrop=
-    e=>{
-      e.preventDefault();
+  $('#uploadZone')?.addEventListener(
+    'dragleave',
+    () => {
 
       $('#uploadZone')
-        .classList.remove('drag');
+        ?.classList.remove('drag');
+    }
+  );
+
+
+  $('#uploadZone')?.addEventListener(
+    'drop',
+    (event) => {
+
+      event.preventDefault();
+
+      $('#uploadZone')
+        ?.classList.remove('drag');
 
       handleFiles(
-        [...e.dataTransfer.files]
+        [
+          ...event.dataTransfer.files
+        ]
       );
-    };
+    }
+  );
 
-  $('#mediaList').oninput=
-    e=>{
 
-      const i=
+  $('#mediaList')?.addEventListener(
+    'input',
+    (event) => {
+
+      const index =
         Number(
-          e.target.dataset.mediaAlt
+          event.target.dataset.mediaAlt
         );
 
-      if(Number.isInteger(i)){
-        state.media[i].alt=
-          e.target.value;
+      if (
+        Number.isInteger(index) &&
+        state.media[index]
+      ) {
+
+        state.media[index].alt =
+          event.target.value;
       }
-    };
+    }
+  );
 
-  $('#mediaList').onclick=
-    e=>{
 
-      const p=
-        e.target.closest(
+  $('#mediaList')?.addEventListener(
+    'click',
+    (event) => {
+
+      const primaryButton =
+        event.target.closest(
           '[data-primary]'
         );
 
-      const r=
-        e.target.closest(
+      const removeButton =
+        event.target.closest(
           '[data-remove-media]'
         );
 
-      if(p){
+      if (primaryButton) {
+
+        const index =
+          Number(
+            primaryButton.dataset.primary
+          );
 
         state.media.forEach(
-          (m,i)=>
-            m.primary=
-              i===
-              Number(
-                p.dataset.primary
-              )
+          (media, i) => {
+            media.primary =
+              i === index;
+          }
         );
 
         renderMedia();
       }
 
-      if(r){
+      if (removeButton) {
 
         state.media.splice(
           Number(
-            r.dataset.removeMedia
+            removeButton.dataset
+              .removeMedia
           ),
           1
         );
 
         renderMedia();
       }
-    };
+    }
+  );
+
+
+  /* =====================================================
+     STEPPER
+  ===================================================== */
 
   $$('.stepper .step')
-    .forEach(b=>
-      b.onclick=
-        ()=>{
-          const n=
-            Number(
-              b.dataset.step
-            );
+    .forEach(
+      (button) => {
 
-          if(n<=state.step){
-            setStep(n);
+        button.addEventListener(
+          'click',
+          () => {
+
+            const step =
+              Number(
+                button.dataset.step
+              );
+
+            if (
+              step <= state.step
+            ) {
+              setStep(step);
+            }
           }
-        }
+        );
+      }
     );
 
-  $('#serviceGrid').onclick=
-    e=>{
 
-      const edit=
-        e.target.closest(
+  /* =====================================================
+     SERVICE GRID
+  ===================================================== */
+
+  $('#serviceGrid')?.addEventListener(
+    'click',
+    (event) => {
+
+      const edit =
+        event.target.closest(
           '.edit-service'
         );
 
-      const dup=
-        e.target.closest(
+      const duplicate =
+        event.target.closest(
           '.duplicate-service'
         );
 
-      if(edit){
 
-        const s=
+      if (edit) {
+
+        const service =
           state.services.find(
-            x=>x.id===edit.dataset.id
+            (item) =>
+              item.id ===
+              edit.dataset.id
           );
 
-        if(s){
-          openWizard(s);
+        if (service) {
+          openWizard(service);
         }
       }
 
-      if(dup){
 
-        const s=
+      if (duplicate) {
+
+        const service =
           state.services.find(
-            x=>x.id===dup.dataset.id
+            (item) =>
+              item.id ===
+              duplicate.dataset.id
           );
 
-        if(s){
+        if (service) {
 
           openWizard({
-            ...s,
-            id:null,
-            current_version_id:null,
-            name:`${s.name} Copy`,
-            status:'draft'
+            ...service,
+
+            id: null,
+
+            current_version_id:
+              null,
+
+            name:
+              `${service.name} Copy`,
+
+            status: 'draft'
           });
 
           toast(
@@ -1717,92 +2435,131 @@ function bindUI(){
           );
         }
       }
-    };
+    }
+  );
 
-  $('#addCategoryBtn').onclick=
-    addCategory;
 
-  $('#commandBtn').onclick=
-    openCommand;
+  $('#addCategoryBtn')?.addEventListener(
+    'click',
+    addCategory
+  );
 
-  $('#closeCommand').onclick=
-    closeCommand;
 
-  $('#commandInput').oninput=
-    renderCommand;
+  /* =====================================================
+     COMMAND PALETTE
+  ===================================================== */
 
-  $('#commandOverlay').onclick=
-    e=>{
-      if(e.target===$('#commandOverlay')){
+  $('#commandBtn')?.addEventListener(
+    'click',
+    openCommand
+  );
+
+  $('#closeCommand')?.addEventListener(
+    'click',
+    closeCommand
+  );
+
+  $('#commandInput')?.addEventListener(
+    'input',
+    renderCommand
+  );
+
+  $('#commandOverlay')?.addEventListener(
+    'click',
+    (event) => {
+
+      if (
+        event.target ===
+        $('#commandOverlay')
+      ) {
         closeCommand();
       }
-    };
+    }
+  );
+
 
   document.addEventListener(
     'keydown',
-    e=>{
+    (event) => {
 
-      if(
-        (e.ctrlKey||e.metaKey) &&
-        e.key.toLowerCase()==='k'
-      ){
+      if (
+        (event.ctrlKey ||
+          event.metaKey) &&
+        event.key.toLowerCase() ===
+          'k'
+      ) {
 
-        e.preventDefault();
+        event.preventDefault();
+
         openCommand();
       }
 
-      if(e.key==='Escape'){
+
+      if (event.key === 'Escape') {
 
         closeCommand();
 
-        if(
+        if (
           !$('#wizardOverlay')
-            .classList.contains('hidden')
-        ){
+            ?.classList.contains(
+              'hidden'
+            )
+        ) {
           closeWizard();
         }
       }
 
-      if(
-        e.key==='/' &&
-        document.activeElement.tagName!=='INPUT' &&
-        document.activeElement.tagName!=='TEXTAREA'
-      ){
 
-        e.preventDefault();
+      if (
+        event.key === '/' &&
+        document.activeElement &&
+        document.activeElement.tagName !==
+          'INPUT' &&
+        document.activeElement.tagName !==
+          'TEXTAREA'
+      ) {
 
-        $('#serviceSearch').focus();
+        event.preventDefault();
+
+        $('#serviceSearch')?.focus();
       }
+
     }
   );
 }
 
-function handleFiles(files){
+
+/* =========================================================
+   MEDIA FILES
+========================================================= */
+
+function handleFiles(files) {
 
   files
     .filter(
-      f=>
-        f.type.startsWith('image/') ||
-        f.type.startsWith('video/')
+      (file) =>
+        file.type.startsWith('image/') ||
+        file.type.startsWith('video/')
     )
-    .forEach(file=>{
+    .forEach(
+      (file) => {
 
-      const url=
-        URL.createObjectURL(file);
+        const url =
+          URL.createObjectURL(file);
 
-      state.media.push({
-        file,
-        url,
-        alt:
-          file.name.replace(
-            /\.[^.]+$/,
-            ''
-          ),
-        primary:
-          state.media.length===0
-      });
-
-    });
+        state.media.push({
+          file,
+          url,
+          alt:
+            file.name.replace(
+              /\.[^.]+$/,
+              ''
+            ),
+          primary:
+            state.media.length === 0
+        });
+      }
+    );
 
   renderMedia();
 
@@ -1812,34 +2569,42 @@ function handleFiles(files){
   );
 }
 
-async function addCategory(){
 
-  const name=
+/* =========================================================
+   CATEGORY
+========================================================= */
+
+async function addCategory() {
+
+  const name =
     prompt(
       'New category name'
     );
 
-  if(!name?.trim()){
-    return;
-  }
+  if (!name?.trim()) return;
 
-  const slug=
+  const slug =
     slugify(name);
 
-  const {error}=
+  const { error } =
     await supabaseClient
       .from('offer_categories')
       .insert({
         client_id:
           state.client.client_id,
-        name:name.trim(),
+
+        name:
+          name.trim(),
+
         slug,
+
         sort_order:
           state.categories.length,
-        is_active:true
+
+        is_active: true
       });
 
-  if(error){
+  if (error) {
 
     toast(
       error.message,
@@ -1859,137 +2624,173 @@ async function addCategory(){
   );
 }
 
-function openCommand(){
+
+/* =========================================================
+   COMMAND PALETTE
+========================================================= */
+
+function openCommand() {
 
   $('#commandOverlay')
-    .classList.remove('hidden');
+    ?.classList.remove(
+      'hidden'
+    );
 
-  $('#commandInput').value='';
+  if ($('#commandInput')) {
+    $('#commandInput').value = '';
+  }
 
   renderCommand();
 
   setTimeout(
-    ()=>$('#commandInput').focus(),
+    () =>
+      $('#commandInput')
+        ?.focus(),
     30
   );
 }
 
-function closeCommand(){
+function closeCommand() {
 
   $('#commandOverlay')
-    .classList.add('hidden');
+    ?.classList.add(
+      'hidden'
+    );
 }
 
-function renderCommand(){
+function renderCommand() {
 
-  const q=
+  const query =
     $('#commandInput')
-      .value
+      ?.value
       .toLowerCase()
-      .trim();
+      .trim() || '';
 
-  const results=[];
+  const results = [];
 
-  if(
-    !q ||
-    'add service'.includes(q)
-  ){
+
+  if (
+    !query ||
+    'add service'.includes(query)
+  ) {
 
     results.push({
-      title:'Add Service',
-      meta:'Create a new service',
+      title: 'Add Service',
+      meta: 'Create a new service',
 
-      action:()=>{
+      action: () => {
+
         closeCommand();
         openWizard();
       }
     });
   }
 
+
   state.services
     .filter(
-      s=>
-        !q ||
-        s.name
+      (service) =>
+        !query ||
+        service.name
           .toLowerCase()
-          .includes(q)
+          .includes(query)
     )
-    .slice(0,8)
-    .forEach(s=>
-      results.push({
+    .slice(0, 8)
+    .forEach(
+      (service) => {
 
-        title:s.name,
+        results.push({
 
-        meta:
-          `${s.status} · ${
-            s.price
-              ? money(
-                  s.price.amount,
-                  s.price.currency
-                )
-              : 'No price'
-          }`,
+          title:
+            service.name,
 
-        action:()=>{
-          closeCommand();
-          openWizard(s);
-        }
+          meta:
+            `${service.status} · ${
+              service.price
+                ? money(
+                    service.price.amount,
+                    service.price.currency
+                  )
+                : 'No price'
+            }`,
 
-      })
+          action: () => {
+
+            closeCommand();
+
+            openWizard(
+              service
+            );
+          }
+        });
+      }
     );
+
 
   state.categories
     .filter(
-      c=>
-        !q ||
-        c.name
+      (category) =>
+        !query ||
+        category.name
           .toLowerCase()
-          .includes(q)
+          .includes(query)
     )
-    .slice(0,5)
-    .forEach(c=>
-      results.push({
+    .slice(0, 5)
+    .forEach(
+      (category) => {
 
-        title:c.name,
-        meta:'Category',
+        results.push({
 
-        action:()=>{
-          closeCommand();
+          title:
+            category.name,
 
-          state.category=c.id;
+          meta:
+            'Category',
 
-          renderCategories();
-          renderGrid();
-        }
+          action: () => {
 
-      })
+            closeCommand();
+
+            state.category =
+              category.id;
+
+            renderCategories();
+            renderGrid();
+          }
+        });
+      }
     );
 
-  $('#commandResults').innerHTML=
-    results.length
-      ? results.map((r,i)=>`
 
-          <button
-            class="command-item"
-            data-command-index="${i}"
-          >
+  if ($('#commandResults')) {
 
-            <strong>
-              ${esc(r.title)}
-            </strong>
+    $('#commandResults').innerHTML =
+      results.length
+        ? results
+            .map(
+              (result, index) =>
+                `
+                <button
+                  class="command-item"
+                  data-command-index="${index}"
+                  type="button"
+                >
 
-            <small>
-              ${esc(r.meta)}
-            </small>
+                  <strong>
+                    ${esc(result.title)}
+                  </strong>
 
-          </button>
+                  <small>
+                    ${esc(result.meta)}
+                  </small>
 
-        `).join('')
+                </button>
+                `
+            )
+            .join('')
 
-      : `
-
+        : `
           <div class="command-item">
-
             <strong>
               No results
             </strong>
@@ -1997,30 +2798,36 @@ function renderCommand(){
             <small>
               Try another search.
             </small>
-
           </div>
-
         `;
+  }
 
-  $('#commandResults').onclick=
-    e=>{
 
-      const b=
-        e.target.closest(
+  $('#commandResults')?.addEventListener(
+    'click',
+    (event) => {
+
+      const button =
+        event.target.closest(
           '[data-command-index]'
         );
 
-      if(b){
+      if (!button) return;
 
-        results[
-          Number(
-            b.dataset.commandIndex
-          )
-        ].action();
+      const index =
+        Number(
+          button.dataset.commandIndex
+        );
 
-      }
-    };
+      results[index]?.action();
+    }
+  );
 }
+
+
+/* =========================================================
+   REALTIME
+========================================================= */
 
 supabaseClient
   .channel('services-live')
@@ -2028,11 +2835,11 @@ supabaseClient
   .on(
     'postgres_changes',
     {
-      event:'*',
-      schema:'public',
-      table:'offers'
+      event: '*',
+      schema: 'public',
+      table: 'offers'
     },
-    ()=>
+    () =>
       loadServices()
         .then(renderAll)
         .catch(console.warn)
@@ -2041,16 +2848,21 @@ supabaseClient
   .on(
     'postgres_changes',
     {
-      event:'*',
-      schema:'public',
-      table:'offer_versions'
+      event: '*',
+      schema: 'public',
+      table: 'offer_versions'
     },
-    ()=>
+    () =>
       loadServices()
         .then(renderAll)
         .catch(console.warn)
   )
 
   .subscribe();
+
+
+/* =========================================================
+   START
+========================================================= */
 
 init();
