@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="theme-color" content="#05080c">
+  <title>Services | GLIME</title>
+  <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="services.css">
+</head>
+<body>
+  <div id="bootScreen" class="boot-screen">
+    <div class="boot-mark"><img src="glime_logo_clean.svg" alt="GLIME"></div>
+    <div class="boot-spinner"></div>
+    <div class="boot-text">Securing your GLIME workspace…</div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <img src="glime_logo_clean.svg" alt="GLIME" class="brand-logo">
+        <div class="brand-caption">AI BUSINESS WORKSPACE</div>
+      </div>
+
+      <button class="mobile-close" id="closeSidebar" aria-label="Close menu">×</button>
+
+      <nav class="side-nav">
+        <a href="dashboard.html" class="nav-link">⌂ <span>Dashboard</span></a>
+        <a href="services.html" class="nav-link active">▦ <span>Services</span></a>
+        <a href="instagram-agent.html" class="nav-link">◎ <span>Instagram</span></a>
+        <a href="follow-up.html" class="nav-link">↗ <span>Follow-up</span></a>
+        <a href="leads.html" class="nav-link">◈ <span>Leads AI</span></a>
+        <a href="billing.html" class="nav-link">▣ <span>Billing</span></a>
+      </nav>
+
+      <div class="side-bottom">
+        <div class="workspace-mini">
+          <span class="status-dot"></span>
+          <div>
+            <strong id="businessName">Business</strong>
+            <small id="clientId">Loading…</small>
+          </div>
+        </div>
+        <button id="logoutBtn" class="logout-btn">Secure Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="openSidebar" aria-label="Open menu">☰</button>
+        <div>
+          <div class="eyebrow">GLIME SERVICES</div>
+          <h1>Services</h1>
+          <p>Build, organize and publish the business knowledge your AI specialists can use.</p>
+        </div>
+        <div class="top-actions">
+          <button class="ghost-btn command-btn" id="commandBtn"><span>⌘</span> Search <kbd>Ctrl K</kbd></button>
+          <button class="primary-btn" id="addServiceBtn">＋ Add Service</button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <aside class="catalog-sidebar">
+          <div class="catalog-head">
+            <div>
+              <div class="section-kicker">CATALOG</div>
+              <h2>Categories</h2>
+            </div>
+            <span id="categoryCount" class="count-pill">0</span>
+          </div>
+
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="serviceSearch" type="search" placeholder="Search services…" autocomplete="off">
+            <kbd>/</kbd>
+          </label>
+
+          <div id="categoryList" class="category-list"></div>
+
+          <button class="category-add" id="addCategoryBtn">＋ New category</button>
+
+          <div class="catalog-note">
+            <span class="note-icon">✦</span>
+            <div>
+              <strong>GLIME AI ready</strong>
+              <p>Published service truth can be used by connected specialists.</p>
+            </div>
+          </div>
+        </aside>
+
+        <section class="service-area">
+          <div class="service-toolbar">
+            <div>
+              <div class="section-kicker">SERVICE CATALOG</div>
+              <h2 id="gridTitle">All Services</h2>
+              <p id="gridMeta">Loading your catalog…</p>
+            </div>
+            <div class="toolbar-actions">
+              <select id="statusFilter" class="select-control" aria-label="Filter status">
+                <option value="all">All status</option>
+                <option value="active">Published</option>
+                <option value="draft">Draft</option>
+                <option value="review">In review</option>
+              </select>
+              <button class="icon-btn" id="refreshBtn" title="Refresh">↻</button>
+            </div>
+          </div>
+
+          <div id="aiNudge" class="ai-nudge hidden">
+            <div class="nudge-icon">✦</div>
+            <div>
+              <strong id="nudgeTitle">GLIME found something to improve</strong>
+              <p id="nudgeText">Some service information is incomplete.</p>
+            </div>
+            <button class="nudge-close" id="closeNudge">×</button>
+          </div>
+
+          <div id="serviceGrid" class="service-grid"></div>
+
+          <div id="emptyState" class="empty-state hidden">
+            <div class="empty-orb">✦</div>
+            <h3>No services match this view</h3>
+            <p>Try another category or create your first service.</p>
+            <button class="primary-btn" id="emptyAddBtn">＋ Add Service</button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- Command palette -->
+  <div id="commandOverlay" class="overlay hidden">
+    <div class="command-palette">
+      <div class="command-top">
+        <span>⌘</span>
+        <input id="commandInput" placeholder="Search services, categories or actions…" autocomplete="off">
+        <button id="closeCommand">Esc</button>
+      </div>
+      <div id="commandResults" class="command-results"></div>
+    </div>
+  </div>
+
+  <!-- Service wizard -->
+  <div id="wizardOverlay" class="overlay hidden">
+    <section class="wizard-shell" role="dialog" aria-modal="true" aria-labelledby="wizardTitle">
+      <header class="wizard-header">
+        <div>
+          <div class="section-kicker">SERVICE WORKSPACE</div>
+          <h2 id="wizardTitle">Create service</h2>
+          <p id="wizardSub">Build your service in five focused steps.</p>
+        </div>
+        <button class="close-btn" id="closeWizard" aria-label="Close">×</button>
+      </header>
+
+      <div class="stepper" id="stepper">
+        <button data-step="1" class="step active"><span>1</span><b>Basic</b></button>
+        <i></i>
+        <button data-step="2" class="step"><span>2</span><b>Pricing</b></button>
+        <i></i>
+        <button data-step="3" class="step"><span>3</span><b>Availability</b></button>
+        <i></i>
+        <button data-step="4" class="step"><span>4</span><b>Media</b></button>
+        <i></i>
+        <button data-step="5" class="step"><span>5</span><b>Review & Publish</b></button>
+      </div>
+
+      <div class="wizard-body">
+        <div id="wizardAlert" class="wizard-alert hidden"></div>
+
+        <!-- Step 1 -->
+        <section class="wizard-step active" data-panel="1">
+          <div class="panel-title">
+            <div>
+              <span class="step-label">STEP 01</span>
+              <h3>Basic & Details</h3>
+              <p>Tell GLIME what this service is and who it is for.</p>
+            </div>
+            <span class="save-state" id="saveState1">Draft</span>
+          </div>
+
+          <div class="form-grid">
+            <label class="field full">
+              <span>Service name <em>*</em></span>
+              <input id="fName" maxlength="120" placeholder="e.g. Bridal Makeup">
+              <small>Use the name customers will recognize.</small>
+            </label>
+
+            <label class="field">
+              <span>Catalog type <em>*</em></span>
+              <select id="fType"></select>
+            </label>
+
+            <label class="field">
+              <span>Category</span>
+              <select id="fCategory"></select>
+            </label>
+
+            <label class="field full ai-field">
+              <span>Short description</span>
+              <button type="button" class="ai-field-btn" data-ai-target="fShort">✦ Generate with GLIME AI</button>
+              <textarea id="fShort" maxlength="300" rows="3" placeholder="A concise customer-facing description…"></textarea>
+            </label>
+
+            <label class="field full ai-field">
+              <span>Full description <em>*</em></span>
+              <button type="button" class="ai-field-btn" data-ai-target="fDescription">✦ Generate with GLIME AI</button>
+              <textarea id="fDescription" maxlength="4000" rows="7" placeholder="Explain the service, benefits, process and important customer information…"></textarea>
+              <small>Published AI answers should be based on approved business truth.</small>
+            </label>
+          </div>
+
+          <div id="dynamicFields" class="dynamic-fields"></div>
+        </section>
+
+        <!-- Step 2 -->
+        <section class="wizard-step" data-panel="2">
+          <div class="panel-title">
+            <div>
+              <span class="step-label">STEP 02</span>
+              <h3>Pricing & Variants</h3>
+              <p>Configure the commercial details customers and agents can rely on.</p>
+            </div>
+          </div>
+
+          <div class="capability-note" id="capabilityNote"></div>
+
+          <div class="form-grid">
+            <label class="field">
+              <span>Price <em>*</em></span>
+              <div class="input-prefix"><b>₹</b><input id="fPrice" type="number" min="0" step="0.01" placeholder="15000"></div>
+            </label>
+            <label class="field">
+              <span>Currency</span>
+              <select id="fCurrency"><option value="INR">INR — Indian Rupee</option><option value="USD">USD — US Dollar</option></select>
+            </label>
+            <label class="field">
+              <span>Price type</span>
+              <select id="fPriceType"><option value="fixed">Fixed</option><option value="starting_at">Starting at</option><option value="range">Range</option></select>
+            </label>
+            <label class="field">
+              <span>Billing period</span>
+              <select id="fBilling"><option value="">One-time</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select>
+            </label>
+            <label class="field">
+              <span>Duration (minutes)</span>
+              <input id="fDuration" type="number" min="1" step="1" placeholder="60">
+            </label>
+          </div>
+
+          <div class="subsection-head">
+            <div>
+              <span class="step-label">OPTIONAL</span>
+              <h4>Variants</h4>
+            </div>
+            <button class="secondary-btn" id="addVariantBtn">＋ Add variant</button>
+          </div>
+          <div id="variantList" class="variant-list"></div>
+        </section>
+
+        <!-- Step 3 -->
+        <section class="wizard-step" data-panel="3">
+          <div class="panel-title">
+            <div>
+              <span class="step-label">STEP 03</span>
+              <h3>Availability</h3>
+              <p>Define when this service can be offered or booked.</p>
+            </div>
+          </div>
+
+          <div id="availabilityDisabled" class="capability-note hidden">
+            <span>✓</span>
+            <div><strong>Availability is not required for this catalog type.</strong><p>This capability is controlled by your catalog type configuration.</p></div>
+          </div>
+
+          <div id="availabilityEditor">
+            <div class="timezone-row">
+              <label class="field">
+                <span>Timezone</span>
+                <select id="fTimezone"><option value="Asia/Kolkata">Asia/Kolkata (IST)</option><option value="UTC">UTC</option></select>
+              </label>
+              <label class="toggle-line"><input id="sameHours" type="checkbox" checked><span class="toggle"></span><b>Use the same hours for selected days</b></label>
+            </div>
+            <div id="dayRows" class="day-rows"></div>
+          </div>
+        </section>
+
+        <!-- Step 4 -->
+        <section class="wizard-step" data-panel="4">
+          <div class="panel-title">
+            <div>
+              <span class="step-label">STEP 04</span>
+              <h3>Media</h3>
+              <p>Add the visuals customers should see. Technical embedding details stay hidden.</p>
+            </div>
+          </div>
+
+          <div class="upload-zone" id="uploadZone">
+            <input id="mediaInput" type="file" accept="image/*,video/*" multiple hidden>
+            <div class="upload-icon">↑</div>
+            <h4>Drop images or videos here</h4>
+            <p>or choose files from your device</p>
+            <button class="secondary-btn" id="chooseMediaBtn">Choose media</button>
+          </div>
+          <div id="mediaList" class="media-list"></div>
+          <div class="media-note">GLIME can later use approved service media for intelligent Instagram matching. Embedding status is handled internally.</div>
+        </section>
+
+        <!-- Step 5 -->
+        <section class="wizard-step" data-panel="5">
+          <div class="panel-title">
+            <div>
+              <span class="step-label">STEP 05</span>
+              <h3>AI Knowledge, Review & Publish</h3>
+              <p>Check the business truth before it becomes available to customer-facing specialists.</p>
+            </div>
+            <span class="knowledge-badge">✦ AI KNOWLEDGE</span>
+          </div>
+
+          <label class="field full ai-field">
+            <span>AI Knowledge summary</span>
+            <button type="button" class="ai-field-btn" data-ai-target="fKnowledge">✦ Generate with GLIME AI</button>
+            <textarea id="fKnowledge" rows="6" maxlength="5000" placeholder="What should GLIME know when customers ask about this service?"></textarea>
+          </label>
+
+          <div class="review-layout">
+            <div class="checklist-card">
+              <div class="check-head"><h4>Publish checklist</h4><span id="checkCount">0/4</span></div>
+              <div id="publishChecklist"></div>
+            </div>
+            <div class="preview-card">
+              <span class="step-label">CUSTOMER PREVIEW</span>
+              <div class="preview-media" id="previewMedia">No primary media</div>
+              <h3 id="previewName">Service name</h3>
+              <p id="previewDescription">Description preview will appear here.</p>
+              <strong id="previewPrice">₹0</strong>
+            </div>
+          </div>
+
+          <div class="publish-note">
+            <span>✓</span>
+            <p>Clients can submit a complete service for review. Only approved/published business truth is intended for customer-facing AI.</p>
+          </div>
+        </section>
+      </div>
+
+      <footer class="wizard-footer">
+        <button class="ghost-btn" id="wizardCancel">Cancel</button>
+        <div class="footer-right">
+          <button class="secondary-btn" id="prevStep">← Back</button>
+          <button class="secondary-btn" id="saveDraftBtn">Save draft</button>
+          <button class="primary-btn" id="nextStep">Continue →</button>
+          <button class="primary-btn hidden" id="publishBtn">Publish service</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <div id="toastHost" class="toast-host"></div>
+  <script src="services.js"></script>
+</body>
+</html>
