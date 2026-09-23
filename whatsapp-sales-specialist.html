@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Sales Specialist | GLIME</title>
+  <link rel="stylesheet" href="services.css">
+  <link rel="stylesheet" href="whatsapp-sales-specialist.css">
+</head>
+<body>
+  <main class="wa-page">
+    <header class="wa-header">
+      <div>
+        <a class="wa-back" href="dashboard.html">← Dashboard</a>
+        <p class="wa-eyebrow">GLIME · SALES AUTOMATION</p>
+        <h1>WhatsApp Sales Specialist</h1>
+        <p class="wa-subtitle">
+          Connect your WhatsApp Business account and let GLIME organize conversations,
+          leads and sales follow-ups from one place.
+        </p>
+      </div>
+      <div id="connectionBadge" class="wa-badge wa-badge-offline">Checking connection…</div>
+    </header>
+
+    <section id="alertBox" class="wa-alert" hidden></section>
+
+    <section id="connectCard" class="wa-card">
+      <div class="wa-icon">WA</div>
+      <div class="wa-card-content">
+        <span class="wa-kicker">STEP 1</span>
+        <h2>Connect WhatsApp Business</h2>
+        <p>
+          Continue with Meta's official WhatsApp Embedded Signup. Your WhatsApp
+          credentials are handled by Meta; GLIME stores only the connection
+          information needed to run the specialist.
+        </p>
+        <button id="connectButton" class="wa-primary" type="button">
+          Connect WhatsApp
+        </button>
+        <p class="wa-help">
+          You will complete the business and phone-number verification inside Meta.
+        </p>
+      </div>
+    </section>
+
+    <section id="connectedCard" class="wa-card wa-connected" hidden>
+      <div class="wa-card-content">
+        <span class="wa-kicker">CONNECTED</span>
+        <h2 id="connectedTitle">WhatsApp is connected</h2>
+        <div class="wa-details">
+          <div><span>Business</span><strong id="wabaName">—</strong></div>
+          <div><span>Phone</span><strong id="phoneNumber">—</strong></div>
+          <div><span>Verified name</span><strong id="verifiedName">—</strong></div>
+        </div>
+        <div class="wa-actions">
+          <button id="refreshButton" class="wa-secondary" type="button">Refresh</button>
+          <button id="disconnectButton" class="wa-danger" type="button">Disconnect</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="wa-grid">
+      <article class="wa-info-card">
+        <span class="wa-kicker">WHAT STARTS AFTER CONNECTION</span>
+        <h3>Sales workflow</h3>
+        <ul>
+          <li>Incoming WhatsApp messages are received through the Meta webhook.</li>
+          <li>Customers and leads are matched or created automatically.</li>
+          <li>Conversation history is stored against the correct client.</li>
+          <li>Lead activity is added to the existing GLIME timeline.</li>
+          <li>The WhatsApp Sales Specialist can use the existing action/approval architecture.</li>
+        </ul>
+      </article>
+
+      <article class="wa-info-card">
+        <span class="wa-kicker">SECURITY</span>
+        <h3>Designed around GLIME's existing backend</h3>
+        <p>
+          The browser never receives the WhatsApp access token. Connection and
+          webhook operations are handled by Supabase Edge Functions using the
+          existing client ownership model.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="whatsapp-sales-specialist.js"></script>
+</body>
+</html>
