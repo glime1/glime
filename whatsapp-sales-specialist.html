@@ -1,90 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WhatsApp Sales Specialist | GLIME</title>
-  <link rel="stylesheet" href="services.css">
-  <link rel="stylesheet" href="whatsapp-sales-specialist.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#05080c">
+<title>WhatsApp Sales Specialist | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="whatsapp-sales-specialist.css">
 </head>
 <body>
-  <main class="wa-page">
-    <header class="wa-header">
-      <div>
-        <a class="wa-back" href="dashboard.html">← Dashboard</a>
-        <p class="wa-eyebrow">GLIME · SALES AUTOMATION</p>
-        <h1>WhatsApp Sales Specialist</h1>
-        <p class="wa-subtitle">
-          Connect your WhatsApp Business account and let GLIME organize conversations,
-          leads and sales follow-ups from one place.
-        </p>
+<div id="bootScreen" class="boot-screen"><img src="glime_logo_clean.svg" alt="GLIME"><div class="boot-spinner"></div><div>Securing your GLIME workspace…</div></div>
+<div class="app-shell">
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><img src="glime_logo_clean.svg" class="brand-logo" alt="GLIME"><div class="brand-caption">AI BUSINESS WORKSPACE</div></div>
+  <button class="mobile-close" id="closeSidebar">×</button>
+  <nav class="side-nav">
+    <a href="dashboard.html" class="nav-link">⌂ <span>Dashboard</span></a>
+    <a href="services.html" class="nav-link">▦ <span>Services</span></a>
+    <a href="instagram-sales-specialist.html" class="nav-link">◎ <span>Instagram Sales</span></a>
+    <a href="whatsapp-sales-specialist.html" class="nav-link active">◉ <span>WhatsApp Sales</span></a>
+    <a href="follow-up.html" class="nav-link">↗ <span>Follow-up</span></a>
+    <a href="leads.html" class="nav-link">◈ <span>Leads AI</span></a>
+    <a href="orders.html" class="nav-link">🛒 <span>Orders</span></a>
+    <a href="billing.html" class="nav-link">▣ <span>Billing</span></a>
+  </nav>
+  <div class="side-bottom">
+    <div class="workspace-mini"><span class="status-dot"></span><div><strong id="businessName">Business</strong><small id="clientId">Loading…</small></div></div>
+    <button id="logoutBtn" class="logout-btn">Secure Logout</button>
+  </div>
+</aside>
+<main class="main">
+<header class="topbar">
+  <button class="mobile-menu" id="openSidebar">☰</button>
+  <div><div class="eyebrow">WHATSAPP SALES SPECIALIST</div><h1>WhatsApp Sales</h1><p>Conversations, AI sales, orders and customer context in one workspace.</p></div>
+  <div class="top-actions"><span id="connectionBadge" class="connection-badge offline">● Not connected</span><button id="connectBtn" class="primary-btn">Connect WhatsApp</button></div>
+</header>
+
+<section class="specialist-shell">
+  <div class="conversation-panel">
+    <div class="panel-head"><div><div class="section-kicker">INBOX</div><h2>Conversations</h2></div><button id="refreshBtn" class="icon-btn">↻</button></div>
+    <label class="search-box">⌕ <input id="conversationSearch" placeholder="Search customer or number…"></label>
+    <div class="filter-row"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="open">Open</button><button class="filter" data-filter="closed">Closed</button></div>
+    <div id="conversationList" class="conversation-list"><div class="loading-state">Loading conversations…</div></div>
+    <a class="side-addon" href="orders.html"><span>🛒</span><div><strong>Orders</strong><small>View WhatsApp, Instagram & website orders</small></div><b>→</b></a>
+    <div class="addon-buttons"><a href="orders.html#new" class="addon-btn">＋ New Order</a><button id="addonsBtn" class="addon-btn">＋ Add-on</button></div>
+  </div>
+
+  <section class="chat-panel">
+    <div id="chatEmpty" class="chat-empty"><div class="empty-orb">◉</div><h2>Select a conversation</h2><p>Every WhatsApp customer stays in a separate conversation.</p></div>
+    <div id="chatView" class="chat-view hidden">
+      <div class="chat-header"><div class="avatar" id="chatAvatar">W</div><div class="chat-title"><strong id="chatName">Customer</strong><span id="chatPhone">—</span></div><div class="chat-actions"><button id="closeConversationBtn" class="ghost-btn">Close</button></div></div>
+      <div id="messageList" class="message-list"></div>
+      <div class="composer">
+        <div id="aiSuggestion" class="ai-suggestion hidden"><div><span class="ai-label">✦ AI SUGGESTION</span><p id="suggestionText"></p></div><div class="suggestion-actions"><button id="useSuggestion" class="secondary-btn">Use</button><button id="refreshSuggestion" class="icon-btn">↻</button></div></div>
+        <textarea id="messageInput" rows="3" placeholder="Write a WhatsApp message…"></textarea>
+        <div class="composer-bottom"><button id="suggestBtn" class="ghost-btn">✦ Suggest reply</button><span id="sendHint">Manual send</span><button id="sendBtn" class="primary-btn">Send →</button></div>
       </div>
-      <div id="connectionBadge" class="wa-badge wa-badge-offline">Checking connection…</div>
-    </header>
+    </div>
+  </section>
 
-    <section id="alertBox" class="wa-alert" hidden></section>
+  <aside class="context-panel">
+    <div class="context-head"><div><div class="section-kicker">CUSTOMER CONTEXT</div><h2 id="contextName">Customer</h2></div><span id="leadStatus" class="status-pill">Lead</span></div>
+    <div class="context-card"><div class="card-label">CONTACT</div><div class="context-value" id="contextPhone">—</div><div class="context-muted" id="contextCustomer">No customer profile</div></div>
+    <div class="context-card"><div class="card-label">LEAD</div><div class="context-grid"><div><small>Interest</small><strong id="leadInterest">—</strong></div><div><small>Budget</small><strong id="leadBudget">—</strong></div><div><small>Product</small><strong id="leadProduct">—</strong></div><div><small>Source</small><strong id="leadSource">WhatsApp</strong></div></div></div>
+    <div class="context-card"><div class="card-label">AI SALES MODE</div><div class="mode-grid"><button class="mode active" data-mode="auto">AUTO<span>AI can send</span></button><button class="mode" data-mode="approval">AI + APPROVAL<span>Review first</span></button><button class="mode" data-mode="manual">MANUAL<span>You send</span></button></div></div>
+    <div class="context-card"><div class="card-label">SERVICES</div><div id="serviceContext" class="service-context"><span>Loading catalog…</span></div></div>
+    <div class="context-card"><div class="card-label">ACTIONS</div><div class="context-actions"><a id="openLeadBtn" href="leads.html" class="secondary-btn">Open Lead</a><a href="orders.html" class="secondary-btn">View Orders</a><button id="addLeadBtn" class="primary-btn">＋ Add to Leads</button></div></div>
+    <div class="context-card timeline-card"><div class="card-label">TIMELINE</div><div id="timeline" class="timeline"><span>No events loaded.</span></div></div>
+  </aside>
+</section>
+</main></div>
 
-    <section id="connectCard" class="wa-card">
-      <div class="wa-icon">WA</div>
-      <div class="wa-card-content">
-        <span class="wa-kicker">STEP 1</span>
-        <h2>Connect WhatsApp Business</h2>
-        <p>
-          Continue with Meta's official WhatsApp Embedded Signup. Your WhatsApp
-          credentials are handled by Meta; GLIME stores only the connection
-          information needed to run the specialist.
-        </p>
-        <button id="connectButton" class="wa-primary" type="button">
-          Connect WhatsApp
-        </button>
-        <p class="wa-help">
-          You will complete the business and phone-number verification inside Meta.
-        </p>
-      </div>
-    </section>
-
-    <section id="connectedCard" class="wa-card wa-connected" hidden>
-      <div class="wa-card-content">
-        <span class="wa-kicker">CONNECTED</span>
-        <h2 id="connectedTitle">WhatsApp is connected</h2>
-        <div class="wa-details">
-          <div><span>Business</span><strong id="wabaName">—</strong></div>
-          <div><span>Phone</span><strong id="phoneNumber">—</strong></div>
-          <div><span>Verified name</span><strong id="verifiedName">—</strong></div>
-        </div>
-        <div class="wa-actions">
-          <button id="refreshButton" class="wa-secondary" type="button">Refresh</button>
-          <button id="disconnectButton" class="wa-danger" type="button">Disconnect</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="wa-grid">
-      <article class="wa-info-card">
-        <span class="wa-kicker">WHAT STARTS AFTER CONNECTION</span>
-        <h3>Sales workflow</h3>
-        <ul>
-          <li>Incoming WhatsApp messages are received through the Meta webhook.</li>
-          <li>Customers and leads are matched or created automatically.</li>
-          <li>Conversation history is stored against the correct client.</li>
-          <li>Lead activity is added to the existing GLIME timeline.</li>
-          <li>The WhatsApp Sales Specialist can use the existing action/approval architecture.</li>
-        </ul>
-      </article>
-
-      <article class="wa-info-card">
-        <span class="wa-kicker">SECURITY</span>
-        <h3>Designed around GLIME's existing backend</h3>
-        <p>
-          The browser never receives the WhatsApp access token. Connection and
-          webhook operations are handled by Supabase Edge Functions using the
-          existing client ownership model.
-        </p>
-      </article>
-    </section>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="whatsapp-sales-specialist.js"></script>
+<div id="connectModal" class="modal hidden"><div class="modal-card"><button class="modal-close" id="closeConnect">×</button><div class="section-kicker">WHATSAPP CONNECTION</div><h2>Connect your WhatsApp Business</h2><p>GLIME will use Meta's approved WhatsApp Business flow. Your access token stays server-side.</p><div class="connect-steps"><div><b>1</b><span>Start secure connection</span></div><div><b>2</b><span>Complete Meta verification</span></div><div><b>3</b><span>Return to GLIME</span></div></div><button id="startConnect" class="primary-btn full">Continue with Meta →</button><p id="connectStatus" class="modal-status"></p></div></div>
+<script src="whatsapp-sales-specialist.js"></script>
 </body>
 </html>
