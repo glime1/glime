@@ -4,7 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Dashboard | GLIME AI AUTOMATION</title>
+    <meta
+        http-equiv="Cache-Control"
+        content="no-store, no-cache, must-revalidate, max-age=0"
+    >
+
+    <meta
+        http-equiv="Pragma"
+        content="no-cache"
+    >
+
+    <meta
+        http-equiv="Expires"
+        content="0"
+    >
+
+    <title>Dashboard | Glime AI Automation</title>
 
     <meta
         name="description"
@@ -26,7 +41,60 @@
     
 <style>
 :root{--bg:#05080c;--card:#111827;--green:#00ff88;--cyan:#00f0ff;--text:#fff;--muted:#9ca3af;--danger:#ff4757;--border:rgba(255,255,255,.07)}
-*{box-sizing:border-box;font-family:Poppins,sans-serif}body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}.sidebar{width:245px;min-height:100vh;padding:28px 16px;background:rgba(17,24,39,.86);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}.logo{text-align:center;margin-bottom:34px;display:flex;flex-direction:column;align-items:center;gap:8px}.official-logo{width:110px;height:58px;object-fit:contain}.logo span{font-size:12px;color:var(--muted);letter-spacing:.7px}.nav-item{padding:13px 16px;color:var(--muted);text-decoration:none;border-radius:10px;margin-bottom:7px;font-weight:600;transition:.2s}.nav-item:hover,.nav-item.active{background:rgba(0,255,136,.09);color:var(--green);border-left:3px solid var(--green)}.logout-btn{margin-top:auto;padding:12px;border-radius:10px;border:1px solid rgba(255,71,87,.3);background:rgba(255,71,87,.08);color:var(--danger);font-weight:700;cursor:pointer}.main-content{flex:1;padding:36px;max-width:1500px}.header{display:flex;justify-content:space-between;align-items:center;gap:24px;padding-bottom:25px;border-bottom:1px solid var(--border)}.eyebrow{font-size:.72rem;letter-spacing:1.8px;color:var(--cyan);font-weight:700;margin-bottom:7px}.header h1,.section h2,.hero-card h2{margin:0}.header h1{font-size:1.8rem}.header p,.hero-card p,.support-card p{color:var(--muted);margin:8px 0 0;line-height:1.6}.identity{text-align:right}.client-badge{display:inline-block;color:var(--cyan);background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.22);padding:8px 13px;border-radius:18px;font-size:.85rem;font-weight:700}.email-display{color:var(--muted);font-size:.76rem;margin-top:7px;overflow-wrap:anywhere}.hero-card{margin-top:24px;padding:26px;border-radius:16px;border:1px solid rgba(0,255,136,.2);background:linear-gradient(135deg,rgba(0,255,136,.07),rgba(0,240,255,.04));display:flex;justify-content:space-between;align-items:center;gap:20px}.hero-card.danger-card{border-color:rgba(255,71,87,.35);background:rgba(255,71,87,.05)}.hero-card h2{font-size:1.35rem}.btn{display:inline-block;padding:11px 17px;border-radius:10px;text-decoration:none;font-weight:700;border:1px solid var(--border);color:#fff;background:rgba(255,255,255,.06);white-space:nowrap}.btn.primary{color:#061018;background:linear-gradient(135deg,var(--green),var(--cyan));border:0}.btn.whatsapp{background:#25d366;border:0}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}.stat-card,.card{background:var(--card);border:1px solid var(--border);border-radius:14px}.stat-card{padding:20px}.stat-label{display:block;color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}.stat-card strong{display:block;font-size:1.25rem}.stat-card small{display:block;color:var(--muted);margin-top:5px}.section{margin-top:30px}.section-heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:14px}.section-heading h2{font-size:1.2rem}.muted{color:var(--muted);font-size:.8rem}.usage-grid,.details-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.details-grid{grid-template-columns:1fr 1fr}.usage-card,.detail-card{padding:20px}.card-top,.detail-row{display:flex;justify-content:space-between;gap:15px}.card-top{font-weight:700}.meter{height:9px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:15px 0 9px}.meter-fill{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:99px;transition:width .5s}.usage-card p{color:var(--muted);font-size:.8rem;line-height:1.5;margin:0}.detail-row{padding:13px 0;border-bottom:1px solid var(--border)}.detail-row:last-child{border-bottom:0}.detail-row span{color:var(--muted);font-size:.82rem}.detail-row strong{font-size:.85rem;text-align:right;overflow-wrap:anywhere}.support-card{padding:24px;display:flex;justify-content:space-between;align-items:center;gap:20px}footer{color:#667085;text-align:center;font-size:.75rem;padding:30px 0 8px}footer a{color:var(--muted);text-decoration:none}#dashboardLoading{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}.loading-spinner{width:44px;height:44px;border-radius:50%;border:3px solid rgba(255,255,255,.1);border-top-color:var(--green);border-right-color:var(--cyan);animation:spin .9s linear infinite}.loading-text{color:var(--muted);font-size:.9rem}@keyframes spin{to{transform:rotate(360deg)}}.access-gate{position:fixed;inset:0;z-index:6000;background:rgba(5,8,12,.95);display:flex;align-items:center;justify-content:center;padding:20px}.gate-card{max-width:520px;width:100%;background:var(--card);border:1px solid rgba(255,71,87,.35);border-radius:18px;padding:30px;text-align:center}.gate-icon{font-size:2rem;margin-bottom:10px}.gate-card h2{margin:0 0 10px}.gate-card p{color:var(--muted);line-height:1.6;margin-bottom:22px}.gate-card button{display:block;margin:15px auto 0;background:none;border:0;color:var(--muted);cursor:pointer}
+*{box-sizing:border-box;font-family:Poppins,sans-serif}body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}.sidebar{width:245px;min-height:100vh;padding:28px 16px;background:rgba(17,24,39,.86);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}.logo{text-align:center;margin-bottom:34px;display:flex;flex-direction:column;align-items:center;gap:8px}.official-logo{width:110px;height:58px;object-fit:contain}.logo span{font-size:12px;color:var(--muted);letter-spacing:.7px}.nav-item{padding:13px 16px;color:var(--muted);text-decoration:none;border-radius:10px;margin-bottom:7px;font-weight:600;transition:.2s}.nav-item:hover,.nav-item.active{background:rgba(0,255,136,.09);color:var(--green);border-left:3px solid var(--green)}.logout-btn{margin-top:auto;padding:12px;border-radius:10px;border:1px solid rgba(255,71,87,.3);background:rgba(255,71,87,.08);color:var(--danger);font-weight:700;cursor:pointer}.main-content{flex:1;padding:36px;max-width:1500px}.header{display:flex;justify-content:space-between;align-items:center;gap:24px;padding-bottom:25px;border-bottom:1px solid var(--border)}.eyebrow{font-size:.72rem;letter-spacing:1.8px;color:var(--cyan);font-weight:700;margin-bottom:7px}.header h1,.section h2,.hero-card h2{margin:0}.header h1{font-size:1.8rem}.header p,.hero-card p,.support-card p{color:var(--muted);margin:8px 0 0;line-height:1.6}.identity{text-align:right}.client-badge{display:inline-block;color:var(--cyan);background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.22);padding:8px 13px;border-radius:18px;font-size:.85rem;font-weight:700}.email-display{color:var(--muted);font-size:.76rem;margin-top:7px;overflow-wrap:anywhere}.hero-card{margin-top:24px;padding:26px;border-radius:16px;border:1px solid rgba(0,255,136,.2);background:linear-gradient(135deg,rgba(0,255,136,.07),rgba(0,240,255,.04));display:flex;justify-content:space-between;align-items:center;gap:20px}.hero-card.danger-card{border-color:rgba(255,71,87,.35);background:rgba(255,71,87,.05)}.hero-card h2{font-size:1.35rem}.btn{display:inline-block;padding:11px 17px;border-radius:10px;text-decoration:none;font-weight:700;border:1px solid var(--border);color:#fff;background:rgba(255,255,255,.06);white-space:nowrap}.btn.primary{color:#061018;background:linear-gradient(135deg,var(--green),var(--cyan));border:0}.btn.whatsapp{background:#25d366;border:0}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}.stat-card,.card{background:var(--card);border:1px solid var(--border);border-radius:14px}.stat-card{padding:20px}.stat-label{display:block;color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}.stat-card strong{display:block;font-size:1.25rem}.stat-card small{display:block;color:var(--muted);margin-top:5px}.section{margin-top:30px}.section-heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:14px}.section-heading h2{font-size:1.2rem}.muted{color:var(--muted);font-size:.8rem}.usage-grid,.details-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.details-grid{grid-template-columns:1fr 1fr}.usage-card,.detail-card{padding:20px}.card-top,.detail-row{display:flex;justify-content:space-between;gap:15px}.card-top{font-weight:700}.meter{height:9px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:15px 0 9px}.meter-fill{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:99px;transition:width .5s}.usage-card p{color:var(--muted);font-size:.8rem;line-height:1.5;margin:0}.detail-row{padding:13px 0;border-bottom:1px solid var(--border)}.detail-row:last-child{border-bottom:0}.detail-row span{color:var(--muted);font-size:.82rem}.detail-row strong{font-size:.85rem;text-align:right;overflow-wrap:anywhere}.support-card{padding:24px;display:flex;justify-content:space-between;align-items:center;gap:20px}footer{color:#667085;text-align:center;font-size:.75rem;padding:30px 0 8px}footer a{color:var(--muted);text-decoration:none}#dashboardLoading{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}.loading-spinner{width:44px;height:44px;border-radius:50%;border:3px solid rgba(255,255,255,.1);border-top-color:var(--green);border-right-color:var(--cyan);animation:spin .9s linear infinite}.loading-text{color:var(--muted);font-size:.9rem}@keyframes spin{to{transform:rotate(360deg)}}
+.error-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 7000;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.error-card {
+    max-width: 620px;
+    width: 100%;
+    background: var(--card);
+    border: 1px solid rgba(255,71,87,.35);
+    border-radius: 18px;
+    padding: 30px;
+}
+
+.error-card h2 {
+    margin: 0 0 10px;
+}
+
+.error-card p {
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.error-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.error-details {
+    margin-top: 20px;
+    padding: 14px;
+    background: rgba(0,0,0,.25);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: #cbd5e1;
+    font-size: .75rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 240px;
+    overflow: auto;
+}
+
+.access-gate{position:fixed;inset:0;z-index:6000;background:rgba(5,8,12,.95);display:flex;align-items:center;justify-content:center;padding:20px}.gate-card{max-width:520px;width:100%;background:var(--card);border:1px solid rgba(255,71,87,.35);border-radius:18px;padding:30px;text-align:center}.gate-icon{font-size:2rem;margin-bottom:10px}.gate-card h2{margin:0 0 10px}.gate-card p{color:var(--muted);line-height:1.6;margin-bottom:22px}.gate-card button{display:block;margin:15px auto 0;background:none;border:0;color:var(--muted);cursor:pointer}
 @media(max-width:900px){body{display:block}.sidebar{width:100%;min-height:0;padding:16px 12px;border-right:0;border-bottom:1px solid var(--border)}.logo{margin-bottom:12px}.nav-item{margin-bottom:6px;text-align:center}.logout-btn{margin-top:8px}.main-content{padding:20px 14px}.header,.hero-card,.support-card{flex-direction:column;align-items:flex-start}.identity{text-align:left}.stats-grid{grid-template-columns:1fr 1fr}.usage-grid,.details-grid{grid-template-columns:1fr}.hero-actions{width:100%}.hero-actions .btn{width:100%;text-align:center}.support-card .btn{width:100%;text-align:center}}
 @media(max-width:520px){.stats-grid{grid-template-columns:1fr}.header h1{font-size:1.4rem}.main-content{padding:16px 12px}.stat-card,.usage-card,.detail-card{padding:17px}.hero-card{padding:20px}}
 
@@ -38,7 +106,9 @@
 <body>
   <div id="dashboardLoading">
     <div class="loading-spinner"></div>
-    <div class="loading-text">Securing your GLIME account...</div>
+    <div class="loading-text">
+      Starting GLIME dashboard...
+    </div>
   </div>
 
   <aside class="sidebar">
@@ -56,7 +126,7 @@
   <main class="main-content">
     <header class="header" id="overview">
       <div>
-        <div class="eyebrow">GLIME AUTOMATION</div>
+        <div class="eyebrow">GLIME SaaS</div>
         <h1>Welcome, <span id="clientName">...</span> 👋</h1>
         <p>Manage your GLIME account, plan, usage and access from one place.</p>
       </div>
@@ -143,8 +213,8 @@
         <span class="muted">Active during your Free Trial</span>
       </div>
       <div class="modules-grid" id="trialModulesGrid">
-        <a class="card module-card module-link" href="instagram-sales-specialist.html"><div><div class="module-name">Instagram Sales Specialist</div><small>Sales automation for Instagram</small></div><span class="module-status">Active · Open →</span></a>
-        <a class="card module-card module-link" href="whatsapp-sales-specialist.html"><div><div class="module-name">WhatsApp Sales Specialist</div><small>Sales automation for WhatsApp</small></div><span class="module-status">Active · Open →</span></a>
+        <a class="card module-card module-link" href="instagram-agent.html"><div><div class="module-name">Instagram Sales Specialist</div><small>Sales automation for Instagram</small></div><span class="module-status">Active · Open →</span></a>
+        <article class="card module-card" title="WhatsApp Specialist page is not yet present in the current project files."><div><div class="module-name">WhatsApp Sales Specialist</div><small>Sales automation for WhatsApp</small></div><span class="module-status">Active</span></article>
         <a class="card module-card module-link" href="leads.html"><div><div class="module-name">Leads AI</div><small>Lead management and intelligence</small></div><span class="module-status">Active · Open →</span></a>
         <a class="card module-card module-link" href="follow-up.html"><div><div class="module-name">Follow-up Specialist</div><small>Automated lead follow-ups</small></div><span class="module-status">Active · Open →</span></a>
         <a class="card module-card module-link" href="client-assistant.html"><div><div class="module-name">Client Data Assistant</div><small>Business data assistance</small></div><span class="module-status">Active · Open →</span></a>
@@ -161,7 +231,7 @@
         <span class="muted">7-day Free Trial</span>
       </div>
       <div class="trial-grid">
-        <article class="card trial-card"><strong id="trialAiCredits">10,000 GLIME Credits</strong><span id="trialAiTokens">10,000 AI Tokens</span></article>
+        <article class="card trial-card"><strong id="trialAiCredits">10 GLIME Credits</strong><span id="trialAiTokens">10,000 AI Tokens</span></article>
         <article class="card trial-card"><strong id="trialInstagram">100</strong><span>Successful Instagram messages</span></article>
         <article class="card trial-card"><strong id="trialWhatsApp">50</strong><span>Successful WhatsApp messages</span></article>
       </div>
@@ -220,16 +290,257 @@ function nameFromEmail(email){ const v=(email||'').split('@')[0]||'Client'; retu
 function buildWhatsApp(name,email,id){ const msg=`Hi GLIME Team!\n\nI need help with my account.\n\nClient Name: ${name||'Client'}\nEmail: ${email||''}\nClient ID: ${id||'Not available'}\n\nMessage:`; return `https://wa.me/${CLIENT_SUPPORT_NUMBER}?text=${encodeURIComponent(msg)}`; }
 function setMeter(id,p){ document.getElementById(id).style.width=Math.min(100,Math.max(0,p))+'%'; }
 
-async function getBilling(){
-  const {data,error}=await supabaseClient.auth.getSession();
-  if(error) throw error;
-  const token=data?.session?.access_token;
-  if(!token) throw new Error('Active login session is missing.');
-  const response=await fetch(SUPABASE_URL+'/functions/v1/glime-billing-my-subscription',{headers:{Authorization:'Bearer '+token,apikey:SUPABASE_KEY}});
-  const body=await response.json().catch(()=>({}));
-  if(!response.ok||!body.ok) throw new Error(body.error||'Billing data could not be loaded.');
-  return body.data||{};
+/*
+ * Promise timeout helper.
+ * Prevents the dashboard from remaining on
+ * the loading screen indefinitely.
+ */
+function withTimeout(
+    promise,
+    ms,
+    label
+) {
+    let timer;
+
+    const timeout = new Promise(
+        function(_, reject) {
+            timer = setTimeout(
+                function() {
+                    reject(
+                        new Error(
+                            label +
+                            ' timed out after ' +
+                            Math.round(ms / 1000) +
+                            ' seconds.'
+                        )
+                    );
+                },
+                ms
+            );
+        }
+    );
+
+    return Promise.race(
+        [
+            promise,
+            timeout
+        ]
+    ).finally(
+        function() {
+            clearTimeout(timer);
+        }
+    );
 }
+
+
+/*
+ * Dashboard error screen.
+ * The previous dashboard called showDashboardError()
+ * without defining it.
+ */
+function showDashboardError(
+    message,
+    details
+) {
+    const oldScreen =
+        document.getElementById(
+            'dashboardErrorScreen'
+        );
+
+    if (oldScreen) {
+        oldScreen.remove();
+    }
+
+    const screen =
+        document.createElement('div');
+
+    screen.id =
+        'dashboardErrorScreen';
+
+    screen.className =
+        'error-screen';
+
+    screen.innerHTML = `
+        <div class="error-card">
+
+            <div class="eyebrow">
+                GLIME DASHBOARD
+            </div>
+
+            <h2>
+                Dashboard could not finish loading
+            </h2>
+
+            <p>
+                ${esc(
+                    message ||
+                    'An unexpected error occurred.'
+                )}
+            </p>
+
+            <div class="error-actions">
+
+                <button
+                    id="dashboardRetryBtn"
+                    class="btn primary"
+                    type="button"
+                >
+                    Try Again
+                </button>
+
+                <a
+                    href="billing.html"
+                    class="btn"
+                >
+                    Open Billing
+                </a>
+
+                <button
+                    id="dashboardErrorLogout"
+                    class="btn"
+                    type="button"
+                >
+                    Secure Logout
+                </button>
+
+            </div>
+
+            <div class="error-details">
+                ${esc(
+                    details ||
+                    message ||
+                    'No technical details available.'
+                )}
+            </div>
+
+        </div>
+    `;
+
+    document.body.appendChild(
+        screen
+    );
+
+    document
+        .getElementById(
+            'dashboardRetryBtn'
+        )
+        .addEventListener(
+            'click',
+            function() {
+                screen.remove();
+
+                loadingScreen.style.display =
+                    'flex';
+
+                initializeDashboard();
+            }
+        );
+
+    document
+        .getElementById(
+            'dashboardErrorLogout'
+        )
+        .addEventListener(
+            'click',
+            handleLogout
+        );
+}
+
+
+async function getBilling(
+    session
+) {
+    let activeSession =
+        session;
+
+    if (!activeSession) {
+        const authResult =
+            await withTimeout(
+                supabaseClient.auth.getSession(),
+                10000,
+                'Supabase Auth'
+            );
+
+        if (authResult.error) {
+            throw authResult.error;
+        }
+
+        activeSession =
+            authResult.data?.session;
+    }
+
+    const token =
+        activeSession?.access_token;
+
+    if (!token) {
+        throw new Error(
+            'Active login session is missing.'
+        );
+    }
+
+    const response =
+        await withTimeout(
+            fetch(
+                SUPABASE_URL +
+                '/functions/v1/glime-billing-my-subscription',
+                {
+                    method: 'GET',
+
+                    headers: {
+                        Authorization:
+                            'Bearer ' + token,
+
+                        apikey:
+                            SUPABASE_KEY,
+
+                        Accept:
+                            'application/json'
+                    },
+
+                    cache:
+                        'no-store'
+                }
+            ),
+            15000,
+            'Billing service'
+        );
+
+    const raw =
+        await response.text();
+
+    let body = {};
+
+    try {
+        body =
+            raw
+                ? JSON.parse(raw)
+                : {};
+    } catch (_) {
+        body = {};
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            body?.error ||
+            body?.message ||
+            (
+                'Billing service returned HTTP ' +
+                response.status +
+                '.'
+            )
+        );
+    }
+
+    if (body?.ok === false) {
+        throw new Error(
+            body.error ||
+            'Billing data could not be loaded.'
+        );
+    }
+
+    return body?.data || {};
+}
+
 
 function renderAccount(billing,client){
   const a=billing.account_state||{};
@@ -284,7 +595,7 @@ function renderUsage(b){
   setMeter('dataMeter',dataP);
   const ai=Number(b.ai_credits?.balance_credits||0);
   document.getElementById('aiCredits').textContent=ai.toLocaleString('en-IN');
-  document.getElementById('aiMeta').textContent=`${ai.toLocaleString('en-IN')} AI Tokens remaining`;
+  document.getElementById('aiMeta').textContent=`${(ai*1000).toLocaleString('en-IN')} AI Tokens remaining`;
   document.getElementById('creditsValue').textContent=ai.toLocaleString('en-IN');
   document.getElementById('creditsMeta').textContent=`${Number(b.ai_credits?.used_credits||0).toLocaleString('en-IN')} credits used · ${Number(b.ai_credits?.granted_credits||0).toLocaleString('en-IN')} granted`;
   setMeter('creditsMeter',0);
@@ -306,26 +617,164 @@ function renderTrialAllowances(b){
     const used=events.filter(x=>x.usage_code===usageCode && x.metadata?.promotional_grant_code===code).reduce((n,x)=>n+Number(x.quantity||0),0);
     return Math.max(0,Number(g?.quantity||0)-used);
   };
-  document.getElementById('trialAiCredits').textContent='10,000 GLIME Credits';
-  document.getElementById('trialAiTokens').textContent=`${Math.max(0,Number(b.ai_credits?.balance_credits||0)).toLocaleString('en-IN')} AI Tokens available`;
+  document.getElementById('trialAiCredits').textContent='10 GLIME Credits';
+  document.getElementById('trialAiTokens').textContent=`${Math.max(0,Number(b.ai_credits?.balance_credits||0)*1000).toLocaleString('en-IN')} AI Tokens available`;
   document.getElementById('trialInstagram').textContent=quota('FREE_TRIAL_INSTAGRAM_MESSAGES','instagram_message').toLocaleString('en-IN');
   document.getElementById('trialWhatsApp').textContent=quota('FREE_TRIAL_WHATSAPP_MESSAGES','whatsapp_message').toLocaleString('en-IN');
 }
 
 
-async function loadTrialModules(clientId,billing){
-  const section=document.getElementById('agents');
-  const a=billing.account_state||{};
-  const end=a.free_trial_ends_at?new Date(a.free_trial_ends_at):null;
-  const active=String(a.free_trial_status||'').toLowerCase()==='active' && end && end.getTime()>Date.now() && !billing.current_subscription;
-  if(!active){section.style.display='none';return;}
-  const {data,error}=await supabaseClient.from('client_modules').select('module_id,enabled,status,visible_to_client,expires_at').eq('client_id',clientId);
-  if(error){console.warn('Trial module access:',error);return;}
-  const allowed=new Set((data||[]).filter(x=>x.enabled===true&&x.visible_to_client===true&&['active','trial'].includes(String(x.status||'').toLowerCase())&&(!x.expires_at||new Date(x.expires_at)>new Date())).map(x=>Number(x.module_id)));
-  const ids={instagram:7,whatsapp:12,leads:1,followup:11,assistant:10,services:4};
-  const cards=[['Instagram Sales Specialist',ids.instagram],['WhatsApp Sales Specialist',ids.whatsapp],['Leads AI',ids.leads],['Follow-up Specialist',ids.followup],['Client Data Assistant',ids.assistant],['Services',ids.services]];
-  document.querySelectorAll('#trialModulesGrid .module-card').forEach((card,i)=>{const ok=allowed.has(cards[i][1]);card.style.display=ok?'flex':'none';});
+async function loadTrialModules(
+    clientId,
+    billing
+) {
+    const section =
+        document.getElementById(
+            'agents'
+        );
+
+    const a =
+        billing.account_state || {};
+
+    const end =
+        a.free_trial_ends_at
+            ? new Date(
+                a.free_trial_ends_at
+            )
+            : null;
+
+    const active =
+        String(
+            a.free_trial_status || ''
+        ).toLowerCase() === 'active' &&
+        end &&
+        end.getTime() > Date.now() &&
+        !billing.current_subscription;
+
+    if (!active) {
+        section.style.display =
+            'none';
+        return;
+    }
+
+    const result =
+        await withTimeout(
+            supabaseClient
+                .from('client_modules')
+                .select(
+                    'module_id,enabled,status,visible_to_client,expires_at'
+                )
+                .eq(
+                    'client_id',
+                    clientId
+                ),
+            10000,
+            'Trial modules'
+        );
+
+    const data =
+        result.data;
+
+    const error =
+        result.error;
+
+    if (error) {
+        console.warn(
+            'Trial module access:',
+            error
+        );
+        return;
+    }
+
+    const allowed =
+        new Set(
+            (data || [])
+                .filter(
+                    function(x) {
+                        return (
+                            x.enabled === true &&
+                            x.visible_to_client === true &&
+                            [
+                                'active',
+                                'trial'
+                            ].includes(
+                                String(
+                                    x.status || ''
+                                ).toLowerCase()
+                            ) &&
+                            (
+                                !x.expires_at ||
+                                new Date(
+                                    x.expires_at
+                                ) > new Date()
+                            )
+                        );
+                    }
+                )
+                .map(
+                    function(x) {
+                        return Number(
+                            x.module_id
+                        );
+                    }
+                )
+        );
+
+    const ids = {
+        instagram: 7,
+        whatsapp: 12,
+        leads: 1,
+        followup: 11,
+        assistant: 10,
+        services: 4
+    };
+
+    const cards = [
+        [
+            'Instagram Sales Specialist',
+            ids.instagram
+        ],
+        [
+            'WhatsApp Sales Specialist',
+            ids.whatsapp
+        ],
+        [
+            'Leads AI',
+            ids.leads
+        ],
+        [
+            'Follow-up Specialist',
+            ids.followup
+        ],
+        [
+            'Client Data Assistant',
+            ids.assistant
+        ],
+        [
+            'Services',
+            ids.services
+        ]
+    ];
+
+    document
+        .querySelectorAll(
+            '#trialModulesGrid .module-card'
+        )
+        .forEach(
+            function(card, i) {
+                const ok =
+                    allowed.has(
+                        cards[i][1]
+                    );
+
+                card.style.display =
+                    ok
+                        ? 'flex'
+                        : 'none';
+            }
+        );
 }
+
 
 function showAccessGate(){
   const overlay=document.createElement('div'); overlay.className='access-gate';
@@ -333,131 +782,264 @@ function showAccessGate(){
   document.body.appendChild(overlay); document.getElementById('gateLogout').onclick=handleLogout;
 }
 
-async function initializeDashboard(){
-  const loadingScreen = document.getElementById('dashboardLoading');
+async function initializeDashboard() {
+    try {
+        loadingScreen.style.display =
+            'flex';
 
-  try {
-    loadingScreen.querySelector('.loading-text').textContent =
-      'Step 1/4: Checking Supabase Auth...';
+        /*
+         * Step 1:
+         * Get the real Supabase Auth session.
+         */
+        const authResult =
+            await withTimeout(
+                supabaseClient.auth.getSession(),
+                10000,
+                'Supabase Auth'
+            );
 
-    console.log('[GLIME DEBUG] initializeDashboard started');
+        const data =
+            authResult.data;
 
-    const sessionPromise = supabaseClient.auth.getSession();
+        const error =
+            authResult.error;
 
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(
-          'Supabase auth.getSession() did not return within 10 seconds.'
-        ));
-      }, 10000);
-    });
+        if (error) {
+            throw error;
+        }
 
-    const {data, error} = await Promise.race([
-      sessionPromise,
-      timeoutPromise
-    ]);
+        const session =
+            data?.session;
 
-    console.log('[GLIME DEBUG] getSession finished', {
-      hasSession: !!data?.session,
-      error
-    });
+        if (!session?.user) {
+            window.location.replace(
+                'login.html'
+            );
+            return;
+        }
 
-    if(error) throw error;
+        const email =
+            (
+                session.user.email ||
+                ''
+            )
+                .trim()
+                .toLowerCase();
 
-    const session = data?.session;
+        if (!email) {
+            await supabaseClient.auth.signOut(
+                {
+                    scope: 'local'
+                }
+            );
 
-    if(!session?.user){
-      throw new Error(
-        'No active Supabase session was found.'
-      );
+            window.location.replace(
+                'login.html'
+            );
+
+            return;
+        }
+
+        localStorage.setItem(
+            'glime_client_email',
+            email
+        );
+
+        /*
+         * Step 2:
+         * Load client profile.
+         */
+        const clientPromise =
+            withTimeout(
+                supabaseClient
+                    .from('client_data')
+                    .select(
+                        'client_id,email,full_name,name,client_name,business_name,account_status,free_trial_status,free_trial_started_at,free_trial_ends_at'
+                    )
+                    .eq(
+                        'auth_user_id',
+                        session.user.id
+                    )
+                    .limit(1),
+                10000,
+                'Client profile'
+            );
+
+        /*
+         * Step 3:
+         * Load billing.
+         */
+        const billingPromise =
+            withTimeout(
+                getBilling(
+                    session
+                ),
+                15000,
+                'Billing service'
+            );
+
+        const results =
+            await Promise.all(
+                [
+                    clientPromise,
+                    billingPromise
+                ]
+            );
+
+        const clientResult =
+            results[0];
+
+        const billing =
+            results[1];
+
+        const clientRows =
+            clientResult?.data || [];
+
+        const clientError =
+            clientResult?.error;
+
+        if (clientError) {
+            console.warn(
+                'Client profile load:',
+                clientError
+            );
+        }
+
+        const client =
+            clientRows[0] || {
+                email: email
+            };
+
+        /*
+         * Step 4:
+         * Render dashboard.
+         */
+        const allowed =
+            renderAccount(
+                billing,
+                client
+            );
+
+        renderUsage(
+            billing
+        );
+
+        /*
+         * Trial modules should not block
+         * the main dashboard.
+         */
+        loadTrialModules(
+            client.client_id,
+            billing
+        ).catch(
+            function(moduleError) {
+                console.warn(
+                    'Trial modules failed:',
+                    moduleError
+                );
+            }
+        );
+
+        const id =
+            client.client_id ||
+            billing.customer?.client_id ||
+            '';
+
+        document
+            .getElementById(
+                'whatsappSupportBtn'
+            )
+            .href =
+                buildWhatsApp(
+                    client.full_name ||
+                    billing.customer?.name ||
+                    nameFromEmail(
+                        email
+                    ),
+                    email,
+                    id
+                );
+
+        loadingScreen.style.display =
+            'none';
+
+        if (!allowed) {
+            showAccessGate();
+        }
+
+    } catch (error) {
+        console.error(
+            '[GLIME DEBUG] Dashboard failed:',
+            error
+        );
+
+        loadingScreen.style.display =
+            'none';
+
+        const message =
+            error?.message ||
+            'Unknown dashboard error.';
+
+        const details =
+            error?.stack ||
+            JSON.stringify(
+                error,
+                null,
+                2
+            );
+
+        showDashboardError(
+            message,
+            details
+        );
     }
-
-    loadingScreen.querySelector('.loading-text').textContent =
-      'Step 2/4: Loading client profile...';
-
-    const email = (session.user.email || '').trim().toLowerCase();
-
-    if(!email){
-      throw new Error('Authenticated user has no email address.');
-    }
-
-    localStorage.setItem('glime_client_email', email);
-
-    const clientPromise = supabaseClient
-      .from('client_data')
-      .select('client_id,email,full_name,name,client_name,business_name,account_status,free_trial_status,free_trial_started_at,free_trial_ends_at')
-      .eq('auth_user_id', session.user.id)
-      .limit(1);
-
-    loadingScreen.querySelector('.loading-text').textContent =
-      'Step 3/4: Loading billing data...';
-
-    const billingPromise = getBilling();
-
-    const [clientResult, billing] = await Promise.all([
-      clientPromise,
-      billingPromise
-    ]);
-
-    console.log('[GLIME DEBUG] client + billing loaded');
-
-    if(clientResult.error){
-      console.warn(
-        '[GLIME DEBUG] client_data error:',
-        clientResult.error
-      );
-    }
-
-    const client = clientResult.data?.[0] || {email};
-
-    loadingScreen.querySelector('.loading-text').textContent =
-      'Step 4/4: Rendering dashboard...';
-
-    const allowed = renderAccount(billing, client);
-
-    renderUsage(billing);
-
-    await loadTrialModules(client.client_id, billing);
-
-    const id =
-      client.client_id ||
-      billing.customer?.client_id ||
-      '';
-
-    document.getElementById('whatsappSupportBtn').href =
-      buildWhatsApp(
-        client.full_name ||
-        billing.customer?.name ||
-        nameFromEmail(email),
-        email,
-        id
-      );
-
-    loadingScreen.style.display = 'none';
-
-    if(!allowed){
-      showAccessGate();
-    }
-
-    console.log('[GLIME DEBUG] Dashboard loaded successfully');
-
-  } catch(error) {
-
-    console.error('[GLIME DEBUG] Dashboard failed:', error);
-
-    loadingScreen.style.display = 'none';
-
-    showDashboardError(
-      error?.message || 'Unknown dashboard error',
-      error?.stack || JSON.stringify(error, null, 2)
-    );
-  }
 }
 
-async function handleLogout(){
-  try{await supabaseClient.auth.signOut({scope:'local'});}finally{localStorage.removeItem('glime_client_email');window.location.replace('login.html');}
+
+async function handleLogout() {
+    try {
+        await supabaseClient.auth.signOut(
+            {
+                scope: 'local'
+            }
+        );
+    } catch (error) {
+        console.error(
+            'Logout error:',
+            error
+        );
+    } finally {
+        localStorage.removeItem(
+            'glime_client_email'
+        );
+
+        window.location.replace(
+            'login.html'
+        );
+    }
 }
-supabaseClient.auth.onAuthStateChange((event,session)=>{ if(event==='SIGNED_OUT'||!session){localStorage.removeItem('glime_client_email');window.location.replace('login.html');} });
+
+
+supabaseClient.auth.onAuthStateChange(
+    function(
+        event,
+        session
+    ) {
+        if (
+            event === 'SIGNED_OUT' ||
+            !session
+        ) {
+            localStorage.removeItem(
+                'glime_client_email'
+            );
+
+            window.location.replace(
+                'login.html'
+            );
+        }
+    }
+);
+
 initializeDashboard();
 </script>
 </body>
