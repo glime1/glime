@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GLIME Billing</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<style>
+:root{--bg:#05080c;--panel:#0d151f;--line:rgba(255,255,255,.09);--text:#fff;--muted:#98a6b5;--green:#00ff88;--cyan:#00f0ff;--danger:#ff5364}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,rgba(0,240,255,.08),transparent 34%),radial-gradient(circle at 0 0,rgba(0,255,136,.07),transparent 32%),var(--bg);color:var(--text);font-family:Poppins,Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1220px;margin:auto;padding:22px 16px 70px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}.brand img{width:46px;height:46px;object-fit:contain}.brand b{font-size:22px}.brand span{display:block;color:var(--muted);font-size:12px}
+.grid{display:grid;gap:16px}.cols{grid-template-columns:repeat(2,minmax(0,1fr))}.plans{grid-template-columns:repeat(2,minmax(0,1fr))}.card{background:rgba(13,21,31,.9);border:1px solid var(--line);border-radius:17px;padding:20px;box-shadow:0 14px 38px rgba(0,0,0,.2)}.section{margin-top:18px}.card h2,.card h3{margin:0 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.price{font-size:30px;font-weight:850;margin:14px 0}.price small{font-size:13px;color:var(--muted);font-weight:500}
+.btn{border:1px solid rgba(0,255,136,.32);background:rgba(0,255,136,.07);color:var(--green);padding:10px 15px;border-radius:10px;cursor:pointer;font-weight:750}.btn.primary{background:linear-gradient(135deg,rgba(0,255,136,.18),rgba(0,240,255,.14));border-color:rgba(0,240,255,.42);color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed}.toggle{display:flex;justify-content:center;margin:0 0 18px}.toggle button{padding:9px 20px;border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.04);color:var(--muted);cursor:pointer}.toggle button:first-child{border-radius:10px 0 0 10px}.toggle button:last-child{border-radius:0 10px 10px 0}.toggle .active{background:linear-gradient(90deg,rgba(0,255,136,.18),rgba(0,240,255,.12));color:#fff;border-color:rgba(0,240,255,.45)}
+.features{padding-left:18px;color:#dbe5f2;line-height:1.75}.stat,.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}.stat:last-child,.row:last-child{border-bottom:0}.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.2);color:var(--cyan);font-size:12px}.success{color:var(--green)}.cyan{color:var(--cyan)}.bar{height:9px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:9px 0 5px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:99px}.notice{padding:13px 15px;border-radius:12px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.18);margin-bottom:14px;white-space:pre-wrap}.notice.error{background:rgba(255,83,100,.06);border-color:rgba(255,83,100,.22)}.hidden{display:none!important}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.loader,.empty{color:var(--muted);padding:10px 0}table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted)}.kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);font-weight:800}.heroTitle{font-size:25px;margin:5px 0}.countdown{font-size:24px;font-weight:850;color:var(--green);margin-top:5px}.input{background:#08111a;border:1px solid var(--line);color:#fff;border-radius:10px;padding:10px}.status-pending{color:#ffd166}.status-ok{color:var(--green)}.status-bad{color:var(--danger)}
+@media(max-width:850px){.plans,.cols{grid-template-columns:1fr}.top{align-items:flex-start}.price{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+<a class="brand" href="dashboard.html"><img src="glime_logo_clean.svg" alt="GLIME"><div><b>GLIME</b><span>Billing & Usage</span></div></a>
+<button class="btn" id="refresh">Refresh</button>
+</header>
+<div id="notice" class="notice hidden"></div>
+
+<section class="section card"><div id="accountState" class="loader">Loading account status…</div></section>
+<section class="section card"><div class="kicker">Subscription</div><h2>Current plan</h2><div id="subBody" class="loader">Loading…</div></section>
+
+<section class="section">
+<div class="toggle"><button id="monthly" class="active">Monthly</button><button id="yearly">Yearly</button></div>
+<div id="plans" class="grid plans"></div>
+</section>
+
+<section class="section grid cols">
+<div class="card"><h3>Business Data</h3><div id="capacity" class="loader">Loading capacity…</div><div id="dataAddons" style="margin-top:12px" class="loader">Loading add-ons…</div></div>
+<div class="card"><h3>Extra Storage</h3><div id="storageAddons" class="loader">Loading storage options…</div><div class="small muted" style="margin-top:10px">Additional storage is billed monthly and is added to your active subscription.</div></div>
+<div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1 AI token. Input + output tokens are counted together.</div></div>
+</section>
+
+<section class="section grid cols">
+<div class="card"><h3>Wallet</h3><div id="wallet" class="loader">Loading…</div><div class="actions"><input id="walletAmount" class="input" type="number" min="100" step="1" value="100" style="flex:1;min-width:130px"><button class="btn primary" id="walletBtn">Add Balance</button></div><div class="small muted" style="margin-top:8px">Minimum balance addition: ₹100.</div></div>
+<div class="card"><h3>Usage & Spending</h3><div id="usage" class="loader">Loading…</div></div>
+</section>
+
+<section class="section card"><h3>Agents & Access</h3><div id="agents" class="loader">Loading…</div></section>
+<section class="section card hidden" id="grantsCard"><h3>GLIME Rewards & Grants</h3><div id="grants"></div></section>
+<section class="section card"><h3>Payment History</h3><div id="payments" class="loader">Loading…</div></section>
+<section class="section card"><h3>Invoices</h3><div id="invoices" class="loader">Loading…</div></section>
+</div>
+
+<script>
+const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const state={cycle:'monthly',catalog:{growth:null,omni:null,data:[],storage:[],credits:[]},billing:null,busy:false};
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const money=v=>v==null?'—':new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(Number(v));
+const num=v=>Number(v||0).toLocaleString('en-IN');
+const fnUrl=name=>`${SUPABASE_URL}/functions/v1/${name}`;
+
+function notice(msg,error=false){
+ const n=$('notice'); n.textContent=String(msg||'');
+ n.classList.remove('hidden'); n.classList.toggle('error',error);
+}
+function clearNotice(){$('notice').classList.add('hidden');}
+function setBusy(v){
+ state.busy=!!v;
+ document.querySelectorAll('button').forEach(b=>{if(b.id!=='refresh')b.disabled=state.busy;});
+}
+function apiError(name,error,status,body){
+ let detail='';
+ if(body){
+  if(typeof body==='string') detail=body;
+  else detail=body.error||body.message||body.code||'';
+ }
+ const msg=detail||error?.message||`Request failed`;
+ return `${name}: ${msg}${status?` (HTTP ${status})`:''}`;
+}
+async function authHeaders(){
+ const {data:{session},error}=await sb.auth.getSession();
+ if(error)throw Error(`Session error: ${error.message}`);
+ if(!session){location.replace('login.html');throw Error('LOGIN_REQUIRED');}
+ return {Authorization:`Bearer ${session.access_token}`,apikey:SUPABASE_KEY,'Content-Type':'application/json',Accept:'application/json'};
+}
+
+/* Uses fetch rather than functions.invoke so HTTP status + raw Edge Function
+   response are preserved. This makes backend failures diagnosable instead
+   of becoming the old generic "Billing connection failed" message. */
+async function call(name,body=null,method='POST',extraHeaders={}){
+ if(method!=='POST')throw Error(`Unsupported billing method: ${method}`);
+ const h={...(await authHeaders()),...extraHeaders};
+ let response;
+ try{
+  response=await fetch(fnUrl(name),{method,headers:h,body:JSON.stringify(body||{})});
+ }catch(e){
+  throw Error(`${name}: Network/CORS failure. ${e?.message||'Request could not be sent.'}`);
+ }
+ const text=await response.text().catch(()=> '');
+ let data=null;
+ try{data=text?JSON.parse(text):null;}catch{}
+ if(!response.ok){
+  throw Error(apiError(name,null,response.status,data||text));
+ }
+ if(data==null)throw Error(`${name}: Edge Function returned an empty response.`);
+ if(data.ok===false)throw Error(apiError(name,null,response.status,data));
+ return data;
+}
+async function callGet(name,query=''){
+ const h=await authHeaders();
+ let response;
+ try{response=await fetch(fnUrl(name)+query,{method:'GET',headers:{...h,Accept:'application/json'}});}
+ catch(e){throw Error(`${name}: Network/CORS failure. ${e?.message||'Request could not be sent.'}`);}
+ const text=await response.text().catch(()=> '');
+ let data=null;try{data=text?JSON.parse(text):null}catch{}
+ if(!response.ok)throw Error(apiError(name,null,response.status,data||text));
+ return data;
+}
+const newIntent=()=>crypto.randomUUID();
+function pct(used,quota){return quota>0?Math.min(100,Math.max(0,used/quota*100)):0;}
+function bytes(v){const n=Number(v||0);if(n<1048576)return `${Math.round(n/1024)} KB`;if(n<1073741824)return `${(n/1048576).toFixed(1)} MB`;return `${(n/1073741824).toFixed(2)} GB`;}
+const labels={core_agents:'Core Agents',voice_agent:'Voice Agent',whatsapp_agent:'WhatsApp Agent',instagram_agent:'Instagram Agent',lead_management:'Lead Management',sales_pipeline:'Sales Pipeline',customer_support:'Customer Support',appointment_booking:'Appointment & Booking',internal_operations:'Internal Operations',reporting_analytics:'Reporting & Analytics',document_data_processing:'Document & Data Processing',marketing_workflows:'Marketing Workflows',inventory_order_work:'Inventory & Order Work',business_data:'Business Data'};
+const featureLabel=v=>labels[v]||String(v||'').replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
+
+function getProductPrice(product,cycle){
+ const prices=product?.prices||[];
+ return prices.find(p=>p.billing_interval===cycle)||prices.find(p=>p.billing_interval==='monthly')||prices[0]||null;
+}
+async function loadCatalog(){
+ const r=await call('glime-billing-catalog',{all:true});
+ const products=r?.data?.products||[];
+ const by=Object.fromEntries(products.map(x=>[x.product?.product_code,x]));
+ state.catalog.growth=by.glime_growth||null;state.catalog.omni=by.glime_omni||null;
+ state.catalog.data=products.filter(x=>['glime_business_data_50mb','glime_business_data_100mb'].includes(x.product?.product_code));
+ state.catalog.storage=products.filter(x=>['glime_storage_50mb','glime_storage_1gb'].includes(x.product?.product_code));
+ state.catalog.credits=products.filter(x=>['glime_ai_credits_10','glime_ai_credits_100','glime_ai_credits_500','glime_ai_credits_1000'].includes(x.product?.product_code));
+ [state.catalog.growth,state.catalog.omni,...state.catalog.data,...state.catalog.storage,...state.catalog.credits].filter(Boolean).forEach(x=>x.price=getProductPrice(x,state.cycle));
+}
+function renderAccount(){
+ const a=state.billing?.account_state||{},status=String(a.account_status||'active').toLowerCase(),end=a.free_trial_ends_at;
+ if(status==='suspended'){ $('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">Account suspended</div><div class="muted">${esc(a.suspension_reason||'Access is currently suspended.')}</div><div class="actions"><button class="btn primary" id="choosePlanBtn">Choose a paid plan</button></div>`;return;}
+ if(end&&(a.free_trial_status==='active'||!a.current_subscription)){
+  const left=Math.max(0,new Date(end).getTime()-Date.now()),d=Math.floor(left/86400000),h=Math.floor(left%86400000/3600000),m=Math.floor(left%3600000/60000);
+  $('accountState').innerHTML=`<div class="kicker">Free access</div><div class="heroTitle">7-day trial</div><div class="countdown" id="trialCountdown">${d}d ${h}h ${m}m remaining</div><div class="muted small">Trial ends ${esc(new Date(end).toLocaleString('en-IN'))}. After expiry, a paid subscription is required for continued access.</div>`;
+ }else $('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">${esc(a.free_trial_status||status||'active')}</div><div class="muted">Your access and limits are controlled by your current GLIME billing configuration.</div>`;
+ const choose=$('choosePlanBtn');if(choose)choose.onclick=()=>document.getElementById('plans').scrollIntoView({behavior:'smooth'});
+}
+function renderSubscription(){
+ const b=state.billing||{},s=b.current_subscription,p=b.current_product||{};
+ if(!s){$('subBody').innerHTML='<div class="empty">No paid subscription is active. Your available free/trial access is shown above.</div>';return;}
+ $('subBody').innerHTML=`<div class="stat"><span>Plan</span><b>${esc(p.name||p.product_code||'GLIME')}</b></div><div class="stat"><span>Status</span><span class="badge">${esc(s.status)}</span></div><div class="stat"><span>Amount</span><b>${money(s.amount)}</b></div><div class="stat"><span>Billing cycle</span><span>${esc(b.current_price?.billing_interval||'—')}</span></div><div class="stat"><span>Current period</span><span>${esc((s.current_period_start||'').slice(0,10))} → ${esc((s.current_period_end||'').slice(0,10))}</span></div><div class="stat"><span>Auto-renew</span><span>${s.auto_renew?'On':'Off'}</span></div><div class="actions"><button class="btn primary" id="changePlan">Change Plan</button><button class="btn" id="renewBtn">${s.auto_renew?'Cancel auto-renew':'Resume subscription'}</button></div>`;
+ $('renewBtn').onclick=async()=>{if(state.busy)return;try{setBusy(true);clearNotice();await call('glime-cashfree-manage-subscription',{subscription_id:s.id,action:s.auto_renew?'cancel_auto_renew':'resume_auto_renew'});await loadAll();notice('Subscription setting updated.')}catch(e){notice(e.message,true)}finally{setBusy(false)}};
+ $('changePlan').onclick=()=>document.getElementById('plans').scrollIntoView({behavior:'smooth'});
+}
+function renderPlans(){
+ const arr=[state.catalog.growth,state.catalog.omni].filter(Boolean),current=state.billing?.current_product?.product_code;
+ $('plans').innerHTML=arr.map(p=>{
+  const pr=getProductPrice(p,state.cycle)||{},ents=p.entitlements||[],code=p.product?.product_code||'',isCurrent=current===code&&String(state.billing?.current_price?.billing_interval||'')===String(pr.billing_interval||state.cycle);
+  const sameProduct=current===code;
+  return `<article class="card"><span class="badge">${esc(code.replace('glime_','').toUpperCase())}</span><h2 style="margin-top:10px">${esc(p.product?.name||'GLIME Plan')}</h2><div class="muted">${esc(p.product?.description||'')}</div><div class="price">${money(pr.amount)} <small>/ ${esc(pr.billing_interval||state.cycle)}</small></div><ul class="features">${ents.slice(0,12).map(e=>`<li>${esc(featureLabel(e.entitlement_code))}${e.quantity!=null?` — ${esc(e.quantity)} ${esc(e.unit||'')}`:''}</li>`).join('')}</ul><button class="btn primary planBtn" data-product="${esc(code)}" data-interval="${esc(pr.billing_interval||state.cycle)}" ${isCurrent?'disabled':''}>${isCurrent?'Current plan':sameProduct?'Change billing cycle':'Change plan'}</button></article>`;
+ }).join('')||'<div class="card empty">Plans are unavailable right now.</div>';
+}
+function renderCapacity(){
+ const c=state.billing?.capacity||{},fq=Number(c.file_storage_quota_bytes||0),fu=Number(c.file_storage_used_bytes||0),dq=Number(c.database_quota_bytes||0),du=Number(c.database_used_bytes||0);
+ $('capacity').innerHTML=`<div class="stat"><span>Business Data</span><b>${bytes(du)} / ${bytes(dq)}</b></div><div class="bar"><i style="width:${pct(du,dq)}%"></i></div><div class="small muted">Business data limit: ${bytes(dq)}</div><div class="stat" style="margin-top:10px"><span>Files & Photos</span><b>${bytes(fu)} / ${bytes(fq)}</b></div><div class="bar"><i style="width:${pct(fu,fq)}%"></i></div><div class="small muted">Files & photos limit: ${bytes(fq)}</div>`;
+}
+function renderAddons(){
+ const arr=state.catalog.data;
+ $('dataAddons').innerHTML=arr.length?arr.map(x=>{const p=x.product,pr=getProductPrice(x,'monthly')||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="muted small">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month</div><button class="btn" style="margin-top:7px" data-data-code="${esc(p.product_code)}">Add</button></div></div>`}).join(''):'<div class="empty">Business Data add-ons are unavailable in the current catalog.</div>';
+}
+function renderStorage(){
+ const arr=state.catalog.storage;
+ $('storageAddons').innerHTML=arr.length?arr.map(x=>{
+  const p=x.product,pr=getProductPrice(x,'monthly')||{};
+  return `<div class="row"><div><b>${esc(p.name)}</b><div class="muted small">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month</div><button class="btn" style="margin-top:7px" data-storage-code="${esc(p.product_code)}">Add</button></div></div>`;
+ }).join(''):'<div class="empty">Storage add-ons are unavailable in the current catalog.</div>';
+}
+function renderCredits(){
+ const x=state.billing?.ai_credits||{},credits=Number(x.balance_credits||0),tokens=Number(x.remaining_tokens??credits);
+ $('credits').innerHTML=`<div class="stat"><span>Credits remaining</span><b class="cyan">${num(credits)}</b></div><div class="stat"><span>AI tokens remaining</span><b>${num(tokens)}</b></div><div class="stat"><span>Credits granted</span><span>${num(x.granted_credits||0)}</span></div><div class="stat"><span>Credits used</span><span>${num(x.used_credits||0)}</span></div>`;
+ $('creditPacks').innerHTML=state.catalog.credits.length?`<div class="small muted" style="margin-bottom:8px">Add credits</div>${state.catalog.credits.map(x=>{const p=x.product,pr=getProductPrice(x,'one_time')||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="small muted">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><br><button class="btn" style="margin-top:6px" data-credit-code="${esc(p.product_code)}">Buy</button></div></div>`}).join('')}`:'';
+}
+function renderWallet(){const w=state.billing?.wallet;$('wallet').innerHTML=w?`<div class="stat"><span>Balance</span><b class="success">${money(w.balance)}</b></div><div class="stat"><span>Status</span><span class="badge">${esc(w.status||'active')}</span></div>`:'<div class="empty">Wallet balance is not available yet.</div>';}
+function renderUsage(){const rows=state.billing?.usage_summary||[];$('usage').innerHTML=rows.length?rows.map(r=>`<div class="stat"><span>${esc(r.usage_code)}</span><span>${num(r.quantity)} · ${money(r.amount||0)}</span></div>`).join(''):'<div class="empty">No usage recorded yet.</div>';}
+function renderAgents(){const rows=state.billing?.entitlements||[];$('agents').innerHTML=rows.length?rows.map(x=>`<div class="row"><span>${esc(x.entitlement_code)}</span><span class="badge">${esc(x.status||'active')}</span></div>`).join(''):'<div class="empty">Agent access is controlled by your active GLIME entitlements.</div>';}
+function renderGrants(){const rows=state.billing?.promotional_grants||state.billing?.grants||[];if(!rows.length){$('grantsCard').classList.add('hidden');return;}$('grantsCard').classList.remove('hidden');$('grants').innerHTML=rows.map(x=>`<div class="row"><div><b>${esc(x.grant_code||x.grant_type||'GLIME grant')}</b><div class="small muted">${esc(x.reason||x.description||'Promotional benefit')}</div></div><span class="badge">${esc(x.quantity)} ${esc(x.unit||'')}</span></div>`).join('');}
+function renderPayments(){const rows=state.billing?.payments?.length?state.billing.payments:state.billing?.orders||[];$('payments').innerHTML=rows.length?`<table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc((x.created_at||x.paid_at||'').slice(0,19).replace('T',' '))}</td><td>${esc(x.order_type||x.payment_type||'Payment')}</td><td>${money(x.total_amount??x.amount)}</td><td>${esc(x.status||'—')}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No payment records yet.</div>';}
+function renderInvoices(){const rows=state.billing?.invoices||[];$('invoices').innerHTML=rows.length?`<table><thead><tr><th>Date</th><th>Invoice</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc((x.created_at||'').slice(0,10))}</td><td>${esc(x.invoice_number||'Invoice')}</td><td>${money(x.total_amount??x.amount)}</td><td>${esc(x.status||'—')}</td><td><button class="btn" data-invoice-id="${esc(x.id)}">Download</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No invoices yet.</div>';}
+
+function unwrapSession(d,key){
+ return d?.data?.[key]||d?.[key]||null;
+}
+async function checkout(d,type='payment'){
+ const key=type==='subscription'?'subscription_session_id':'payment_session_id';
+ const session=unwrapSession(d,key);
+ if(!session)throw Error(`Cashfree checkout session was not returned (${key}).`);
+ if(typeof window.Cashfree!=='function')throw Error('Cashfree SDK failed to load. Please refresh and try again.');
+ const cf=Cashfree({mode:'production'});
+ try{
+  if(type==='subscription')return await cf.checkout({subscriptionSessionId:session});
+  return await cf.checkout({paymentSessionId:session});
+ }catch(e){
+  throw Error(`Cashfree checkout failed: ${e?.message||'Unable to open payment window.'}`);
+ }
+}
+async function startSubscription(code,interval){
+ const d=await call('glime-cashfree-create-subscription',{product_code:code,billing_interval:interval},'POST',{'x-idempotency-key':newIntent()});
+ await checkout(d,'subscription');
+}
+async function upgrade(code,interval){
+ const q=await call('glime-billing-upgrade-quote',{target_product_code:code,billing_interval:interval});
+ const quote=q.data||q;
+ const charge=Number(quote?.proration?.charge_now??quote?.charge_now??quote?.amount_due??0);
+ if(!Number.isFinite(charge)||charge<=0)throw Error(`Upgrade is not payable now. Calculated charge: ${money(charge)}.`);
+ const d=await call('glime-cashfree-create-upgrade-payment',{product_code:code,billing_interval:interval},'POST',{'x-idempotency-key':newIntent()});
+ await checkout(d,'payment');
+ if(d?.data?.order_number){
+  try{await call('glime-cashfree-finalize-upgrade',{order_number:d.data.order_number});}catch{}
+ }
+}
+async function walletTopup(){
+ const amount=Number($('walletAmount').value);
+ if(!Number.isFinite(amount)||amount<100)throw Error('Minimum wallet balance addition is ₹100.');
+ const d=await call('glime-cashfree-create-wallet-topup',{amount},'POST',{'x-idempotency-key':newIntent()});
+ await checkout(d,'payment');
+ if(d?.data?.order_number){
+  try{await call('glime-cashfree-finalize-wallet-topup',{order_number:d.data.order_number});}catch{}
+ }
+}
+async function refreshAfterPayment(){
+ for(let i=0;i<3;i++){
+  await new Promise(r=>setTimeout(r,1500));
+  try{await loadAll();}catch{}
+ }
+}
+async function loadAll(){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session){location.replace('login.html');return;}
+ const b=await call('glime-billing-my-subscription',{});
+ state.billing=b.data||b;
+ await loadCatalog();
+ renderAccount();renderSubscription();renderPlans();renderCapacity();renderAddons();renderStorage();renderCredits();renderWallet();renderUsage();renderAgents();renderGrants();renderPayments();renderInvoices();
+}
+async function setCycle(cycle){
+ if(state.busy)return;
+ state.cycle=cycle;
+ $('monthly').classList.toggle('active',cycle==='monthly');$('yearly').classList.toggle('active',cycle==='yearly');
+ try{setBusy(true);clearNotice();await loadCatalog();renderPlans();}catch(e){notice(e.message,true)}finally{setBusy(false)}
+}
+$('monthly').onclick=()=>setCycle('monthly');
+$('yearly').onclick=()=>setCycle('yearly');
+$('refresh').onclick=async()=>{if(state.busy)return;try{setBusy(true);clearNotice();await loadAll();notice('Billing refreshed.')}catch(e){notice(e.message,true)}finally{setBusy(false)}};
+$('walletBtn').onclick=async()=>{if(state.busy)return;try{setBusy(true);clearNotice();await walletTopup();notice('Payment window opened.');setTimeout(refreshAfterPayment,1000);}catch(e){notice(e.message,true)}finally{setBusy(false)}};
+
+document.addEventListener('click',async e=>{
+ const b=e.target.closest('button');if(!b||state.busy)return;
+ try{
+  if(b.classList.contains('planBtn')&&!b.disabled){
+   setBusy(true);clearNotice();
+   const code=b.dataset.product,interval=b.dataset.interval,current=state.billing?.current_product?.product_code,currentInterval=state.billing?.current_price?.billing_interval;
+   if(!current)await startSubscription(code,interval);
+   else if(current!==code||currentInterval!==interval)await upgrade(code,interval);
+  }else if(b.dataset.dataCode){
+   setBusy(true);clearNotice();
+   const d=await call('glime-cashfree-create-business-data-addon',{product_code:b.dataset.dataCode},'POST',{'x-idempotency-key':newIntent()});
+   await checkout(d,'subscription');notice('Add-on checkout opened.');setTimeout(refreshAfterPayment,1000);
+  }else if(b.dataset.storageCode){
+   setBusy(true);clearNotice();
+   const d=await call('glime-cashfree-create-storage-addon',{product_code:b.dataset.storageCode},'POST',{'x-idempotency-key':newIntent()});
+   await checkout(d,'subscription');notice('Storage add-on checkout opened.');setTimeout(refreshAfterPayment,1000);
+  }else if(b.dataset.creditCode){
+   setBusy(true);clearNotice();
+   const d=await call('glime-cashfree-create-ai-credit-purchase',{product_code:b.dataset.creditCode},'POST',{'x-idempotency-key':newIntent()});
+   await checkout(d,'payment');notice('AI credit payment opened.');setTimeout(refreshAfterPayment,1000);
+  }else if(b.dataset.invoiceId){
+   setBusy(true);clearNotice();
+   const h=await authHeaders();
+   let r;
+   try{r=await fetch(fnUrl('glime-billing-invoice-download')+'?invoice_id='+encodeURIComponent(b.dataset.invoiceId),{method:'GET',headers:{Authorization:h.Authorization,apikey:SUPABASE_KEY,Accept:'application/pdf'}});}
+   catch(e){throw Error(`Invoice download: Network/CORS failure. ${e?.message||'Request failed.'}`);}
+   const ct=(r.headers.get('content-type')||'').toLowerCase();
+   if(!r.ok||!ct.includes('application/pdf')){
+    const raw=await r.text().catch(()=> '');
+    let parsed=null;try{parsed=raw?JSON.parse(raw):null}catch{}
+    throw Error(apiError('glime-billing-invoice-download',null,r.status,parsed||raw||'Invoice download failed.'));
+   }
+   const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download='GLIME-Invoice.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+   notice('Invoice downloaded.');
+  }
+ }catch(err){notice(err.message||'Billing action failed.',true)}
+ finally{setBusy(false)}
+});
+
+setInterval(()=>{const end=state.billing?.account_state?.free_trial_ends_at,el=$('trialCountdown');if(!end||!el)return;const left=Math.max(0,new Date(end).getTime()-Date.now()),d=Math.floor(left/86400000),h=Math.floor(left%86400000/3600000),m=Math.floor(left%3600000/60000);el.textContent=`${d}d ${h}h ${m}m remaining`;},60000);
+(async()=>{try{await loadAll();}catch(e){notice(e.message||'Billing could not be loaded.',true);}})();
+</script>
+</body>
+</html>
