@@ -161,7 +161,7 @@
         <span class="muted">7-day Free Trial</span>
       </div>
       <div class="trial-grid">
-        <article class="card trial-card"><strong id="trialAiCredits">10 GLIME Credits</strong><span id="trialAiTokens">10,000 AI Tokens</span></article>
+        <article class="card trial-card"><strong id="trialAiCredits">10,000 GLIME Credits</strong><span id="trialAiTokens">10,000 AI Tokens</span></article>
         <article class="card trial-card"><strong id="trialInstagram">100</strong><span>Successful Instagram messages</span></article>
         <article class="card trial-card"><strong id="trialWhatsApp">50</strong><span>Successful WhatsApp messages</span></article>
       </div>
@@ -306,8 +306,8 @@ function renderTrialAllowances(b){
     const used=events.filter(x=>x.usage_code===usageCode && x.metadata?.promotional_grant_code===code).reduce((n,x)=>n+Number(x.quantity||0),0);
     return Math.max(0,Number(g?.quantity||0)-used);
   };
-  document.getElementById('trialAiCredits').textContent='10000 GLIME Credits';
-  document.getElementById('trialAiTokens').textContent=`${Math.max(0,Number(b.ai_credits?.balance_credits||0).toLocaleString('en-IN')} AI Tokens available`;
+  document.getElementById('trialAiCredits').textContent='10,000 GLIME Credits';
+  document.getElementById('trialAiTokens').textContent=`${Math.max(0,Number(b.ai_credits?.balance_credits||0)).toLocaleString('en-IN')} AI Tokens available`;
   document.getElementById('trialInstagram').textContent=quota('FREE_TRIAL_INSTAGRAM_MESSAGES','instagram_message').toLocaleString('en-IN');
   document.getElementById('trialWhatsApp').textContent=quota('FREE_TRIAL_WHATSAPP_MESSAGES','whatsapp_message').toLocaleString('en-IN');
 }
