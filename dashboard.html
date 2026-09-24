@@ -306,7 +306,7 @@ function renderTrialAllowances(b){
     const used=events.filter(x=>x.usage_code===usageCode && x.metadata?.promotional_grant_code===code).reduce((n,x)=>n+Number(x.quantity||0),0);
     return Math.max(0,Number(g?.quantity||0)-used);
   };
-  document.getElementById('trialAiCredits').textContent='10 GLIME Credits';
+  document.getElementById('trialAiCredits').textContent='10000 GLIME Credits';
   document.getElementById('trialAiTokens').textContent=`${Math.max(0,Number(b.ai_credits?.balance_credits||0).toLocaleString('en-IN')} AI Tokens available`;
   document.getElementById('trialInstagram').textContent=quota('FREE_TRIAL_INSTAGRAM_MESSAGES','instagram_message').toLocaleString('en-IN');
   document.getElementById('trialWhatsApp').textContent=quota('FREE_TRIAL_WHATSAPP_MESSAGES','whatsapp_message').toLocaleString('en-IN');
