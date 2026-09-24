@@ -36,7 +36,7 @@
 <section class="section grid cols">
 <div class="card"><h3>Business Data</h3><div id="capacity" class="loader">Loading capacity…</div><div id="dataAddons" style="margin-top:12px" class="loader">Loading add-ons…</div></div>
 <div class="card"><h3>Extra Storage</h3><div id="storageAddons" class="loader">Loading storage options…</div><div class="small muted" style="margin-top:10px">Additional storage is billed monthly and is added to your active subscription.</div></div>
-<div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1,000 AI tokens. Input + output tokens are counted together.</div></div>
+<div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1 AI token. Input + output tokens are counted together.</div></div>
 </section>
 
 <section class="section grid cols">
@@ -178,7 +178,7 @@ function renderStorage(){
  }).join(''):'<div class="empty">Storage add-ons are unavailable in the current catalog.</div>';
 }
 function renderCredits(){
- const x=state.billing?.ai_credits||{},credits=Number(x.balance_credits||0),tokens=Number(x.remaining_tokens??credits*1000);
+ const x=state.billing?.ai_credits||{},credits=Number(x.balance_credits||0),tokens=Number(x.remaining_tokens??credits);
  $('credits').innerHTML=`<div class="stat"><span>Credits remaining</span><b class="cyan">${num(credits)}</b></div><div class="stat"><span>AI tokens remaining</span><b>${num(tokens)}</b></div><div class="stat"><span>Credits granted</span><span>${num(x.granted_credits||0)}</span></div><div class="stat"><span>Credits used</span><span>${num(x.used_credits||0)}</span></div>`;
  $('creditPacks').innerHTML=state.catalog.credits.length?`<div class="small muted" style="margin-bottom:8px">Add credits</div>${state.catalog.credits.map(x=>{const p=x.product,pr=getProductPrice(x,'one_time')||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="small muted">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><br><button class="btn" style="margin-top:6px" data-credit-code="${esc(p.product_code)}">Buy</button></div></div>`}).join('')}`:'';
 }
