@@ -334,30 +334,123 @@ function showAccessGate(){
 }
 
 async function initializeDashboard(){
-  try{
-    const {data,error}=await supabaseClient.auth.getSession();
-    if(error) throw error;
-    const session=data?.session;
-    if(!session?.user){window.location.replace('login.html');return;}
-    const email=(session.user.email||'').trim().toLowerCase();
-    if(!email){await supabaseClient.auth.signOut({scope:'local'});window.location.replace('login.html');return;}
-    localStorage.setItem('glime_client_email',email);
+  const loadingScreen = document.getElementById('dashboardLoading');
 
-    const [{data:clientRows,error:clientError},billing]=await Promise.all([
-      supabaseClient.from('client_data').select('client_id,email,full_name,name,client_name,business_name,account_status,free_trial_status,free_trial_started_at,free_trial_ends_at').eq('auth_user_id',session.user.id).limit(1),
-      getBilling()
+  try {
+    loadingScreen.querySelector('.loading-text').textContent =
+      'Step 1/4: Checking Supabase Auth...';
+
+    console.log('[GLIME DEBUG] initializeDashboard started');
+
+    const sessionPromise = supabaseClient.auth.getSession();
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(
+          'Supabase auth.getSession() did not return within 10 seconds.'
+        ));
+      }, 10000);
+    });
+
+    const {data, error} = await Promise.race([
+      sessionPromise,
+      timeoutPromise
     ]);
-    if(clientError) console.warn('Client profile load:',clientError);
-    const client=clientRows?.[0]||{email};
-    const allowed=renderAccount(billing,client);
+
+    console.log('[GLIME DEBUG] getSession finished', {
+      hasSession: !!data?.session,
+      error
+    });
+
+    if(error) throw error;
+
+    const session = data?.session;
+
+    if(!session?.user){
+      throw new Error(
+        'No active Supabase session was found.'
+      );
+    }
+
+    loadingScreen.querySelector('.loading-text').textContent =
+      'Step 2/4: Loading client profile...';
+
+    const email = (session.user.email || '').trim().toLowerCase();
+
+    if(!email){
+      throw new Error('Authenticated user has no email address.');
+    }
+
+    localStorage.setItem('glime_client_email', email);
+
+    const clientPromise = supabaseClient
+      .from('client_data')
+      .select('client_id,email,full_name,name,client_name,business_name,account_status,free_trial_status,free_trial_started_at,free_trial_ends_at')
+      .eq('auth_user_id', session.user.id)
+      .limit(1);
+
+    loadingScreen.querySelector('.loading-text').textContent =
+      'Step 3/4: Loading billing data...';
+
+    const billingPromise = getBilling();
+
+    const [clientResult, billing] = await Promise.all([
+      clientPromise,
+      billingPromise
+    ]);
+
+    console.log('[GLIME DEBUG] client + billing loaded');
+
+    if(clientResult.error){
+      console.warn(
+        '[GLIME DEBUG] client_data error:',
+        clientResult.error
+      );
+    }
+
+    const client = clientResult.data?.[0] || {email};
+
+    loadingScreen.querySelector('.loading-text').textContent =
+      'Step 4/4: Rendering dashboard...';
+
+    const allowed = renderAccount(billing, client);
+
     renderUsage(billing);
-    loadTrialModules(client.client_id, billing);
-    const id=client.client_id||billing.customer?.client_id||'';
-    document.getElementById('whatsappSupportBtn').href=buildWhatsApp(client.full_name||billing.customer?.name||nameFromEmail(email),email,id);
-    loadingScreen.style.display='none';
-    if(!allowed) showAccessGate();
-  }catch(error){
-    console.error('Dashboard error:',error); localStorage.removeItem('glime_client_email'); window.location.replace('login.html');
+
+    await loadTrialModules(client.client_id, billing);
+
+    const id =
+      client.client_id ||
+      billing.customer?.client_id ||
+      '';
+
+    document.getElementById('whatsappSupportBtn').href =
+      buildWhatsApp(
+        client.full_name ||
+        billing.customer?.name ||
+        nameFromEmail(email),
+        email,
+        id
+      );
+
+    loadingScreen.style.display = 'none';
+
+    if(!allowed){
+      showAccessGate();
+    }
+
+    console.log('[GLIME DEBUG] Dashboard loaded successfully');
+
+  } catch(error) {
+
+    console.error('[GLIME DEBUG] Dashboard failed:', error);
+
+    loadingScreen.style.display = 'none';
+
+    showDashboardError(
+      error?.message || 'Unknown dashboard error',
+      error?.stack || JSON.stringify(error, null, 2)
+    );
   }
 }
 
