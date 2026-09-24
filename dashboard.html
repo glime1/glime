@@ -284,7 +284,7 @@ function renderUsage(b){
   setMeter('dataMeter',dataP);
   const ai=Number(b.ai_credits?.balance_credits||0);
   document.getElementById('aiCredits').textContent=ai.toLocaleString('en-IN');
-  document.getElementById('aiMeta').textContent=`${(ai.toLocaleString('en-IN')} AI Tokens remaining`;
+  document.getElementById('aiMeta').textContent=`${ai.toLocaleString('en-IN')} AI Tokens remaining`;
   document.getElementById('creditsValue').textContent=ai.toLocaleString('en-IN');
   document.getElementById('creditsMeta').textContent=`${Number(b.ai_credits?.used_credits||0).toLocaleString('en-IN')} credits used · ${Number(b.ai_credits?.granted_credits||0).toLocaleString('en-IN')} granted`;
   setMeter('creditsMeter',0);
