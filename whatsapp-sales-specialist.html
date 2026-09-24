@@ -74,6 +74,24 @@
 </main></div>
 
 <div id="connectModal" class="modal hidden"><div class="modal-card"><button class="modal-close" id="closeConnect">×</button><div class="section-kicker">WHATSAPP CONNECTION</div><h2>Connect your WhatsApp Business</h2><p>GLIME will use Meta's approved WhatsApp Business flow. Your access token stays server-side.</p><div class="connect-steps"><div><b>1</b><span>Start secure connection</span></div><div><b>2</b><span>Complete Meta verification</span></div><div><b>3</b><span>Return to GLIME</span></div></div><button id="startConnect" class="primary-btn full">Continue with Meta →</button><p id="connectStatus" class="modal-status"></p></div></div>
+<script>
+window.fbAsyncInit = function () {
+  FB.init({
+    appId: '1682940610216509',
+    cookie: true,
+    xfbml: false,
+    version: 'v26.0'
+  });
+};
+</script>
+
+<script
+  async
+  defer
+  crossorigin="anonymous"
+  src="https://connect.facebook.net/en_US/sdk.js">
+</script>
+  
 <script src="whatsapp-sales-specialist.js"></script>
 </body>
 </html>
