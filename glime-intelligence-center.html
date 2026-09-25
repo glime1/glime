@@ -54,6 +54,54 @@
       );
     }
 
+    .brand-block{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      min-width:0;
+    }
+
+    .official-logo{
+      width:92px;
+      height:52px;
+      object-fit:contain;
+      flex-shrink:0;
+    }
+
+    .brand-copy{
+      min-width:0;
+    }
+
+    .header-actions{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .back-dashboard{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:38px;
+      padding:8px 13px;
+      border:1px solid rgba(0,240,255,.2);
+      border-radius:10px;
+      color:#061018;
+      background:linear-gradient(135deg,#00ff88,#00f0ff);
+      text-decoration:none;
+      font-size:.76rem;
+      font-weight:700;
+      white-space:nowrap;
+      transition:.18s ease;
+    }
+
+    .back-dashboard:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.04);
+    }
+
     .eyebrow{
       font-size:.7rem;
       letter-spacing:1.8px;
@@ -112,6 +160,25 @@
         flex-direction:column;
       }
 
+      .brand-block{
+        width:100%;
+        align-items:flex-start;
+      }
+
+      .official-logo{
+        width:82px;
+        height:48px;
+      }
+
+      .header-actions{
+        width:100%;
+        justify-content:flex-start;
+      }
+
+      .back-dashboard{
+        flex:1;
+      }
+
       .client-status{
         white-space:normal;
       }
@@ -125,23 +192,44 @@
 
     <header class="intelligence-header">
 
-      <div>
-        <div class="eyebrow">GLIME INTELLIGENCE</div>
+      <div class="brand-block">
 
-        <h1>
-          Business Intelligence Center
-        </h1>
+        <img
+          src="glime_logo_clean.svg"
+          alt="GLIME"
+          class="official-logo"
+        >
 
-        <p class="subtitle">
-          Impact · Proactive Insights · Evidence & Confidence · Decision & Action
-        </p>
+        <div class="brand-copy">
+          <div class="eyebrow">GLIME INTELLIGENCE</div>
+
+          <h1>
+            Business Intelligence Center
+          </h1>
+
+          <p class="subtitle">
+            Impact · Proactive Insights · Evidence & Confidence · Decision & Action
+          </p>
+        </div>
+
       </div>
 
-      <div
-        class="client-status"
-        id="clientStatus"
-      >
-        Authenticating…
+      <div class="header-actions">
+
+        <div
+          class="client-status"
+          id="clientStatus"
+        >
+          Authenticating…
+        </div>
+
+        <a
+          href="dashboard.html"
+          class="back-dashboard"
+        >
+          ← Back to Dashboard
+        </a>
+
       </div>
 
     </header>
