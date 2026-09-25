@@ -2070,40 +2070,47 @@ async function openDetail(id) {
       }
 
       const {
+        data: updatedLead,
         error
       } = await db
         .from("leads")
         .update({
-          status:
-            status
-        })
-        .eq(
-          "id",
-          id
-        )
-        .eq(
-          "client_id",
-          clientId
-        );
+        status: status
+       })
+      .eq("id", id)
+      .eq("client_id", clientId)
+      .select("id, client_id, status, customer_id")
+      .single();
 
-      if (error) {
+if (error) {
 
-        if (button) {
+  if (button) {
+    button.disabled = false;
+    button.textContent = "Save status";
+  }
 
-          button.disabled =
-            false;
+  showMessage(
+    error.message,
+    true
+  );
 
-          button.textContent =
-            "Save status";
-        }
+  return;
+}
 
-        showMessage(
-          error.message,
-          true
-        );
+if (!updatedLead) {
 
-        return;
-      }
+  if (button) {
+    button.disabled = false;
+    button.textContent = "Save status";
+  }
+
+  showMessage(
+    "Lead status was not saved. Please refresh and try again.",
+    true
+  );
+
+  return;
+}
 
 
       const {
