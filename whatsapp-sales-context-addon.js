@@ -589,6 +589,13 @@
     renderInto({ customer, lead, followUp, orders, timeline });
   }
 
+  // conversationId is the source of truth for "which
+  // conversation is the addon currently showing". Any caller
+  // (click, poll, future hooks) funnels through here so a
+  // stale async response can never overwrite the currently
+  // selected conversation's context — enforced by requestToken
+  // inside refreshContext, and by the id-equality guard below
+  // which avoids redundant refreshes for the same conversation.
   function scheduleRefresh(conversationId) {
     if (!conversationId) return;
     if (conversationId === activeConversationId) return;
@@ -597,44 +604,51 @@
   }
 
   /* ---------------------------------------------------------
-     Detect real conversation selection
-     (delegated click — does not replace existing handlers)
+     Reliable sync with the existing specialist's selection
+     ---------------------------------------------------------
+     whatsapp-sales-specialist.js keeps its selected
+     conversation in a private `state` closure we cannot read
+     directly, and it can select/rerender a conversation either
+     from a user click or programmatically (list refresh,
+     realtime updates). To stay correctly synchronized without
+     touching that file, the addon treats the DOM's own
+     ".conversation-item.active" element as the single source
+     of truth:
+
+     - A capture-phase click listener gives an instant response
+       for the common case (user taps a conversation).
+     - A lightweight poll re-reads the same DOM state on an
+       interval, so ANY selection change — click, keyboard,
+       realtime-triggered rerender, or a future code path in
+       the specialist — is picked up even without a click event.
+
+     Both paths funnel through the same scheduleRefresh(), which
+     already de-dupes by conversation id, so there is only ever
+     one context pipeline and no duplicate work.
      --------------------------------------------------------- */
+
+  function detectSelectedConversationId() {
+    const active = document.querySelector(".conversation-item.active");
+    return active && active.dataset.id ? active.dataset.id : null;
+  }
 
   document.addEventListener(
     "click",
     (event) => {
       const item = event.target.closest(".conversation-item");
-      if (!item || !item.dataset.id) return;
-      scheduleRefresh(item.dataset.id);
+      if (item && item.dataset.id) scheduleRefresh(item.dataset.id);
     },
     true
   );
 
-  // Fallback safety net: watch the conversation list for an
-  // "active" item appearing/changing without a direct click
-  // (e.g. programmatic selection).
-  function startListObserver() {
-    const list = document.getElementById("conversationList");
-    if (!list) {
-      setTimeout(startListObserver, 300);
-      return;
-    }
-    const observer = new MutationObserver(() => {
-      const active = list.querySelector(".conversation-item.active");
-      if (active && active.dataset.id) {
-        scheduleRefresh(active.dataset.id);
-      }
-    });
-    observer.observe(list, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["class"]
-    });
+  function startSelectionSync() {
+    setInterval(() => {
+      const id = detectSelectedConversationId();
+      if (id) scheduleRefresh(id);
+    }, 400);
   }
 
-  startListObserver();
+  startSelectionSync();
 
   console.log("[GLIME WA Context] addon loaded.");
 })();
