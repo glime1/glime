@@ -587,7 +587,7 @@
     }
 
     document
-      .querySelectorAll(".filter-btn")
+      .querySelectorAll(".filter")
       .forEach((button) => {
         button.classList.toggle(
           "active",
