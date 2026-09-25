@@ -261,7 +261,12 @@
   }
 
   /* ---------------------------------------------------------
-     Render
+     Render — Customer / Follow-up / Orders / Timeline
+     (Lead fields are NOT re-rendered here: they reuse the
+     existing #leadStatus/#leadInterest/#leadBudget/
+     #leadProduct/#leadSource elements instead — see
+     updateExistingLeadFields below — to avoid duplicating
+     Lead information in the desktop context panel.)
      --------------------------------------------------------- */
 
   function renderCustomerSection(customer) {
@@ -288,31 +293,6 @@
         <a class="glime-wa-context-link" href="customer.html?id=${encodeURIComponent(
           customer.id
         )}">Open customer profile →</a>
-      </div>`;
-  }
-
-  function renderLeadSection(lead) {
-    if (!lead) {
-      return `
-        <div class="glime-wa-context-section">
-          <div class="glime-wa-context-label">LEAD</div>
-          <div class="glime-wa-context-muted">No existing GLIME lead linked</div>
-          <a class="glime-wa-context-link" href="leads.html">Open Leads →</a>
-        </div>`;
-    }
-    return `
-      <div class="glime-wa-context-section">
-        <div class="glime-wa-context-label">LEAD</div>
-        <div class="glime-wa-context-row"><span>Priority</span><strong>${esc(
-          lead.priority || "—"
-        )}</strong></div>
-        <div class="glime-wa-context-row"><span>Next follow-up</span><strong>${fmtDate(
-          lead.next_follow_up_at
-        )}</strong></div>
-        <div class="glime-wa-context-row"><span>Last contacted</span><strong>${fmtDate(
-          lead.last_contacted_at
-        )}</strong></div>
-        <a class="glime-wa-context-link" href="leads.html">Open Leads →</a>
       </div>`;
   }
 
@@ -407,14 +387,43 @@
       </div>`;
   }
 
-  function renderAll(payload) {
-    const { customer, lead, followUp, orders } = payload;
-    return [
+  // Timeline section: mobile-modal only (desktop already has
+  // the existing #timeline element inside .context-panel, so
+  // we reuse that instead of duplicating it — see
+  // renderTimelineIfPresent and renderInto below).
+  function renderTimelineSection(timeline) {
+    if (!timeline || !timeline.length) {
+      return `
+        <div class="glime-wa-context-section">
+          <div class="glime-wa-context-label">TIMELINE</div>
+          <div class="glime-wa-context-muted">No events yet</div>
+        </div>`;
+    }
+    return `
+      <div class="glime-wa-context-section">
+        <div class="glime-wa-context-label">TIMELINE</div>
+        ${timeline
+          .map(
+            (t) =>
+              `<div class="glime-wa-context-row"><span>${esc(
+                t.title || t.event_type || "Event"
+              )}</span><strong>${fmtDate(t.created_at)}</strong></div>`
+          )
+          .join("")}
+      </div>`;
+  }
+
+  function renderContextSections(payload, includeTimeline) {
+    const { customer, lead, followUp, orders, timeline } = payload;
+    const sections = [
       renderCustomerSection(customer),
-      renderLeadSection(lead),
       renderFollowUpSection(followUp, lead),
       renderOrdersSection(orders)
-    ].join("");
+    ];
+    if (includeTimeline) {
+      sections.push(renderTimelineSection(timeline));
+    }
+    return sections.join("");
   }
 
   /* ---------------------------------------------------------
@@ -474,13 +483,19 @@
     return btn;
   }
 
-  function renderInto(html) {
+  // Desktop panel: Customer / Follow-up / Orders only — Lead
+  // and Timeline already have dedicated existing elements in
+  // .context-panel (#leadStatus etc. and #timeline).
+  // Mobile modal: same data, plus a Timeline section appended
+  // after Orders, since the existing #timeline element lives
+  // inside the desktop-only .context-panel.
+  function renderInto(payload) {
     const desktop = ensureDesktopContainer();
-    if (desktop) desktop.innerHTML = html;
+    if (desktop) desktop.innerHTML = renderContextSections(payload, false);
     ensureMobileTrigger();
     const modal = document.getElementById("glimeWaContextModal");
     const body = modal ? modal.querySelector("#glimeWaContextModalBody") : null;
-    if (body) body.innerHTML = html;
+    if (body) body.innerHTML = renderContextSections(payload, true);
   }
 
   function updateExistingCustomerFields(customer, conversation) {
@@ -500,6 +515,27 @@
         ? buildAddress(customer) || "No address on file"
         : "Customer profile not linked";
     }
+  }
+
+  // Populate the existing Lead fields from the resolved lead.
+  // When no lead resolves, leave the existing empty/default
+  // state (already set by whatsapp-sales-specialist.js) as-is.
+  function updateExistingLeadFields(lead) {
+    if (!lead) return;
+    const statusEl = document.getElementById("leadStatus");
+    const interestEl = document.getElementById("leadInterest");
+    const budgetEl = document.getElementById("leadBudget");
+    const productEl = document.getElementById("leadProduct");
+    const sourceEl = document.getElementById("leadSource");
+    if (statusEl) statusEl.textContent = "Lead";
+    if (interestEl) interestEl.textContent = lead.interest || "—";
+    if (budgetEl) {
+      budgetEl.textContent = lead.budget
+        ? `${lead.budget} ${lead.budget_currency || "INR"}`
+        : "—";
+    }
+    if (productEl) productEl.textContent = lead.product_service || "—";
+    if (sourceEl) sourceEl.textContent = lead.source || "whatsapp";
   }
 
   function renderTimelineIfPresent(timeline) {
@@ -548,8 +584,9 @@
     if (token !== requestToken) return;
 
     updateExistingCustomerFields(customer, conversation);
+    updateExistingLeadFields(lead);
     renderTimelineIfPresent(timeline);
-    renderInto(renderAll({ customer, lead, followUp, orders }));
+    renderInto({ customer, lead, followUp, orders, timeline });
   }
 
   function scheduleRefresh(conversationId) {
