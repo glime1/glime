@@ -54,10 +54,8 @@ table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;
 
 <section class="section grid cols">
   <div class="card"><h3>Business Data</h3><div id="capacity" class="loader">Loading capacity…</div><div id="dataAddons" style="margin-top:12px" class="loader">Loading add-ons…</div></div>
-  <div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1,000 AI tokens. Input + output tokens are counted together.</div></div>
+  <div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1 AI token. Input + output tokens are counted together.</div></div>
 </section>
-
-<section class="section card"><h3>Extra Storage</h3><div id="storageAddons" class="loader">Loading storage options…</div><div class="small muted" style="margin-top:10px">Additional storage is billed monthly and is added to your active subscription.</div></section>
 
 <section class="section grid cols">
   <div class="card"><h3>Wallet</h3><div id="wallet" class="loader">Loading…</div><div class="actions"><input id="walletAmount" class="input" type="number" min="100" step="1" value="100" style="flex:1;min-width:130px"><button class="btn primary" id="walletBtn">Add Balance</button></div><div class="small muted" style="margin-top:8px">Minimum balance addition: ₹100.</div></div>
@@ -74,7 +72,7 @@ table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;
 const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const state={cycle:'monthly',catalog:{growth:null,omni:null,data:[],credits:[],all:[]},billing:null};
+const state={cycle:'monthly',catalog:{growth:null,omni:null,data:[],credits:[]},billing:null};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>v==null?'—':new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(Number(v));
@@ -85,49 +83,15 @@ async function call(name,body=null,method='POST',query=''){const h=await authHea
 function notice(msg,error=false){const n=$('notice');n.textContent=msg;n.classList.remove('hidden');n.classList.toggle('error',error)}
 async function product(code,cycle){return call('glime-billing-catalog',null,'GET',`?product_code=${encodeURIComponent(code)}&interval=${encodeURIComponent(cycle)}`)}
 async function loadCatalog(){
-  const all=await call('glime-billing-catalog',null,'GET','?all=1');
-  const products=all?.data?.products||[];
-  const byCode=Object.fromEntries(products.map(x=>[x.product?.product_code,x]));
-
-  state.catalog.growth=byCode.glime_growth||null;
-  state.catalog.omni=byCode.glime_omni||null;
-
-  state.catalog.data=products.filter(x=>[
-    'glime_business_data_50mb',
-    'glime_business_data_100mb'
-  ].includes(x.product?.product_code));
-
-  state.catalog.all=products;
-  state.catalog.credits=products.filter(x=>[
-    'glime_ai_credits_10',
-    'glime_ai_credits_100',
-    'glime_ai_credits_500',
-    'glime_ai_credits_1000'
-  ].includes(x.product?.product_code));
+  const [g,o]=await Promise.all([product('glime_growth',state.cycle),product('glime_omni',state.cycle)]);
+  state.catalog.growth=g.data;state.catalog.omni=o.data;
+  const dataCodes=['glime_business_data_50mb','glime_business_data_100mb'];
+  state.catalog.data=[];
+  for(const code of dataCodes){try{const r=await product(code,'monthly');if(r?.data?.product)state.catalog.data.push(r.data)}catch(e){}}
+  const creditCodes=['glime_ai_credits_10','glime_ai_credits_100','glime_ai_credits_500','glime_ai_credits_1000'];
+  state.catalog.credits=[];
+  for(const code of creditCodes){try{const r=await product(code,'one_time');if(r?.data?.product)state.catalog.credits.push(r.data)}catch(e){}}
 }
-function getProductPrice(p,cycle){
-  const prices=p?.prices||[];
-  return prices.find(x=>String(x.billing_interval)===String(cycle))
-      || prices.find(x=>x.active!==false)
-      || null;
-}
-function featureLabel(code){
-  const labels={
-    business_data_mb:'Business Data',
-    storage_mb:'Storage',
-    ai_credits:'AI Credits',
-    voice_agent:'Voice Agent',
-    new_agent_priority:'New Agent Priority',
-    ai_connector_chatgpt:'ChatGPT Connector',
-    ai_connector_claude:'Claude Connector'
-  };
-  const key=String(code||'').toLowerCase();
-  if(labels[key]) return labels[key];
-  return String(code||'Feature')
-    .replace(/_/g,' ')
-    .replace(/\b\w/g,m=>m.toUpperCase());
-}
-
 function pct(used,quota){return quota>0?Math.min(100,Math.max(0,(used/quota)*100)):0}
 function bytes(v){const n=Number(v||0);if(n<1024*1024)return `${num(Math.round(n/1024))} KB`;if(n<1024*1024*1024)return `${(n/1024/1024).toFixed(1)} MB`;return `${(n/1024/1024/1024).toFixed(2)} GB`}
 function renderAccount(){
@@ -231,85 +195,37 @@ function renderSubscription(){
 }
 
 function renderPlans(){
-  const arr=[state.catalog.growth,state.catalog.omni].filter(Boolean);
-  const current=state.billing?.current_product?.product_code;
-
-  $('plans').innerHTML=arr.map(p=>{
-    const product=p.product||{};
-    const pr=getProductPrice(p,state.cycle)||{};
-    const ents=p.entitlements||[];
-    const code=product.product_code||'';
-    const isOmni=code==='glime_omni';
-    const isCurrent=current===code
-      && String(state.billing?.current_price?.billing_interval||'')
-      ===String(pr.billing_interval||state.cycle);
-    const sameProduct=current===code;
-
-    const visible=ents.filter(e=>{
-      const x=String(e.entitlement_code||'').toLowerCase();
-      return x!=='core_agents' && x!=='omni_access';
-    });
-
-    let features=visible.map(e=>{
-      const raw=String(e.entitlement_code||'').toLowerCase();
-      const unit=String(e.unit||'').toLowerCase();
-      const meta=e.metadata||{};
-
-      if(unit==='connector'||raw.includes('connector')){
-        const provider=String(meta.provider||raw.replace(/^ai_connector_/,'')||'connector')
-          .replace(/[_-]+/g,' ').trim();
-        return provider.charAt(0).toUpperCase()+provider.slice(1)+' Connector';
-      }
-
-      if(isOmni&&raw==='business_data_mb') return 'Business Data — 200 MB';
-      if(isOmni&&raw==='storage_mb') return 'Storage — 10000 MB';
-      if(isOmni&&raw==='ai_credits') return 'AI Credits — 1000000';
-
-      return featureLabel(raw)+(e.quantity!=null
-        ? ' — '+e.quantity+(e.unit?' '+e.unit:'')
-        : '');
-    }).filter(Boolean);
-
-    /* Keep the internal core_agents/omni_access entitlements in Supabase,
-       but present one simple client-facing specialist group. */
-    if(isOmni){
-      features=[
-        'Your Business Specialists',
-        'Follow-up Specialist',
-        'Leads Specialist',
-        'Instagram Sales Specialist',
-        'WhatsApp Sales Specialist',
-        'GLIME Data Analyst',
-        ...features
-      ];
-    }else{
-      features=[
-        'Your Business Specialists',
-        'Follow-up Specialist',
-        'Leads Specialist',
-        'Instagram Sales Specialist',
-        'WhatsApp Sales Specialist',
-        'GLIME Data Analyst',
-        ...features
-      ];
-    }
-
-    return `<article class="card">
-      <span class="badge">${esc(code.replace('glime_','').toUpperCase())}</span>
-      <h2 style="margin-top:10px">${esc(product.name||'GLIME Plan')}</h2>
-      <div class="muted">${esc(product.description||'')}</div>
-      <div class="price">${money(pr.amount)} <small>/ ${esc(pr.billing_interval||state.cycle)}</small></div>
-      <ul class="features">${features.slice(0,16).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
-      <button class="btn primary planBtn"
-        data-product="${esc(code)}"
-        data-interval="${esc(pr.billing_interval||state.cycle)}"
-        ${isCurrent?'disabled':''}>
-        ${isCurrent?'Current plan':sameProduct?'Change billing cycle':'Choose plan'}
-      </button>
-    </article>`;
-  }).join('')||'<div class="card empty">Plans are unavailable right now.</div>';
+ const arr=[state.catalog.growth,state.catalog.omni].filter(Boolean);
+ const current=state.billing?.current_product?.product_code;
+ $('plans').innerHTML=arr.map(p=>{
+  const pr=getProductPrice(p,state.cycle)||{};
+  const ents=p.entitlements||[];
+  const code=p.product?.product_code||'';
+  const isOmni=code==='glime_omni';
+  const isCurrent=current===code&&String(state.billing?.current_price?.billing_interval||'')===String(pr.billing_interval||state.cycle);
+  const sameProduct=current===code;
+  const visible=ents.filter(e=>{
+   const x=String(e.entitlement_code||'').toLowerCase();
+   return x!=='core_agents' && x!=='omni_access';
+  });
+  let features=visible.map(e=>{
+   const raw=String(e.entitlement_code||'').toLowerCase();
+   const unit=String(e.unit||'').toLowerCase();
+   if(unit==='connector'||raw.includes('connector')){
+    const provider=raw.replace(/^ai_connector_/,'').replace(/[_-]+/g,' ').trim();
+    return provider?provider.charAt(0).toUpperCase()+provider.slice(1)+' Connector':'Connector';
+   }
+   if(isOmni&&raw==='business_data_mb')return 'Business Data — 200 MB';
+   if(isOmni&&raw==='storage_mb')return 'Storage — 10000 MB';
+   if(isOmni&&raw==='ai_credits')return 'AI Credits — 1000000';
+   return featureLabel(e.entitlement_code)+(e.quantity!=null?' — '+e.quantity+' '+(e.unit||''):'');
+  }).filter(Boolean);
+  if(isOmni){
+   features=['Your Business Specialists','Follow-up Specialist','Leads Specialist','Instagram Sales Specialist','WhatsApp Sales Specialist','GLIME Data Assistant',...features];
+  }
+  return `<article class="card"><span class="badge">${esc(code.replace('glime_','').toUpperCase())}</span><h2 style="margin-top:10px">${esc(p.product?.name||'GLIME Plan')}</h2><div class="muted">${esc(p.product?.description||'')}</div><div class="price">${money(pr.amount)} <small>/ ${esc(pr.billing_interval||state.cycle)}</small></div><ul class="features">${features.slice(0,12).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="btn primary planBtn" data-product="${esc(code)}" data-interval="${esc(pr.billing_interval||state.cycle)}" ${isCurrent?'disabled':''}>${isCurrent?'Current plan':sameProduct?'Change billing cycle':'Change plan'}</button></article>`;
+ }).join('')||'<div class="card empty">Plans are unavailable right now.</div>';
 }
-
 function renderCapacity(){
   const c=state.billing?.capacity||{};
   const fq=Number(c.file_storage_quota_bytes||0),fu=Number(c.file_storage_used_bytes||0),dq=Number(c.database_quota_bytes||0),du=Number(c.database_used_bytes||0);
@@ -317,36 +233,10 @@ function renderCapacity(){
 }
 function renderAddons(){
   const arr=state.catalog.data;
-  $('dataAddons').innerHTML=arr.length
-    ? arr.map(x=>{
-        const p=x.product||{},pr=getProductPrice(x,'monthly')||{};
-        return `<div class="row">
-          <div><b>${esc(p.name)}</b><div class="muted small">${esc(p.description||'')}</div></div>
-          <div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month</div>
-          <button class="btn" style="margin-top:7px" data-data-code="${esc(p.product_code)}">Add</button></div>
-        </div>`;
-      }).join('')
-    : '<div class="empty">Business Data add-ons are unavailable in the current catalog.</div>';
+  $('dataAddons').innerHTML=arr.length?arr.map(x=>{const p=x.product,pr=x.price||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="muted small">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month</div><button class="btn" style="margin-top:7px" data-data-code="${esc(p.product_code)}">Add</button></div></div>`}).join(''):'<div class="empty">Business Data add-ons are unavailable in the current catalog.</div>';
 }
-function renderStorage(){
-  const products=(state.catalog.all||[]).filter(x=>[
-    'glime_storage_50mb','glime_storage_1gb'
-  ].includes(x.product?.product_code));
-  $('storageAddons').innerHTML=products.length
-    ? products.map(x=>{
-        const p=x.product||{},pr=getProductPrice(x,'monthly')||{};
-        const mb=p.product_code==='glime_storage_1gb'?1024:500;
-        return `<div class="row">
-          <div><b>${esc(p.name)}</b><div class="muted small">${mb} MB additional storage</div></div>
-          <div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month</div>
-          <button class="btn" style="margin-top:7px" data-storage-code="${esc(p.product_code)}">Add</button></div>
-        </div>`;
-      }).join('')
-    : '<div class="empty">Extra Storage options are unavailable in the current catalog.</div>';
-}
-
 function renderCredits(){
-  const tx=state.billing?.ai_credits||{},credits=Number(tx.balance_credits||0),tokens=Number(tx.remaining_tokens??credits*1000);
+  const tx=state.billing?.ai_credits||{},credits=Number(tx.balance_credits||0),tokens=Number(tx.remaining_tokens??credits);
   $('credits').innerHTML=`<div class="stat"><span>Credits remaining</span><b class="cyan">${num(credits)}</b></div><div class="stat"><span>AI tokens remaining</span><b>${num(tokens)}</b></div><div class="stat"><span>Credits granted</span><span>${num(tx.granted_credits||0)}</span></div><div class="stat"><span>Credits used</span><span>${num(tx.used_credits||0)}</span></div>`;
   $('creditPacks').innerHTML=state.catalog.credits.length?`<div class="small muted" style="margin-bottom:8px">Add credits</div>${state.catalog.credits.map(x=>{const p=x.product,pr=x.price||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="small muted">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><br><button class="btn" style="margin-top:6px" data-credit-code="${esc(p.product_code)}">Buy</button></div></div>`}).join('')}`:'';
 }
@@ -408,7 +298,7 @@ async function loadAll(){
   const {data:{session}}=await sb.auth.getSession();if(!session){location.replace('login.html');return}
   const b=await call('glime-billing-my-subscription',null,'GET');state.billing=b.data||b;
   await loadCatalog();
-  renderAccount();renderSubscription();renderPlans();renderCapacity();renderAddons();renderStorage();renderCredits();renderWallet();renderUsage();renderAgents();renderGrants();renderPayments();renderInvoices();
+  renderAccount();renderSubscription();renderPlans();renderCapacity();renderAddons();renderCredits();renderWallet();renderUsage();renderAgents();renderGrants();renderPayments();renderInvoices();
 }
 $('monthly').onclick=async()=>{state.cycle='monthly';$('monthly').classList.add('active');$('yearly').classList.remove('active');try{await loadCatalog();renderPlans()}catch(e){notice(e.message,true)}};
 $('yearly').onclick=async()=>{state.cycle='yearly';$('yearly').classList.add('active');$('monthly').classList.remove('active');try{await loadCatalog();renderPlans()}catch(e){notice(e.message,true)}};
@@ -421,14 +311,7 @@ document.addEventListener('click',async e=>{
       const code=b.dataset.product,interval=b.dataset.interval,current=state.billing?.current_product?.product_code;
       if(!current)await subscribe(code,interval);else if(current!==code)await upgrade(code,interval);
     }else if(b.dataset.dataCode){
-      const d=await call('glime-cashfree-create-business-data-addon',{product_code:b.dataset.dataCode});
-      await checkoutPaymentSession(d);
-    }else if(b.dataset.storageCode){
-      const d=await call('glime-cashfree-create-storage-addon',{product_code:b.dataset.storageCode});
-      const session=d?.data?.subscription_session_id||d?.subscription_session_id;
-      if(!session)throw Error('Storage checkout is not ready.');
-      const cf=Cashfree({mode:(d.environment||d.data?.environment||'sandbox')==='production'?'production':'sandbox'});
-      await cf.checkout({subscriptionSessionId:session});
+      notice('This Business Data add-on is cataloged. Recurring checkout will activate after its provider-side plan configuration is completed.');
     }else if(b.dataset.creditCode){
       await buyCredits(b.dataset.creditCode);
     }
