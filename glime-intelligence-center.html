@@ -15,6 +15,8 @@
       --green:#00ff88;
       --cyan:#00f0ff;
       --border:rgba(255,255,255,.07);
+      --card-bg:#111827;
+      --card-text:#fff;
     }
 
     *{box-sizing:border-box}
@@ -27,7 +29,7 @@
       font-family:Poppins,Arial,sans-serif;
     }
 
-    body{min-height:100vh}
+    body{min-height:100vh;color:var(--card-text);}
 
     .intelligence-shell{
       width:100%;
@@ -83,6 +85,14 @@
 
     .intelligence-main{
       min-height:200px;
+      color:var(--card-text);
+    }
+
+    /* Existing Phase G uses var(--card-bg,#fff).
+       Define the variable here so it never falls back to white. */
+    .gG2-card{
+      --card-bg:#111827;
+      color:#fff;
     }
 
     .loading{
