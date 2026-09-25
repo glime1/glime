@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLIME Intelligence Center</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --bg:#05080c;
+      --card:#111827;
+      --text:#fff;
+      --muted:#9ca3af;
+      --green:#00ff88;
+      --cyan:#00f0ff;
+      --border:rgba(255,255,255,.07);
+    }
+
+    *{box-sizing:border-box}
+
+    html,body{
+      margin:0;
+      padding:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Poppins,Arial,sans-serif;
+    }
+
+    body{min-height:100vh}
+
+    .intelligence-shell{
+      width:100%;
+      max-width:1500px;
+      margin:0 auto;
+      padding:22px;
+    }
+
+    .intelligence-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:18px;
+      padding:20px 22px;
+      margin-bottom:18px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:linear-gradient(
+        135deg,
+        rgba(0,255,136,.07),
+        rgba(0,240,255,.04)
+      );
+    }
+
+    .eyebrow{
+      font-size:.7rem;
+      letter-spacing:1.8px;
+      color:var(--cyan);
+      font-weight:700;
+    }
+
+    h1{
+      margin:5px 0 0;
+      font-size:1.45rem;
+    }
+
+    .subtitle{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:.82rem;
+      line-height:1.5;
+    }
+
+    .client-status{
+      padding:8px 12px;
+      border:1px solid rgba(0,240,255,.2);
+      border-radius:999px;
+      color:var(--cyan);
+      font-size:.75rem;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .intelligence-main{
+      min-height:200px;
+    }
+
+    .loading{
+      padding:30px;
+      text-align:center;
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:var(--card);
+      color:var(--muted);
+    }
+
+    @media(max-width:700px){
+      .intelligence-shell{padding:12px}
+
+      .intelligence-header{
+        align-items:flex-start;
+        flex-direction:column;
+      }
+
+      .client-status{
+        white-space:normal;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="intelligence-shell">
+
+    <header class="intelligence-header">
+
+      <div>
+        <div class="eyebrow">GLIME INTELLIGENCE</div>
+
+        <h1>
+          Business Intelligence Center
+        </h1>
+
+        <p class="subtitle">
+          Impact · Proactive Insights · Evidence & Confidence · Decision & Action
+        </p>
+      </div>
+
+      <div
+        class="client-status"
+        id="clientStatus"
+      >
+        Authenticating…
+      </div>
+
+    </header>
+
+
+    <main
+      class="intelligence-main main-content"
+      id="glimeIntelligenceMain"
+    >
+
+      <div class="loading">
+        Loading your client intelligence…
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SUPABASE_URL =
+        "https://ufoulgbiqgjriwapuopc.supabase.co";
+
+      const SUPABASE_KEY =
+        "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+
+
+      /*
+       * Use one shared Supabase client.
+       *
+       * The existing Phase E/F/G files will reuse
+       * window.supabaseClient when available.
+       */
+      window.supabaseClient =
+        window.supabaseClient ||
+        (
+          window.supabase?.createClient
+            ? window.supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY
+              )
+            : null
+        );
+
+
+      async function boot() {
+
+        const status =
+          document.getElementById(
+            "clientStatus"
+          );
+
+        const main =
+          document.getElementById(
+            "glimeIntelligenceMain"
+          );
+
+
+        if (!window.supabaseClient) {
+
+          status.textContent =
+            "Supabase unavailable";
+
+          main.innerHTML =
+            `
+              <div class="loading">
+                GLIME Intelligence could not
+                connect to Supabase.
+              </div>
+            `;
+
+          return;
+        }
+
+
+        const {
+          data,
+          error
+        } =
+          await window.supabaseClient
+            .auth
+            .getSession();
+
+
+        if (
+          error ||
+          !data?.session
+        ) {
+
+          status.textContent =
+            "Login required";
+
+          main.innerHTML =
+            `
+              <div class="loading">
+                Please sign in to view your
+                GLIME Intelligence Center.
+              </div>
+            `;
+
+          return;
+        }
+
+
+        status.textContent =
+          "Secure client session";
+
+
+        /*
+         * Important:
+         *
+         * No client_id is accepted from
+         * URL/query parameters.
+         *
+         * Existing Phase E/F/G modules use
+         * the authenticated Supabase session
+         * and existing RLS policies.
+         */
+
+        main
+          .querySelector(".loading")
+          ?.remove();
+      }
+
+
+      if (
+        document.readyState ===
+        "loading"
+      ) {
+
+        document.addEventListener(
+          "DOMContentLoaded",
+          boot,
+          { once:true }
+        );
+
+      } else {
+
+        boot();
+
+      }
+
+    })();
+  </script>
+
+
+  <!-- Existing production Phase modules -->
+
+  <script
+    src="glime-phase-e-impact-analysis.js"
+  ></script>
+
+  <script
+    src="glime-phase-e-proactive-insights.js"
+  ></script>
+
+  <script
+    src="glime-phase-f-evidence-confidence.js"
+  ></script>
+
+  <script
+    src="glime-phase-g-decision-action-center.js"
+  ></script>
+
+</body>
+</html>
