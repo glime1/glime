@@ -3,635 +3,381 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Control Room | Glime</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>GLIME Admin Panel</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#080d14; --panel:#101827; --panel2:#0c1420; --border:rgba(255,255,255,.09);
-  --admin:#ff9f43; --cyan:#00eaff; --green:#00ff88; --danger:#ff5263;
-  --text:#f5f7fb; --muted:#9ba7b7;
+  --bg:#070b12;--panel:#0e1622;--panel2:#111d2c;--line:rgba(255,255,255,.09);
+  --text:#f4f7fb;--muted:#91a0b3;--cyan:#00eaff;--green:#00e88a;
+  --orange:#ffad45;--red:#ff5366;--blue:#6fa8ff;
 }
 *{box-sizing:border-box}
-body{
-  margin:0; min-height:100vh; padding:24px 14px;
-  background:radial-gradient(circle at top,rgba(0,234,255,.06),transparent 34%),var(--bg);
-  color:var(--text); font-family:Poppins,system-ui,sans-serif;
-}
-.wrap{width:min(960px,100%);margin:auto}
-.card{
-  background:linear-gradient(180deg,rgba(16,24,39,.98),rgba(10,17,27,.98));
-  border:1px solid var(--border); border-radius:20px; padding:26px;
-  box-shadow:0 18px 55px rgba(0,0,0,.35);
-}
-.login-card{max-width:500px;margin:8vh auto}
-h1,h2{margin:0}
-h2{font-size:1.45rem;color:var(--admin)}
-.subtitle{color:var(--muted);margin:7px 0 24px;font-size:.9rem}
-.header{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:22px}
-.header p{margin:5px 0 0;color:var(--muted);font-size:.85rem}
-.logout{width:auto!important;margin:0!important;padding:9px 14px!important;background:transparent!important;color:var(--danger)!important;border:1px solid rgba(255,82,99,.5)!important}
-.section{
-  margin-top:22px;padding-top:20px;border-top:1px solid var(--border)
-}
-.section-title{
-  color:var(--admin);font-weight:600;font-size:1rem;margin-bottom:14px
-}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.form-group{margin-bottom:14px}
-label{display:block;color:var(--muted);font-size:.78rem;font-weight:600;margin-bottom:7px}
-input,select{
-  width:100%;padding:12px 13px;border-radius:10px;
-  border:1px solid var(--border);background:rgba(255,255,255,.025);
-  color:#fff;outline:none;font:inherit
-}
-input:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,234,255,.08)}
-option{background:#101827;color:#fff}
-button{
-  border:0;border-radius:10px;padding:12px 15px;font:600 .92rem Poppins;
-  cursor:pointer;transition:.2s
-}
-button:disabled{opacity:.55;cursor:not-allowed}
-.primary{width:100%;background:var(--admin);color:#111}
-.primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 0 20px rgba(255,159,67,.2)}
-.secondary{width:100%;background:rgba(0,234,255,.08);color:var(--cyan);border:1px solid rgba(0,234,255,.55)}
-.secondary:hover:not(:disabled){background:var(--cyan);color:#061016}
-.invite{background:rgba(0,255,136,.07);color:var(--green);border:1px solid rgba(0,255,136,.45)}
-.client-meta{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px
-}
-.meta{
-  padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)
-}
-.meta small{display:block;color:var(--muted);font-size:.68rem;margin-bottom:3px}
-.meta strong{font-size:.82rem;word-break:break-word}
-.badge{
-  display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;
-  font-size:.72rem;font-weight:700;background:rgba(255,159,67,.1);color:var(--admin)
-}
-#status-message,#login-status,#invite-status{
-  text-align:center;margin-top:12px;padding:9px;border-radius:9px;font-size:.82rem;display:none
-}
-.help{color:var(--muted);font-size:.72rem;line-height:1.5;margin:8px 0 0}
-@media(max-width:650px){
-  body{padding:10px}.card{padding:18px;border-radius:16px}
-  .header{align-items:flex-start;flex-direction:column}
-  .grid,.client-meta{grid-template-columns:1fr}
-  .logout{width:100%!important}
-}
+body{margin:0;background:radial-gradient(circle at top,rgba(0,234,255,.07),transparent 32%),var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;display:grid;grid-template-columns:240px 1fr}
+.sidebar{border-right:1px solid var(--line);background:#09101a;padding:18px;position:sticky;top:0;height:100vh}
+.logo{font-size:24px;font-weight:800;letter-spacing:.08em;color:var(--cyan);margin:4px 8px 22px}
+.admin-pill{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025);margin-bottom:18px}
+.admin-pill small{color:var(--muted);display:block}.admin-pill b{font-size:12px}
+nav button{width:100%;text-align:left;background:transparent;border:0;color:var(--muted);padding:11px 12px;border-radius:10px;margin:2px 0}
+nav button:hover,nav button.active{background:rgba(0,234,255,.08);color:var(--cyan)}
+.logout{margin-top:18px;color:var(--red)!important}
+main{padding:22px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:20px}
+h1{font-size:24px;margin:0}.sub{color:var(--muted);margin-top:5px}.view{display:none}.view.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.card{background:linear-gradient(180deg,#101a28,#0b131f);border:1px solid var(--line);border-radius:16px;padding:16px}
+.metric small{color:var(--muted)}.metric strong{display:block;font-size:28px;margin-top:7px}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+input,select,textarea{width:100%;background:#0a121d;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan)}
+.search{max-width:420px}.btn{border:1px solid var(--line);background:#132031;color:var(--text);padding:10px 13px;border-radius:10px}
+.btn.primary{background:var(--cyan);color:#041016;border-color:var(--cyan);font-weight:700}
+.btn.green{background:rgba(0,232,138,.1);color:var(--green);border-color:rgba(0,232,138,.35)}
+.btn.red{background:rgba(255,83,102,.1);color:var(--red);border-color:rgba(255,83,102,.35)}
+.btn.orange{background:rgba(255,173,69,.1);color:var(--orange);border-color:rgba(255,173,69,.35)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);vertical-align:middle}th{color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(145,160,179,.12);color:var(--muted)}
+.badge.green{color:var(--green);background:rgba(0,232,138,.1)}.badge.red{color:var(--red);background:rgba(255,83,102,.1)}
+.badge.orange{color:var(--orange);background:rgba(255,173,69,.1)}.badge.blue{color:var(--blue);background:rgba(111,168,255,.1)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:14px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.detail{margin-top:14px}.kv{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.kv div{padding:10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)}.kv small{display:block;color:var(--muted);margin-bottom:3px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}.modal.open{display:flex}
+.modalbox{width:min(980px,100%);max-height:92vh;overflow:auto;background:#0d1724;border:1px solid var(--line);border-radius:18px;padding:18px}
+.modalhead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:15px}
+.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:14px}.tabs button{white-space:nowrap}
+.tab{display:none}.tab.active{display:block}
+.activity{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);margin-top:6px;flex:none}
+.notice{padding:12px;border:1px solid rgba(255,173,69,.25);background:rgba(255,173,69,.06);border-radius:12px;color:#ffd79f;margin-bottom:12px}
+.hidden{display:none!important}
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}.loginbox{width:min(420px,100%)}
+#login2fa{display:none}
+.message{margin-top:9px;color:var(--muted);min-height:18px}
+@media(max-width:900px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}nav{display:flex;overflow:auto}nav button{min-width:max-content}.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){main{padding:12px}.grid,.split,.three,.kv{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}table{font-size:12px}.card{padding:13px}}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <section class="card login-card" id="login-screen">
-    <h2>🔐 Admin Login</h2>
-    <p class="subtitle">Glime Control Room</p>
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="loginEmail">Admin Email</label>
-        <input type="email" id="loginEmail" autocomplete="username" required>
-      </div>
-      <div class="form-group">
-        <label for="loginPassword">Password</label>
-        <input type="password" id="loginPassword" autocomplete="current-password" required>
-      </div>
-      <button class="primary" type="submit" id="loginBtn">Login</button>
-      <p id="login-status"></p>
-    </form>
-  </section>
+<section id="login">
+  <div class="card loginbox" id="login1">
+    <h1>GLIME Admin</h1><p class="sub">Secure Admin Control Center</p>
+    <label>Admin Email</label><input id="email" type="email" autocomplete="username">
+    <label style="margin-top:10px">Password</label><input id="password" type="password" autocomplete="current-password">
+    <button class="btn primary" style="width:100%;margin-top:14px" id="loginBtn">Login</button>
+    <div class="message" id="loginMsg"></div>
+  </div>
+  <div class="card loginbox" id="login2fa">
+    <h1>Two-Factor Authentication</h1><p class="sub">Enter the 6-digit code from your authenticator app.</p>
+    <input id="otp" inputmode="numeric" maxlength="6" placeholder="000000">
+    <button class="btn primary" style="width:100%;margin-top:14px" id="verifyBtn">Verify</button>
+    <div class="message" id="mfaMsg"></div>
+  </div>
+</section>
 
-  <section class="card" id="control-room" style="display:none">
-    <div class="header">
-      <div>
-        <h2>👑 Admin Control Room</h2>
-        <p>Manage client access, projects and invoices.</p>
-      </div>
-      <button class="logout" type="button" id="logoutBtn">Logout</button>
-    </div>
+<div class="app hidden" id="app">
+  <aside class="sidebar">
+    <div class="logo">GLIME</div>
+    <div class="admin-pill"><small>Signed in as</small><b id="adminEmail">admin@glime.online</b></div>
+    <nav>
+      <button class="active" data-view="overview">Overview</button>
+      <button data-view="clients">Clients</button>
+      <button data-view="modules">Modules</button>
+      <button data-view="billing">Billing</button>
+      <button data-view="rewards">Rewards</button>
+      <button data-view="storage">Storage</button>
+      <button data-view="safety">Safety Monitor</button>
+      <button data-view="care">CARE</button>
+      <button data-view="voice">Voice AI</button>
+      <button data-view="settings">Settings</button>
+      <button class="logout" id="logoutBtn">Logout</button>
+    </nav>
+  </aside>
 
-    <form id="adminForm">
-      <div class="section" style="margin-top:0;padding-top:0;border-top:0">
-        <div class="section-title">1. Find Client</div>
-        <div class="form-group">
-          <label for="clientEmail">Client Email</label>
-          <input type="email" id="clientEmail" placeholder="client@company.com" required>
+  <main>
+    <div class="topbar"><div><h1 id="title">Overview</h1><div class="sub">GLIME operational control center</div></div><button class="btn" id="refreshBtn">↻ Refresh</button></div>
+
+    <section class="view active" id="view-overview">
+      <div class="grid">
+        <div class="card metric"><small>Total Clients</small><strong id="mTotal">0</strong></div>
+        <div class="card metric"><small>Active</small><strong id="mActive">0</strong></div>
+        <div class="card metric"><small>Free Trial</small><strong id="mTrial">0</strong></div>
+        <div class="card metric"><small>Suspended / Expired</small><strong id="mSuspended">0</strong></div>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <div class="card metric"><small>Active Module Access</small><strong id="mModules">0</strong></div>
+        <div class="card metric"><small>Paid/Payment Records</small><strong id="mPayments">0</strong></div>
+        <div class="card metric"><small>Rewards / Grants</small><strong id="mRewards">0</strong></div>
+        <div class="card metric"><small>Safety Messages Reviewed</small><strong id="mSafety">0</strong></div>
+      </div>
+      <div class="split" style="margin-top:14px">
+        <div class="card"><h3>Recent Activity</h3><div id="activity"></div></div>
+        <div class="card"><h3>Safety Snapshot</h3><div id="safetySnapshot"></div></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-clients">
+      <div class="card">
+        <div class="toolbar"><input class="search" id="clientSearch" placeholder="Search GLM-0002, email, name or business"><select id="clientFilter" style="max-width:220px"><option value="all">All statuses</option><option value="active">Active</option><option value="trial">Trial</option><option value="suspended">Suspended</option><option value="expired">Expired</option></select></div>
+        <div style="overflow:auto"><table><thead><tr><th>Client</th><th>Email</th><th>Status</th><th>Trial</th><th>Created</th><th></th></tr></thead><tbody id="clientRows"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-modules"><div class="card"><h3>Module Access</h3><p class="sub">Client module access follows the existing client_modules architecture.</p><div style="overflow:auto"><table><thead><tr><th>Client</th><th>Module</th><th>Enabled</th><th>Status</th><th>Plan</th><th>Expiry</th></tr></thead><tbody id="moduleRows"></tbody></table></div></div></section>
+
+    <section class="view" id="view-billing"><div class="card"><h3>Billing — Read Only</h3><div class="notice">Payment status is displayed from the existing billing system. This Admin Panel does not manually change payment/subscription state.</div><div style="overflow:auto"><table><thead><tr><th>Client</th><th>Status</th><th>Plan</th><th>Created</th><th>Provider</th></tr></thead><tbody id="billingRows"></tbody></table></div></div></section>
+
+    <section class="view" id="view-rewards">
+      <div class="split">
+        <div class="card"><h3>Give Reward</h3>
+          <p class="sub">Choose one or several clients, or all eligible clients.</p>
+          <label>Recipients</label><select id="rewardRecipients"><option value="selected">Selected clients</option><option value="all">All clients</option></select>
+          <label style="margin-top:9px">Clients (comma-separated GLM IDs)</label><input id="rewardClients" placeholder="GLM-0002, GLM-0003">
+          <label style="margin-top:9px">Reward / Grant Code</label><input id="rewardCode" placeholder="e.g. GLIME_CREDIT_BONUS">
+          <label style="margin-top:9px">Quantity</label><input id="rewardQty" type="number" min="1" step="1">
+          <label style="margin-top:9px">Unit</label><input id="rewardUnit" placeholder="GLIME_CREDIT / WHATSAPP_MESSAGE / ...">
+          <label style="margin-top:9px">Reason</label><textarea id="rewardReason" rows="3"></textarea>
+          <label style="margin-top:9px">Valid Until</label><input id="rewardEnd" type="datetime-local">
+          <button class="btn primary" style="margin-top:12px" id="rewardBtn">Issue Reward</button>
+          <div class="message" id="rewardMsg"></div>
         </div>
-        <button type="button" class="secondary" id="fetchBtn">🔍 Fetch Client</button>
-        <button type="button" class="secondary invite" id="createLeadBtn" disabled>➕ Create Client from Lead</button>
-        <p class="help">If this email is already in Contact Leads but not in client_data, use this button to create the client record.</p>
-        <div class="client-meta" id="clientMeta" style="display:none">
-          <div class="meta"><small>Client ID</small><strong id="clientIdView">—</strong></div>
-          <div class="meta"><small>Email</small><strong id="clientEmailView">—</strong></div>
-          <div class="meta"><small>Client ID</small><strong id="clientCodeView">—</strong></div>
-        </div>
-
-      <div class="section">
-        <div class="section-title">2. Project</div>
-        <div class="grid">
-          <div class="form-group">
-            <label for="projectName">Project Name / Info</label>
-            <input type="text" id="projectName" placeholder="e.g. Business Website">
-          </div>
-          <div class="form-group">
-            <label>Overall Status</label>
-            <div style="padding:12px 13px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)">
-              <span class="badge" id="overallStatus">Pending</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="form-group">
-            <label for="step1">Step 1: UI/UX Wireframing</label>
-            <select id="step1">
-              <option>Pending</option><option>In Progress</option><option>Completed</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="step2">Step 2: Custom VS Code Development</label>
-            <select id="step2">
-              <option>Pending</option><option>In Progress</option><option>Completed</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="step3">Step 3: Database & Testing</label>
-            <select id="step3">
-              <option>Pending</option><option>In Progress</option><option>Completed</option>
-            </select>
-          </div>
+        <div class="card"><h3>Promotional Code</h3>
+          <p class="sub">Reserved for the future subscription-discount workflow.</p>
+          <div class="notice">The Admin UI can prepare promotional-code data, but it will not invent or alter a payment discount flow until the billing backend provides the secure code-validation/redemption endpoint.</div>
+          <label>Code</label><input id="promoCode" placeholder="GLIME10">
+          <label style="margin-top:9px">Discount / Offer</label><input id="promoOffer" placeholder="Future billing rule">
         </div>
       </div>
+      <div class="card" style="margin-top:14px"><h3>Reward History</h3><div style="overflow:auto"><table><thead><tr><th>Client</th><th>Code</th><th>Type</th><th>Qty</th><th>Status</th><th>Reason</th><th>Date</th></tr></thead><tbody id="rewardRows"></tbody></table></div></div>
+    </section>
 
-      <div class="section">
-        <div class="section-title">3. Invoice</div>
-        <div class="grid">
-          <div class="form-group">
-            <label for="paymentStatus">Invoice / Payment Status</label>
-            <select id="paymentStatus">
-              <option value="Pending">Pending</option>
-              <option value="Paid">Paid ✅</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="invoiceLink">Invoice Link</label>
-            <input type="url" id="invoiceLink" placeholder="https://...">
-          </div>
-        </div>
-        <p class="help">The client dashboard only shows the invoice information you publish here. No PayPal/UPI collection is built into this panel.</p>
-      </div>
+    <section class="view" id="view-storage"><div class="card"><h3>Client Storage</h3><p class="sub">Existing storage RPC is used for the selected client. Storage controls remain separate from billing payment state.</p><div id="storageContent"></div></div></section>
 
-      <div class="section">
-        <div class="section-title">4. Client Access</div>
-        <button type="button" class="secondary invite" id="inviteBtn" disabled>✉️ Send Client Invite</button>
-        <p id="invite-status"></p>
+    <section class="view" id="view-safety">
+      <div class="card"><h3>Meta Safety Monitor</h3><p class="sub">Read-only monitoring of WhatsApp and Instagram conversations/messages. Admin reviews activity and can suspend an account when misuse is identified.</p>
+        <div class="grid" style="margin-bottom:14px"><div class="card metric"><small>WhatsApp Messages</small><strong id="waCount">0</strong></div><div class="card metric"><small>Instagram Messages</small><strong id="igCount">0</strong></div><div class="card metric"><small>WhatsApp Conversations</small><strong id="waConv">0</strong></div><div class="card metric"><small>Instagram Conversations</small><strong id="igConv">0</strong></div></div>
+        <div style="overflow:auto"><table><thead><tr><th>Platform</th><th>Client</th><th>Customer</th><th>Direction</th><th>Message</th><th>Time</th><th></th></tr></thead><tbody id="safetyRows"></tbody></table></div>
       </div>
+    </section>
 
-      <div class="section">
-        <button type="submit" class="primary" id="saveBtn">Save Client Changes</button>
-        <p id="status-message"></p>
-      </div>
-    </form>
-  </section>
+    <section class="view" id="view-care"><div class="card"><h3>CARE</h3><p class="sub">Existing CARE access remains managed through the existing backend controls.</p><div id="careContent"></div></div></section>
+    <section class="view" id="view-voice"><div class="card"><h3>Voice AI</h3><p class="sub">Provider, agent and provisioning status for clients.</p><div id="voiceContent"></div></div></section>
+    <section class="view" id="view-settings">
+      <div class="card"><h3>Admin Security</h3><p class="sub">Two-factor authentication is handled through Supabase Auth MFA.</p><div id="mfaSettings"></div></div>
+      <div class="card" style="margin-top:14px"><h3>Payment Provider</h3><p class="sub">Existing payment-provider control remains backend-driven. This page does not expose payment credentials.</p><div id="paymentSettings"></div></div>
+    </section>
+  </main>
 </div>
+
+<div class="modal" id="clientModal"><div class="modalbox">
+  <div class="modalhead"><div><h2 id="detailName">Client</h2><div class="sub" id="detailSub"></div></div><button class="btn" id="closeModal">Close</button></div>
+  <div class="tabs">
+    <button class="btn active" data-tab="profile">Profile</button><button class="btn" data-tab="account">Account</button><button class="btn" data-tab="trial">Trial</button><button class="btn" data-tab="modules">Modules</button><button class="btn" data-tab="billing">Billing</button><button class="btn" data-tab="usage">Usage</button><button class="btn" data-tab="storage">Storage</button><button class="btn" data-tab="safety">Safety</button><button class="btn" data-tab="care">CARE</button><button class="btn" data-tab="voice">Voice AI</button></div>
+  <div class="tab active" id="tab-profile"></div><div class="tab" id="tab-account"></div><div class="tab" id="tab-trial"></div><div class="tab" id="tab-modules"></div><div class="tab" id="tab-billing"></div><div class="tab" id="tab-usage"></div><div class="tab" id="tab-storage"></div><div class="tab" id="tab-safety"></div><div class="tab" id="tab-care"></div><div class="tab" id="tab-voice"></div>
+</div></div>
 
 <script>
 (() => {
-  const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-  const ADMIN_EMAIL = 'admin@glime.online';
+  const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
+  const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+  const ADMIN_EMAIL='admin@glime.online';
+  const ADMIN_UUID='c21669ee-04e2-4d8a-9ad2-98b969db57a3';
+  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const $=id=>document.getElementById(id);
+  let clients=[],modules=[],clientModules=[],subs=[],rewards=[],current=null,mfaFactor=null,mfaChallenge=null;
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
-  });
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const dt=v=>v?new Date(v).toLocaleString():'—';
+  const statusBadge=s=>{s=(s||'').toLowerCase();return `<span class="badge ${s.includes('active')?'green':s.includes('trial')?'orange':s.includes('suspend')||s.includes('expired')?'red':'blue'}">${esc(s||'unknown')}</span>`};
+  function msg(id,t){$(id).textContent=t||''}
+  function go(name){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+name).classList.add('active');document.querySelectorAll('nav button[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===name));$('title').textContent=name==='safety'?'Safety Monitor':name[0].toUpperCase()+name.slice(1)}
 
-  const $ = id => document.getElementById(id);
-  let currentClientId = null;
+  document.querySelectorAll('nav button[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));
+  $('refreshBtn').onclick=loadAll;
+  $('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};
+  $('closeModal').onclick=()=>$('clientModal').classList.remove('open');
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active')});
 
-  function setMsg(id, text, color) {
-    const el = $(id);
-    el.textContent = text;
-    el.style.color = color;
-    el.style.display = text ? 'block' : 'none';
+  async function adminCheck(){
+    const {data}=await sb.auth.getSession(); const u=data.session?.user;
+    if(!u || (u.email||'').toLowerCase()!==ADMIN_EMAIL.toLowerCase()){showLogin();return false}
+    $('adminEmail').textContent=u.email;
+    const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal.data?.currentLevel==='aal2'){showApp();return true}
+    const f=await sb.auth.mfa.listFactors();
+    const verified=(f.data?.totp||[]).find(x=>x.status==='verified');
+    if(verified){mfaFactor=verified;showMfa();return false}
+    showApp();return true;
   }
+  function showLogin(){$('login').style.display='flex';$('app').classList.add('hidden')}
+  function showMfa(){$('login1').style.display='none';$('login2fa').style.display='block'}
+  function showApp(){$('login').style.display='none';$('app').classList.remove('hidden')}
 
-  function showLogin(message='') {
-    $('login-screen').style.display='block';
-    $('control-room').style.display='none';
-    setMsg('login-status', message, '#ff5263');
-  }
-
-  function showControlRoom() {
-    $('login-screen').style.display='none';
-    $('control-room').style.display='block';
-  }
-
-  async function enforceAdmin(user) {
-    if (!user) { showLogin(); return false; }
-    const email=(user.email||'').trim().toLowerCase();
-    if(email!==ADMIN_EMAIL.toLowerCase()){
-      await supabase.auth.signOut();
-      showLogin('Access denied. This account is not authorized.');
-      return false;
-    }
-    showControlRoom();
-    return true;
-  }
-
-  async function ensureAdminSession() {
-    const {data,error}=await supabase.auth.getSession();
-    if(error || !data.session?.user){ showLogin('Admin session expired. Please login again.'); return null; }
-    const email=(data.session.user.email||'').trim().toLowerCase();
-    if(email!==ADMIN_EMAIL.toLowerCase()){
-      await supabase.auth.signOut();
-      showLogin('Access denied. This account is not authorized.');
-      return null;
-    }
-    return data.session;
-  }
-
-  $('loginForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const btn=$('loginBtn');
-    btn.disabled=true; btn.textContent='Signing in...'; setMsg('login-status','', '');
+  $('loginBtn').onclick=async()=>{
+    const b=$('loginBtn');b.disabled=true;msg('loginMsg','Signing in...');
     try{
-      const {data,error}=await supabase.auth.signInWithPassword({
-        email:$('loginEmail').value.trim(),
-        password:$('loginPassword').value
-      });
-      if(error) throw error;
-      await enforceAdmin(data.user);
-      $('loginPassword').value='';
-    }catch(err){
-      setMsg('login-status','Login failed: '+(err?.message||String(err)),'#ff5263');
-    }finally{
-      btn.disabled=false; btn.textContent='Login';
-    }
-  });
+      const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+      if(error)throw error;
+      if((data.user.email||'').toLowerCase()!==ADMIN_EMAIL.toLowerCase()){await sb.auth.signOut();throw new Error('Unauthorized admin account.')}
+      const f=await sb.auth.mfa.listFactors(); const verified=(f.data?.totp||[]).find(x=>x.status==='verified');
+      if(verified){mfaFactor=verified;showMfa()}else{showApp();await loadAll()}
+    }catch(e){msg('loginMsg',e.message)}finally{b.disabled=false}
+  };
+  $('verifyBtn').onclick=async()=>{
+    try{
+      if(!mfaFactor)throw new Error('No verified MFA factor found.');
+      const c=await sb.auth.mfa.challenge({factorId:mfaFactor.id});if(c.error)throw c.error;mfaChallenge=c.data;
+      const v=await sb.auth.mfa.verify({factorId:mfaFactor.id,challengeId:mfaChallenge.id,code:$('otp').value.trim()});if(v.error)throw v.error;
+      await sb.auth.refreshSession();showApp();await loadAll();
+    }catch(e){msg('mfaMsg',e.message)}
+  };
 
-  $('logoutBtn').addEventListener('click', async()=>{
-    await supabase.auth.signOut();
-    currentClientId=null;
-    $('inviteBtn').disabled=true;
-    $('createLeadBtn').disabled=true;
-    $('clientMeta').style.display='none';
-    showLogin('You have been logged out.');
-  });
-
-  supabase.auth.onAuthStateChange((event,session)=>{
-    if(!session?.user){
-      currentClientId=null;
-      $('inviteBtn').disabled=true;
-      $('createLeadBtn').disabled=true;
-      $('clientMeta').style.display='none';
-      showLogin();
-    }
-  });
-
-  function updateOverallStatus(){
-    const steps=[$('step1').value,$('step2').value,$('step3').value];
-    let status='Pending';
-    if(steps.every(s=>s==='Completed')) status='Completed';
-    else if(steps.some(s=>s==='In Progress'||s==='Completed')) status='In Progress';
-    $('overallStatus').textContent=status;
+  async function q(table,columns='*'){const r=await sb.from(table).select(columns);if(r.error)throw r.error;return r.data||[]}
+  async function loadAll(){
+    try{
+      const [c,m,cm,s,rg]=await Promise.all([
+        q('client_data','*'),q('modules','*'),q('client_modules','*'),q('glime_billing_subscriptions','*'),q('glime_billing_promotional_grants','*')
+      ]);
+      clients=c;modules=m;clientModules=cm;subs=s;rewards=rg;
+      renderOverview();renderClients();renderModules();renderBilling();renderRewards();renderMfa();
+      await renderSafety();renderSimpleSections();
+    }catch(e){console.error(e);alert('Admin data load failed: '+e.message)}
   }
-  ['step1','step2','step3'].forEach(id=>$(id).addEventListener('change',updateOverallStatus));
 
-
-  async function generateNextClientId() {
-    const { data, error } = await supabase
-      .from('client_data')
-      .select('client_id')
-      .not('client_id', 'is', null)
-      .like('client_id', 'GLM-%');
-
-    if (error) throw error;
-
-    let max = 0;
-    (data || []).forEach(row => {
-      const match = String(row.client_id || '').match(/^GLM-(\d+)$/i);
-      if (match) max = Math.max(max, Number(match[1]));
+  function renderOverview(){
+    const active=clients.filter(x=>['active'].includes((x.account_status||'').toLowerCase())).length;
+    const trial=clients.filter(x=>(x.free_trial_status||'').toLowerCase()==='active').length;
+    const sus=clients.filter(x=>['suspended','expired'].includes((x.account_status||'').toLowerCase()) || (x.free_trial_status||'').toLowerCase()==='expired').length;
+    $('mTotal').textContent=clients.length;$('mActive').textContent=active;$('mTrial').textContent=trial;$('mSuspended').textContent=sus;
+    $('mModules').textContent=clientModules.filter(x=>x.enabled && ['active','trial'].includes((x.status||'').toLowerCase())).length;
+    $('mPayments').textContent=subs.length;$('mRewards').textContent=rewards.length;
+    const acts=clients.slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,8);
+    $('activity').innerHTML=acts.length?acts.map(x=>`<div class="activity"><i class="dot"></i><div><b>${esc(x.full_name||x.client_name||x.email||x.client_id)}</b> signed up<br><span class="sub">${dt(x.created_at)}</span></div></div>`).join(''):'<div class="sub">No recent activity.</div>';
+  }
+  function renderClients(){
+    const term=($('clientSearch').value||'').toLowerCase(),filter=$('clientFilter').value;
+    const rows=clients.filter(x=>{
+      const s=(x.account_status||'').toLowerCase(),t=(x.free_trial_status||'').toLowerCase();
+      const ok=filter==='all'||(filter==='trial'&&t==='active')||(filter==='expired'&&(t==='expired'||s==='expired'))||(filter===s);
+      const blob=[x.client_id,x.email,x.full_name,x.client_name,x.business_name].join(' ').toLowerCase();
+      return ok&&blob.includes(term)
     });
+    $('clientRows').innerHTML=rows.map(x=>`<tr><td><b>${esc(x.full_name||x.client_name||'—')}</b><br><span class="sub">${esc(x.client_id||'')}</span></td><td>${esc(x.email)}</td><td>${statusBadge(x.account_status||x.free_trial_status)}</td><td>${x.free_trial_ends_at?dt(x.free_trial_ends_at):'—'}</td><td>${dt(x.created_at)}</td><td><button class="btn primary" onclick="window.openClient('${esc(x.id)}')">View</button></td></tr>`).join('')||'<tr><td colspan="6" class="sub">No clients found.</td></tr>';
+  }
+  $('clientSearch').oninput=renderClients;$('clientFilter').onchange=renderClients;
 
-    return `GLM-${String(max + 1).padStart(4, '0')}`;
+  function renderModules(){
+    $('moduleRows').innerHTML=clientModules.map(x=>{const c=clients.find(y=>y.id===x.client_id);const m=modules.find(y=>y.id===x.module_id);return `<tr><td>${esc(c?.client_id||x.client_id)}</td><td>${esc(m?.name||m?.slug||x.module_id)}</td><td>${x.enabled?'Yes':'No'}</td><td>${statusBadge(x.status)}</td><td>${esc(x.plan||'—')}</td><td>${dt(x.expires_at)}</td></tr>`}).join('')||'<tr><td colspan="6" class="sub">No module records.</td></tr>';
+  }
+  function renderBilling(){
+    $('billingRows').innerHTML=subs.map(x=>{const c=clients.find(y=>y.id===x.client_id)||clients.find(y=>y.client_id===x.client_id);return `<tr><td>${esc(c?.client_id||x.client_id||'—')}</td><td>${statusBadge(x.status)}</td><td>${esc(x.plan_name||x.plan_code||x.product_code||'—')}</td><td>${dt(x.created_at)}</td><td>${esc(x.provider||x.payment_provider||'—')}</td></tr>`}).join('')||'<tr><td colspan="5" class="sub">No subscription records.</td></tr>';
+  }
+  function renderRewards(){
+    $('rewardRows').innerHTML=rewards.slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,100).map(x=>`<tr><td>${esc(x.client_id)}</td><td>${esc(x.grant_code)}</td><td>${esc(x.grant_type)}</td><td>${esc(x.quantity)}</td><td>${statusBadge(x.status)}</td><td>${esc(x.reason||'')}</td><td>${dt(x.created_at)}</td></tr>`).join('')||'<tr><td colspan="7" class="sub">No rewards/grants yet.</td></tr>';
   }
 
-  async function fetchClient(){
-    const email=$('clientEmail').value.trim().toLowerCase();
-    const btn=$('fetchBtn');
-    if(!email){setMsg('status-message','Please enter a client email.','#ff5263');return;}
-    btn.disabled=true;btn.textContent='Fetching...';
-    currentClientId=null;$('inviteBtn').disabled=true;$('clientMeta').style.display='none';
-    try{
-      const session=await ensureAdminSession(); if(!session)return;
-      const {data,error}=await supabase.from('client_data').select('*')
-        .ilike('email',email).order('created_at',{ascending:false}).limit(1);
-      if(error)throw error;
-      if(!data?.length){setMsg('status-message','No client found with this email.','#ff5263');return;}
-      const client=data[0];
-      currentClientId=client.id;
-      await loadClientStorage();
-      $('clientEmail').value=client.email||email;
-      $('clientIdView').textContent=client.id||'—';
-      $('clientCodeView').textContent=client.client_id||'Not assigned';
-      $('clientEmailView').textContent=client.email||email;
-      $('clientMeta').style.display='grid';
-      $('projectName').value=client.project_name||'';
-      $('paymentStatus').value=client.payment_status||'Pending';
-      $('invoiceLink').value=client.invoice_link||'';
-      $('step1').value=client.step1_status||'Pending';
-      $('step2').value=client.step2_status||'Pending';
-      $('step3').value=client.step3_status||'Pending';
-      updateOverallStatus();
-      $('inviteBtn').disabled=false;
-      setMsg('status-message','Client loaded successfully.','#00eaff');
-    }catch(err){
-      console.error(err);
-      setMsg('status-message','Fetch failed: '+(err?.message||String(err)),'#ff5263');
-    }finally{
-      btn.disabled=false;btn.textContent='🔍 Fetch Client';
-    }
-  }
-  $('fetchBtn').addEventListener('click',fetchClient);
-    function formatStorage(bytes) {
-    const n = Number(bytes || 0);
-
-    if (n < 1024 * 1024) {
-      return Math.round(n / 1024) + ' KB';
-    }
-
-    return (n / (1024 * 1024)).toFixed(2) + ' MB';
+  window.openClient=async id=>{
+    current=clients.find(x=>x.id===id);if(!current)return;
+    $('clientModal').classList.add('open');$('detailName').textContent=current.full_name||current.client_name||current.email||'Client';$('detailSub').textContent=`${current.client_id||'No Client ID'} • ${current.email||''}`;
+    renderDetail();await loadClientSafety();
+  };
+  function renderDetail(){
+    const c=current,mods=clientModules.filter(x=>x.client_id===c.id),mySubs=subs.filter(x=>x.client_id===c.id||x.client_id===c.client_id);
+    $('tab-profile').innerHTML=`<div class="kv"><div><small>Client ID</small><b>${esc(c.client_id)}</b></div><div><small>Email</small><b>${esc(c.email)}</b></div><div><small>Name</small><b>${esc(c.full_name||c.client_name)}</b></div><div><small>Business</small><b>${esc(c.business_name)}</b></div><div><small>Phone</small><b>${esc(c.phone||c.mobile||'—')}</b></div><div><small>Signup</small><b>${dt(c.created_at)}</b></div></div><button class="btn orange" style="margin-top:12px" onclick="window.editProfile()">Edit Profile</button>`;
+    $('tab-account').innerHTML=`<div class="kv"><div><small>Account</small><b>${statusBadge(c.account_status)}</b></div><div><small>Payment</small><b>${statusBadge(c.payment_status)}</b></div><div><small>Suspension Reason</small><b>${esc(c.suspension_reason||'—')}</b></div><div><small>Invoice</small><b>${c.invoice_link?`<a href="${esc(c.invoice_link)}" target="_blank">Open</a>`:'—'}</b></div></div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${(c.account_status||'').toLowerCase()==='suspended'?'<button class="btn green" onclick="window.reactivateClient()">Reactivate</button>':'<button class="btn red" onclick="window.suspendClient()">Suspend Client</button>'}<button class="btn" onclick="window.archiveClient()">Archive</button></div>`;
+    $('tab-trial').innerHTML=`<div class="kv"><div><small>Trial Status</small><b>${statusBadge(c.free_trial_status)}</b></div><div><small>Trial Start</small><b>${dt(c.free_trial_started_at)}</b></div><div><small>Trial End</small><b>${dt(c.free_trial_ends_at)}</b></div><div><small>Account Status</small><b>${statusBadge(c.account_status)}</b></div></div>`;
+    $('tab-modules').innerHTML=`<div style="overflow:auto"><table><thead><tr><th>Module</th><th>Enabled</th><th>Status</th><th>Plan</th><th>Expiry</th></tr></thead><tbody>${mods.map(x=>{const m=modules.find(y=>y.id===x.module_id);return `<tr><td>${esc(m?.name||m?.slug||x.module_id)}</td><td>${x.enabled?'Yes':'No'}</td><td>${statusBadge(x.status)}</td><td>${esc(x.plan||'—')}</td><td>${dt(x.expires_at)}</td></tr>`}).join('')||'<tr><td colspan="5">No modules.</td></tr>'}</tbody></table></div>`;
+    $('tab-billing').innerHTML=`<div style="overflow:auto"><table><thead><tr><th>Status</th><th>Plan</th><th>Provider</th><th>Date</th></tr></thead><tbody>${mySubs.map(x=>`<tr><td>${statusBadge(x.status)}</td><td>${esc(x.plan_name||x.plan_code||x.product_code||'—')}</td><td>${esc(x.provider||x.payment_provider||'—')}</td><td>${dt(x.created_at)}</td></tr>`).join('')||'<tr><td colspan="4">No subscription records.</td></tr>'}</tbody></table></div>`;
+    const rw=rewards.filter(x=>x.client_id===c.client_id);
+    $('tab-usage').innerHTML=`<div class="kv"><div><small>Reward/Grant Records</small><b>${rw.length}</b></div><div><small>Modules</small><b>${mods.length}</b></div></div>`;
+    $('tab-storage').innerHTML=`<div id="detailStorage">Loading storage...</div>`;
+    $('tab-care').innerHTML='<div class="notice">CARE remains controlled by the existing CARE backend/RPC architecture. This new shell does not replace those controls.</div>';
+    $('tab-voice').innerHTML='<div class="notice">Voice Provider/Agent/Provisioning controls remain backend-driven and can be attached to this client detail view without changing the client dashboard.</div>';
   }
 
-  async function loadClientStorage() {
-    if (!currentClientId) {
-      $('storageMeta').style.display = 'none';
-      return;
-    }
+  window.editProfile=async()=>{
+    const name=prompt('Client name:',current.full_name||current.client_name||'');if(name===null)return;
+    const phone=prompt('Mobile number:',current.phone||current.mobile||'');if(phone===null)return;
+    const business=prompt('Business name:',current.business_name||'');if(business===null)return;
+    const r=await sb.from('client_data').update({full_name:name,client_name:name,phone:phone,business_name:business}).eq('id',current.id).select('*').single();
+    if(r.error){alert(r.error.message);return} current=r.data;clients=clients.map(x=>x.id===current.id?current:x);renderClients();renderDetail();alert('Profile updated.');
+  };
+  window.suspendClient=async()=>{
+    const reason=prompt('Suspension reason (this will be shown to the client):');if(!reason)return;
+    if(!confirm(`Suspend ${current.client_id||current.email}?`))return;
+    const r=await sb.from('client_data').update({account_status:'suspended',suspension_reason:reason}).eq('id',current.id).select('*').single();
+    if(r.error){alert(r.error.message);return}current=r.data;clients=clients.map(x=>x.id===current.id?current:x);renderClients();renderDetail();alert('Client suspended.');
+  };
+  window.reactivateClient=async()=>{
+    if(!confirm(`Reactivate ${current.client_id||current.email}?`))return;
+    const r=await sb.from('client_data').update({account_status:'active',suspension_reason:null}).eq('id',current.id).select('*').single();
+    if(r.error){alert(r.error.message);return}current=r.data;clients=clients.map(x=>x.id===current.id?current:x);renderClients();renderDetail();alert('Client reactivated.');
+  };
+  window.archiveClient=async()=>{
+    if(!confirm('Archive this client? This first version uses the existing account_status field and does not permanently delete data.'))return;
+    const r=await sb.from('client_data').update({account_status:'archived'}).eq('id',current.id).select('*').single();
+    if(r.error){alert(r.error.message);return}current=r.data;clients=clients.map(x=>x.id===current.id?current:x);renderClients();renderDetail();alert('Client archived.');
+  };
 
-    try {
-      const session = await ensureAdminSession();
-      if (!session) return;
+  async function loadClientSafety(){
+    if(!current)return;
+    const [wa,ig]=await Promise.all([
+      sb.from('whatsapp_messages').select('*').eq('client_id',current.client_id).order('created_at',{ascending:false}).limit(50),
+      sb.from('instagram_messages').select('*').eq('client_id',current.client_id).order('created_at',{ascending:false}).limit(50)
+    ]);
+    const rows=[...(wa.data||[]).map(x=>({...x,platform:'WhatsApp'})),...(ig.data||[]).map(x=>({...x,platform:'Instagram'}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    $('tab-safety').innerHTML=`<div class="notice">Read-only message review. Admin can suspend the client from the Account tab if misuse is confirmed.</div><div style="overflow:auto"><table><thead><tr><th>Platform</th><th>Direction</th><th>Message</th><th>Status</th><th>Time</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.platform)}</td><td>${esc(x.direction)}</td><td>${esc(x.text_body||'['+(x.message_type||'message')+']')}</td><td>${statusBadge(x.status)}</td><td>${dt(x.created_at)}</td></tr>`).join('')||'<tr><td colspan="5">No messages available.</td></tr>'}</tbody></table></div>`;
+  }
 
-      const { data, error } = await supabase.rpc(
-        'get_lookbook_storage_admin',
-        {
-          p_email: $('clientEmail').value.trim().toLowerCase()
-        }
-      );
+  async function renderSafety(){
+    const [wa,ig,wc,ic]=await Promise.all([
+      sb.from('whatsapp_messages').select('id,client_id,text_body,direction,status,created_at,customer_phone').order('created_at',{ascending:false}).limit(80),
+      sb.from('instagram_messages').select('id,client_id,text_body,direction,status,created_at').order('created_at',{ascending:false}).limit(80),
+      sb.from('whatsapp_conversations').select('id,client_id,customer_name,customer_phone,last_message_at').order('last_message_at',{ascending:false}).limit(100),
+      sb.from('instagram_conversations').select('id,client_id,username,last_message_at').order('last_message_at',{ascending:false}).limit(100)
+    ]);
+    $('waCount').textContent=(wa.data||[]).length;$('igCount').textContent=(ig.data||[]).length;$('waConv').textContent=(wc.data||[]).length;$('igConv').textContent=(ic.data||[]).length;$('mSafety').textContent=(wa.data||[]).length+(ig.data||[]).length;
+    const rows=[...(wa.data||[]).map(x=>({...x,platform:'WhatsApp',customer:x.customer_phone})),...(ig.data||[]).map(x=>({...x,platform:'Instagram',customer:'Instagram user'}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,100);
+    $('safetyRows').innerHTML=rows.map(x=>`<tr><td>${x.platform}</td><td>${esc(x.client_id)}</td><td>${esc(x.customer)}</td><td>${esc(x.direction)}</td><td style="max-width:420px">${esc(x.text_body||'['+(x.message_type||'message')+']')}</td><td>${dt(x.created_at)}</td><td><button class="btn" onclick="window.findClient('${esc(x.client_id)}')">View</button></td></tr>`).join('')||'<tr><td colspan="7">No messages available.</td></tr>';
+    $('safetySnapshot').innerHTML=rows.slice(0,5).map(x=>`<div class="activity"><i class="dot"></i><div><b>${esc(x.platform)} · ${esc(x.client_id)}</b><br>${esc((x.text_body||'').slice(0,100))}<br><span class="sub">${dt(x.created_at)}</span></div></div>`).join('')||'<div class="sub">No message records available.</div>';
+  }
+  window.findClient=id=>{const c=clients.find(x=>x.client_id===id);if(c)window.openClient(c.id)};
 
-      if (error) throw error;
+  $('rewardBtn').onclick=async()=>{
+    const mode=$('rewardRecipients').value,code=$('rewardCode').value.trim(),qty=Number($('rewardQty').value),unit=$('rewardUnit').value.trim(),reason=$('rewardReason').value.trim(),end=$('rewardEnd').value;
+    if(!code||!qty||!unit){msg('rewardMsg','Reward code, quantity and unit are required.');return}
+    const ids=mode==='all'?clients.map(x=>x.client_id).filter(Boolean):$('rewardClients').value.split(',').map(x=>x.trim()).filter(Boolean);
+    if(!ids.length){msg('rewardMsg','Select at least one client.');return}
+    /*
+      Existing promotional-grants table is intentionally read-only to this browser
+      under the current RLS. We do not bypass RLS with a service key.
+      The secure admin grant endpoint should be connected here when the existing
+      billing backend exposes its admin grant RPC/Edge Function.
+    */
+    msg('rewardMsg',`Reward request prepared for ${ids.length} client(s). Secure grant endpoint is not exposed to this browser yet; no unsafe direct DB write was attempted.`);
+  };
 
-      if (!data) {
-        $('storageMeta').style.display = 'none';
-        return;
-      }
+  async function renderSimpleSections(){
+    $('storageContent').innerHTML=clients.map(c=>`<div class="card" style="margin:8px 0;display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>${esc(c.client_id)}</b><br><span class="sub">${esc(c.email)}</span></div><button class="btn" onclick="window.openClient('${esc(c.id)}')">View</button></div>`).join('')||'<div class="sub">No clients.</div>';
+    $('careContent').innerHTML=clients.map(c=>`<div class="activity"><i class="dot"></i><div><b>${esc(c.client_id)}</b> — CARE access is backend-controlled.</div></div>`).join('');
+    $('voiceContent').innerHTML=clients.map(c=>`<div class="activity"><i class="dot"></i><div><b>${esc(c.client_id)}</b> — Voice AI status can be inspected from the client detail.</div></div>`).join('');
+    $('paymentSettings').innerHTML='<div class="notice">Payment settings are not editable here. Existing backend/provider controls remain authoritative.</div>';
+  }
 
-      $('storageUsedView').textContent =
-        formatStorage(data.bytes_used);
-
-      $('storageLimitView').textContent =
-        formatStorage(data.storage_limit_bytes);
-
-      $('storageRemainingView').textContent =
-        formatStorage(data.remaining_bytes);
-
-      $('storageReservedView').textContent =
-        formatStorage(data.reserved_bytes);
-
-      $('storageMeta').style.display = 'grid';
-
-      $('newStorageLimit').value =
-        Math.round(Number(data.storage_limit_bytes) / 1048576);
-
-    } catch (err) {
-      console.error(err);
-
-      setMsg(
-        'storage-status',
-        'Storage fetch failed: ' + (err?.message || String(err)),
-        '#ff5263'
-      );
+  async function renderMfa(){
+    const f=await sb.auth.mfa.listFactors();const verified=(f.data?.totp||[]).filter(x=>x.status==='verified');
+    $('mfaSettings').innerHTML=verified.length?`<p><span class="badge green">2FA Enabled</span></p><p class="sub">Verified TOTP factor is active for this admin account.</p>`:`<p><span class="badge red">2FA Not Enrolled</span></p><button class="btn orange" id="enrollMfa">Set up TOTP 2FA</button><div id="mfaEnrollBox"></div>`;
+    const b=$('enrollMfa');if(!b)return;b.onclick=async()=>{
+      try{
+        const r=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'GLIME Admin'});if(r.error)throw r.error;mfaFactor=r.data;
+        $('mfaEnrollBox').innerHTML=`<p class="sub">Scan this QR in Google Authenticator/Authy, then enter the code.</p><img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="${r.data.totp.qr_code}" alt="TOTP QR"><p class="sub">Secret: ${esc(r.data.totp.secret)}</p><input id="newMfaCode" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn primary" style="margin-top:8px" id="confirmMfa">Verify & Enable</button>`;
+        $('confirmMfa').onclick=async()=>{const c=await sb.auth.mfa.challenge({factorId:mfaFactor.id});if(c.error)throw c.error;const v=await sb.auth.mfa.verify({factorId:mfaFactor.id,challengeId:c.data.id,code:$('newMfaCode').value.trim()});if(v.error){alert(v.error.message);return}alert('2FA enabled.');await sb.auth.refreshSession();renderMfa()};
+      }catch(e){alert(e.message)}
     }
   }
 
-  $('clientEmail').addEventListener('input',()=>{
-    $('createLeadBtn').disabled = !$('clientEmail').value.trim();
-  });
-
-  $('updateStorageBtn').addEventListener('click',async()=>{
-    if(!currentClientId){
-      setMsg('storage-status','Fetch a client first.','#ff5263');
-      return;
-    }
-
-    const mb=Number($('newStorageLimit').value);
-    if(!Number.isFinite(mb)||mb<1){
-      setMsg('storage-status','Enter a storage limit of at least 1 MB.','#ff5263');
-      return;
-    }
-
-    const btn=$('updateStorageBtn');
-    btn.disabled=true;
-    btn.textContent='Updating...';
-
-    try{
-      const session=await ensureAdminSession();
-      if(!session)return;
-
-      const limitBytes=Math.round(mb*1048576);
-
-      const {error}=await supabase.rpc('set_lookbook_storage_limit',{
-        p_client_id:currentClientId,
-        p_limit_bytes:limitBytes
-      });
-
-      if(error)throw error;
-
-      await loadClientStorage();
-
-      setMsg(
-        'storage-status',
-        `Storage limit updated to ${mb} MB.`,
-        '#00ff88'
-      );
-    }catch(err){
-      console.error(err);
-      setMsg(
-        'storage-status',
-        'Storage update failed: '+(err?.message||String(err)),
-        '#ff5263'
-      );
-    }finally{
-      btn.disabled=false;
-      btn.textContent='Update Storage Limit';
-    }
-  });
-
-  $('createLeadBtn').addEventListener('click',async()=>{
-    const email=$('clientEmail').value.trim().toLowerCase();
-    if(!email){setMsg('status-message','Please enter a client email.','#ff5263');return;}
-
-    const btn=$('createLeadBtn');
-    btn.disabled=true;btn.textContent='Creating...';
-    try{
-      const session=await ensureAdminSession();if(!session)return;
-      const {data,error}=await supabase.functions.invoke('admin-create-client-from-lead',{body:{email}});
-      if(error){
-        let detail=error.message||'Could not create client from lead.';
-        try{if(error.context){const payload=await error.context.json();if(payload?.error)detail=payload.error;}}catch(_){}
-        throw new Error(detail);
-      }
-      if(!data?.ok||!data?.client)throw new Error(data?.error||'Client creation failed.');
-
-      const client=data.client;
-      currentClientId=client.id;
-      $('clientEmail').value=client.email||email;
-      await loadClientStorage();
-      $('clientIdView').textContent=client.id||'—';
-      $('clientCodeView').textContent=client.client_id||'Not assigned';
-      $('clientEmailView').textContent=client.email||email;
-      $('clientMeta').style.display='grid';
-      $('projectName').value=client.project_name||'';
-      $('paymentStatus').value=client.payment_status||'Pending';
-      $('invoiceLink').value=client.invoice_link||'';
-      $('step1').value=client.step1_status||'Pending';
-      $('step2').value=client.step2_status||'Pending';
-      $('step3').value=client.step3_status||'Pending';
-      updateOverallStatus();
-      $('inviteBtn').disabled=false;
-      setMsg('status-message',data.message||'Client created from lead successfully.','#00ff88');
-    }catch(err){
-      console.error(err);
-      setMsg('status-message','Create from lead failed: '+(err?.message||String(err)),'#ff5263');
-    }finally{
-      btn.disabled=!$('clientEmail').value.trim();btn.textContent='➕ Create Client from Lead';
-    }
-  });
-
-  $('inviteBtn').addEventListener('click',async()=>{
-    const email=$('clientEmail').value.trim().toLowerCase();
-    if(!currentClientId||!email){setMsg('invite-status','Fetch the client first.','#ff5263');return;}
-    const btn=$('inviteBtn');btn.disabled=true;btn.textContent='Sending Invite...';
-    try{
-      const session=await ensureAdminSession();if(!session)return;
-      const {data,error}=await supabase.functions.invoke('Send-client-invite',{body:{email}});
-      if(error){
-        let detail=error.message||'Could not send invitation.';
-        try{if(error.context){const payload=await error.context.json();if(payload?.error)detail=payload.error;}}catch(_){}
-        throw new Error(detail);
-      }
-      if(!data?.success)throw new Error(data?.error||'Invitation failed.');
-      setMsg('invite-status','Client invitation sent to '+email,'#00ff88');
-    }catch(err){
-      console.error(err);
-      setMsg('invite-status','Invite failed: '+(err?.message||String(err)),'#ff5263');
-    }finally{
-      btn.disabled=!currentClientId;btn.textContent='✉️ Send Client Invite';
-    }
-  });
-
-  $('adminForm').addEventListener('submit',async e=>{
-    e.preventDefault();
-    if(!currentClientId){setMsg('status-message','Fetch a client before saving.','#ff5263');return;}
-    const btn=$('saveBtn');btn.disabled=true;btn.textContent='Saving...';
-    try{
-      const session=await ensureAdminSession();if(!session)return;
-      const { data: existingClient, error: existingError } =
-        await supabase.from('client_data')
-          .select('client_id')
-          .eq('id', currentClientId)
-          .single();
-
-      if (existingError) throw existingError;
-
-      const clientId =
-        existingClient.client_id ||
-        await generateNextClientId();
-
-      const payload = {
-        client_id: clientId,
-        email:$('clientEmail').value.trim().toLowerCase(),
-        project_name:$('projectName').value.trim(),
-        payment_status:$('paymentStatus').value,
-        invoice_link:$('invoiceLink').value.trim()||null,
-        step1_status:$('step1').value,
-        step2_status:$('step2').value,
-        step3_status:$('step3').value
-      };
-
-      // UPDATE + SELECT: if RLS prevents the update, Supabase will not
-      // return the saved row and we will not falsely report success.
-      const {data: updatedRows, error: updateError} =
-        await supabase
-          .from('client_data')
-          .update(payload)
-          .eq('id',currentClientId)
-          .select('id,client_id,email,project_name,payment_status,invoice_link,step1_status,step2_status,step3_status');
-
-      if(updateError) throw updateError;
-
-      if(!updatedRows || updatedRows.length !== 1){
-        throw new Error(
-          'Database update returned no row. Check Supabase RLS UPDATE and SELECT policies.'
-        );
-      }
-
-      const savedClient=updatedRows[0];
-
-      if(savedClient.client_id !== clientId){
-        throw new Error(
-          `Client ID was not persisted. Expected ${clientId}, received ${savedClient.client_id || 'NULL'}.`
-        );
-      }
-
-      // Final read-back verification.
-      const {data:verifiedClient,error:verifyError} =
-        await supabase
-          .from('client_data')
-          .select('id,client_id,email')
-          .eq('id',currentClientId)
-          .single();
-
-      if(verifyError) throw verifyError;
-
-      if(verifiedClient.client_id !== clientId){
-        throw new Error(
-          `Database verification failed. Client ID is ${verifiedClient.client_id || 'NULL'}.`
-        );
-      }
-
-      $('clientCodeView').textContent = verifiedClient.client_id;
-      $('clientIdView').textContent = verifiedClient.id;
-      updateOverallStatus();
-      setMsg(
-        'status-message',
-        `Client dashboard updated successfully. Client ID: ${verifiedClient.client_id}`,
-        '#00ff88'
-      );
-    }catch(err){
-      console.error(err);
-      setMsg('status-message','Update failed: '+(err?.message||String(err)),'#ff5263');
-    }finally{
-      btn.disabled=false;btn.textContent='Save Client Changes';
-    }
-  });
-
-  (async()=>{
-    if(!window.supabase){showLogin('Supabase library failed to load.');return;}
-    const {data}=await supabase.auth.getUser();
-    await enforceAdmin(data?.user||null);
-  })();
+  (async()=>{if(!window.supabase){return}if(await adminCheck())await loadAll()})();
 })();
-  </script>
-
-  <script src="admin-modules-addon.js"></script>
-  <script src="voice-provider-admin-addon.js"></script>
-  <script src="voice-provider-provision-addon.js"></script>
-  <script src="admin-care-addon.js"></script>
-  <script src="admin-payment-addon.js"></script>
-  <script src="admin-payment-client-bridge.js"></script>
-  <script src="voice-ai-setup-auth-fix.js"></script>
-  <script src="admin-client-storage-addon.js"></script>
+</script>
 </body>
 </html>
