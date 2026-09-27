@@ -73,6 +73,15 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
     <button class="btn primary" style="width:100%;margin-top:14px" id="verifyBtn">Verify</button>
     <div class="message" id="mfaMsg"></div>
   </div>
+  <div class="card loginbox" id="login2faSetup">
+    <h1>Set up Admin 2FA</h1>
+    <p class="sub">GLIME Admin access requires a verified authenticator app. Scan the QR code with Google Authenticator, Authy, 1Password, or another TOTP app.</p>
+    <div id="loginQr" style="text-align:center;margin:14px 0"></div>
+    <div id="loginSecret" class="notice" style="word-break:break-all"></div>
+    <input id="setupOtp" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit code">
+    <button class="btn primary" style="width:100%;margin-top:14px" id="setupVerifyBtn">Verify & Enable 2FA</button>
+    <div class="message" id="setupMsg"></div>
+  </div>
 </section>
 
 <div class="app hidden" id="app">
@@ -202,16 +211,39 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
     const {data}=await sb.auth.getSession(); const u=data.session?.user;
     if(!u || (u.email||'').toLowerCase()!==ADMIN_EMAIL.toLowerCase()){showLogin();return false}
     $('adminEmail').textContent=u.email;
+    if(!u.email_confirmed_at){await sb.auth.signOut();msg('loginMsg','Admin email is not verified.');showLogin();return false}
     const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
     if(aal.data?.currentLevel==='aal2'){showApp();return true}
     const f=await sb.auth.mfa.listFactors();
     const verified=(f.data?.totp||[]).find(x=>x.status==='verified');
     if(verified){mfaFactor=verified;showMfa();return false}
-    showApp();return true;
+    await beginMfaEnrollment();
+    return false;
   }
-  function showLogin(){$('login').style.display='flex';$('app').classList.add('hidden')}
-  function showMfa(){$('login1').style.display='none';$('login2fa').style.display='block'}
+  function resetLoginCards(){$('login1').style.display='block';$('login2fa').style.display='none';$('login2faSetup').style.display='none'}
+  function showLogin(){resetLoginCards();$('login').style.display='flex';$('app').classList.add('hidden')}
+  function showMfa(){resetLoginCards();$('login1').style.display='none';$('login2fa').style.display='block';$('login').style.display='flex'}
+  function showMfaSetup(){resetLoginCards();$('login1').style.display='none';$('login2faSetup').style.display='block';$('login').style.display='flex'}
   function showApp(){$('login').style.display='none';$('app').classList.remove('hidden')}
+
+  async function beginMfaEnrollment(){
+    try{
+      const factors=await sb.auth.mfa.listFactors();
+      const pending=(factors.data?.totp||[]).find(x=>x.status==='unverified');
+      if(pending){
+        mfaFactor=pending;showMfaSetup();
+        $('loginQr').innerHTML='';
+        $('loginSecret').textContent='A pending 2FA setup already exists. Open the authenticator entry already created for GLIME Admin and enter its current 6-digit code.';
+        return;
+      }
+      const r=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'GLIME Admin'});
+      if(r.error)throw r.error;
+      mfaFactor=r.data;showMfaSetup();
+      $('loginQr').innerHTML='<img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="'+r.data.totp.qr_code+'" alt="GLIME Admin TOTP QR">';
+      $('loginSecret').textContent='Secret: '+r.data.totp.secret;
+      $('setupOtp').focus();
+    }catch(e){msg('loginMsg','2FA setup failed: '+e.message);showLogin()}
+  }
 
   $('loginBtn').onclick=async()=>{
     const b=$('loginBtn');b.disabled=true;msg('loginMsg','Signing in...');
@@ -219,8 +251,11 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
       const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
       if(error)throw error;
       if((data.user.email||'').toLowerCase()!==ADMIN_EMAIL.toLowerCase()){await sb.auth.signOut();throw new Error('Unauthorized admin account.')}
+      if(!data.user.email_confirmed_at){await sb.auth.signOut();throw new Error('Admin email is not verified.')}
+      const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+      if(aal.data?.currentLevel==='aal2'){showApp();await loadAll();return}
       const f=await sb.auth.mfa.listFactors(); const verified=(f.data?.totp||[]).find(x=>x.status==='verified');
-      if(verified){mfaFactor=verified;showMfa()}else{showApp();await loadAll()}
+      if(verified){mfaFactor=verified;showMfa()}else{await beginMfaEnrollment()}
     }catch(e){msg('loginMsg',e.message)}finally{b.disabled=false}
   };
   $('verifyBtn').onclick=async()=>{
@@ -230,6 +265,19 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
       const v=await sb.auth.mfa.verify({factorId:mfaFactor.id,challengeId:mfaChallenge.id,code:$('otp').value.trim()});if(v.error)throw v.error;
       await sb.auth.refreshSession();showApp();await loadAll();
     }catch(e){msg('mfaMsg',e.message)}
+  };
+
+  $('setupVerifyBtn').onclick=async()=>{
+    const b=$('setupVerifyBtn');b.disabled=true;msg('setupMsg','Verifying 2FA...');
+    try{
+      if(!mfaFactor)throw new Error('2FA setup session is missing. Please sign in again.');
+      const ch=await sb.auth.mfa.challenge({factorId:mfaFactor.id});if(ch.error)throw ch.error;
+      const v=await sb.auth.mfa.verify({factorId:mfaFactor.id,challengeId:ch.data.id,code:$('setupOtp').value.trim()});if(v.error)throw v.error;
+      await sb.auth.refreshSession();
+      const a=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+      if(a.data?.currentLevel!=='aal2')throw new Error('2FA verification did not reach AAL2.');
+      showApp();await loadAll();
+    }catch(e){msg('setupMsg',e.message)}finally{b.disabled=false}
   };
 
   async function q(table,columns='*'){const r=await sb.from(table).select(columns);if(r.error)throw r.error;return r.data||[]}
