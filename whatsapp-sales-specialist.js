@@ -570,6 +570,8 @@ function renderConversations(){
               :''
           }"
           data-id="${esc(c.id)}"
+          data-lead-id="${esc(c.lead_id||'')}"
+          data-phone="${esc(c.customer_phone||'')}"
         >
 
           <div class="avatar">
