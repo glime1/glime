@@ -1,395 +1,247 @@
 (() => {
+const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const MODULE='instagram_ai_sales_agent';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
 
-const SUPABASE_URL =
-  'https://ufoulgbiqgjriwapuopc.supabase.co';
-
-const SUPABASE_KEY =
-  'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-
-const MODULE =
-  'instagram_ai_sales_agent';
-
-const db =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-  );
-
-
-const $ = id =>
-  document.getElementById(id);
-
-
-let state = {
-
+let state={
   user:null,
-
   session:null,
-
   clientId:null,
-
   connection:null,
-
   conversations:[],
-
   messages:[],
-
   selected:null,
-
   lead:null,
-
   services:[],
-
+  business:null,
+  knowledge:[],
+  catalogContext:null,
   filter:'all',
-
-  mode:
-    localStorage.getItem(
-      'glime_instagram_mode'
-    ) || 'manual',
-
-  aiSession:
-    sessionStorage.getItem(
-      'glime_instagram_ai_session'
-    ) || null
-
+  mode:localStorage.getItem('glime_instagram_mode')||'manual',
+  aiSession:sessionStorage.getItem('glime_instagram_ai_session')||null
 };
 
-
-
-/* --------------------------------------------------
-   HELPERS
--------------------------------------------------- */
-
 function esc(value){
-
-  return String(value ?? '')
-    .replace(/[&<>"']/g, char => ({
-      '&':'&amp;',
-      '<':'&lt;',
-      '>':'&gt;',
-      '"':'&quot;',
-      "'":'&#039;'
-    }[char]));
-
+  return String(value??'').replace(/[&<>"']/g,char=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#039;'
+  }[char]));
 }
-
 
 function time(value){
-
-  if(!value) return '';
-
+  if(!value)return '';
   try{
-
-    return new Date(value)
-      .toLocaleString([],{
-        day:'2-digit',
-        month:'short',
-        hour:'2-digit',
-        minute:'2-digit'
-      });
-
+    return new Date(value).toLocaleString([],{
+      day:'2-digit',
+      month:'short',
+      hour:'2-digit',
+      minute:'2-digit'
+    });
   }catch{
-
     return '';
-
   }
-
 }
-
 
 function toast(message,error=false){
+  const old=document.querySelector('.toast');
+  if(old)old.remove();
 
-  const old =
-    document.querySelector('.toast');
-
-  if(old) old.remove();
-
-  const el =
-    document.createElement('div');
-
-  el.className =
-    `toast ${error?'error':''}`;
-
-  el.textContent = message;
-
+  const el=document.createElement('div');
+  el.className=`toast ${error?'error':''}`;
+  el.textContent=message;
   document.body.appendChild(el);
 
-  setTimeout(() => el.remove(),3500);
-
+  setTimeout(()=>el.remove(),3500);
 }
 
-
 async function session(){
+  const {data,error}=await db.auth.getSession();
 
-  const {
-    data,
-    error
-  } =
-    await db.auth.getSession();
-
-  if(error)
-    throw error;
+  if(error)throw error;
 
   if(!data.session){
-
     location.href='login.html';
-
     return null;
-
   }
 
-  state.session =
-    data.session;
-
-  state.user =
-    data.session.user;
+  state.session=data.session;
+  state.user=data.session.user;
 
   const {
     data:c,
     error:e
-  } =
-    await db
-      .from('client_data')
-      .select(
-        'client_id,business_name,name,full_name'
-      )
-      .eq(
-        'auth_user_id',
-        state.user.id
-      )
-      .maybeSingle();
+  }=await db
+    .from('client_data')
+    .select('client_id,business_name,name,full_name')
+    .eq('auth_user_id',state.user.id)
+    .maybeSingle();
 
-  if(e)
-    throw e;
+  if(e)throw e;
 
   if(!c?.client_id)
-    throw new Error(
-      'Client account not found'
-    );
+    throw new Error('Client account not found');
 
-  state.clientId =
-    c.client_id;
+  state.clientId=c.client_id;
 
-  $('businessName').textContent =
-    c.business_name ||
-    c.name ||
-    c.full_name ||
+  $('businessName').textContent=
+    c.business_name||
+    c.name||
+    c.full_name||
     'Business';
 
-  $('clientId').textContent =
-    c.client_id;
+  $('clientId').textContent=c.client_id;
 
   return data.session;
-
 }
 
-
-
-/* --------------------------------------------------
-   EDGE FUNCTION HELPER
--------------------------------------------------- */
-
 async function fn(name,body={}){
-
-  const {
-    data,
-    error
-  } =
-    await db.functions.invoke(
-      name,
-      {body}
-    );
+  const {data,error}=await db.functions.invoke(
+    name,
+    {body}
+  );
 
   if(error)
     throw new Error(
-      error.message ||
+      error.message||
       'Function request failed'
     );
 
   if(data?.error)
     throw new Error(data.error);
 
-  return data || {};
-
+  return data||{};
 }
-
-
-
-/* --------------------------------------------------
-   CONNECTION
--------------------------------------------------- */
 
 async function loadConnection(){
+  const data=await fn(
+    'instagram-connection-status'
+  );
 
-  const data =
-    await fn(
-      'instagram-connection-status'
-    );
+  state.connection=data;
 
-  state.connection =
-    data;
+  const connected=data?.connected===true;
 
-  const connected =
-    data?.connected === true;
+  $('connection').className=
+    `connection-badge ${connected?'online':'offline'}`;
 
-  $('connection').className =
-    `connection-badge ${
-      connected?'online':'offline'
-    }`;
+  $('connection').textContent=
+    connected
+      ? `● Instagram connected${data.username?` @${data.username}`:''}`
+      : (
+          data?.expired
+            ? '● Instagram token expired'
+            : '● Instagram not connected'
+        );
 
-  if(connected){
-
-    $('connection').textContent =
-      `● Instagram connected${
-        data.username
-          ? ` @${data.username}`
-          : ''
-      }`;
-
-    $('connect').textContent =
-      'Instagram Connected';
-
-  }else{
-
-    $('connection').textContent =
-      data?.expired
-        ? '● Instagram token expired'
-        : '● Instagram not connected';
-
-    $('connect').textContent =
-      'Connect Instagram';
-
-  }
+  $('connect').textContent=
+    connected
+      ? 'Instagram Connected'
+      : 'Connect Instagram';
 
   return connected;
-
 }
 
-
-
-/* --------------------------------------------------
-   INSTAGRAM OAUTH
--------------------------------------------------- */
-
 async function connectInstagram(){
+  const s=await session();
 
-  const s =
-    await session();
-
-  if(!s) return;
+  if(!s)return;
 
   try{
+    const response=await fetch(
+      `${SUPABASE_URL}/functions/v1/instagram-oauth-start`,
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          apikey:SUPABASE_KEY,
+          Authorization:`Bearer ${s.access_token}`
+        },
+        body:'{}'
+      }
+    );
 
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/functions/v1/instagram-oauth-start`,
-        {
-          method:'POST',
-          headers:{
-            'Content-Type':
-              'application/json',
+    const data=await response.json();
 
-            apikey:
-              SUPABASE_KEY,
-
-            Authorization:
-              `Bearer ${s.access_token}`
-          },
-
-          body:'{}'
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if(!response.ok || !data.url){
-
+    if(!response.ok||!data.url)
       throw new Error(
-        data.error ||
+        data.error||
         'Unable to start Instagram connection.'
       );
 
-    }
-
-    location.href =
-      data.url;
+    location.href=data.url;
 
   }catch(error){
-
     toast(
       error.message,
       true
     );
-
   }
-
 }
 
-
-
-/* --------------------------------------------------
-   CATALOG
--------------------------------------------------- */
-
 async function loadServices(){
-
   try{
+    const s=await db.auth.getSession();
 
-    const s =
-      await db.auth.getSession();
-
-    const token =
+    const token=
       s.data.session?.access_token;
 
     if(!token){
-
+      state.catalogContext=null;
+      state.business=null;
+      state.knowledge=[];
       state.services=[];
-
       renderServices();
-
       return;
-
     }
 
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/functions/v1/catalog-context`,
-        {
-          method:'POST',
-
-          headers:{
-            'Content-Type':
-              'application/json',
-
-            apikey:
-              SUPABASE_KEY,
-
-            Authorization:
-              `Bearer ${token}`
-          },
-
-          body:'{}'
-        }
-      );
+    const response=await fetch(
+      `${SUPABASE_URL}/functions/v1/catalog-context`,
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          apikey:SUPABASE_KEY,
+          Authorization:`Bearer ${token}`
+        },
+        body:'{}'
+      }
+    );
 
     if(!response.ok)
       throw new Error(
         `catalog-context ${response.status}`
       );
 
-    const result =
-      await response.json();
+    const result=await response.json();
 
-    state.services =
-      (result.catalog || [])
-        .map(item => ({
-          ...item,
-          short_desc:
-            item.short_description ||
-            item.description ||
-            ''
-        }));
+    state.catalogContext=
+      result||{};
+
+    state.business=
+      result.business||null;
+
+    state.knowledge=
+      Array.isArray(result.knowledge)
+        ? result.knowledge
+        : [];
+
+    state.services=
+      (
+        Array.isArray(result.catalog)
+          ? result.catalog
+          : []
+      ).map(item=>({
+        ...item,
+        short_desc:
+          item.short_description||
+          item.description||
+          ''
+      }));
 
   }catch(error){
 
@@ -398,67 +250,55 @@ async function loadServices(){
       error
     );
 
+    state.catalogContext=null;
+    state.business=null;
+    state.knowledge=[];
     state.services=[];
-
   }
 
   renderServices();
-
 }
 
-
 function renderServices(){
-
-  const active =
+  const active=
     state.services.filter(
-      item =>
-        item.status === 'active' ||
-        item.status === 'published'
+      item=>
+        item.status==='active'||
+        item.status==='published'
     );
 
-  const rows =
+  const rows=
     (active.length
       ? active
       : state.services
     ).slice(0,8);
 
-  $('serviceContext').innerHTML =
-    rows.map(item => `
+  $('serviceContext').innerHTML=
+    rows
+      .map(item=>`
+        <div class="service-chip">
+          <b>
+            ${esc(
+              item.name||
+              item.title||
+              'Service'
+            )}
+          </b>
 
-      <div class="service-chip">
-
-        <b>
-          ${esc(
-            item.name ||
-            item.title ||
-            'Service'
-          )}
-        </b>
-
-        <span>
-          ${esc(
-            item.short_desc ||
-            'Catalog service'
-          )}
-        </span>
-
-      </div>
-
-    `).join('') ||
-
+          <span>
+            ${esc(
+              item.short_desc||
+              'Catalog service'
+            )}
+          </span>
+        </div>
+      `)
+      .join('')||
     '<span>No services published yet.</span>';
-
 }
 
-
-
-/* --------------------------------------------------
-   CONVERSATIONS
--------------------------------------------------- */
-
 async function loadConversations(){
-
-  let query =
+  let query=
     db
       .from('instagram_conversations')
       .select('*')
@@ -474,36 +314,32 @@ async function loadConversations(){
         }
       );
 
-  if(state.filter !== 'all'){
-
-    query =
+  if(state.filter!=='all'){
+    query=
       query.eq(
         'status',
         state.filter
       );
-
   }
 
   const {
     data,
     error
-  } =
-    await query.limit(100);
+  }=await query.limit(100);
 
   if(error)
     throw error;
 
-  state.conversations =
-    data || [];
+  state.conversations=
+    data||[];
 
   renderConversations();
 
   if(state.selected){
-
-    const fresh =
+    const fresh=
       state.conversations.find(
-        item =>
-          item.id ===
+        item=>
+          item.id===
           state.selected.id
       );
 
@@ -512,113 +348,98 @@ async function loadConversations(){
         fresh,
         false
       );
-
   }
-
 }
 
-
 function renderConversations(){
-
-  const search =
+  const search=
     $('search')
       .value
       .toLowerCase()
       .trim();
 
-  const rows =
+  const rows=
     state.conversations.filter(
-      c => {
-
-        const text =
-          `${c.username || ''} ${
-            c.instagram_user_id || ''
+      c=>{
+        const text=
+          `${c.username||''} ${
+            c.instagram_user_id||''
           }`.toLowerCase();
 
-        return !search ||
+        return !search||
           text.includes(search);
-
       }
     );
 
+  $('list').innerHTML=
+    rows
+      .map(c=>`
+        <div
+          class="conversation-item ${
+            state.selected?.id===c.id
+              ? 'active'
+              : ''
+          }"
+          data-id="${esc(c.id)}"
+        >
+          <div class="avatar">
+            ${esc(
+              (c.username||'I')
+                .slice(0,1)
+                .toUpperCase()
+            )}
+          </div>
 
-  $('list').innerHTML =
-    rows.map(c => `
+          <div class="conv-copy">
 
-      <div
-        class="conversation-item ${
-          state.selected?.id === c.id
-            ? 'active'
-            : ''
-        }"
-        data-id="${esc(c.id)}"
-      >
+            <div class="conv-top">
+              <strong>
+                ${esc(
+                  c.username||
+                  c.instagram_user_id||
+                  'Instagram Customer'
+                )}
+              </strong>
 
-        <div class="avatar">
-          ${esc(
-            (c.username || 'I')
-              .slice(0,1)
-              .toUpperCase()
-          )}
-        </div>
+              <span class="conv-time">
+                ${time(
+                  c.last_message_at||
+                  c.updated_at
+                )}
+              </span>
+            </div>
 
-        <div class="conv-copy">
-
-          <div class="conv-top">
-
-            <strong>
-              ${esc(
-                c.username ||
-                c.instagram_user_id ||
-                'Instagram Customer'
-              )}
-            </strong>
-
-            <span class="conv-time">
-              ${time(
-                c.last_message_at ||
-                c.updated_at
+            <span class="conv-preview">
+              @${esc(
+                c.username||
+                'instagram'
               )}
             </span>
 
+            <span class="conv-badge">
+              ${
+                c.status==='open'
+                  ? '● Open'
+                  : '○ Closed'
+              }
+            </span>
+
           </div>
-
-          <span class="conv-preview">
-            @${esc(
-              c.username ||
-              'instagram'
-            )}
-          </span>
-
-          <span class="conv-badge">
-            ${
-              c.status === 'open'
-                ? '● Open'
-                : '○ Closed'
-            }
-          </span>
-
         </div>
-
-      </div>
-
-    `).join('') ||
-
+      `)
+      .join('')||
     '<div class="loading-state">No Instagram conversations yet.</div>';
-
 
   document
     .querySelectorAll(
       '.conversation-item'
     )
-    .forEach(item => {
-
-      item.onclick = () => {
-
-        const conversation =
+    .forEach(item=>{
+      item.onclick=()=>{
+        const conversation=
           state.conversations.find(
-            c =>
-              c.id ===
+            c=>
+              c.id===
               item.dataset.id
           );
 
@@ -626,25 +447,15 @@ function renderConversations(){
           selectConversation(
             conversation
           );
-
       };
-
     });
-
 }
-
-
-
-/* --------------------------------------------------
-   SELECT CONVERSATION
--------------------------------------------------- */
 
 async function selectConversation(
   conversation,
   focus=true
 ){
-
-  state.selected =
+  state.selected=
     conversation;
 
   $('empty')
@@ -655,58 +466,49 @@ async function selectConversation(
     .classList
     .remove('hidden');
 
-
-  const username =
-    conversation.username ||
+  const username=
+    conversation.username||
     'Instagram Customer';
 
-
-  $('name').textContent =
+  $('name').textContent=
     username;
 
-  $('handle').textContent =
+  $('handle').textContent=
     `@${username}`;
 
-
-  $('avatar').textContent =
+  $('avatar').textContent=
     username
       .slice(0,1)
       .toUpperCase();
 
-
-  $('ctxName').textContent =
+  $('ctxName').textContent=
     username;
 
-  $('ctxUsername').textContent =
+  $('ctxUsername').textContent=
     `@${username}`;
 
-  $('ctxInstagramId').textContent =
-    conversation.instagram_user_id ||
+  $('ctxInstagramId').textContent=
+    conversation.instagram_user_id||
     '—';
 
-
-  $('openLead').href =
+  $('openLead').href=
     conversation.lead_id
       ? `leads.html?lead=${encodeURIComponent(
           conversation.lead_id
         )}`
       : 'leads.html';
 
-
   document
     .querySelectorAll(
       '.conversation-item'
     )
-    .forEach(item => {
-
+    .forEach(item=>{
       item.classList.toggle(
         'active',
-        item.dataset.id ===
+        item.dataset.id===
           conversation.id
       );
-
     });
-
 
   await loadMessages(
     conversation.id
@@ -718,303 +520,237 @@ async function selectConversation(
 
   await loadPendingApproval();
 
-
   if(focus)
     $('input').focus();
-
 }
-
-
-
-/* --------------------------------------------------
-   MESSAGES
--------------------------------------------------- */
 
 async function loadMessages(
   conversationId
 ){
-
   const {
     data,
     error
-  } =
-    await db
-      .from('instagram_messages')
+  }=await db
+    .from('instagram_messages')
+    .select('*')
+    .eq(
+      'client_id',
+      state.clientId
+    )
+    .eq(
+      'conversation_id',
+      conversationId
+    )
+    .order(
+      'created_at',
+      {ascending:true}
+    )
+    .limit(300);
+
+  if(error)
+    throw error;
+
+  state.messages=
+    data||[];
+
+  renderMessages();
+}
+
+function renderMessages(){
+  const html=
+    state.messages
+      .map(
+        message=>`
+          <div class="message-row ${
+            message.direction==='inbound'
+              ? 'inbound'
+              : 'outbound'
+          }">
+            <div class="bubble">
+
+              ${esc(
+                message.text_body||
+                `[${message.message_type||'message'}]`
+              )}
+
+              <span class="bubble-meta">
+                ${time(
+                  message.created_at||
+                  message.provider_timestamp
+                )}
+
+                ${
+                  message.status
+                    ? ` · ${esc(message.status)}`
+                    : ''
+                }
+              </span>
+
+            </div>
+          </div>
+        `
+      )
+      .join('');
+
+  $('messages').innerHTML=
+    html||
+    '<div class="loading-state">No messages in this conversation.</div>';
+
+  requestAnimationFrame(()=>{
+    $('messages').scrollTop=
+      $('messages').scrollHeight;
+  });
+}
+
+async function loadLeadContext(
+  conversation
+){
+  let lead=null;
+
+  if(conversation.lead_id){
+
+    const {data}=await db
+      .from('leads')
+      .select('*')
+      .eq(
+        'id',
+        conversation.lead_id
+      )
+      .eq(
+        'client_id',
+        state.clientId
+      )
+      .maybeSingle();
+
+    lead=data;
+  }
+
+  if(!lead){
+
+    const {data}=await db
+      .from('leads')
       .select('*')
       .eq(
         'client_id',
         state.clientId
       )
       .eq(
-        'conversation_id',
-        conversationId
+        'instagram_user_id',
+        conversation.instagram_user_id
       )
       .order(
-        'created_at',
-        {ascending:true}
+        'updated_at',
+        {ascending:false}
       )
-      .limit(300);
-
-  if(error)
-    throw error;
-
-  state.messages =
-    data || [];
-
-  renderMessages();
-
-}
-
-
-function renderMessages(){
-
-  const html =
-    state.messages.map(
-      message => `
-
-        <div class="message-row ${
-          message.direction === 'inbound'
-            ? 'inbound'
-            : 'outbound'
-        }">
-
-          <div class="bubble">
-
-            ${esc(
-              message.text_body ||
-              `[${message.message_type || 'message'}]`
-            )}
-
-            <span class="bubble-meta">
-
-              ${time(
-                message.created_at ||
-                message.provider_timestamp
-              )}
-
-              ${
-                message.status
-                  ? ` · ${esc(message.status)}`
-                  : ''
-              }
-
-            </span>
-
-          </div>
-
-        </div>
-
-      `
-    ).join('');
-
-
-  $('messages').innerHTML =
-    html ||
-
-    '<div class="loading-state">No messages in this conversation.</div>';
-
-
-  requestAnimationFrame(() => {
-
-    $('messages').scrollTop =
-      $('messages').scrollHeight;
-
-  });
-
-}
-
-
-
-/* --------------------------------------------------
-   LEAD
--------------------------------------------------- */
-
-async function loadLeadContext(
-  conversation
-){
-
-  let lead=null;
-
-
-  if(conversation.lead_id){
-
-    const {
-      data
-    } =
-      await db
-        .from('leads')
-        .select('*')
-        .eq(
-          'id',
-          conversation.lead_id
-        )
-        .eq(
-          'client_id',
-          state.clientId
-        )
-        .maybeSingle();
+      .limit(1)
+      .maybeSingle();
 
     lead=data;
-
   }
 
-
-  if(!lead){
-
-    const {
-      data
-    } =
-      await db
-        .from('leads')
-        .select('*')
-        .eq(
-          'client_id',
-          state.clientId
-        )
-        .eq(
-          'instagram_user_id',
-          conversation.instagram_user_id
-        )
-        .order(
-          'updated_at',
-          {ascending:false}
-        )
-        .limit(1)
-        .maybeSingle();
-
-    lead=data;
-
-  }
-
-
-  state.lead =
+  state.lead=
     lead;
 
+  $('leadStatus').textContent=
+    lead
+      ? 'Lead'
+      : 'New';
 
-  $('leadStatus').textContent =
-    lead ? 'Lead' : 'New';
-
-  $('interest').textContent =
-    lead?.interest ||
+  $('interest').textContent=
+    lead?.interest||
     '—';
 
-  $('budget').textContent =
+  $('budget').textContent=
     lead?.budget
       ? `${lead.budget} ${
-          lead.budget_currency ||
+          lead.budget_currency||
           'INR'
         }`
       : '—';
 
-  $('product').textContent =
-    lead?.product_service ||
+  $('product').textContent=
+    lead?.product_service||
     '—';
 
-  $('source').textContent =
-    lead?.source ||
+  $('source').textContent=
+    lead?.source||
     'Instagram';
-
 
   await loadTimeline(
     lead?.id
   );
-
 }
-
-
-
-/* --------------------------------------------------
-   TIMELINE
--------------------------------------------------- */
 
 async function loadTimeline(
   leadId
 ){
-
   if(!leadId){
 
-    $('timeline').innerHTML =
+    $('timeline').innerHTML=
       '<span>No lead timeline yet.</span>';
 
     return;
-
   }
-
 
   const {
     data,
     error
-  } =
-    await db
-      .from('lead_timeline')
-      .select(
-        'event_type,title,description,created_at'
-      )
-      .eq(
-        'client_id',
-        state.clientId
-      )
-      .eq(
-        'lead_id',
-        leadId
-      )
-      .order(
-        'created_at',
-        {ascending:false}
-      )
-      .limit(8);
+  }=await db
+    .from('lead_timeline')
+    .select(
+      'event_type,title,description,created_at'
+    )
+    .eq(
+      'client_id',
+      state.clientId
+    )
+    .eq(
+      'lead_id',
+      leadId
+    )
+    .order(
+      'created_at',
+      {ascending:false}
+    )
+    .limit(8);
 
   if(error){
-
     console.error(error);
-
     return;
-
   }
 
+  $('timeline').innerHTML=
+    (data||[])
+      .map(
+        item=>`
+          <div class="timeline-item">
+            <strong>
+              ${esc(
+                item.title||
+                item.event_type||
+                'Event'
+              )}
+            </strong>
 
-  $('timeline').innerHTML =
-    (data || []).map(
-      item => `
-
-        <div class="timeline-item">
-
-          <strong>
-            ${esc(
-              item.title ||
-              item.event_type ||
-              'Event'
-            )}
-          </strong>
-
-          <small>
-            ${esc(
-              item.description || ''
-            )}
-            ·
-            ${time(
-              item.created_at
-            )}
-          </small>
-
-        </div>
-
-      `
-    ).join('') ||
-
+            <small>
+              ${esc(
+                item.description||
+                ''
+              )}
+              ·
+              ${time(
+                item.created_at
+              )}
+            </small>
+          </div>
+        `
+      )
+      .join('')||
     '<span>No events yet.</span>';
-
 }
 
-
-
-/* --------------------------------------------------
-   MODE
--------------------------------------------------- */
-
 function setMode(mode){
-
-  state.mode =
+  state.mode=
     mode;
 
   localStorage.setItem(
@@ -1022,39 +758,27 @@ function setMode(mode){
     mode
   );
 
-
   document
     .querySelectorAll(
       '.mode'
     )
-    .forEach(button => {
-
+    .forEach(button=>{
       button.classList.toggle(
         'active',
-        button.dataset.mode ===
+        button.dataset.mode===
           mode
       );
-
     });
 
-
-  $('sendHint').textContent =
-    mode === 'auto'
+  $('sendHint').textContent=
+    mode==='auto'
       ? 'AI can send'
-      : mode === 'approval'
+      : mode==='approval'
         ? 'Approval required'
         : 'Manual send';
-
 }
 
-
-
-/* --------------------------------------------------
-   SEND MESSAGE
--------------------------------------------------- */
-
 async function sendMessage(){
-
   if(!state.selected){
 
     toast(
@@ -1063,21 +787,17 @@ async function sendMessage(){
     );
 
     return;
-
   }
 
-
-  const message =
+  const message=
     $('input')
       .value
       .trim();
 
-
   if(!message)
     return;
 
-
-  if(message.length > 2000){
+  if(message.length>2000){
 
     toast(
       'Instagram message is too long.',
@@ -1085,16 +805,13 @@ async function sendMessage(){
     );
 
     return;
-
   }
-
 
   $('send').disabled=true;
 
-
   try{
 
-    const result =
+    const result=
       await fn(
         'instagram-action-request',
         {
@@ -1108,21 +825,16 @@ async function sendMessage(){
         }
       );
 
-
     if(!result.ok)
       throw new Error(
-        result.message ||
-        result.error ||
+        result.message||
+        result.error||
         'Instagram action failed.'
       );
 
-
     $('input').value='';
 
-
-    if(
-      state.mode === 'approval'
-    ){
+    if(state.mode==='approval'){
 
       toast(
         'Reply is waiting for approval.'
@@ -1132,7 +844,7 @@ async function sendMessage(){
 
       if(result.job_id){
 
-        const executed =
+        const executed=
           await fn(
             'business-action-executor',
             {
@@ -1141,24 +853,20 @@ async function sendMessage(){
             }
           );
 
-        if(executed?.ok === false){
+        if(executed?.ok===false){
 
           throw new Error(
-            executed.message ||
-            executed.error ||
+            executed.message||
+            executed.error||
             'Instagram message failed.'
           );
-
         }
-
       }
 
       toast(
         'Instagram message sent.'
       );
-
     }
-
 
     await loadMessages(
       state.selected.id
@@ -1168,7 +876,6 @@ async function sendMessage(){
 
     await loadPendingApproval();
 
-
   }catch(error){
 
     console.error(
@@ -1177,7 +884,7 @@ async function sendMessage(){
     );
 
     toast(
-      error.message ||
+      error.message||
       'Instagram message failed.',
       true
     );
@@ -1187,14 +894,7 @@ async function sendMessage(){
     $('send').disabled=false;
 
   }
-
 }
-
-
-
-/* --------------------------------------------------
-   APPROVAL
--------------------------------------------------- */
 
 async function loadPendingApproval(){
 
@@ -1202,16 +902,20 @@ async function loadPendingApproval(){
     .classList
     .add('hidden');
 
-
   if(!state.selected)
     return;
 
+  let approval=null;
 
-  const {
-    data,
-    error
-  } =
-    await db
+  const target=
+    state.selected.lead_id||
+    state.lead?.id;
+
+  if(target){
+
+    const {
+      data
+    }=await db
       .from('client_action_requests')
       .select(
         'id,status,action_payload,created_at'
@@ -1230,9 +934,7 @@ async function loadPendingApproval(){
       )
       .eq(
         'target_id',
-        state.selected.lead_id ||
-        state.lead?.id ||
-        '00000000-0000-0000-0000-000000000000'
+        target
       )
       .eq(
         'status',
@@ -1245,109 +947,73 @@ async function loadPendingApproval(){
       .limit(1)
       .maybeSingle();
 
-
-  if(error){
-
-    console.error(
-      'approval lookup',
-      error
-    );
-
-    return;
-
+    approval=data;
   }
-
-
-  /*
-    Some older action rows target the
-    conversation directly. If lead lookup
-    above did not find anything, perform
-    a conversation target lookup.
-  */
-
-  let approval=data;
-
 
   if(!approval){
 
-    const fallback =
-      await db
-        .from('client_action_requests')
-        .select(
-          'id,status,action_payload,created_at'
-        )
-        .eq(
-          'client_id',
-          state.clientId
-        )
-        .eq(
-          'target_module_slug',
-          MODULE
-        )
-        .eq(
-          'target_action',
-          'message'
-        )
-        .eq(
-          'target_id',
-          state.selected.id
-        )
-        .eq(
-          'status',
-          'proposed'
-        )
-        .order(
-          'created_at',
-          {ascending:false}
-        )
-        .limit(1)
-        .maybeSingle();
+    const {
+      data
+    }=await db
+      .from('client_action_requests')
+      .select(
+        'id,status,action_payload,created_at'
+      )
+      .eq(
+        'client_id',
+        state.clientId
+      )
+      .eq(
+        'target_module_slug',
+        MODULE
+      )
+      .eq(
+        'target_action',
+        'message'
+      )
+      .eq(
+        'target_id',
+        state.selected.id
+      )
+      .eq(
+        'status',
+        'proposed'
+      )
+      .order(
+        'created_at',
+        {ascending:false}
+      )
+      .limit(1)
+      .maybeSingle();
 
-    approval =
-      fallback.data;
-
+    approval=data;
   }
-
 
   if(!approval)
     return;
 
-
-  $('approvalText').textContent =
-    approval.action_payload?.message ||
+  $('approvalText').textContent=
+    approval.action_payload?.message||
     'Instagram reply pending approval.';
-
 
   $('approvalBox')
     .classList
     .remove('hidden');
 
+  $('approveBtn').onclick=
+    ()=>approvePending(
+      approval.id
+    );
 
-  $('approveBtn').onclick =
-    () =>
-      approvePending(
-        approval.id
-      );
-
-
-  $('rejectBtn').onclick =
-    () =>
-      rejectPending(
-        approval.id
-      );
-
+  $('rejectBtn').onclick=
+    ()=>rejectPending(
+      approval.id
+    );
 }
-
-
-
-/* --------------------------------------------------
-   APPROVE
--------------------------------------------------- */
 
 async function approvePending(
   requestId
 ){
-
   try{
 
     $('approveBtn').disabled=true;
@@ -1355,22 +1021,20 @@ async function approvePending(
     const {
       data,
       error
-    } =
-      await db.rpc(
-        'approve_client_business_action',
-        {
-          p_action_request_id:
-            requestId
-        }
-      );
+    }=await db.rpc(
+      'approve_client_business_action',
+      {
+        p_action_request_id:
+          requestId
+      }
+    );
 
     if(error)
       throw error;
 
-
     if(data?.job_id){
 
-      const result =
+      const result=
         await fn(
           'business-action-executor',
           {
@@ -1379,23 +1043,19 @@ async function approvePending(
           }
         );
 
-      if(result?.ok === false){
+      if(result?.ok===false){
 
         throw new Error(
-          result.message ||
-          result.error ||
+          result.message||
+          result.error||
           'Instagram provider failed.'
         );
-
       }
-
     }
-
 
     toast(
       'Approved and sent.'
     );
-
 
     await loadPendingApproval();
 
@@ -1404,7 +1064,6 @@ async function approvePending(
     );
 
     await loadConversations();
-
 
   }catch(error){
 
@@ -1418,31 +1077,22 @@ async function approvePending(
     $('approveBtn').disabled=false;
 
   }
-
 }
-
-
-
-/* --------------------------------------------------
-   REJECT
--------------------------------------------------- */
 
 async function rejectPending(
   requestId
 ){
-
   try{
 
     const {
       error
-    } =
-      await db.rpc(
-        'reject_client_business_action',
-        {
-          p_action_request_id:
-            requestId
-        }
-      );
+    }=await db.rpc(
+      'reject_client_business_action',
+      {
+        p_action_request_id:
+          requestId
+      }
+    );
 
     if(error)
       throw error;
@@ -1459,16 +1109,8 @@ async function rejectPending(
       error.message,
       true
     );
-
   }
-
 }
-
-
-
-/* --------------------------------------------------
-   AI SUGGESTION
--------------------------------------------------- */
 
 async function suggestReply(){
 
@@ -1480,84 +1122,102 @@ async function suggestReply(){
     );
 
     return;
-
   }
-
 
   $('suggest')
     .disabled=true;
 
-
   try{
 
-    const recent =
+    const recent=
       state.messages
         .slice(-12)
         .map(
-          message =>
-            `${
-              message.direction ===
-              'inbound'
-                ? 'Customer'
-                : 'Business'
-            }: ${
-              message.text_body || ''
+          message=>
+            `${message.direction==='inbound'?'Customer':'Business'}: ${
+              message.text_body||''
             }`
         )
         .join('\n');
 
+    const business=
+      JSON.stringify(
+        state.business||
+        {}
+      );
 
-    const catalog =
+    const knowledge=
+      state.knowledge
+        .slice(0,20)
+        .map(
+          item=>
+            `${item.title||'Knowledge'}: ${
+              item.content||''
+            }`
+        )
+        .join('\n');
+
+    const catalog=
       state.services
         .slice(0,20)
-        .map(service => {
+        .map(service=>{
 
-          const name =
-            service.name ||
-            service.title ||
+          const name=
+            service.name||
+            service.title||
             '';
 
-          const description =
-            service.short_desc ||
-            service.description ||
+          const description=
+            service.short_desc||
+            service.description||
             '';
 
           const parts=[
             `${name}: ${description}`
           ];
 
-
           if(
-            service.price != null &&
-            service.price !== ''
+            service.price!=null&&
+            service.price!==''
           ){
 
             parts.push(
               `Price: ${
                 service.price
               } ${
-                service.currency || ''
+                service.currency||''
               }`.trim()
             );
 
           }
 
+          if(service.price_type)
+            parts.push(
+              `Price type: ${
+                service.price_type
+              }`
+            );
+
+          if(service.billing_period)
+            parts.push(
+              `Billing: ${
+                service.billing_period
+              }`
+            );
 
           if(service.offer_type)
             parts.push(
-              `Type: ${service.offer_type}`
+              `Type: ${
+                service.offer_type
+              }`
             );
 
-
-          if(
-            service.sales_talking_points
-          )
+          if(service.sales_talking_points)
             parts.push(
               `Talking points: ${
                 service.sales_talking_points
               }`
             );
-
 
           if(service.allowed_claims)
             parts.push(
@@ -1566,7 +1226,6 @@ async function suggestReply(){
               }`
             );
 
-
           if(service.restrictions)
             parts.push(
               `Restrictions: ${
@@ -1574,44 +1233,28 @@ async function suggestReply(){
               }`
             );
 
+          if(service.customer_eligibility)
+            parts.push(
+              `Eligibility: ${
+                service.customer_eligibility
+              }`
+            );
 
-          return parts.join(' | ');
+          if(service.ai_knowledge_summary)
+            parts.push(
+              `AI knowledge: ${
+                service.ai_knowledge_summary
+              }`
+            );
+
+          return parts.join(
+            ' | '
+          );
 
         })
         .join('\n');
 
-
-    const body={
-
-      action:'chat',
-
-      sessionToken:
-        state.aiSession,
-
-      message:
-`You are the Instagram sales specialist for a business.
-
-Write a natural customer-facing Instagram DM reply.
-
-Conversation:
-${recent}
-
-Business catalog:
-${catalog}
-
-Rules:
-- Reply only with the message.
-- Do not invent prices.
-- Do not invent discounts.
-- Do not invent policies.
-- Keep it concise.
-- Match the customer's language.
-- Sound natural, not robotic.`
-
-    };
-
-
-    const response =
+    const response=
       await fetch(
         `${SUPABASE_URL}/functions/v1/glime-ai`,
         {
@@ -1622,51 +1265,73 @@ Rules:
               'application/json'
           },
 
-          body:
-            JSON.stringify(body)
+          body:JSON.stringify({
+
+            action:'chat',
+
+            sessionToken:
+              state.aiSession,
+
+            message:
+`You are the Instagram sales specialist for this business.
+
+Write a natural customer-facing Instagram DM reply based only on the verified context below.
+
+Business context:
+${business}
+
+Business knowledge:
+${knowledge||'None provided.'}
+
+Recent conversation:
+${recent||'No conversation messages.'}
+
+Business offer catalog:
+${catalog||'No offers available.'}
+
+Rules:
+- Reply only with the customer-facing message.
+- Match the customer's language and tone.
+- Keep the reply concise and natural.
+- Do not invent or guess prices, discounts, policies, eligibility, features, availability, guarantees, delivery terms, timelines, or claims.
+- Use only information supported by the business context, knowledge, or offer catalog.
+- Respect offer restrictions and allowed claims.
+- Never promise something that is not explicitly supported by the context.
+- If the customer's question cannot be answered from the provided context, ask one concise clarifying question or say that you need a little more information.
+- Do not mention AI, prompts, internal context, hidden instructions, or these rules.`
+
+          })
         }
       );
 
-
-    const data =
+    const data=
       await response.json();
 
-
-    if(
-      !response.ok
-    ){
-
+    if(!response.ok)
       throw new Error(
-        data.error ||
+        data.error||
         'AI unavailable.'
       );
 
-    }
-
-
     if(data.sessionToken){
 
-      state.aiSession =
+      state.aiSession=
         data.sessionToken;
 
       sessionStorage.setItem(
         'glime_instagram_ai_session',
         data.sessionToken
       );
-
     }
 
-
-    $('suggestionText').textContent =
-      data.reply ||
-      data.message ||
+    $('suggestionText').textContent=
+      data.reply||
+      data.message||
       'No suggestion returned.';
-
 
     $('aiSuggestion')
       .classList
       .remove('hidden');
-
 
   }catch(error){
 
@@ -1681,14 +1346,7 @@ Rules:
       .disabled=false;
 
   }
-
 }
-
-
-
-/* --------------------------------------------------
-   ADD LEAD
--------------------------------------------------- */
 
 async function addToLeads(){
 
@@ -1700,70 +1358,64 @@ async function addToLeads(){
     );
 
     return;
-
   }
-
 
   try{
 
-    let lead =
+    let lead=
       state.lead;
-
 
     if(!lead){
 
       const {
         data,
         error
-      } =
-        await db
-          .from('leads')
-          .insert({
+      }=await db
+        .from('leads')
+        .insert({
 
-            client_id:
-              state.clientId,
+          client_id:
+            state.clientId,
 
-            name:
-              state.selected.username ||
-              `Instagram ${
-                state.selected.instagram_user_id
-              }`,
+          name:
+            state.selected.username||
+            `Instagram ${
+              state.selected.instagram_user_id
+            }`,
 
-            source:
-              'instagram',
+          source:
+            'instagram',
 
-            source_ref:
-              state.selected.instagram_user_id,
+          source_ref:
+            state.selected.instagram_user_id,
 
-            instagram_user_id:
-              state.selected.instagram_user_id,
+          instagram_user_id:
+            state.selected.instagram_user_id,
 
-            instagram_thread_id:
-              state.selected.instagram_thread_id,
+          instagram_thread_id:
+            state.selected.instagram_thread_id,
 
-            status:
-              'new',
+          status:
+            'new',
 
-            priority:
-              'normal'
+          priority:
+            'normal'
 
-          })
-          .select('*')
-          .single();
-
+        })
+        .select('*')
+        .single();
 
       if(error)
         throw error;
 
-
       lead=data;
-
 
       await db
         .from('instagram_conversations')
         .update({
           lead_id:
             lead.id,
+
           updated_at:
             new Date().toISOString()
         })
@@ -1775,27 +1427,21 @@ async function addToLeads(){
           'client_id',
           state.clientId
         );
-
     }
 
-
-    state.lead =
+    state.lead=
       lead;
 
-
-    state.selected.lead_id =
+    state.selected.lead_id=
       lead.id;
-
 
     toast(
       'Instagram customer added to Leads.'
     );
 
-
     await loadLeadContext(
       state.selected
     );
-
 
   }catch(error){
 
@@ -1803,52 +1449,40 @@ async function addToLeads(){
       error.message,
       true
     );
-
   }
-
 }
-
-
-
-/* --------------------------------------------------
-   CLOSE CONVERSATION
--------------------------------------------------- */
 
 async function closeConversation(){
 
   if(!state.selected)
     return;
 
-
   try{
 
     const {
       error
-    } =
-      await db
-        .from('instagram_conversations')
-        .update({
-          status:'closed',
-          updated_at:
-            new Date().toISOString()
-        })
-        .eq(
-          'id',
-          state.selected.id
-        )
-        .eq(
-          'client_id',
-          state.clientId
-        );
+    }=await db
+      .from('instagram_conversations')
+      .update({
+        status:'closed',
+        updated_at:
+          new Date().toISOString()
+      })
+      .eq(
+        'id',
+        state.selected.id
+      )
+      .eq(
+        'client_id',
+        state.clientId
+      );
 
     if(error)
       throw error;
 
-
     toast(
       'Conversation closed.'
     );
-
 
     await loadConversations();
 
@@ -1858,38 +1492,27 @@ async function closeConversation(){
       error.message,
       true
     );
-
   }
-
 }
 
-
-
-/* --------------------------------------------------
-   EVENTS
--------------------------------------------------- */
-
-$('logout').onclick =
-  async () => {
-
+$('logout').onclick=
+  async()=>{
     await db.auth.signOut();
 
-    location.href =
+    location.href=
       'login.html';
-
   };
 
-
-$('connect').onclick =
+$('connect').onclick=
   connectInstagram;
 
-
-$('refresh').onclick =
-  async () => {
-
+$('refresh').onclick=
+  async()=>{
     try{
 
       await loadConnection();
+
+      await loadServices();
 
       await loadConversations();
 
@@ -1903,105 +1526,83 @@ $('refresh').onclick =
         error.message,
         true
       );
-
     }
-
   };
 
-
-$('search').oninput =
+$('search').oninput=
   renderConversations;
 
-
-$('send').onclick =
+$('send').onclick=
   sendMessage;
 
-
-$('suggest').onclick =
+$('suggest').onclick=
   suggestReply;
 
-
-$('refreshSuggestion').onclick =
+$('refreshSuggestion').onclick=
   suggestReply;
 
-
-$('useSuggestion').onclick =
-  () => {
-
-    $('input').value =
+$('useSuggestion').onclick=
+  ()=>{
+    $('input').value=
       $('suggestionText')
         .textContent
         .trim();
 
     $('input').focus();
-
   };
 
-
-$('addLead').onclick =
+$('addLead').onclick=
   addToLeads;
 
-
-$('closeConversation').onclick =
+$('closeConversation').onclick=
   closeConversation;
-
 
 document
   .querySelectorAll(
     '.mode'
   )
-  .forEach(button => {
-
-    button.onclick =
-      () =>
-        setMode(
-          button.dataset.mode
-        );
-
+  .forEach(button=>{
+    button.onclick=
+      ()=>setMode(
+        button.dataset.mode
+      );
   });
-
 
 document
   .querySelectorAll(
     '.filters button'
   )
-  .forEach(button => {
-
-    button.onclick =
-      async () => {
-
+  .forEach(button=>{
+    button.onclick=
+      async()=>{
         document
           .querySelectorAll(
             '.filters button'
           )
-          .forEach(
-            item =>
-              item.classList.remove(
-                'active'
-              )
+          .forEach(item=>
+            item.classList.remove(
+              'active'
+            )
           );
 
         button.classList.add(
           'active'
         );
 
-        state.filter =
+        state.filter=
           button.dataset.filter;
 
         await loadConversations();
-
       };
-
   });
-
 
 $('input').addEventListener(
   'keydown',
-  event => {
-
+  event=>{
     if(
-      event.key === 'Enter' &&
-      (event.ctrlKey || event.metaKey)
+      event.key==='Enter'&&
+      (event.ctrlKey||
+       event.metaKey)
     ){
 
       event.preventDefault();
@@ -2009,15 +1610,8 @@ $('input').addEventListener(
       sendMessage();
 
     }
-
   }
 );
-
-
-
-/* --------------------------------------------------
-   BOOT
--------------------------------------------------- */
 
 async function boot(){
 
@@ -2044,25 +1638,20 @@ async function boot(){
       error
     );
 
-    $('boot').innerHTML = `
-
+    $('boot').innerHTML=`
       <span style="
         color:#ff6472;
         max-width:400px;
         text-align:center;
       ">
         ${esc(
-          error.message ||
+          error.message||
           'Unable to load Instagram Sales Specialist.'
         )}
       </span>
-
     `;
-
   }
-
 }
-
 
 boot();
 
