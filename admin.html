@@ -229,31 +229,51 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
   function showMfaSetup(){resetLoginCards();$('login1').style.display='none';$('login2faSetup').style.display='block';$('login').style.display='flex'}
   function showApp(){$('login').style.display='none';$('app').classList.remove('hidden')}
 
+  async function clearPendingAdminFactors(){
+    const factors=await sb.auth.mfa.listFactors();
+    if(factors.error)throw factors.error;
+
+    const pending=(factors.data?.totp||[])
+      .filter(x=>x.status==='unverified' && x.friendly_name==='GLIME Admin');
+
+    for(const factor of pending){
+      const u=await sb.auth.mfa.unenroll({factorId:factor.id});
+      if(u.error)throw u.error;
+    }
+  }
+
   async function beginMfaEnrollment(){
     if(mfaEnrollmentBusy)return;
     mfaEnrollmentBusy=true;
     try{
-      const factors=await sb.auth.mfa.listFactors();
-      if(factors.error)throw factors.error;
-      const pending=(factors.data?.totp||[]).find(x=>x.status==='unverified' && x.friendly_name==='GLIME Admin');
+      await clearPendingAdminFactors();
 
-      // Supabase creates an unverified factor during enrollment. If a previous
-      // setup was abandoned, that factor keeps the same friendly name and a
-      // new enrollment is rejected with mfa_factor_name_conflict. Remove only
-      // that abandoned/unverified GLIME Admin factor, then create a fresh one.
-      if(pending){
-        const u=await sb.auth.mfa.unenroll({factorId:pending.id});
-        if(u.error)throw u.error;
+      let r=await sb.auth.mfa.enroll({
+        factorType:'totp',
+        friendlyName:'GLIME Admin'
+      });
+
+      if(r.error && /friendly name|already exists|factor_name_conflict/i.test(r.error.message||'')){
+        await clearPendingAdminFactors();
+        r=await sb.auth.mfa.enroll({
+          factorType:'totp',
+          friendlyName:'GLIME Admin'
+        });
       }
 
-      const r=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'GLIME Admin'});
       if(r.error)throw r.error;
-      mfaFactor=r.data;showMfaSetup();
+
+      mfaFactor=r.data;
+      showMfaSetup();
       $('loginQr').innerHTML='<img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="'+r.data.totp.qr_code+'" alt="GLIME Admin TOTP QR">';
       $('loginSecret').textContent='Secret: '+r.data.totp.secret;
       $('setupOtp').focus();
-    }catch(e){msg('loginMsg','2FA setup failed: '+e.message);showLogin()}
-    finally{mfaEnrollmentBusy=false}
+    }catch(e){
+      msg('loginMsg','2FA setup failed: '+e.message);
+      showLogin();
+    }finally{
+      mfaEnrollmentBusy=false;
+    }
   }
 
   $('loginBtn').onclick=async()=>{
@@ -428,12 +448,37 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
     $('mfaSettings').innerHTML=verified.length?`<p><span class="badge green">2FA Enabled</span></p><p class="sub">Verified TOTP factor is active for this admin account.</p>`:`<p><span class="badge red">2FA Not Enrolled</span></p><button class="btn orange" id="enrollMfa">Set up TOTP 2FA</button><div id="mfaEnrollBox"></div>`;
     const b=$('enrollMfa');if(!b)return;b.onclick=async()=>{
       try{
-        const factors=await sb.auth.mfa.listFactors();if(factors.error)throw factors.error;
-        const pending=(factors.data?.totp||[]).find(x=>x.status==='unverified' && x.friendly_name==='GLIME Admin');
-        if(pending){const u=await sb.auth.mfa.unenroll({factorId:pending.id});if(u.error)throw u.error;}
-        const r=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'GLIME Admin'});if(r.error)throw r.error;mfaFactor=r.data;
+        await clearPendingAdminFactors();
+
+        let r=await sb.auth.mfa.enroll({
+          factorType:'totp',
+          friendlyName:'GLIME Admin'
+        });
+
+        if(r.error && /friendly name|already exists|factor_name_conflict/i.test(r.error.message||'')){
+          await clearPendingAdminFactors();
+          r=await sb.auth.mfa.enroll({
+            factorType:'totp',
+            friendlyName:'GLIME Admin'
+          });
+        }
+
+        if(r.error)throw r.error;
+        mfaFactor=r.data;
+
         $('mfaEnrollBox').innerHTML=`<p class="sub">Scan this QR in Google Authenticator/Authy, then enter the code.</p><img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="${r.data.totp.qr_code}" alt="TOTP QR"><p class="sub">Secret: ${esc(r.data.totp.secret)}</p><input id="newMfaCode" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn primary" style="margin-top:8px" id="confirmMfa">Verify & Enable</button>`;
-        $('confirmMfa').onclick=async()=>{const c=await sb.auth.mfa.challenge({factorId:mfaFactor.id});if(c.error)throw c.error;const v=await sb.auth.mfa.verify({factorId:mfaFactor.id,challengeId:c.data.id,code:$('newMfaCode').value.trim()});if(v.error){alert(v.error.message);return}alert('2FA enabled.');await sb.auth.refreshSession();renderMfa()};
+
+        $('confirmMfa').onclick=async()=>{
+          try{
+            const c=await sb.auth.mfa.challenge({factorId:mfaFactor.id});
+            if(c.error)throw c.error;
+            const v=await sb.auth.mfa.verify({factorId:mfaFactor.id,challengeId:c.data.id,code:$('newMfaCode').value.trim()});
+            if(v.error)throw v.error;
+            alert('2FA enabled.');
+            await sb.auth.refreshSession();
+            renderMfa();
+          }catch(e){alert(e.message)}
+        };
       }catch(e){alert(e.message)}
     }
   }
