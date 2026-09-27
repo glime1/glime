@@ -234,39 +234,69 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
     if(factors.error)throw factors.error;
 
     const pending=(factors.data?.totp||[])
-      .filter(x=>x.status==='unverified' && x.friendly_name==='GLIME Admin');
+      .filter(x=>x.status==='unverified');
 
     for(const factor of pending){
       const u=await sb.auth.mfa.unenroll({factorId:factor.id});
-      if(u.error)throw u.error;
+      if(u.error)console.warn('Unable to remove pending MFA factor:',u.error.message||u.error);
     }
+
+    return (await sb.auth.mfa.listFactors()).data||{totp:[],phone:[]};
+  }
+
+  async function enrollAdminTotp(){
+    const first=await sb.auth.mfa.listFactors();
+    if(first.error)throw first.error;
+
+    const verified=(first.data?.totp||[]).find(x=>x.status==='verified');
+    if(verified)return {existing:true,factor:verified};
+
+    await clearPendingAdminFactors();
+
+    let r=await sb.auth.mfa.enroll({
+      factorType:'totp',
+      friendlyName:'GLIME Admin'
+    });
+
+    if(r.error && /friendly name|already exists|factor_name_conflict|mfa_factor_name_conflict/i.test(r.error.message||'')){
+      r=await sb.auth.mfa.enroll({
+        factorType:'totp',
+        friendlyName:'GLIME Admin Setup'
+      });
+    }
+
+    if(r.error)throw r.error;
+    return {existing:false,factor:r.data};
+  }
+
+  async function finishAdminMfaCleanup(){
+    try{
+      const factors=await sb.auth.mfa.listFactors();
+      if(factors.error)return;
+      for(const factor of (factors.data?.totp||[])){
+        if(factor.status==='unverified' && factor.id!==mfaFactor?.id){
+          const u=await sb.auth.mfa.unenroll({factorId:factor.id});
+          if(u.error)console.warn('Pending MFA cleanup failed:',u.error.message||u.error);
+        }
+      }
+    }catch(e){console.warn('Pending MFA cleanup failed:',e.message||e)}
   }
 
   async function beginMfaEnrollment(){
     if(mfaEnrollmentBusy)return;
     mfaEnrollmentBusy=true;
     try{
-      await clearPendingAdminFactors();
-
-      let r=await sb.auth.mfa.enroll({
-        factorType:'totp',
-        friendlyName:'GLIME Admin'
-      });
-
-      if(r.error && /friendly name|already exists|factor_name_conflict/i.test(r.error.message||'')){
-        await clearPendingAdminFactors();
-        r=await sb.auth.mfa.enroll({
-          factorType:'totp',
-          friendlyName:'GLIME Admin'
-        });
+      const enrolled=await enrollAdminTotp();
+      if(enrolled.existing){
+        mfaFactor=enrolled.factor;
+        showMfa();
+        return;
       }
 
-      if(r.error)throw r.error;
-
-      mfaFactor=r.data;
+      mfaFactor=enrolled.factor;
       showMfaSetup();
-      $('loginQr').innerHTML='<img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="'+r.data.totp.qr_code+'" alt="GLIME Admin TOTP QR">';
-      $('loginSecret').textContent='Secret: '+r.data.totp.secret;
+      $('loginQr').innerHTML='<img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="'+mfaFactor.totp.qr_code+'" alt="GLIME Admin TOTP QR">';
+      $('loginSecret').textContent='Secret: '+mfaFactor.totp.secret;
       $('setupOtp').focus();
     }catch(e){
       msg('loginMsg','2FA setup failed: '+e.message);
@@ -307,6 +337,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
       await sb.auth.refreshSession();
       const a=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
       if(a.data?.currentLevel!=='aal2')throw new Error('2FA verification did not reach AAL2.');
+      await finishAdminMfaCleanup();
       showApp();await loadAll();
     }catch(e){msg('setupMsg',e.message)}finally{b.disabled=false}
   };
@@ -448,25 +479,16 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
     $('mfaSettings').innerHTML=verified.length?`<p><span class="badge green">2FA Enabled</span></p><p class="sub">Verified TOTP factor is active for this admin account.</p>`:`<p><span class="badge red">2FA Not Enrolled</span></p><button class="btn orange" id="enrollMfa">Set up TOTP 2FA</button><div id="mfaEnrollBox"></div>`;
     const b=$('enrollMfa');if(!b)return;b.onclick=async()=>{
       try{
-        await clearPendingAdminFactors();
-
-        let r=await sb.auth.mfa.enroll({
-          factorType:'totp',
-          friendlyName:'GLIME Admin'
-        });
-
-        if(r.error && /friendly name|already exists|factor_name_conflict/i.test(r.error.message||'')){
-          await clearPendingAdminFactors();
-          r=await sb.auth.mfa.enroll({
-            factorType:'totp',
-            friendlyName:'GLIME Admin'
-          });
+        const enrolled=await enrollAdminTotp();
+        if(enrolled.existing){
+          mfaFactor=enrolled.factor;
+          alert('A verified GLIME Admin 2FA factor is already active.');
+          renderMfa();
+          return;
         }
+        mfaFactor=enrolled.factor;
 
-        if(r.error)throw r.error;
-        mfaFactor=r.data;
-
-        $('mfaEnrollBox').innerHTML=`<p class="sub">Scan this QR in Google Authenticator/Authy, then enter the code.</p><img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="${r.data.totp.qr_code}" alt="TOTP QR"><p class="sub">Secret: ${esc(r.data.totp.secret)}</p><input id="newMfaCode" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn primary" style="margin-top:8px" id="confirmMfa">Verify & Enable</button>`;
+        $('mfaEnrollBox').innerHTML=`<p class="sub">Scan this QR in Google Authenticator/Authy, then enter the code.</p><img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="${mfaFactor.totp.qr_code}" alt="TOTP QR"><p class="sub">Secret: ${esc(mfaFactor.totp.secret)}</p><input id="newMfaCode" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn primary" style="margin-top:8px" id="confirmMfa">Verify & Enable</button>`;
 
         $('confirmMfa').onclick=async()=>{
           try{
@@ -474,8 +496,9 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
             if(c.error)throw c.error;
             const v=await sb.auth.mfa.verify({factorId:mfaFactor.id,challengeId:c.data.id,code:$('newMfaCode').value.trim()});
             if(v.error)throw v.error;
-            alert('2FA enabled.');
             await sb.auth.refreshSession();
+            await finishAdminMfaCleanup();
+            alert('2FA enabled.');
             renderMfa();
           }catch(e){alert(e.message)}
         };
