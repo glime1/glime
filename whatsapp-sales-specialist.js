@@ -4,58 +4,1940 @@ const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const MODULE='whatsapp_ai_sales_agent';
 const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-let state={user:null,clientId:null,connection:null,conversations:[],messages:[],selected:null,services:[],filter:'all',mode:localStorage.getItem('glime_whatsapp_mode')||'auto',aiSession:sessionStorage.getItem('glime_ai_session')||null};
 
-async function session(){const {data,error}=await supabase.auth.getSession();if(error)throw error;if(!data.session){location.href='login.html';return null}state.user=data.session.user;const {data:c,error:e}=await supabase.from('client_data').select('client_id,business_name,name,full_name').eq('auth_user_id',state.user.id).maybeSingle();if(e)throw e;if(!c?.client_id)throw new Error('Client account not found');state.clientId=c.client_id;$('businessName').textContent=c.business_name||c.name||c.full_name||'Business';$('clientId').textContent=c.client_id;return data.session}
+let state={
+  user:null,
+  clientId:null,
+  connection:null,
+  conversations:[],
+  messages:[],
+  selected:null,
+  services:[],
+  business:null,
+  knowledge:[],
+  catalogContext:null,
+  filter:'all',
+  mode:localStorage.getItem('glime_whatsapp_mode')||'auto',
+  aiSession:sessionStorage.getItem('glime_ai_session')||null
+};
 
-async function fn(name,body){const {data,error}=await supabase.functions.invoke(name,{body});if(error)throw new Error(error.message||'Function request failed');if(data?.error)throw new Error(data.error);return data||{}}
+/* --------------------------------------------------
+   SESSION
+-------------------------------------------------- */
 
-async function loadConnection(){const d=await fn('whatsapp-connection',{action:'status'});state.connection=d.connection||d;const connected=state.connection?.status==='connected';$('connectionBadge').className=`connection-badge ${connected?'online':'offline'}`;$('connectionBadge').textContent=connected?'● WhatsApp connected':'● Not connected';$('connectBtn').textContent=connected?'WhatsApp Connected':'Connect WhatsApp';return connected}
+async function session(){
+  const {data,error}=await supabase.auth.getSession();
+  if(error)throw error;
 
-async function loadServices(){try{const {data:{session}}=await supabase.auth.getSession();const response=await fetch(`${SUPABASE_URL}/functions/v1/catalog-context`,{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:`Bearer ${session?.access_token||''}`},body:'{}'});if(!response.ok){throw new Error(`catalog-context request failed: ${response.status}`)}const result=await response.json();state.services=(result.catalog||[]).map(item=>({...item,short_desc:item.short_description||item.description||''}))}catch(e){console.error('loadServices/catalog-context error:',e);state.services=[]}renderServices()}
+  if(!data.session){
+    location.href='login.html';
+    return null;
+  }
 
-async function loadConversations(){let q=supabase.from('whatsapp_conversations').select('*').eq('client_id',state.clientId).order('last_message_at',{ascending:false,nullsFirst:false});if(state.filter!=='all')q=q.eq('status',state.filter);const {data,error}=await q.limit(100);if(error)throw error;state.conversations=data||[];renderConversations();if(state.selected){const fresh=state.conversations.find(x=>x.id===state.selected.id);if(fresh)selectConversation(fresh,false)}}
+  state.user=data.session.user;
 
-async function loadMessages(id){const {data,error}=await supabase.from('whatsapp_messages').select('*').eq('client_id',state.clientId).eq('conversation_id',id).order('created_at',{ascending:true}).limit(300);if(error)throw error;state.messages=data||[];renderMessages()}
+  const {data:c,error:e}=await supabase
+    .from('client_data')
+    .select('client_id,business_name,name,full_name')
+    .eq('auth_user_id',state.user.id)
+    .maybeSingle();
 
-async function selectConversation(c,scroll=true){state.selected=c;$('chatEmpty').classList.add('hidden');$('chatView').classList.remove('hidden');$('chatName').textContent=c.customer_name||c.customer_phone||'Customer';$('chatPhone').textContent=c.customer_phone||'—';$('chatAvatar').textContent=(c.customer_name||'W').slice(0,1).toUpperCase();$('contextName').textContent=c.customer_name||'Customer';$('contextPhone').textContent=c.customer_phone||'—';$('openLeadBtn').href=c.lead_id?`leads.html?lead=${encodeURIComponent(c.lead_id)}`:'leads.html';document.querySelectorAll('.conversation-item').forEach(x=>x.classList.toggle('active',x.dataset.id===c.id));await loadMessages(c.id);await loadLeadContext(c);await loadPendingApproval();if(scroll)$('messageInput').focus()}
+  if(e)throw e;
 
-async function loadLeadContext(c){let lead=null;if(c.lead_id){const {data}=await supabase.from('leads').select('*').eq('id',c.lead_id).eq('client_id',state.clientId).maybeSingle();lead=data}if(!lead&&c.customer_id){const {data}=await supabase.from('leads').select('*').eq('customer_id',c.customer_id).eq('client_id',state.clientId).order('updated_at',{ascending:false}).limit(1).maybeSingle();lead=data}$('leadStatus').textContent=lead?'Lead':'New';$('leadInterest').textContent=lead?.interest||'—';$('leadBudget').textContent=lead?.budget?`${lead.budget} ${lead.budget_currency||'INR'}`:'—';$('leadProduct').textContent=lead?.product_service||'—';$('leadSource').textContent=lead?.source||'whatsapp';state.selected.lead=lead;await loadTimeline(lead?.id)}
+  if(!c?.client_id)
+    throw new Error('Client account not found');
 
-async function loadTimeline(leadId){if(!leadId){$('timeline').innerHTML='<span>No lead timeline yet.</span>';return}const {data}=await supabase.from('lead_timeline').select('event_type,title,description,created_at').eq('client_id',state.clientId).eq('lead_id',leadId).order('created_at',{ascending:false}).limit(8);$('timeline').innerHTML=(data||[]).map(x=>`<div class="timeline-item"><strong>${esc(x.title||x.event_type||'Event')}</strong><small>${esc(x.description||'')} · ${time(x.created_at)}</small></div>`).join('')||'<span>No events yet.</span>'}
+  state.clientId=c.client_id;
 
-function renderConversations(){const search=$('conversationSearch').value.toLowerCase().trim();const rows=state.conversations.filter(c=>!search||`${c.customer_name||''} ${c.customer_phone||''}`.toLowerCase().includes(search));$('conversationList').innerHTML=rows.map(c=>`<div class="conversation-item ${state.selected?.id===c.id?'active':''}" data-id="${c.id}"><div class="avatar">${esc((c.customer_name||'W').slice(0,1).toUpperCase())}</div><div class="conv-copy"><div class="conv-top"><strong>${esc(c.customer_name||c.customer_phone||'Customer')}</strong><span class="conv-time">${time(c.last_message_at||c.updated_at)}</span></div><span class="conv-preview">${esc(c.customer_phone||'')}</span><span class="conv-badge">${c.status==='open'?'● Open':'○ Closed'}</span></div></div>`).join('')||'<div class="loading-state">No WhatsApp conversations yet.</div>';document.querySelectorAll('.conversation-item').forEach(x=>x.onclick=()=>selectConversation(state.conversations.find(c=>c.id===x.dataset.id)))}
+  $('businessName').textContent=
+    c.business_name||c.name||c.full_name||'Business';
 
-function renderMessages(){const html=state.messages.map(m=>`<div class="message-row ${m.direction}"><div class="bubble">${esc(m.text_body||`[${m.message_type}]`)}<span class="bubble-meta">${time(m.created_at)}${m.status?` · ${esc(m.status)}`:''}</span></div></div>`).join('');$('messageList').innerHTML=html||'<div class="loading-state">No messages in this conversation.</div>';requestAnimationFrame(()=>{$('messageList').scrollTop=$('messageList').scrollHeight})}
+  $('clientId').textContent=c.client_id;
 
-function renderServices(){const active=state.services.filter(s=>s.status==='active'||s.status==='published');$('serviceContext').innerHTML=(active.length?active:state.services).slice(0,8).map(s=>`<div class="service-chip"><b>${esc(s.name)}</b><span>${esc(s.short_desc||'Catalog service')}</span></div>`).join('')||'<span>No services published yet.</span>'}
+  return data.session;
+}
 
-async function sendMessage(){if(!state.selected)return toast('Select a conversation first');const text=$('messageInput').value.trim();if(!text)return;$('sendBtn').disabled=true;try{if(state.mode==='manual'){const d=await fn('whatsapp-manual-send',{conversation_id:state.selected.id,message:text});if(!d.ok)throw new Error(d.error||'Manual send failed');toast('Message sent manually')}else{const d=await fn('whatsapp-action-request',{conversation_id:state.selected.id,message:text,mode:state.mode});if(state.mode==='auto'&&d.job_id){await fn('business-action-executor',{job_id:d.job_id});toast('AI message sent')}else{toast(d.message||'Reply is waiting for approval');} }$('messageInput').value='';await loadMessages(state.selected.id);await loadConversations();await loadPendingApproval()}catch(e){toast(e.message,true)}finally{$('sendBtn').disabled=false}}
+/* --------------------------------------------------
+   EDGE FUNCTION
+-------------------------------------------------- */
 
-async function loadPendingApproval(){if(!state.selected)return;const {data}=await supabase.from('client_action_requests').select('id,status,action_payload,created_at').eq('client_id',state.clientId).eq('target_module_slug',MODULE).eq('target_action','message').eq('target_id',state.selected.id).eq('status','proposed').order('created_at',{ascending:false}).limit(1).maybeSingle();const old=document.getElementById('approvalBox');if(old)old.remove();if(!data)return;const box=document.createElement('div');box.id='approvalBox';box.className='ai-suggestion';box.innerHTML=`<div><span class="ai-label">✦ PENDING APPROVAL</span><p>${esc(data.action_payload?.message||'')}</p></div><div class="suggestion-actions"><button class="primary-btn" id="approvePending">Approve</button><button class="icon-btn" id="rejectPending">×</button></div>`;document.querySelector('.composer').prepend(box);document.getElementById('approvePending').onclick=()=>approvePending(data.id);document.getElementById('rejectPending').onclick=()=>rejectPending(data.id)}
+async function fn(name,body){
+  const {data,error}=await supabase.functions.invoke(name,{body});
 
-async function approvePending(id){try{const {data,error}=await supabase.rpc('approve_client_business_action',{p_action_request_id:id});if(error)throw error;if(data?.job_id){await fn('business-action-executor',{job_id:data.job_id})}toast('Approved and sent');await loadPendingApproval();await loadMessages(state.selected.id)}catch(e){toast(e.message,true)}}
-async function rejectPending(id){try{const {error}=await supabase.rpc('reject_client_business_action',{p_action_request_id:id});if(error)throw error;toast('Reply rejected');await loadPendingApproval()}catch(e){toast(e.message,true)}}
+  if(error)
+    throw new Error(
+      error.message||'Function request failed'
+    );
 
-async function suggestReply(){if(!state.selected)return toast('Select a conversation first');$('suggestBtn').disabled=true;try{const recent=state.messages.slice(-12).map(m=>`${m.direction==='inbound'?'Customer':'Business'}: ${m.text_body||''}`).join('\n');const catalog=state.services.slice(0,20).map(s=>{const label=s.name||s.title||'';const desc=s.short_desc||s.description||'';const parts=[`${label}: ${desc}`];if(s.price!=null&&s.price!=='')parts.push(`Price: ${s.price} ${s.currency||''}`.trim());if(s.offer_type)parts.push(`Type: ${s.offer_type}`);if(s.sales_talking_points)parts.push(`Talking points: ${s.sales_talking_points}`);if(s.allowed_claims)parts.push(`Allowed claims: ${s.allowed_claims}`);if(s.restrictions)parts.push(`Restrictions: ${s.restrictions}`);if(s.customer_eligibility)parts.push(`Eligibility: ${s.customer_eligibility}`);return parts.join(' | ')}).join('\n');let sessionToken=state.aiSession;const body={action:'chat',sessionToken,message:`You are drafting a WhatsApp sales reply for GLIME's client. Conversation:\n${recent}\nBusiness service catalog:\n${catalog}\nWrite ONLY the suggested customer-facing reply. Be concise, natural and do not invent prices or policies.`};const r=await fetch(`${SUPABASE_URL}/functions/v1/glime-ai`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(d.sessionToken){state.aiSession=d.sessionToken;sessionStorage.setItem('glime_ai_session',d.sessionToken)}if(!r.ok)throw new Error(d.error||'AI unavailable');$('suggestionText').textContent=d.reply||'No suggestion returned.';$('aiSuggestion').classList.remove('hidden')}catch(e){toast(e.message,true)}finally{$('suggestBtn').disabled=false}}
+  if(data?.error)
+    throw new Error(data.error);
 
-async function addToLeads(){if(!state.selected)return;const c=state.selected;try{let lead=state.selected.lead;if(!lead){const {data:existing}=await supabase.from('leads').select('*').eq('client_id',state.clientId).eq('mobile',c.customer_phone).maybeSingle();lead=existing}if(lead){toast('Customer is already a lead');state.selected.lead=lead;return loadLeadContext(c)}const {data:customer}=c.customer_id?await supabase.from('customers').select('*').eq('id',c.customer_id).eq('client_id',state.clientId).maybeSingle():{data:null};const {data:newLead,error}=await supabase.from('leads').insert({client_id:state.clientId,customer_id:c.customer_id||null,name:c.customer_name||customer?.name||'WhatsApp Lead',mobile:c.customer_phone,whatsapp:c.customer_phone,source:'whatsapp',source_ref:c.id,interest:null,product_service:null,status:'new',priority:'normal'}).select('*').single();if(error)throw error;await supabase.from('whatsapp_conversations').update({lead_id:newLead.id}).eq('id',c.id).eq('client_id',state.clientId);state.selected.lead=newLead;await loadLeadContext(c);toast('Lead created')}catch(e){toast(e.message,true)}}
+  return data||{};
+}
 
-async function connectStart(){try{const d=await fn('whatsapp-connection',{action:'start'});sessionStorage.setItem('whatsapp_connect_state',d.state||'');sessionStorage.setItem('whatsapp_config_id',d.config_id||'');$('connectStatus').textContent='Meta connection started. Opening secure signup…';if(window.FB&&d.config_id){FB.login(function(resp){if(resp&&resp.authResponse&&resp.authResponse.code){completeConnect(resp.authResponse.code,d.state)}else{$('connectStatus').textContent='Meta signup was cancelled.'}},{config_id:d.config_id,response_type:'code',override_default_response_type:true,extras:{setup:{},featureType:'whatsapp_business_app_onboarding'}})}else $('connectStatus').textContent='Meta SDK is not available yet. Refresh and try again.'}catch(e){$('connectStatus').textContent=e.message}} 
+/* --------------------------------------------------
+   WHATSAPP CONNECTION
+-------------------------------------------------- */
 
-async function completeConnect(code,stateToken){try{$('connectStatus').textContent='Verifying Meta connection…';const d=await fn('whatsapp-connection',{action:'complete',code,state:stateToken});$('connectStatus').textContent=d?.connection?'WhatsApp connected successfully.':'Connection completed.';setTimeout(()=>location.reload(),700)}catch(e){$('connectStatus').textContent=e.message}}
+async function loadConnection(){
+  const d=await fn('whatsapp-connection',{action:'status'});
 
-function setMode(mode){state.mode=mode;localStorage.setItem('glime_whatsapp_mode',mode);document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));$('sendHint').textContent=mode==='auto'?'AUTO · AI can send':mode==='approval'?'AI + APPROVAL · Review first':'MANUAL · You send'}
+  state.connection=d.connection||d;
 
-async function closeConversation(){if(!state.selected)return;const {error}=await supabase.from('whatsapp_conversations').update({status:'closed'}).eq('id',state.selected.id).eq('client_id',state.clientId);if(error)toast(error.message,true);else{state.selected.status='closed';await loadConversations();toast('Conversation closed')}}
+  const connected=
+    state.connection?.status==='connected';
 
-function setupRealtime(){supabase.channel(`wa-sales-${state.clientId}`).on('postgres_changes',{event:'*',schema:'public',table:'whatsapp_messages',filter:`client_id=eq.${state.clientId}`},()=>{loadConversations();if(state.selected)loadMessages(state.selected.id)}).on('postgres_changes',{event:'*',schema:'public',table:'whatsapp_conversations',filter:`client_id=eq.${state.clientId}`},loadConversations).subscribe()}
+  $('connectionBadge').className=
+    `connection-badge ${connected?'online':'offline'}`;
 
-function toast(msg,error=false){let x=document.querySelector('.glime-toast');if(!x){x=document.createElement('div');x.className='glime-toast';Object.assign(x.style,{position:'fixed',right:'18px',bottom:'18px',zIndex:500,padding:'11px 14px',borderRadius:'10px',background:'#101b28',border:'1px solid rgba(255,255,255,.12)',color:error?'#ff8a96':'#fff',fontSize:'.7rem',boxShadow:'0 15px 40px rgba(0,0,0,.4)'});document.body.appendChild(x)}x.textContent=msg;clearTimeout(x._t);x._t=setTimeout(()=>x.remove(),3200)}
-function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function time(v){if(!v)return'—';const d=new Date(v);return d.toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+  $('connectionBadge').textContent=
+    connected
+      ?'● WhatsApp connected'
+      :'● Not connected';
 
-async function boot(){try{await session();await Promise.all([loadConnection(),loadConversations(),loadServices()]);setMode(state.mode);setupRealtime();$('bootScreen').remove()}catch(e){console.error(e);$('bootScreen').innerHTML=`<div style="color:#ff6472">${esc(e.message)}</div>`}}
+  $('connectBtn').textContent=
+    connected
+      ?'WhatsApp Connected'
+      :'Connect WhatsApp';
 
-$('sendBtn').onclick=sendMessage;$('suggestBtn').onclick=suggestReply;$('refreshSuggestion').onclick=suggestReply;$('useSuggestion').onclick=()=>{$('messageInput').value=$('suggestionText').textContent;$('aiSuggestion').classList.add('hidden');$('messageInput').focus()};$('addLeadBtn').onclick=addToLeads;$('closeConversationBtn').onclick=closeConversation;$('refreshBtn').onclick=()=>Promise.all([loadConnection(),loadConversations()]);$('conversationSearch').oninput=renderConversations;$('connectBtn').onclick=()=>$('connectModal').classList.remove('hidden');$('closeConnect').onclick=()=>$('connectModal').classList.add('hidden');$('startConnect').onclick=connectStart;$('openSidebar').onclick=()=>$('sidebar').classList.add('open');$('closeSidebar').onclick=()=>$('sidebar').classList.remove('open');$('logoutBtn').onclick=async()=>{await supabase.auth.signOut();location.href='login.html'};document.querySelectorAll('.filter').forEach(b=>b.onclick=()=>{document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.filter=b.dataset.filter;loadConversations()});document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));$('addonsBtn').onclick=()=>toast('Add-on slots are ready for future modules.');window.addEventListener('keydown',e=>{if(e.key==='Escape'){$('connectModal').classList.add('hidden')}});boot();
+  return connected;
+}
+
+/* --------------------------------------------------
+   COMMON CATALOG CONTEXT
+   catalog-context v3
+-------------------------------------------------- */
+
+async function loadServices(){
+  try{
+
+    const {
+      data:{
+        session
+      }
+    }=await supabase.auth.getSession();
+
+    const token=session?.access_token||'';
+
+    const response=
+      await fetch(
+        `${SUPABASE_URL}/functions/v1/catalog-context`,
+        {
+          method:'POST',
+
+          headers:{
+            'Content-Type':'application/json',
+            apikey:SUPABASE_KEY,
+            Authorization:`Bearer ${token}`
+          },
+
+          body:'{}'
+        }
+      );
+
+    if(!response.ok){
+      throw new Error(
+        `catalog-context request failed: ${response.status}`
+      );
+    }
+
+    const result=await response.json();
+
+    state.catalogContext=result||{};
+
+    state.business=
+      result.business||null;
+
+    state.knowledge=
+      Array.isArray(result.knowledge)
+        ?result.knowledge
+        :[];
+
+    state.services=
+      (Array.isArray(result.catalog)
+        ?result.catalog
+        :[]
+      ).map(item=>({
+        ...item,
+        short_desc:
+          item.short_description||
+          item.description||
+          ''
+      }));
+
+  }catch(e){
+
+    console.error(
+      'loadServices/catalog-context error:',
+      e
+    );
+
+    state.catalogContext=null;
+    state.business=null;
+    state.knowledge=[];
+    state.services=[];
+
+  }
+
+  renderServices();
+}
+
+/* --------------------------------------------------
+   SERVICE CONTEXT UI
+-------------------------------------------------- */
+
+function renderServices(){
+
+  const active=
+    state.services.filter(
+      s=>
+        s.status==='active'||
+        s.status==='published'
+    );
+
+  const rows=
+    (active.length
+      ?active
+      :state.services
+    ).slice(0,8);
+
+  $('serviceContext').innerHTML=
+    rows.map(s=>`
+
+      <div class="service-chip">
+
+        <b>
+          ${esc(
+            s.name||
+            s.title||
+            'Service'
+          )}
+        </b>
+
+        <span>
+          ${esc(
+            s.short_desc||
+            'Catalog service'
+          )}
+        </span>
+
+      </div>
+
+    `).join('')||
+
+    '<span>No services published yet.</span>';
+}
+
+/* --------------------------------------------------
+   CONVERSATIONS
+-------------------------------------------------- */
+
+async function loadConversations(){
+
+  let q=
+    supabase
+      .from('whatsapp_conversations')
+      .select('*')
+      .eq(
+        'client_id',
+        state.clientId
+      )
+      .order(
+        'last_message_at',
+        {
+          ascending:false,
+          nullsFirst:false
+        }
+      );
+
+  if(state.filter!=='all')
+    q=q.eq(
+      'status',
+      state.filter
+    );
+
+  const {
+    data,
+    error
+  }=await q.limit(100);
+
+  if(error)
+    throw error;
+
+  state.conversations=data||[];
+
+  renderConversations();
+
+  if(state.selected){
+
+    const fresh=
+      state.conversations.find(
+        x=>x.id===state.selected.id
+      );
+
+    if(fresh)
+      selectConversation(
+        fresh,
+        false
+      );
+  }
+}
+
+/* --------------------------------------------------
+   MESSAGES
+-------------------------------------------------- */
+
+async function loadMessages(id){
+
+  const {
+    data,
+    error
+  }=await supabase
+    .from('whatsapp_messages')
+    .select('*')
+    .eq(
+      'client_id',
+      state.clientId
+    )
+    .eq(
+      'conversation_id',
+      id
+    )
+    .order(
+      'created_at',
+      {ascending:true}
+    )
+    .limit(300);
+
+  if(error)
+    throw error;
+
+  state.messages=data||[];
+
+  renderMessages();
+}
+
+/* --------------------------------------------------
+   SELECT CONVERSATION
+-------------------------------------------------- */
+
+async function selectConversation(
+  c,
+  scroll=true
+){
+
+  state.selected=c;
+
+  $('chatEmpty')
+    .classList
+    .add('hidden');
+
+  $('chatView')
+    .classList
+    .remove('hidden');
+
+  $('chatName').textContent=
+    c.customer_name||
+    c.customer_phone||
+    'Customer';
+
+  $('chatPhone').textContent=
+    c.customer_phone||'—';
+
+  $('chatAvatar').textContent=
+    (
+      c.customer_name||
+      'W'
+    )
+      .slice(0,1)
+      .toUpperCase();
+
+  $('contextName').textContent=
+    c.customer_name||
+    'Customer';
+
+  $('contextPhone').textContent=
+    c.customer_phone||
+    '—';
+
+  $('openLeadBtn').href=
+    c.lead_id
+      ?`leads.html?lead=${encodeURIComponent(c.lead_id)}`
+      :'leads.html';
+
+  document
+    .querySelectorAll(
+      '.conversation-item'
+    )
+    .forEach(x=>
+      x.classList.toggle(
+        'active',
+        x.dataset.id===c.id
+      )
+    );
+
+  await loadMessages(c.id);
+
+  await loadLeadContext(c);
+
+  await loadPendingApproval();
+
+  if(scroll)
+    $('messageInput').focus();
+}
+
+/* --------------------------------------------------
+   LEAD CONTEXT
+-------------------------------------------------- */
+
+async function loadLeadContext(c){
+
+  let lead=null;
+
+  if(c.lead_id){
+
+    const {
+      data
+    }=await supabase
+      .from('leads')
+      .select('*')
+      .eq(
+        'id',
+        c.lead_id
+      )
+      .eq(
+        'client_id',
+        state.clientId
+      )
+      .maybeSingle();
+
+    lead=data;
+  }
+
+  if(!lead&&c.customer_id){
+
+    const {
+      data
+    }=await supabase
+      .from('leads')
+      .select('*')
+      .eq(
+        'customer_id',
+        c.customer_id
+      )
+      .eq(
+        'client_id',
+        state.clientId
+      )
+      .order(
+        'updated_at',
+        {ascending:false}
+      )
+      .limit(1)
+      .maybeSingle();
+
+    lead=data;
+  }
+
+  $('leadStatus').textContent=
+    lead
+      ?'Lead'
+      :'New';
+
+  $('leadInterest').textContent=
+    lead?.interest||
+    '—';
+
+  $('leadBudget').textContent=
+    lead?.budget
+      ?`${lead.budget} ${lead.budget_currency||'INR'}`
+      :'—';
+
+  $('leadProduct').textContent=
+    lead?.product_service||
+    '—';
+
+  $('leadSource').textContent=
+    lead?.source||
+    'whatsapp';
+
+  state.selected.lead=lead;
+
+  await loadTimeline(
+    lead?.id
+  );
+}
+
+/* --------------------------------------------------
+   TIMELINE
+-------------------------------------------------- */
+
+async function loadTimeline(leadId){
+
+  if(!leadId){
+
+    $('timeline').innerHTML=
+      '<span>No lead timeline yet.</span>';
+
+    return;
+  }
+
+  const {
+    data
+  }=await supabase
+    .from('lead_timeline')
+    .select(
+      'event_type,title,description,created_at'
+    )
+    .eq(
+      'client_id',
+      state.clientId
+    )
+    .eq(
+      'lead_id',
+      leadId
+    )
+    .order(
+      'created_at',
+      {ascending:false}
+    )
+    .limit(8);
+
+  $('timeline').innerHTML=
+    (data||[])
+      .map(
+        x=>`
+
+          <div class="timeline-item">
+
+            <strong>
+              ${esc(
+                x.title||
+                x.event_type||
+                'Event'
+              )}
+            </strong>
+
+            <small>
+              ${esc(
+                x.description||
+                ''
+              )}
+              ·
+              ${time(
+                x.created_at
+              )}
+            </small>
+
+          </div>
+
+        `
+      )
+      .join('')||
+
+    '<span>No events yet.</span>';
+}
+
+/* --------------------------------------------------
+   RENDER CONVERSATIONS
+-------------------------------------------------- */
+
+function renderConversations(){
+
+  const search=
+    $('conversationSearch')
+      .value
+      .toLowerCase()
+      .trim();
+
+  const rows=
+    state.conversations.filter(
+      c=>
+        !search||
+        `${c.customer_name||''} ${c.customer_phone||''}`
+          .toLowerCase()
+          .includes(search)
+    );
+
+  $('conversationList').innerHTML=
+    rows.map(
+      c=>`
+
+        <div
+          class="conversation-item ${
+            state.selected?.id===c.id
+              ?'active'
+              :''
+          }"
+          data-id="${esc(c.id)}"
+        >
+
+          <div class="avatar">
+            ${esc(
+              (
+                c.customer_name||
+                'W'
+              )
+                .slice(0,1)
+                .toUpperCase()
+            )}
+          </div>
+
+          <div class="conv-copy">
+
+            <div class="conv-top">
+
+              <strong>
+                ${esc(
+                  c.customer_name||
+                  c.customer_phone||
+                  'Customer'
+                )}
+              </strong>
+
+              <span class="conv-time">
+                ${time(
+                  c.last_message_at||
+                  c.updated_at
+                )}
+              </span>
+
+            </div>
+
+            <span class="conv-preview">
+              ${esc(
+                c.customer_phone||
+                ''
+              )}
+            </span>
+
+            <span class="conv-badge">
+              ${
+                c.status==='open'
+                  ?'● Open'
+                  :'○ Closed'
+              }
+            </span>
+
+          </div>
+
+        </div>
+
+      `
+    ).join('')||
+
+    '<div class="loading-state">No WhatsApp conversations yet.</div>';
+
+  document
+    .querySelectorAll(
+      '.conversation-item'
+    )
+    .forEach(
+      x=>
+        x.onclick=
+          ()=>
+            selectConversation(
+              state.conversations.find(
+                c=>c.id===x.dataset.id
+              )
+            )
+    );
+}
+
+/* --------------------------------------------------
+   RENDER MESSAGES
+-------------------------------------------------- */
+
+function renderMessages(){
+
+  const html=
+    state.messages
+      .map(
+        m=>`
+
+          <div class="message-row ${m.direction}">
+
+            <div class="bubble">
+
+              ${esc(
+                m.text_body||
+                `[${m.message_type}]`
+              )}
+
+              <span class="bubble-meta">
+                ${time(m.created_at)}
+                ${
+                  m.status
+                    ?` · ${esc(m.status)}`
+                    :''
+                }
+              </span>
+
+            </div>
+
+          </div>
+
+        `
+      )
+      .join('');
+
+  $('messageList').innerHTML=
+    html||
+
+    '<div class="loading-state">No messages in this conversation.</div>';
+
+  requestAnimationFrame(
+    ()=>
+      $('messageList').scrollTop=
+        $('messageList').scrollHeight
+  );
+}
+
+/* --------------------------------------------------
+   SEND MESSAGE
+-------------------------------------------------- */
+
+async function sendMessage(){
+
+  if(!state.selected)
+    return toast(
+      'Select a conversation first'
+    );
+
+  const text=
+    $('messageInput')
+      .value
+      .trim();
+
+  if(!text)
+    return;
+
+  $('sendBtn').disabled=true;
+
+  try{
+
+    if(state.mode==='manual'){
+
+      const d=
+        await fn(
+          'whatsapp-manual-send',
+          {
+            conversation_id:
+              state.selected.id,
+            message:text
+          }
+        );
+
+      if(!d.ok)
+        throw new Error(
+          d.error||
+          'Manual send failed'
+        );
+
+      toast(
+        'Message sent manually'
+      );
+
+    }else{
+
+      const d=
+        await fn(
+          'whatsapp-action-request',
+          {
+            conversation_id:
+              state.selected.id,
+            message:text,
+            mode:state.mode
+          }
+        );
+
+      if(
+        state.mode==='auto'&&
+        d.job_id
+      ){
+
+        await fn(
+          'business-action-executor',
+          {
+            job_id:d.job_id
+          }
+        );
+
+        toast(
+          'AI message sent'
+        );
+
+      }else{
+
+        toast(
+          d.message||
+          'Reply is waiting for approval'
+        );
+
+      }
+    }
+
+    $('messageInput').value='';
+
+    await loadMessages(
+      state.selected.id
+    );
+
+    await loadConversations();
+
+    await loadPendingApproval();
+
+  }catch(e){
+
+    toast(
+      e.message,
+      true
+    );
+
+  }finally{
+
+    $('sendBtn').disabled=false;
+
+  }
+}
+
+/* --------------------------------------------------
+   PENDING APPROVAL
+-------------------------------------------------- */
+
+async function loadPendingApproval(){
+
+  if(!state.selected)
+    return;
+
+  const {
+    data
+  }=await supabase
+    .from('client_action_requests')
+    .select(
+      'id,status,action_payload,created_at'
+    )
+    .eq(
+      'client_id',
+      state.clientId
+    )
+    .eq(
+      'target_module_slug',
+      MODULE
+    )
+    .eq(
+      'target_action',
+      'message'
+    )
+    .eq(
+      'target_id',
+      state.selected.id
+    )
+    .eq(
+      'status',
+      'proposed'
+    )
+    .order(
+      'created_at',
+      {ascending:false}
+    )
+    .limit(1)
+    .maybeSingle();
+
+  const old=
+    document.getElementById(
+      'approvalBox'
+    );
+
+  if(old)
+    old.remove();
+
+  if(!data)
+    return;
+
+  const box=
+    document.createElement('div');
+
+  box.id='approvalBox';
+  box.className='ai-suggestion';
+
+  box.innerHTML=`
+
+    <div>
+
+      <span class="ai-label">
+        ✦ PENDING APPROVAL
+      </span>
+
+      <p>
+        ${esc(
+          data.action_payload?.message||
+          ''
+        )}
+      </p>
+
+    </div>
+
+    <div class="suggestion-actions">
+
+      <button
+        class="primary-btn"
+        id="approvePending"
+      >
+        Approve
+      </button>
+
+      <button
+        class="icon-btn"
+        id="rejectPending"
+      >
+        ×
+      </button>
+
+    </div>
+
+  `;
+
+  document
+    .querySelector('.composer')
+    .prepend(box);
+
+  document
+    .getElementById(
+      'approvePending'
+    )
+    .onclick=
+      ()=>
+        approvePending(
+          data.id
+        );
+
+  document
+    .getElementById(
+      'rejectPending'
+    )
+    .onclick=
+      ()=>
+        rejectPending(
+          data.id
+        );
+}
+
+/* --------------------------------------------------
+   APPROVE
+-------------------------------------------------- */
+
+async function approvePending(id){
+
+  try{
+
+    const {
+      data,
+      error
+    }=await supabase.rpc(
+      'approve_client_business_action',
+      {
+        p_action_request_id:id
+      }
+    );
+
+    if(error)
+      throw error;
+
+    if(data?.job_id){
+
+      await fn(
+        'business-action-executor',
+        {
+          job_id:data.job_id
+        }
+      );
+    }
+
+    toast(
+      'Approved and sent'
+    );
+
+    await loadPendingApproval();
+
+    await loadMessages(
+      state.selected.id
+    );
+
+  }catch(e){
+
+    toast(
+      e.message,
+      true
+    );
+
+  }
+}
+
+/* --------------------------------------------------
+   REJECT
+-------------------------------------------------- */
+
+async function rejectPending(id){
+
+  try{
+
+    const {
+      error
+    }=await supabase.rpc(
+      'reject_client_business_action',
+      {
+        p_action_request_id:id
+      }
+    );
+
+    if(error)
+      throw error;
+
+    toast(
+      'Reply rejected'
+    );
+
+    await loadPendingApproval();
+
+  }catch(e){
+
+    toast(
+      e.message,
+      true
+    );
+  }
+}
+
+/* --------------------------------------------------
+   AI SUGGESTION
+   COMMON CONTEXT:
+   business + knowledge + catalog
+-------------------------------------------------- */
+
+async function suggestReply(){
+
+  if(!state.selected)
+    return toast(
+      'Select a conversation first'
+    );
+
+  $('suggestBtn').disabled=true;
+
+  try{
+
+    /* ----------------------------------------------
+       RECENT CONVERSATION
+    ---------------------------------------------- */
+
+    const recent=
+      state.messages
+        .slice(-12)
+        .map(
+          m=>
+            `${m.direction==='inbound'
+              ?'Customer'
+              :'Business'
+            }: ${m.text_body||''}`
+        )
+        .join('\n');
+
+    /* ----------------------------------------------
+       CATALOG
+    ---------------------------------------------- */
+
+    const catalog=
+      state.services
+        .slice(0,20)
+        .map(
+          s=>{
+
+            const label=
+              s.name||
+              s.title||
+              '';
+
+            const desc=
+              s.short_desc||
+              s.description||
+              '';
+
+            const parts=[
+              `${label}: ${desc}`
+            ];
+
+            if(
+              s.price!=null&&
+              s.price!==''
+            ){
+
+              parts.push(
+                `Price: ${s.price} ${s.currency||''}`.trim()
+              );
+            }
+
+            if(s.offer_type)
+              parts.push(
+                `Type: ${s.offer_type}`
+              );
+
+            if(s.sales_talking_points)
+              parts.push(
+                `Talking points: ${s.sales_talking_points}`
+              );
+
+            if(s.allowed_claims)
+              parts.push(
+                `Allowed claims: ${s.allowed_claims}`
+              );
+
+            if(s.restrictions)
+              parts.push(
+                `Restrictions: ${s.restrictions}`
+              );
+
+            if(s.customer_eligibility)
+              parts.push(
+                `Eligibility: ${s.customer_eligibility}`
+              );
+
+            if(s.ai_knowledge_summary)
+              parts.push(
+                `AI knowledge: ${s.ai_knowledge_summary}`
+              );
+
+            return parts.join(
+              ' | '
+            );
+          }
+        )
+        .join('\n');
+
+    /* ----------------------------------------------
+       BUSINESS
+    ---------------------------------------------- */
+
+    const business=
+      state.business
+        ?JSON.stringify(
+            state.business
+          )
+        :'{}';
+
+    /* ----------------------------------------------
+       CLIENT KNOWLEDGE
+    ---------------------------------------------- */
+
+    const knowledge=
+      state.knowledge
+        .slice(0,20)
+        .map(
+          k=>
+            `${k.title||'Knowledge'}: ${k.content||''}`
+        )
+        .join('\n');
+
+    /* ----------------------------------------------
+       FINAL COMMON CONTEXT
+    ---------------------------------------------- */
+
+    const body={
+
+      action:'chat',
+
+      sessionToken:
+        state.aiSession,
+
+      message:
+
+`You are drafting a WhatsApp sales reply for GLIME's client.
+
+Use ONLY the supplied business context, business knowledge, offer catalog and conversation context.
+
+Do not invent information.
+
+Business context:
+${business}
+
+Business knowledge:
+${knowledge||'None provided'}
+
+Conversation:
+${recent||'No conversation history provided'}
+
+Business offer catalog:
+${catalog||'No catalog information provided'}
+
+Rules:
+- Write ONLY the suggested customer-facing reply.
+- Be concise and natural.
+- Match the customer's language.
+- Do not invent prices.
+- Do not invent discounts.
+- Do not invent policies.
+- Do not invent eligibility requirements.
+- Do not invent features.
+- Do not invent claims.
+- Do not promise anything that is not present in the supplied context.
+- Use the actual catalog information when answering product/service questions.
+- Respect restrictions and allowed claims.
+- If the supplied context does not contain the answer, ask a concise clarifying question instead of guessing.
+- Do not mention internal context, AI, prompts, catalog processing, or these rules.
+`
+    };
+
+    /* ----------------------------------------------
+       GLIME AI
+    ---------------------------------------------- */
+
+    const r=
+      await fetch(
+        `${SUPABASE_URL}/functions/v1/glime-ai`,
+        {
+          method:'POST',
+
+          headers:{
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify(body)
+        }
+      );
+
+    const d=
+      await r.json();
+
+    if(d.sessionToken){
+
+      state.aiSession=
+        d.sessionToken;
+
+      sessionStorage.setItem(
+        'glime_ai_session',
+        d.sessionToken
+      );
+    }
+
+    if(!r.ok)
+      throw new Error(
+        d.error||
+        'AI unavailable'
+      );
+
+    $('suggestionText').textContent=
+      d.reply||
+      'No suggestion returned.';
+
+    $('aiSuggestion')
+      .classList
+      .remove('hidden');
+
+  }catch(e){
+
+    console.error(
+      'WhatsApp AI suggestion error:',
+      e
+    );
+
+    toast(
+      e.message,
+      true
+    );
+
+  }finally{
+
+    $('suggestBtn').disabled=false;
+
+  }
+}
+
+/* --------------------------------------------------
+   ADD TO LEADS
+-------------------------------------------------- */
+
+async function addToLeads(){
+
+  if(!state.selected)
+    return;
+
+  const c=
+    state.selected;
+
+  try{
+
+    let lead=
+      state.selected.lead;
+
+    if(!lead){
+
+      const {
+        data:existing
+      }=await supabase
+        .from('leads')
+        .select('*')
+        .eq(
+          'client_id',
+          state.clientId
+        )
+        .eq(
+          'mobile',
+          c.customer_phone
+        )
+        .maybeSingle();
+
+      lead=existing;
+    }
+
+    if(lead){
+
+      toast(
+        'Customer is already a lead'
+      );
+
+      state.selected.lead=lead;
+
+      return loadLeadContext(c);
+    }
+
+    const {
+      data:customer
+    }=
+      c.customer_id
+        ?await supabase
+          .from('customers')
+          .select('*')
+          .eq(
+            'id',
+            c.customer_id
+          )
+          .eq(
+            'client_id',
+            state.clientId
+          )
+          .maybeSingle()
+        :{data:null};
+
+    const {
+      data:newLead,
+      error
+    }=await supabase
+      .from('leads')
+      .insert({
+
+        client_id:
+          state.clientId,
+
+        customer_id:
+          c.customer_id||null,
+
+        name:
+          c.customer_name||
+          customer?.name||
+          'WhatsApp Lead',
+
+        mobile:
+          c.customer_phone,
+
+        whatsapp:
+          c.customer_phone,
+
+        source:
+          'whatsapp',
+
+        source_ref:
+          c.id,
+
+        interest:
+          null,
+
+        product_service:
+          null,
+
+        status:
+          'new',
+
+        priority:
+          'normal'
+
+      })
+      .select('*')
+      .single();
+
+    if(error)
+      throw error;
+
+    await supabase
+      .from('whatsapp_conversations')
+      .update({
+        lead_id:
+          newLead.id
+      })
+      .eq(
+        'id',
+        c.id
+      )
+      .eq(
+        'client_id',
+        state.clientId
+      );
+
+    state.selected.lead=
+      newLead;
+
+    await loadLeadContext(
+      c
+    );
+
+    toast(
+      'Lead created'
+    );
+
+  }catch(e){
+
+    toast(
+      e.message,
+      true
+    );
+
+  }
+}
+
+/* --------------------------------------------------
+   CONNECT WHATSAPP
+-------------------------------------------------- */
+
+async function connectStart(){
+
+  try{
+
+    const d=
+      await fn(
+        'whatsapp-connection',
+        {
+          action:'start'
+        }
+      );
+
+    sessionStorage.setItem(
+      'whatsapp_connect_state',
+      d.state||''
+    );
+
+    sessionStorage.setItem(
+      'whatsapp_config_id',
+      d.config_id||''
+    );
+
+    $('connectStatus').textContent=
+      'Meta connection started. Opening secure signup…';
+
+    if(
+      window.FB&&
+      d.config_id
+    ){
+
+      FB.login(
+        function(resp){
+
+          if(
+            resp&&
+            resp.authResponse&&
+            resp.authResponse.code
+          ){
+
+            completeConnect(
+              resp.authResponse.code,
+              d.state
+            );
+
+          }else{
+
+            $('connectStatus').textContent=
+              'Meta signup was cancelled.';
+
+          }
+
+        },
+        {
+          config_id:
+            d.config_id,
+
+          response_type:
+            'code',
+
+          override_default_response_type:
+            true,
+
+          extras:{
+            setup:{},
+
+            featureType:
+              'whatsapp_business_app_onboarding'
+          }
+        }
+      );
+
+    }else{
+
+      $('connectStatus').textContent=
+        'Meta SDK is not available yet. Refresh and try again.';
+
+    }
+
+  }catch(e){
+
+    $('connectStatus').textContent=
+      e.message;
+
+  }
+}
+
+/* --------------------------------------------------
+   COMPLETE WHATSAPP CONNECT
+-------------------------------------------------- */
+
+async function completeConnect(
+  code,
+  stateToken
+){
+
+  try{
+
+    $('connectStatus').textContent=
+      'Verifying Meta connection…';
+
+    const d=
+      await fn(
+        'whatsapp-connection',
+        {
+          action:'complete',
+          code,
+          state:stateToken
+        }
+      );
+
+    $('connectStatus').textContent=
+      d?.connection
+        ?'WhatsApp connected successfully.'
+        :'Connection completed.';
+
+    setTimeout(
+      ()=>location.reload(),
+      700
+    );
+
+  }catch(e){
+
+    $('connectStatus').textContent=
+      e.message;
+
+  }
+}
+
+/* --------------------------------------------------
+   MODE
+-------------------------------------------------- */
+
+function setMode(mode){
+
+  state.mode=
+    mode;
+
+  localStorage.setItem(
+    'glime_whatsapp_mode',
+    mode
+  );
+
+  document
+    .querySelectorAll(
+      '.mode'
+    )
+    .forEach(
+      b=>
+        b.classList.toggle(
+          'active',
+          b.dataset.mode===mode
+        )
+    );
+
+  $('sendHint').textContent=
+    mode==='auto'
+      ?'AUTO · AI can send'
+      :mode==='approval'
+        ?'AI + APPROVAL · Review first'
+        :'MANUAL · You send';
+}
+
+/* --------------------------------------------------
+   CLOSE CONVERSATION
+-------------------------------------------------- */
+
+async function closeConversation(){
+
+  if(!state.selected)
+    return;
+
+  const {
+    error
+  }=await supabase
+    .from('whatsapp_conversations')
+    .update({
+      status:'closed'
+    })
+    .eq(
+      'id',
+      state.selected.id
+    )
+    .eq(
+      'client_id',
+      state.clientId
+    );
+
+  if(error){
+
+    toast(
+      error.message,
+      true
+    );
+
+  }else{
+
+    state.selected.status=
+      'closed';
+
+    await loadConversations();
+
+    toast(
+      'Conversation closed'
+    );
+  }
+}
+
+/* --------------------------------------------------
+   REALTIME
+-------------------------------------------------- */
+
+function setupRealtime(){
+
+  supabase
+    .channel(
+      `wa-sales-${state.clientId}`
+    )
+
+    .on(
+      'postgres_changes',
+      {
+        event:'*',
+        schema:'public',
+        table:'whatsapp_messages',
+        filter:
+          `client_id=eq.${state.clientId}`
+      },
+      ()=>{
+        loadConversations();
+
+        if(state.selected)
+          loadMessages(
+            state.selected.id
+          );
+      }
+    )
+
+    .on(
+      'postgres_changes',
+      {
+        event:'*',
+        schema:'public',
+        table:'whatsapp_conversations',
+        filter:
+          `client_id=eq.${state.clientId}`
+      },
+      loadConversations
+    )
+
+    .subscribe();
+}
+
+/* --------------------------------------------------
+   TOAST
+-------------------------------------------------- */
+
+function toast(
+  msg,
+  error=false
+){
+
+  let x=
+    document.querySelector(
+      '.glime-toast'
+    );
+
+  if(!x){
+
+    x=
+      document.createElement(
+        'div'
+      );
+
+    x.className=
+      'glime-toast';
+
+    Object.assign(
+      x.style,
+      {
+        position:'fixed',
+        right:'18px',
+        bottom:'18px',
+        zIndex:500,
+        padding:'11px 14px',
+        borderRadius:'10px',
+        background:'#101b28',
+        border:
+          '1px solid rgba(255,255,255,.12)',
+        color:
+          error
+            ?'#ff8a96'
+            :'#fff',
+        fontSize:'.7rem',
+        boxShadow:
+          '0 15px 40px rgba(0,0,0,.4)'
+      }
+    );
+
+    document.body.appendChild(x);
+  }
+
+  x.textContent=
+    msg;
+
+  clearTimeout(x._t);
+
+  x._t=
+    setTimeout(
+      ()=>x.remove(),
+      3200
+    );
+}
+
+/* --------------------------------------------------
+   ESCAPE HTML
+-------------------------------------------------- */
+
+function esc(v){
+
+  return String(v??'')
+    .replace(
+      /[&<>"']/g,
+      m=>({
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;',
+        "'":'&#039;'
+      }[m])
+    );
+}
+
+/* --------------------------------------------------
+   TIME
+-------------------------------------------------- */
+
+function time(v){
+
+  if(!v)
+    return'—';
+
+  const d=
+    new Date(v);
+
+  return d.toLocaleString(
+    'en-IN',
+    {
+      day:'2-digit',
+      month:'short',
+      hour:'2-digit',
+      minute:'2-digit'
+    }
+  );
+}
+
+/* --------------------------------------------------
+   BOOT
+-------------------------------------------------- */
+
+async function boot(){
+
+  try{
+
+    await session();
+
+    await Promise.all([
+      loadConnection(),
+      loadConversations(),
+      loadServices()
+    ]);
+
+    setMode(
+      state.mode
+    );
+
+    setupRealtime();
+
+    $('bootScreen').remove();
+
+  }catch(e){
+
+    console.error(
+      e
+    );
+
+    $('bootScreen').innerHTML=
+      `<div style="color:#ff6472">
+        ${esc(e.message)}
+      </div>`;
+
+  }
+}
+
+/* --------------------------------------------------
+   EVENTS
+-------------------------------------------------- */
+
+$('sendBtn').onclick=
+  sendMessage;
+
+$('suggestBtn').onclick=
+  suggestReply;
+
+$('refreshSuggestion').onclick=
+  suggestReply;
+
+$('useSuggestion').onclick=
+  ()=>{
+    $('messageInput').value=
+      $('suggestionText')
+        .textContent;
+
+    $('aiSuggestion')
+      .classList
+      .add('hidden');
+
+    $('messageInput').focus();
+  };
+
+$('addLeadBtn').onclick=
+  addToLeads;
+
+$('closeConversationBtn').onclick=
+  closeConversation;
+
+$('refreshBtn').onclick=
+  ()=>Promise.all([
+    loadConnection(),
+    loadConversations(),
+    loadServices()
+  ]);
+
+$('conversationSearch').oninput=
+  renderConversations;
+
+$('connectBtn').onclick=
+  ()=>
+    $('connectModal')
+      .classList
+      .remove('hidden');
+
+$('closeConnect').onclick=
+  ()=>
+    $('connectModal')
+      .classList
+      .add('hidden');
+
+$('startConnect').onclick=
+  connectStart;
+
+$('openSidebar').onclick=
+  ()=>
+    $('sidebar')
+      .classList
+      .add('open');
+
+$('closeSidebar').onclick=
+  ()=>
+    $('sidebar')
+      .classList
+      .remove('open');
+
+$('logoutBtn').onclick=
+  async()=>{
+    await supabase.auth.signOut();
+    location.href='login.html';
+  };
+
+document
+  .querySelectorAll(
+    '.filter'
+  )
+  .forEach(
+    b=>
+      b.onclick=
+        ()=>{
+          document
+            .querySelectorAll(
+              '.filter'
+            )
+            .forEach(
+              x=>
+                x.classList.remove(
+                  'active'
+                )
+            );
+
+          b.classList.add(
+            'active'
+          );
+
+          state.filter=
+            b.dataset.filter;
+
+          loadConversations();
+        }
+  );
+
+document
+  .querySelectorAll(
+    '.mode'
+  )
+  .forEach(
+    b=>
+      b.onclick=
+        ()=>
+          setMode(
+            b.dataset.mode
+          )
+  );
+
+$('addonsBtn').onclick=
+  ()=>
+    toast(
+      'Add-on slots are ready for future modules.'
+    );
+
+window.addEventListener(
+  'keydown',
+  e=>{
+    if(e.key==='Escape'){
+
+      $('connectModal')
+        .classList
+        .add('hidden');
+
+    }
+  }
+);
+
+boot();
+
 })();
