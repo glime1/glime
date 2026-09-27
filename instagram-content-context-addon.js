@@ -1036,7 +1036,6 @@
     getCatalog: () => [...catalog]
   };
 
-})();
 
 /* =========================================================
    GLIME — Instagram Content Context Add-on Styles
