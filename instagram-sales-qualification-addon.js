@@ -746,9 +746,98 @@
     }
   }
 
+  async function findWhatsAppConversation(
+    clientId,
+    leadId,
+    phone
+  ) {
+    if (leadId) {
+      const byLead =
+        await db
+          .from('whatsapp_conversations')
+          .select('id')
+          .eq(
+            'client_id',
+            clientId
+          )
+          .eq(
+            'lead_id',
+            leadId
+          )
+          .limit(1)
+          .maybeSingle();
+
+      if (byLead.error) {
+        throw byLead.error;
+      }
+
+      if (byLead.data) {
+        return byLead.data;
+      }
+    }
+
+    const normalized =
+      normalizePhone(
+        phone
+      );
+
+    if (!normalized) {
+      return null;
+    }
+
+    const digits =
+      normalized.replace(
+        /\D/g,
+        ''
+      );
+
+    const variants =
+      new Set([
+        normalized,
+        digits
+      ]);
+
+    if (
+      digits.length === 12 &&
+      digits.startsWith('91')
+    ) {
+      variants.add(
+        digits.slice(2)
+      );
+    } else if (
+      digits.length === 10
+    ) {
+      variants.add(
+        '91' + digits
+      );
+    }
+
+    const byPhone =
+      await db
+        .from('whatsapp_conversations')
+        .select('id')
+        .eq(
+          'client_id',
+          clientId
+        )
+        .in(
+          'customer_phone',
+          [...variants]
+        )
+        .limit(1)
+        .maybeSingle();
+
+    if (byPhone.error) {
+      throw byPhone.error;
+    }
+
+    return byPhone.data || null;
+  }
+
   function showHandoff(
     lead,
-    q
+    q,
+    clientId
   ) {
     const host =
       document.querySelector(
@@ -820,16 +909,65 @@
         'margin-top:8px;width:100%;padding:9px;border:0;border-radius:8px;cursor:pointer;';
 
       button.onclick =
-        () => {
-          location.href =
-            'whatsapp-sales-specialist.html?lead=' +
-            encodeURIComponent(
-              lead.id
-            ) +
-            '&phone=' +
-            encodeURIComponent(
-              number
+        async () => {
+          if (
+            button.disabled
+          ) {
+            return;
+          }
+
+          const originalText =
+            button.textContent;
+
+          button.disabled =
+            true;
+
+          button.textContent =
+            'Checking WhatsApp conversation…';
+
+          try {
+            const match =
+              await findWhatsAppConversation(
+                clientId,
+                lead.id,
+                number
+              );
+
+            if (match) {
+              location.href =
+                'whatsapp-sales-specialist.html?lead=' +
+                encodeURIComponent(
+                  lead.id
+                ) +
+                '&phone=' +
+                encodeURIComponent(
+                  number
+                );
+            } else {
+              button.disabled =
+                false;
+
+              button.textContent =
+                originalText;
+
+              localToast(
+                'WhatsApp conversation अभी उपलब्ध नहीं है। पहले customer से WhatsApp पर conversation शुरू करें।',
+                true
+              );
+            }
+          } catch (error) {
+            button.disabled =
+              false;
+
+            button.textContent =
+              originalText;
+
+            localToast(
+              error.message ||
+                'WhatsApp conversation check failed.',
+              true
             );
+          }
         };
 
       box.appendChild(
@@ -1118,7 +1256,8 @@
       ) {
         showHandoff(
           savedLead,
-          q
+          q,
+          ctx.client.client_id
         );
       }
 
