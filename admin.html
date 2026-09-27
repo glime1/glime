@@ -306,7 +306,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
 
       mfaFactor=enrolled.factor;
       showMfaSetup();
-      $('loginQr').innerHTML='<img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="'+mfaFactor.totp.qr_code+'" alt="GLIME Admin TOTP QR">';
+      $('loginQr').innerHTML='<img style="max-width:220px;background:white;padding:10px;border-radius:10px" src=\''+mfaFactor.totp.qr_code+'\' alt="GLIME Admin TOTP QR">';
       $('loginSecret').textContent='Secret: '+mfaFactor.totp.secret;
       $('setupOtp').focus();
     }catch(e){
@@ -499,7 +499,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
         }
         mfaFactor=enrolled.factor;
 
-        $('mfaEnrollBox').innerHTML=`<p class="sub">Scan this QR in Google Authenticator/Authy, then enter the code.</p><img style="max-width:220px;background:white;padding:10px;border-radius:10px" src="${mfaFactor.totp.qr_code}" alt="TOTP QR"><p class="sub">Secret: ${esc(mfaFactor.totp.secret)}</p><input id="newMfaCode" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn primary" style="margin-top:8px" id="confirmMfa">Verify & Enable</button>`;
+        $('mfaEnrollBox').innerHTML=`<p class="sub">Scan this QR in Google Authenticator/Authy, then enter the code.</p><img style="max-width:220px;background:white;padding:10px;border-radius:10px" src='${mfaFactor.totp.qr_code}' alt="TOTP QR"><p class="sub">Secret: ${esc(mfaFactor.totp.secret)}</p><input id="newMfaCode" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn primary" style="margin-top:8px" id="confirmMfa">Verify & Enable</button>`;
 
         $('confirmMfa').onclick=async()=>{
           try{
