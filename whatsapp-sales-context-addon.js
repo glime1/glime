@@ -1065,7 +1065,8 @@
      overwriting the currently selected conversation.
      --------------------------------------------------------- */
 
-  let activeSelectionSignature = null;
+  let activeSelectionId = null;
+  let activeSelectionElement = null;
   let selectionSyncTimer = null;
 
   function detectSelectedConversation() {
@@ -1098,11 +1099,11 @@
      */
     if (!selected) {
       if (
-        activeSelectionSignature !==
-        null
+        activeSelectionId !== null ||
+        activeSelectionElement !== null
       ) {
-        activeSelectionSignature =
-          null;
+        activeSelectionId = null;
+        activeSelectionElement = null;
 
         clearRenderedContext();
       }
@@ -1111,26 +1112,22 @@
     }
 
     /*
-     * Include the actual active DOM node in the signature.
+     * Compare both the conversation id and the actual active
+     * DOM node directly.
      *
      * If realtime/rerender creates a new DOM node for the
-     * same conversation, the signature changes and the
-     * context is refreshed again.
+     * same conversation, the element reference changes and
+     * the context is refreshed again.
      */
-    const signature =
-      selected.id +
-      "::" +
-      String(selected.element);
-
     if (
-      signature ===
-      activeSelectionSignature
+      selected.id === activeSelectionId &&
+      selected.element === activeSelectionElement
     ) {
       return;
     }
 
-    activeSelectionSignature =
-      signature;
+    activeSelectionId = selected.id;
+    activeSelectionElement = selected.element;
 
     scheduleRefresh(
       selected.id
