@@ -193,7 +193,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
   const ADMIN_UUID='c21669ee-04e2-4d8a-9ad2-98b969db57a3';
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   const $=id=>document.getElementById(id);
-  let clients=[],modules=[],clientModules=[],subs=[],rewards=[],current=null,mfaFactor=null,mfaChallenge=null;
+  let clients=[],modules=[],clientModules=[],subs=[],rewards=[],current=null,mfaFactor=null,mfaChallenge=null,mfaEnrollmentBusy=false;
 
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const dt=v=>v?new Date(v).toLocaleString():'—';
@@ -217,7 +217,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
     const f=await sb.auth.mfa.listFactors();
     const verified=(f.data?.totp||[]).find(x=>x.status==='verified');
     if(verified){mfaFactor=verified;showMfa();return false}
-    await beginMfaEnrollment();
+    // Do not auto-enroll here. Enrollment must happen only after the user
+    // explicitly completes the password login flow. This prevents a race
+    // where page-load auth and the Login button both call enroll() together.
+    showLogin();
     return false;
   }
   function resetLoginCards(){$('login1').style.display='block';$('login2fa').style.display='none';$('login2faSetup').style.display='none'}
@@ -227,6 +230,8 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
   function showApp(){$('login').style.display='none';$('app').classList.remove('hidden')}
 
   async function beginMfaEnrollment(){
+    if(mfaEnrollmentBusy)return;
+    mfaEnrollmentBusy=true;
     try{
       const factors=await sb.auth.mfa.listFactors();
       if(factors.error)throw factors.error;
@@ -248,6 +253,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
       $('loginSecret').textContent='Secret: '+r.data.totp.secret;
       $('setupOtp').focus();
     }catch(e){msg('loginMsg','2FA setup failed: '+e.message);showLogin()}
+    finally{mfaEnrollmentBusy=false}
   }
 
   $('loginBtn').onclick=async()=>{
