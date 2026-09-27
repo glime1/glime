@@ -253,15 +253,26 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
 
     await clearPendingAdminFactors();
 
+    // Use a unique, timestamped friendly name on every enrollment attempt.
+    // Previously this used fixed names ("GLIME Admin" / "GLIME Admin Setup"),
+    // so if a prior unverified factor failed to get deleted (network hiccup,
+    // race condition, etc.) the next login would collide with BOTH fixed
+    // names and enrollment would fail with "friendly name already exists".
+    // A unique name removes that entire class of bug.
+    const uniqueName='GLIME Admin '+Date.now();
     let r=await sb.auth.mfa.enroll({
       factorType:'totp',
-      friendlyName:'GLIME Admin'
+      friendlyName:uniqueName
     });
 
     if(r.error && /friendly name|already exists|factor_name_conflict|mfa_factor_name_conflict/i.test(r.error.message||'')){
+      // Extremely unlikely with a timestamped name, but retry once more
+      // with an even more unique name after another cleanup pass, instead
+      // of giving up.
+      await clearPendingAdminFactors();
       r=await sb.auth.mfa.enroll({
         factorType:'totp',
-        friendlyName:'GLIME Admin Setup'
+        friendlyName:uniqueName+'-'+Math.random().toString(36).slice(2,7)
       });
     }
 
