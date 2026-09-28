@@ -2467,78 +2467,219 @@ async function submitPublish() {
     }
 
     /*
-      Step 3 can be revisited directly,
-      therefore validate it again before
-      final publication.
+      IMPORTANT:
+      Never trust state.versionId's status
+      from stale client state.
+
+      offer_versions.status must be fetched
+      fresh here so the correct branch below
+      is taken, and so RLS is never hit by
+      attempting a structured-data write on
+      a review/approved/published version.
     */
 
-    const availabilityError =
-      validateStep(3);
+    const versionCheck =
+      await supabaseClient
+        .from(
+          'offer_versions'
+        )
+        .select(
+          'id,status'
+        )
+        .eq(
+          'id',
+          state.versionId
+        )
+        .maybeSingle();
 
-    if (availabilityError) {
-      showAlert(
-        availabilityError
+    if (versionCheck.error) {
+      throw versionCheck.error;
+    }
+
+    if (!versionCheck.data) {
+      throw new Error(
+        'Service version could not be found.'
       );
+    }
 
-      setStep(3);
+    const versionStatus =
+      versionCheck.data.status;
+
+    /*
+      PUBLISHED:
+      Nothing to submit here. This wizard
+      instance must not attempt to publish
+      or edit an already-published version.
+
+      Editing again must go through
+      resetWizard(), which creates/reuses a
+      separate draft version.
+    */
+
+    if (versionStatus === 'published') {
+      showAlert(
+        'This service is already published. Reopen it to start a new draft before publishing again.'
+      );
 
       return;
     }
 
-    /*
-      IMPORTANT ORDER:
+    if (versionStatus === 'draft') {
 
-      1. Save structured draft data.
-      2. Submit version for review.
-      3. Client approves its own version.
-      4. Client publishes the approved version.
+      /*
+        Step 3 can be revisited directly,
+        therefore validate it again before
+        final publication.
+      */
 
-      This uses the existing RPC architecture.
-      No admin-only Edge Function is used.
-    */
+      const availabilityError =
+        validateStep(3);
 
-    await saveStructured();
+      if (availabilityError) {
+        showAlert(
+          availabilityError
+        );
 
-    const submit =
-      await supabaseClient.rpc(
-        'client_submit_offer_version_for_review',
-        {
-          p_version_id:
-            state.versionId
-        }
+        setStep(3);
+
+        return;
+      }
+
+      /*
+        IMPORTANT ORDER:
+
+        1. Save structured draft data.
+        2. Submit version for review.
+        3. Client approves its own version.
+        4. Client publishes the approved version.
+
+        This uses the existing RPC architecture.
+        No admin-only Edge Function is used.
+      */
+
+      await saveStructured();
+
+      const submit =
+        await supabaseClient.rpc(
+          'client_submit_offer_version_for_review',
+          {
+            p_version_id:
+              state.versionId
+          }
+        );
+
+      if (submit.error) {
+        throw submit.error;
+      }
+
+      const approve =
+        await supabaseClient.rpc(
+          'client_approve_offer_version',
+          {
+            p_version_id:
+              state.versionId,
+
+            p_notes:
+              'Client approved from Services wizard.'
+          }
+        );
+
+      if (approve.error) {
+        throw approve.error;
+      }
+
+      const publish =
+        await supabaseClient.rpc(
+          'client_publish_offer_version',
+          {
+            p_version_id:
+              state.versionId
+          }
+        );
+
+      if (publish.error) {
+        throw publish.error;
+      }
+
+    } else if (versionStatus === 'review') {
+
+      /*
+        IMPORTANT:
+        Do NOT run saveStructured() here.
+
+        RLS blocks structured-table writes
+        against a version that is no longer
+        a draft, and this version has already
+        been submitted for review.
+
+        Continue the existing approval RPC
+        flow from where it stands, then
+        publish once approved.
+      */
+
+      const approve =
+        await supabaseClient.rpc(
+          'client_approve_offer_version',
+          {
+            p_version_id:
+              state.versionId,
+
+            p_notes:
+              'Client approved from Services wizard.'
+          }
+        );
+
+      if (approve.error) {
+        throw approve.error;
+      }
+
+      const publish =
+        await supabaseClient.rpc(
+          'client_publish_offer_version',
+          {
+            p_version_id:
+              state.versionId
+          }
+        );
+
+      if (publish.error) {
+        throw publish.error;
+      }
+
+    } else if (versionStatus === 'approved') {
+
+      /*
+        IMPORTANT:
+        Do NOT run saveStructured() here, and
+        do NOT re-submit or re-approve.
+
+        The version is already approved.
+        Only the publish RPC should run.
+      */
+
+      const publish =
+        await supabaseClient.rpc(
+          'client_publish_offer_version',
+          {
+            p_version_id:
+              state.versionId
+          }
+        );
+
+      if (publish.error) {
+        throw publish.error;
+      }
+
+    } else {
+
+      /*
+        Any other status (e.g. archived) is
+        not a valid state to publish from.
+      */
+
+      throw new Error(
+        `This version cannot be published from its current status (${versionStatus}).`
       );
-
-    if (submit.error) {
-      throw submit.error;
-    }
-
-    const approve =
-      await supabaseClient.rpc(
-        'client_approve_offer_version',
-        {
-          p_version_id:
-            state.versionId,
-
-          p_notes:
-            'Client approved from Services wizard.'
-        }
-      );
-
-    if (approve.error) {
-      throw approve.error;
-    }
-
-    const publish =
-      await supabaseClient.rpc(
-        'client_publish_offer_version',
-        {
-          p_version_id:
-            state.versionId
-        }
-      );
-
-    if (publish.error) {
-      throw publish.error;
     }
 
     await loadServices();
