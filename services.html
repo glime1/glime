@@ -312,17 +312,13 @@
           <div class="panel-title">
             <div>
               <span class="step-label">STEP 05</span>
-              <h3>AI Knowledge, Review & Publish</h3>
-              <p>Check the business truth before it becomes available to customer-facing specialists.</p>
+              <h3>Review & Publish</h3>
+              <p>Review the service and manage your client-level business knowledge before publishing.</p>
             </div>
-            <span class="knowledge-badge">✦ AI KNOWLEDGE</span>
+            <span class="knowledge-badge">✦ CLIENT KNOWLEDGE</span>
           </div>
 
-          <label class="field full ai-field">
-            <span>AI Knowledge summary</span>
-            <button type="button" class="ai-field-btn" data-ai-target="fKnowledge">✦ Generate with GLIME AI</button>
-            <textarea id="fKnowledge" rows="6" maxlength="5000" placeholder="What should GLIME know when customers ask about this service?"></textarea>
-          </label>
+          <div id="knowledgeBaseHost"></div>
 
           <div class="review-layout">
             <div class="checklist-card">
@@ -360,5 +356,6 @@
   <div id="toastHost" class="toast-host"></div>
   <script src="services.js"></script>
   <script src="services-media-persistence-addon.js"></script>
+  <script src="services-knowledge-base-addon.js"></script>
 </body>
 </html>
