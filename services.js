@@ -1,6 +1,9 @@
 const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
 const state = {
   user: null,
@@ -52,61 +55,106 @@ const money = (v, c = 'INR') =>
 
 function toast(message, type = '') {
   const el = document.createElement('div');
+
   el.className = 'toast ' + type;
   el.textContent = message;
 
   const host = $('#toastHost');
-  if (host) host.appendChild(el);
 
-  setTimeout(() => el.remove(), 3200);
+  if (host) {
+    host.appendChild(el);
+  }
+
+  setTimeout(
+    () => el.remove(),
+    3200
+  );
 }
 
 function setBoot(v) {
   const el = $('#bootScreen');
-  if (el) el.style.display = v ? 'flex' : 'none';
+
+  if (el) {
+    el.style.display = v
+      ? 'flex'
+      : 'none';
+  }
 }
 
 function showAlert(msg, success = false) {
   const el = $('#wizardAlert');
+
   if (!el) return;
 
   el.textContent = msg;
-  el.classList.toggle('hidden', !msg);
-  el.classList.toggle('success', success);
+
+  el.classList.toggle(
+    'hidden',
+    !msg
+  );
+
+  el.classList.toggle(
+    'success',
+    success
+  );
 }
 
 async function getToken() {
-  const { data } = await supabaseClient.auth.getSession();
-  return data?.session?.access_token || '';
+  const { data } =
+    await supabaseClient.auth.getSession();
+
+  return (
+    data?.session?.access_token ||
+    ''
+  );
 }
 
 async function edge(slug, body) {
-  const token = await getToken();
+  const token =
+    await getToken();
 
   if (!token) {
-    throw new Error('Active login session is missing.');
+    throw new Error(
+      'Active login session is missing.'
+    );
   }
 
-  const r = await fetch(
-    `${SUPABASE_URL}/functions/v1/${slug}`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        apikey: SUPABASE_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    }
-  );
+  const r =
+    await fetch(
+      `${SUPABASE_URL}/functions/v1/${slug}`,
+      {
+        method: 'POST',
 
-  const j = await r.json().catch(() => ({}));
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
 
-  if (!r.ok || j.ok === false) {
+          apikey:
+            SUPABASE_KEY,
+
+          'Content-Type':
+            'application/json'
+        },
+
+        body:
+          JSON.stringify(body)
+      }
+    );
+
+  const j =
+    await r
+      .json()
+      .catch(() => ({}));
+
+  if (
+    !r.ok ||
+    j.ok === false
+  ) {
     throw new Error(
       typeof j.error === 'string'
         ? j.error
-        : j.error?.message || 'Request failed.'
+        : j.error?.message ||
+          'Request failed.'
     );
   }
 
@@ -119,39 +167,67 @@ async function edge(slug, body) {
 
 async function init() {
   try {
-    const { data, error } = await supabaseClient.auth.getSession();
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .auth
+        .getSession();
 
-    if (error || !data.session?.user) {
-      location.replace('login.html');
+    if (
+      error ||
+      !data.session?.user
+    ) {
+      location.replace(
+        'login.html'
+      );
+
       return;
     }
 
-    state.user = data.session.user;
+    state.user =
+      data.session.user;
 
-    const { data: client, error: ce } =
+    const {
+      data: client,
+      error: ce
+    } =
       await supabaseClient
         .from('client_data')
         .select(
           'id,client_id,auth_user_id,business_name,client_name,full_name,name'
         )
-        .eq('auth_user_id', state.user.id)
+        .eq(
+          'auth_user_id',
+          state.user.id
+        )
         .limit(1)
         .maybeSingle();
 
-    if (ce || !client?.client_id) {
-      throw new Error('Client profile not found.');
+    if (
+      ce ||
+      !client?.client_id
+    ) {
+      throw new Error(
+        'Client profile not found.'
+      );
     }
 
-    state.client = client;
+    state.client =
+      client;
 
-    $('#businessName').textContent =
-      client.business_name ||
-      client.client_name ||
-      client.full_name ||
-      client.name ||
-      'Business';
+    $('#businessName')
+      .textContent =
+        client.business_name ||
+        client.client_name ||
+        client.full_name ||
+        client.name ||
+        'Business';
 
-    $('#clientId').textContent = client.client_id;
+    $('#clientId')
+      .textContent =
+        client.client_id;
 
     await Promise.all([
       loadFoundation(),
@@ -161,14 +237,24 @@ async function init() {
     ]);
 
     bindUI();
+
     renderAll();
+
     setBoot(false);
+
   } catch (e) {
     console.error(e);
-    toast(e.message, 'bad');
+
+    toast(
+      e.message,
+      'bad'
+    );
 
     setTimeout(
-      () => location.replace('dashboard.html'),
+      () =>
+        location.replace(
+          'dashboard.html'
+        ),
       1400
     );
   }
@@ -179,17 +265,24 @@ async function init() {
 ========================================================= */
 
 async function loadFoundation() {
-  const j = await edge(
-    'services-foundation',
-    {
-      action: 'get'
-    }
-  );
+  const j =
+    await edge(
+      'services-foundation',
+      {
+        action: 'get'
+      }
+    );
 
-  state.catalog = j.catalog || null;
+  state.catalog =
+    j.catalog || null;
 
-  state.types = (j.types || [])
-    .filter(x => x.is_active || x.source === 'system');
+  state.types =
+    (j.types || [])
+      .filter(
+        x =>
+          x.is_active ||
+          x.source === 'system'
+      );
 
   fillTypeSelect();
 }
@@ -200,22 +293,36 @@ async function loadFoundation() {
 ========================================================= */
 
 async function loadCategories() {
-  const { data, error } =
+  const {
+    data,
+    error
+  } =
     await supabaseClient
       .from('offer_categories')
       .select(
         'id,name,slug,description,sort_order,is_active,is_global'
       )
-      .eq('is_active', true)
+      .eq(
+        'is_active',
+        true
+      )
       .or(
         `is_global.eq.true,client_id.eq.${state.client.client_id}`
       )
-      .order('sort_order', { ascending: true })
+      .order(
+        'sort_order',
+        {
+          ascending: true
+        }
+      )
       .order('name');
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
-  state.categories = data || [];
+  state.categories =
+    data || [];
 
   renderCategories();
 }
@@ -225,98 +332,147 @@ async function loadCategories() {
 ========================================================= */
 
 async function loadCustomFields() {
-  const { data, error } =
+  const {
+    data,
+    error
+  } =
     await supabaseClient
       .from('custom_field_defs')
       .select(
         'id,name,field_key,field_type,label,description,options,is_required,is_active,sort_order'
       )
-      .eq('client_id', state.client.client_id)
-      .eq('is_active', true)
-      .order('sort_order')
-      .order('label');
+      .eq(
+        'client_id',
+        state.client.client_id
+      )
+      .eq(
+        'is_active',
+        true
+      )
+      .order(
+        'sort_order'
+      )
+      .order(
+        'label'
+      );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
-  state.customFields = data || [];
+  state.customFields =
+    data || [];
 
   renderDynamicFields();
 }
 
 function renderDynamicFields() {
-  const host = $('#dynamicFields');
+  const host =
+    $('#dynamicFields');
 
-  if (!host) return;
+  if (!host) {
+    return;
+  }
 
-  host.innerHTML = state.customFields
-    .map(f => {
-      const v = state.customValues[f.id] ?? '';
+  host.innerHTML =
+    state.customFields
+      .map(f => {
+        const v =
+          state.customValues[
+            f.id
+          ] ?? '';
 
-      const opts =
-        Array.isArray(f.options?.options)
-          ? f.options.options
-          : [];
+        const opts =
+          Array.isArray(
+            f.options?.options
+          )
+            ? f.options.options
+            : [];
 
-      let control = '';
+        let control =
+          '';
 
-      if (f.field_type === 'select') {
-        control = `
-          <select data-cf="${f.id}">
-            <option value="">Select…</option>
-            ${opts
-              .map(
-                o =>
-                  `<option value="${esc(o)}"
-                    ${
-                      String(v) === String(o)
-                        ? 'selected'
-                        : ''
-                    }>
-                    ${esc(o)}
-                  </option>`
-              )
-              .join('')}
-          </select>
+        if (
+          f.field_type ===
+          'select'
+        ) {
+          control = `
+            <select
+              data-cf="${f.id}"
+            >
+              <option value="">
+                Select…
+              </option>
+
+              ${opts
+                .map(
+                  o =>
+                    `<option
+                      value="${esc(o)}"
+                      ${
+                        String(v) ===
+                        String(o)
+                          ? 'selected'
+                          : ''
+                      }
+                    >
+                      ${esc(o)}
+                    </option>`
+                )
+                .join('')}
+            </select>
+          `;
+        } else if (
+          f.field_type ===
+          'textarea'
+        ) {
+          control = `
+            <textarea
+              data-cf="${f.id}"
+              rows="4"
+            >${esc(v)}</textarea>
+          `;
+        } else {
+          control = `
+            <input
+              data-cf="${f.id}"
+              type="${
+                f.field_type ===
+                'number'
+                  ? 'number'
+                  : 'text'
+              }"
+              value="${esc(v)}"
+            >
+          `;
+        }
+
+        return `
+          <label class="dynamic-card">
+            <span>
+              ${esc(f.label)}
+              ${
+                f.is_required
+                  ? '<em>*</em>'
+                  : ''
+              }
+            </span>
+
+            ${
+              f.description
+                ? `<small>
+                    ${esc(
+                      f.description
+                    )}
+                  </small>`
+                : ''
+            }
+
+            ${control}
+          </label>
         `;
-      } else if (f.field_type === 'textarea') {
-        control = `
-          <textarea
-            data-cf="${f.id}"
-            rows="4"
-          >${esc(v)}</textarea>
-        `;
-      } else {
-        control = `
-          <input
-            data-cf="${f.id}"
-            type="${
-              f.field_type === 'number'
-                ? 'number'
-                : 'text'
-            }"
-            value="${esc(v)}"
-          >
-        `;
-      }
-
-      return `
-        <label class="dynamic-card">
-          <span>
-            ${esc(f.label)}
-            ${f.is_required ? '<em>*</em>' : ''}
-          </span>
-
-          ${
-            f.description
-              ? `<small>${esc(f.description)}</small>`
-              : ''
-          }
-
-          ${control}
-        </label>
-      `;
-    })
-    .join('');
+      })
+      .join('');
 }
 
 /* =========================================================
@@ -324,77 +480,136 @@ function renderDynamicFields() {
 ========================================================= */
 
 async function loadStructured() {
-  if (!state.versionId) return;
+  if (!state.versionId) {
+    return;
+  }
 
   const [
     vr,
     ar,
     mr,
     cr
-  ] = await Promise.all([
-    supabaseClient
-      .from('offer_variants')
-      .select(
-        'id,name,sku,description,attributes,is_active,sort_order'
-      )
-      .eq('offer_version_id', state.versionId)
-      .order('sort_order'),
+  ] =
+    await Promise.all([
+      supabaseClient
+        .from('offer_variants')
+        .select(
+          'id,name,sku,description,attributes,is_active,sort_order'
+        )
+        .eq(
+          'offer_version_id',
+          state.versionId
+        )
+        .order(
+          'sort_order'
+        ),
 
-    supabaseClient
-      .from('offer_availability')
-      .select(
-        'id,day_of_week,start_time,end_time,timezone,capacity,is_available,notes'
-      )
-      .eq('offer_version_id', state.versionId)
-      .order('day_of_week'),
+      supabaseClient
+        .from('offer_availability')
+        .select(
+          'id,day_of_week,start_time,end_time,timezone,capacity,is_available,notes'
+        )
+        .eq(
+          'offer_version_id',
+          state.versionId
+        )
+        .order(
+          'day_of_week'
+        ),
 
-    supabaseClient
-      .from('offer_media')
-      .select(
-        'id,media_type,storage_path,file_url,alt_text,sort_order,is_primary,metadata'
-      )
-      .eq('offer_version_id', state.versionId)
-      .order('sort_order'),
+      supabaseClient
+        .from('offer_media')
+        .select(
+          'id,media_type,storage_path,file_url,alt_text,sort_order,is_primary,metadata'
+        )
+        .eq(
+          'offer_version_id',
+          state.versionId
+        )
+        .order(
+          'sort_order'
+        ),
 
-    supabaseClient
-      .from('custom_field_values')
-      .select(
-        'field_def_id,value_text,value_json'
-      )
-      .eq('offer_version_id', state.versionId)
-  ]);
+      supabaseClient
+        .from('custom_field_values')
+        .select(
+          'field_def_id,value_text,value_json'
+        )
+        .eq(
+          'offer_version_id',
+          state.versionId
+        )
+    ]);
 
-  if (vr.error) throw vr.error;
-  if (ar.error) throw ar.error;
-  if (mr.error) throw mr.error;
-  if (cr.error) throw cr.error;
+  if (vr.error) {
+    throw vr.error;
+  }
+
+  if (ar.error) {
+    throw ar.error;
+  }
+
+  if (mr.error) {
+    throw mr.error;
+  }
+
+  if (cr.error) {
+    throw cr.error;
+  }
 
   state.variants =
-    (vr.data || []).map(v => ({
-      id: v.id,
-      name: v.name,
-      sku: v.sku || '',
-      price: v.attributes?.price || '',
-      description: v.description || ''
-    }));
+    (vr.data || [])
+      .map(v => ({
+        id: v.id,
 
-  state.days = ar.data || [];
+        name:
+          v.name,
+
+        sku:
+          v.sku || '',
+
+        price:
+          v.attributes?.price ||
+          '',
+
+        description:
+          v.description ||
+          ''
+      }));
+
+  state.days =
+    ar.data || [];
 
   state.media =
-    (mr.data || []).map(m => ({
-      id: m.id,
-      url: m.file_url || '',
-      alt: m.alt_text || '',
-      primary: m.is_primary,
-      type: m.media_type
-    }));
+    (mr.data || [])
+      .map(m => ({
+        id: m.id,
 
-  state.customValues = {};
+        url:
+          m.file_url || '',
 
-  (cr.data || []).forEach(v => {
-    state.customValues[v.field_def_id] =
-      v.value_text ?? v.value_json ?? '';
-  });
+        alt:
+          m.alt_text || '',
+
+        primary:
+          m.is_primary,
+
+        type:
+          m.media_type
+      }));
+
+  state.customValues =
+    {};
+
+  (cr.data || [])
+    .forEach(v => {
+      state.customValues[
+        v.field_def_id
+      ] =
+        v.value_text ??
+        v.value_json ??
+        '';
+    });
 
   renderVariants();
   renderMedia();
@@ -408,45 +623,66 @@ function renderDaysFromState() {
     return;
   }
 
-  const map = new Map(
-    state.days.map(d => [
-      Number(d.day_of_week),
-      d
-    ])
-  );
+  const map =
+    new Map(
+      state.days.map(
+        d => [
+          Number(
+            d.day_of_week
+          ),
+          d
+        ]
+      )
+    );
 
   $$('#dayRows [data-day-start]')
     .forEach(el => {
-      const d = map.get(
-        Number(el.dataset.dayStart)
-      );
+      const d =
+        map.get(
+          Number(
+            el.dataset.dayStart
+          )
+        );
 
       if (d) {
         el.value =
-          (d.start_time || '').slice(0, 5);
+          (
+            d.start_time ||
+            ''
+          ).slice(0, 5);
       }
     });
 
   $$('#dayRows [data-day-end]')
     .forEach(el => {
-      const d = map.get(
-        Number(el.dataset.dayEnd)
-      );
+      const d =
+        map.get(
+          Number(
+            el.dataset.dayEnd
+          )
+        );
 
       if (d) {
         el.value =
-          (d.end_time || '').slice(0, 5);
+          (
+            d.end_time ||
+            ''
+          ).slice(0, 5);
       }
     });
 
   $$('#dayRows [data-day-on]')
     .forEach(el => {
-      const d = map.get(
-        Number(el.dataset.dayOn)
-      );
+      const d =
+        map.get(
+          Number(
+            el.dataset.dayOn
+          )
+        );
 
       if (d) {
-        el.checked = !!d.is_available;
+        el.checked =
+          !!d.is_available;
       }
     });
 }
@@ -456,7 +692,9 @@ function renderDaysFromState() {
 ========================================================= */
 
 function derivedStatus(s) {
-  const vs = s.version?.status || '';
+  const vs =
+    s.version?.status ||
+    '';
 
   if (
     vs === 'published' ||
@@ -487,60 +725,100 @@ function derivedStatus(s) {
 ========================================================= */
 
 async function saveStructured() {
-  if (!state.versionId) return;
+  if (!state.versionId) {
+    return;
+  }
 
   /* ---------- VARIANTS ---------- */
 
   const variantRows =
     state.variants
-      .filter(v => v.name.trim())
-      .map((v, i) => ({
-        offer_version_id: state.versionId,
-        name: v.name.trim(),
-        sku: v.sku?.trim() || null,
-        description:
-          v.description?.trim() || null,
-        attributes: {
-          price:
-            v.price === ''
-              ? null
-              : Number(v.price)
-        },
-        is_active: true,
-        sort_order: i
-      }));
+      .filter(
+        v =>
+          v.name.trim()
+      )
+      .map(
+        (v, i) => ({
+          offer_version_id:
+            state.versionId,
+
+          name:
+            v.name.trim(),
+
+          sku:
+            v.sku?.trim() ||
+            null,
+
+          description:
+            v.description?.trim() ||
+            null,
+
+          attributes: {
+            price:
+              v.price === ''
+                ? null
+                : Number(
+                    v.price
+                  )
+          },
+
+          is_active:
+            true,
+
+          sort_order:
+            i
+        })
+      );
 
   const oldV =
     await supabaseClient
-      .from('offer_variants')
+      .from(
+        'offer_variants'
+      )
       .select('id')
       .eq(
         'offer_version_id',
         state.versionId
       );
 
-  if (oldV.error) throw oldV.error;
+  if (oldV.error) {
+    throw oldV.error;
+  }
 
-  if (oldV.data?.length) {
+  if (
+    oldV.data?.length
+  ) {
     const del =
       await supabaseClient
-        .from('offer_variants')
+        .from(
+          'offer_variants'
+        )
         .delete()
         .eq(
           'offer_version_id',
           state.versionId
         );
 
-    if (del.error) throw del.error;
+    if (del.error) {
+      throw del.error;
+    }
   }
 
-  if (variantRows.length) {
+  if (
+    variantRows.length
+  ) {
     const r =
       await supabaseClient
-        .from('offer_variants')
-        .insert(variantRows);
+        .from(
+          'offer_variants'
+        )
+        .insert(
+          variantRows
+        );
 
-    if (r.error) throw r.error;
+    if (r.error) {
+      throw r.error;
+    }
   }
 
   /* ---------- AVAILABILITY ---------- */
@@ -549,7 +827,9 @@ async function saveStructured() {
     $$('#dayRows [data-day-start]')
       .map(el => {
         const i =
-          Number(el.dataset.dayStart);
+          Number(
+            el.dataset.dayStart
+          );
 
         const end =
           $(
@@ -565,7 +845,8 @@ async function saveStructured() {
           offer_version_id:
             state.versionId,
 
-          day_of_week: i,
+          day_of_week:
+            i,
 
           start_time:
             on && el.value
@@ -578,76 +859,102 @@ async function saveStructured() {
               : null,
 
           timezone:
-            $('#fTimezone').value ||
+            $('#fTimezone')
+              ?.value ||
             'Asia/Kolkata',
 
-          is_available: !!on
+          is_available:
+            !!on
         };
       });
 
   const deleteAvailability =
     await supabaseClient
-      .from('offer_availability')
+      .from(
+        'offer_availability'
+      )
       .delete()
       .eq(
         'offer_version_id',
         state.versionId
       );
 
-  if (deleteAvailability.error) {
+  if (
+    deleteAvailability.error
+  ) {
     throw deleteAvailability.error;
   }
 
   const ad =
     await supabaseClient
-      .from('offer_availability')
+      .from(
+        'offer_availability'
+      )
       .insert(days);
 
-  if (ad.error) throw ad.error;
+  if (ad.error) {
+    throw ad.error;
+  }
 
   /* ---------- CUSTOM FIELD VALUES ---------- */
 
   const vals =
-    Object.entries(state.customValues)
+    Object.entries(
+      state.customValues
+    )
       .filter(
         ([_, v]) =>
           v !== '' &&
           v != null
       )
       .map(
-        ([field_def_id, value_text]) => ({
+        ([
+          field_def_id,
+          value_text
+        ]) => ({
           offer_version_id:
             state.versionId,
 
           field_def_id,
 
           value_text:
-            String(value_text),
+            String(
+              value_text
+            ),
 
-          value_json: null
+          value_json:
+            null
         })
       );
 
   const deleteValues =
     await supabaseClient
-      .from('custom_field_values')
+      .from(
+        'custom_field_values'
+      )
       .delete()
       .eq(
         'offer_version_id',
         state.versionId
       );
 
-  if (deleteValues.error) {
+  if (
+    deleteValues.error
+  ) {
     throw deleteValues.error;
   }
 
   if (vals.length) {
     const cv =
       await supabaseClient
-        .from('custom_field_values')
+        .from(
+          'custom_field_values'
+        )
         .insert(vals);
 
-    if (cv.error) throw cv.error;
+    if (cv.error) {
+      throw cv.error;
+    }
   }
 }
 
@@ -656,7 +963,10 @@ async function saveStructured() {
 ========================================================= */
 
 async function loadServices() {
-  const { data, error } =
+  const {
+    data,
+    error
+  } =
     await supabaseClient
       .from('offers')
       .select(
@@ -668,15 +978,20 @@ async function loadServices() {
       )
       .order(
         'updated_at',
-        { ascending: false }
+        {
+          ascending: false
+        }
       );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   const ids =
     (data || [])
       .map(
-        x => x.current_version_id
+        x =>
+          x.current_version_id
       )
       .filter(Boolean);
 
@@ -686,19 +1001,29 @@ async function loadServices() {
   if (ids.length) {
     const vr =
       await supabaseClient
-        .from('offer_versions')
+        .from(
+          'offer_versions'
+        )
         .select(
           'id,offer_id,version_number,status,title,description,metadata'
         )
-        .in('id', ids);
+        .in(
+          'id',
+          ids
+        );
 
-    if (vr.error) throw vr.error;
+    if (vr.error) {
+      throw vr.error;
+    }
 
-    versions = vr.data || [];
+    versions =
+      vr.data || [];
 
     const pr =
       await supabaseClient
-        .from('offer_prices')
+        .from(
+          'offer_prices'
+        )
         .select(
           'offer_version_id,amount,currency,price_type,billing_period,is_active'
         )
@@ -711,37 +1036,49 @@ async function loadServices() {
           true
         );
 
-    if (pr.error) throw pr.error;
+    if (pr.error) {
+      throw pr.error;
+    }
 
-    prices = pr.data || [];
+    prices =
+      pr.data || [];
   }
 
-  const vm = new Map(
-    versions.map(v => [
-      v.id,
-      v
-    ])
-  );
+  const vm =
+    new Map(
+      versions.map(
+        v => [
+          v.id,
+          v
+        ]
+      )
+    );
 
-  const pm = new Map(
-    prices.map(p => [
-      p.offer_version_id,
-      p
-    ])
-  );
+  const pm =
+    new Map(
+      prices.map(
+        p => [
+          p.offer_version_id,
+          p
+        ]
+      )
+    );
 
   state.services =
-    (data || []).map(o => ({
-      ...o,
-      version:
-        vm.get(
-          o.current_version_id
-        ) || null,
-      price:
-        pm.get(
-          o.current_version_id
-        ) || null
-    }));
+    (data || [])
+      .map(o => ({
+        ...o,
+
+        version:
+          vm.get(
+            o.current_version_id
+          ) || null,
+
+        price:
+          pm.get(
+            o.current_version_id
+          ) || null
+      }));
 }
 
 /* =========================================================
@@ -749,17 +1086,22 @@ async function loadServices() {
 ========================================================= */
 
 function fillTypeSelect() {
-  const sel = $('#fType');
+  const sel =
+    $('#fType');
 
-  if (!sel) return;
+  if (!sel) {
+    return;
+  }
 
   sel.innerHTML =
     state.types
       .map(
         t =>
-          `<option value="${esc(
-            t.type_key
-          )}">
+          `<option
+            value="${esc(
+              t.type_key
+            )}"
+          >
             ${esc(t.label)}
           </option>`
       )
@@ -774,7 +1116,9 @@ function fillCategorySelect() {
     state.categories
       .map(
         c =>
-          `<option value="${c.id}">
+          `<option
+            value="${c.id}"
+          >
             ${esc(c.name)}
           </option>`
       )
@@ -786,57 +1130,82 @@ function fillCategorySelect() {
 ========================================================= */
 
 function renderCategories() {
-  $('#categoryCount').textContent =
-    state.categories.length;
+  $('#categoryCount')
+    .textContent =
+      state.categories.length;
 
-  const counts = {};
+  const counts =
+    {};
 
-  state.services.forEach(s => {
-    const key =
-      s.category_id ||
-      'uncategorized';
+  state.services.forEach(
+    s => {
+      const key =
+        s.category_id ||
+        'uncategorized';
 
-    counts[key] =
-      (counts[key] || 0) + 1;
-  });
+      counts[key] =
+        (
+          counts[key] ||
+          0
+        ) + 1;
+    }
+  );
 
   const items = [
     {
       id: 'all',
       name: 'All Services',
-      n: state.services.length
+      n:
+        state.services.length
     },
 
     {
-      id: 'uncategorized',
-      name: 'Uncategorized',
-      n: counts.uncategorized || 0
+      id:
+        'uncategorized',
+      name:
+        'Uncategorized',
+      n:
+        counts.uncategorized ||
+        0
     },
 
-    ...state.categories.map(c => ({
-      id: c.id,
-      name: c.name,
-      n: counts[c.id] || 0
-    }))
+    ...state.categories.map(
+      c => ({
+        id: c.id,
+        name: c.name,
+        n:
+          counts[c.id] ||
+          0
+      })
+    )
   ];
 
-  $('#categoryList').innerHTML =
-    items
-      .map(
-        x =>
-          `<button
-            class="category-item ${
-              state.category === x.id
-                ? 'active'
-                : ''
-            }"
-            data-category="${esc(x.id)}"
-          >
-            <span>${esc(x.name)}</span>
-            <small>${x.n}</small>
-          </button>`
-      )
-      .join('');
+  $('#categoryList')
+    .innerHTML =
+      items
+        .map(
+          x =>
+            `<button
+              class="category-item ${
+                state.category ===
+                x.id
+                  ? 'active'
+                  : ''
+              }"
+              data-category="${esc(
+                x.id
+              )}"
+            >
+              <span>
+                ${esc(x.name)}
+              </span>
+
+              <small>
+                ${x.n}
+              </small>
+            </button>`
+        )
+        .join('');
 }
 
 /* =========================================================
@@ -849,67 +1218,82 @@ function filtered() {
       .toLowerCase()
       .trim();
 
-  return state.services.filter(s => {
-    const cat =
-      state.category === 'all' ||
-      s.category_id ===
-        state.category ||
-      (
+  return state.services
+    .filter(s => {
+      const cat =
         state.category ===
-          'uncategorized' &&
-        !s.category_id
+          'all' ||
+        s.category_id ===
+          state.category ||
+        (
+          state.category ===
+            'uncategorized' &&
+          !s.category_id
+        );
+
+      const ds =
+        derivedStatus(s);
+
+      const status =
+        state.status ===
+          'all' ||
+        ds ===
+          state.status;
+
+      const text =
+        `${s.name} ${
+          s.short_description ||
+          ''
+        } ${
+          s.description ||
+          ''
+        }`.toLowerCase();
+
+      return (
+        cat &&
+        status &&
+        (
+          !q ||
+          text.includes(q)
+        )
       );
-
-    const ds =
-      derivedStatus(s);
-
-    const status =
-      state.status === 'all' ||
-      ds === state.status;
-
-    const text =
-      `${s.name} ${
-        s.short_description || ''
-      } ${
-        s.description || ''
-      }`.toLowerCase();
-
-    return (
-      cat &&
-      status &&
-      (!q || text.includes(q))
-    );
-  });
-}
+    });
+    }
 
 /* =========================================================
    SERVICE GRID
 ========================================================= */
 
 function renderGrid() {
-  const rows = filtered();
+  const rows =
+    filtered();
 
-  const grid = $('#serviceGrid');
-  const empty = $('#emptyState');
+  const grid =
+    $('#serviceGrid');
 
-  $('#gridTitle').textContent =
-    state.category === 'all'
-      ? 'All Services'
-      : (
-          state.categories.find(
-            c =>
-              c.id ===
-              state.category
-          )?.name ||
-          'Uncategorized'
-        );
+  const empty =
+    $('#emptyState');
 
-  $('#gridMeta').textContent =
-    `${rows.length} service${
-      rows.length === 1
-        ? ''
-        : 's'
-    } · no page reload`;
+  $('#gridTitle')
+    .textContent =
+      state.category === 'all'
+        ? 'All Services'
+        : (
+            state.categories.find(
+              c =>
+                c.id ===
+                state.category
+            )?.name ||
+            'Uncategorized'
+          );
+
+  $('#gridMeta')
+    .textContent =
+      `${rows.length} service${
+        rows.length === 1
+          ? ''
+          : 's'
+      } · no page reload`;
 
   grid.innerHTML =
     rows
@@ -1057,12 +1441,13 @@ function updateNudge() {
       .classList
       .remove('hidden');
 
-    $('#nudgeText').textContent =
-      `${incomplete} draft service${
-        incomplete === 1
-          ? ' is'
-          : 's are'
-      } missing key business information.`;
+    $('#nudgeText')
+      .textContent =
+        `${incomplete} draft service${
+          incomplete === 1
+            ? ' is'
+            : 's are'
+        } missing key business information.`;
   } else {
     $('#aiNudge')
       .classList
@@ -1092,12 +1477,14 @@ function closeWizard() {
     .classList
     .add('hidden');
 
-  document.body.style.overflow = '';
+  document.body.style.overflow =
+    '';
 }
 
 function resetWizard(service) {
   state.offerId =
-    service?.id || null;
+    service?.id ||
+    null;
 
   state.versionId =
     service?.version?.status ===
@@ -1107,65 +1494,86 @@ function resetWizard(service) {
 
   state.variants = [];
   state.media = [];
-
+  state.days = [];
   state.customValues = {};
 
-  $('#wizardTitle').textContent =
-    service
-      ? 'Edit service'
-      : 'Create service';
+  $('#wizardTitle')
+    .textContent =
+      service
+        ? 'Edit service'
+        : 'Create service';
 
-  $('#fName').value =
-    service?.name || '';
+  $('#fName')
+    .value =
+      service?.name ||
+      '';
 
-  $('#fShort').value =
-    service?.short_description ||
-    '';
+  $('#fShort')
+    .value =
+      service?.short_description ||
+      '';
 
-  $('#fDescription').value =
-    service?.description ||
-    service?.version?.description ||
-    '';
+  $('#fDescription')
+    .value =
+      service?.description ||
+      service?.version?.description ||
+      '';
 
-  $('#fCategory').value =
-    service?.category_id || '';
+  $('#fCategory')
+    .value =
+      service?.category_id ||
+      '';
 
-  $('#fType').value =
-    service?.offer_type ||
-    'service';
+  $('#fType')
+    .value =
+      service?.offer_type ||
+      'service';
 
-  $('#fPrice').value =
-    service?.price?.amount || '';
+  $('#fPrice')
+    .value =
+      service?.price?.amount ||
+      '';
 
-  $('#fCurrency').value =
-    service?.price?.currency ||
-    'INR';
+  $('#fCurrency')
+    .value =
+      service?.price?.currency ||
+      'INR';
 
-  $('#fPriceType').value =
-    service?.price?.price_type ===
-    'starting_at'
-      ? 'starting_from'
-      : (
-          service?.price?.price_type ||
-          'fixed'
-        );
+  $('#fPriceType')
+    .value =
+      service?.price?.price_type ===
+      'starting_at'
+        ? 'starting_from'
+        : (
+            service?.price?.price_type ||
+            'fixed'
+          );
 
-  $('#fBilling').value =
-    service?.price?.billing_period ||
-    '';
+  $('#fBilling')
+    .value =
+      service?.price?.billing_period ||
+      '';
 
-  $('#fDuration').value = '';
+  $('#fDuration')
+    .value =
+      '';
 
-  $('#fKnowledge').value =
-    service?.version?.metadata
-      ?.ai_knowledge_summary ||
-    '';
+  /*
+    IMPORTANT:
+    Legacy service-level AI knowledge
+    field has intentionally been removed.
+
+    Client Knowledge Base is handled by
+    services-knowledge-base-addon.js.
+  */
 
   renderVariants();
   renderMedia();
   renderDays();
+
   updateCapabilities();
   updateChecklist();
+
   showAlert('');
 
   if (
@@ -1173,14 +1581,21 @@ function resetWizard(service) {
     state.versionId
   ) {
     loadStructured()
-      .catch(e =>
-        showAlert(e.message)
+      .catch(
+        e =>
+          showAlert(
+            e.message
+          )
       );
   }
 }
 
 function setStep(n) {
-  state.step = n;
+  state.step =
+    Math.max(
+      1,
+      Math.min(5, n)
+    );
 
   $$('.wizard-step')
     .forEach(x =>
@@ -1188,52 +1603,79 @@ function setStep(n) {
         'active',
         Number(
           x.dataset.panel
-        ) === n
+        ) === state.step
       )
     );
 
   $$('.stepper .step')
     .forEach(x => {
       const s =
-        Number(x.dataset.step);
+        Number(
+          x.dataset.step
+        );
 
       x.classList.toggle(
         'active',
-        s === n
+        s === state.step
       );
 
       x.classList.toggle(
         'done',
-        s < n
+        s < state.step
       );
     });
 
   $('#prevStep')
     .classList.toggle(
       'hidden',
-      n === 1
+      state.step === 1
     );
 
   $('#nextStep')
     .classList.toggle(
       'hidden',
-      n === 5
+      state.step === 5
     );
 
   $('#publishBtn')
     .classList.toggle(
       'hidden',
-      n !== 5
+      state.step !== 5
     );
 
   $('#saveDraftBtn')
     .classList.toggle(
       'hidden',
-      n === 5
+      state.step === 5
     );
 
-  if (n === 5) {
+  if (
+    state.step === 5
+  ) {
     updateChecklist();
+
+    /*
+      Knowledge Base addon may use
+      this event to refresh Step 5.
+    */
+    document.dispatchEvent(
+      new CustomEvent(
+        'glime:services-step5-open',
+        {
+          detail: {
+            clientId:
+              state.client?.client_id ||
+              null,
+            offerId:
+              state.offerId ||
+              null,
+            versionId:
+              state.versionId ||
+              null
+          }
+        }
+      )
+    );
   }
 }
 
@@ -1251,7 +1693,9 @@ function validateStep(n) {
       return 'Service name is required.';
     }
 
-    if (!$('#fType').value) {
+    if (
+      !$('#fType').value
+    ) {
       return 'Choose a catalog type.';
     }
 
@@ -1260,16 +1704,110 @@ function validateStep(n) {
 
   if (n === 2) {
     if (
-      $('#fPrice').value === '' ||
+      $('#fPrice').value ===
+        '' ||
       Number(
         $('#fPrice').value
       ) < 0
     ) {
       return 'A valid price is required.';
     }
+
+    return '';
+  }
+
+  if (n === 3) {
+    /*
+      Availability is conditional.
+      If the selected catalog type does
+      not support availability, Step 3
+      does not block the wizard.
+    */
+
+    if (
+      !state.capabilities
+        ?.availability
+    ) {
+      return '';
+    }
+
+    const rows =
+      $$('#dayRows [data-day-on]');
+
+    const available =
+      rows.filter(
+        el => el.checked
+      );
+
+    if (!available.length) {
+      return 'Select at least one available day.';
+    }
+
+    for (
+      const checkbox of available
+    ) {
+      const i =
+        Number(
+          checkbox.dataset.dayOn
+        );
+
+      const start =
+        $(
+          `#dayRows [data-day-start="${i}"]`
+        )?.value || '';
+
+      const end =
+        $(
+          `#dayRows [data-day-end="${i}"]`
+        )?.value || '';
+
+      if (!start || !end) {
+        return `Set start and end time for ${getDayName(i)}.`;
+      }
+
+      if (
+        start >= end
+      ) {
+        return `End time must be later than start time for ${getDayName(i)}.`;
+      }
+    }
+
+    return '';
+  }
+
+  /*
+    Step 4 media is optional.
+    No validation is required here.
+  */
+
+  if (n === 4) {
+    return '';
+  }
+
+  /*
+    Step 5 Knowledge Base is optional.
+    It is client-level knowledge, not a
+    mandatory field on every service.
+  */
+
+  if (n === 5) {
+    return '';
   }
 
   return '';
+}
+
+function getDayName(index) {
+  return [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+  ][index] ||
+    'selected day';
 }
 
 /* =========================================================
@@ -1278,13 +1816,27 @@ function validateStep(n) {
 
 async function saveDraft(silent = false) {
   try {
+    /*
+      Only validate the currently reached
+      wizard requirements.
+
+      Step 3 is now validated when the user
+      moves through the wizard.
+    */
+
     const stepErr =
       validateStep(
-        Math.min(state.step, 2)
+        Math.min(
+          state.step,
+          4
+        )
       );
 
     if (stepErr) {
-      showAlert(stepErr);
+      showAlert(
+        stepErr
+      );
+
       return false;
     }
 
@@ -1308,11 +1860,13 @@ async function saveDraft(silent = false) {
       client_id:
         state.client.client_id,
 
-      offer_type: type,
+      offer_type:
+        type,
 
       name,
 
-      slug: newSlug,
+      slug:
+        newSlug,
 
       short_description:
         $('#fShort')
@@ -1328,9 +1882,11 @@ async function saveDraft(silent = false) {
         $('#fCategory').value ||
         null,
 
-      status: 'draft',
+      status:
+        'draft',
 
-      current_version_id: null
+      current_version_id:
+        null
     };
 
     let offer;
@@ -1342,7 +1898,8 @@ async function saveDraft(silent = false) {
         client_id:
           state.client.client_id,
 
-        offer_type: type,
+        offer_type:
+          type,
 
         name,
 
@@ -1360,13 +1917,16 @@ async function saveDraft(silent = false) {
           $('#fCategory').value ||
           null,
 
-        status: 'draft'
+        status:
+          'draft'
       };
 
       const u =
         await supabaseClient
           .from('offers')
-          .update(updatePayload)
+          .update(
+            updatePayload
+          )
           .eq(
             'id',
             state.offerId
@@ -1382,7 +1942,8 @@ async function saveDraft(silent = false) {
         throw u.error;
       }
 
-      offer = u.data;
+      offer =
+        u.data;
     }
 
     /* ---------- NEW OFFER ---------- */
@@ -1391,7 +1952,9 @@ async function saveDraft(silent = false) {
       const ins =
         await supabaseClient
           .from('offers')
-          .insert(payload)
+          .insert(
+            payload
+          )
           .select()
           .single();
 
@@ -1399,7 +1962,8 @@ async function saveDraft(silent = false) {
         throw ins.error;
       }
 
-      offer = ins.data;
+      offer =
+        ins.data;
 
       state.offerId =
         offer.id;
@@ -1421,7 +1985,8 @@ async function saveDraft(silent = false) {
           .order(
             'version_number',
             {
-              ascending: false
+              ascending:
+                false
             }
           )
           .limit(1)
@@ -1434,12 +1999,25 @@ async function saveDraft(silent = false) {
       const nextVersion =
         Number(
           latest.data
-            ?.version_number || 0
+            ?.version_number ||
+            0
         ) + 1;
+
+      /*
+        IMPORTANT:
+        Do not create the old
+        ai_knowledge_summary metadata.
+
+        Knowledge is now maintained through
+        client_knowledge_items and the
+        client-storage-knowledge Edge Function.
+      */
 
       const ins =
         await supabaseClient
-          .from('offer_versions')
+          .from(
+            'offer_versions'
+          )
           .insert({
             offer_id:
               offer.id,
@@ -1447,21 +2025,19 @@ async function saveDraft(silent = false) {
             version_number:
               nextVersion,
 
-            status: 'draft',
+            status:
+              'draft',
 
-            title: name,
+            title:
+              name,
 
             description:
               $('#fDescription')
                 .value
                 .trim(),
 
-            metadata: {
-              ai_knowledge_summary:
-                $('#fKnowledge')
-                  .value
-                  .trim()
-            }
+            metadata:
+              {}
           })
           .select()
           .single();
@@ -1493,23 +2069,58 @@ async function saveDraft(silent = false) {
     /* ---------- EXISTING VERSION ---------- */
 
     else {
+      /*
+        Preserve unrelated metadata.
+        Only remove the obsolete legacy
+        ai_knowledge_summary key.
+      */
+
+      const existing =
+        await supabaseClient
+          .from(
+            'offer_versions'
+          )
+          .select(
+            'metadata,status'
+          )
+          .eq(
+            'id',
+            state.versionId
+          )
+          .maybeSingle();
+
+      if (existing.error) {
+        throw existing.error;
+      }
+
+      const metadata = {
+        ...(existing.data
+          ?.metadata &&
+          typeof existing.data
+            .metadata ===
+            'object'
+          ? existing.data.metadata
+          : {})
+      };
+
+      delete metadata
+        .ai_knowledge_summary;
+
       const up =
         await supabaseClient
-          .from('offer_versions')
+          .from(
+            'offer_versions'
+          )
           .update({
-            title: name,
+            title:
+              name,
 
             description:
               $('#fDescription')
                 .value
                 .trim(),
 
-            metadata: {
-              ai_knowledge_summary:
-                $('#fKnowledge')
-                  .value
-                  .trim()
-            }
+            metadata
           })
           .eq(
             'id',
@@ -1525,12 +2136,15 @@ async function saveDraft(silent = false) {
 
     const price =
       Number(
-        $('#fPrice').value || 0
+        $('#fPrice').value ||
+        0
       );
 
     const old =
       await supabaseClient
-        .from('offer_prices')
+        .from(
+          'offer_prices'
+        )
         .select('id')
         .eq(
           'offer_version_id',
@@ -1551,14 +2165,16 @@ async function saveDraft(silent = false) {
       offer_version_id:
         state.versionId,
 
-      amount: price,
+      amount:
+        price,
 
       currency:
         $('#fCurrency').value ||
         'INR',
 
       price_type:
-        priceType === 'starting_at'
+        priceType ===
+        'starting_at'
           ? 'starting_from'
           : priceType,
 
@@ -1566,14 +2182,19 @@ async function saveDraft(silent = false) {
         $('#fBilling').value ||
         null,
 
-      is_active: true
+      is_active:
+        true
     };
 
     if (old.data) {
       const u =
         await supabaseClient
-          .from('offer_prices')
-          .update(priceRow)
+          .from(
+            'offer_prices'
+          )
+          .update(
+            priceRow
+          )
           .eq(
             'id',
             old.data.id
@@ -1582,16 +2203,31 @@ async function saveDraft(silent = false) {
       if (u.error) {
         throw u.error;
       }
+
     } else {
       const i =
         await supabaseClient
-          .from('offer_prices')
-          .insert(priceRow);
+          .from(
+            'offer_prices'
+          )
+          .insert(
+            priceRow
+          );
 
       if (i.error) {
         throw i.error;
       }
     }
+
+    /*
+      Save variants, availability and
+      custom-field values while the version
+      is still draft.
+
+      Media is intentionally left compatible
+      with services-media-persistence-addon.js,
+      which wraps this function.
+    */
 
     await saveStructured();
 
@@ -1599,9 +2235,10 @@ async function saveDraft(silent = false) {
 
     renderAll();
 
-    if ($('#saveState1') ) {
-      $('#saveState1').textContent =
-        'Saved';
+    if ($('#saveState1')) {
+      $('#saveState1')
+        .textContent =
+          'Saved';
     }
 
     if (!silent) {
@@ -1626,7 +2263,7 @@ async function saveDraft(silent = false) {
 }
 
 /* =========================================================
-   PUBLISH / REVIEW
+   PUBLISH / CLIENT APPROVAL
 ========================================================= */
 
 async function submitPublish() {
@@ -1653,12 +2290,15 @@ async function submitPublish() {
   }
 
   if (
-    $('#fPrice').value === '' ||
+    $('#fPrice').value ===
+      '' ||
     Number(
       $('#fPrice').value
     ) < 0
   ) {
-    missing.push('price');
+    missing.push(
+      'price'
+    );
   }
 
   if (missing.length) {
@@ -1669,112 +2309,109 @@ async function submitPublish() {
     return;
   }
 
-  if (
-    !state.offerId ||
-    !state.versionId
-  ) {
-    const ok =
-      await saveDraft(true);
-
-    if (!ok) return;
-  }
-
   try {
     /*
-      Structured data must be saved
-      while version is still draft.
+      Make sure the service exists as a
+      draft before attempting the RPC flow.
+    */
+
+    if (
+      !state.offerId ||
+      !state.versionId
+    ) {
+      const ok =
+        await saveDraft(
+          true
+        );
+
+      if (!ok) {
+        return;
+      }
+    }
+
+    /*
+      Step 3 can be revisited directly,
+      therefore validate it again before
+      final publication.
+    */
+
+    const availabilityError =
+      validateStep(3);
+
+    if (availabilityError) {
+      showAlert(
+        availabilityError
+      );
+
+      setStep(3);
+
+      return;
+    }
+
+    /*
+      IMPORTANT ORDER:
+
+      1. Save structured draft data.
+      2. Submit version for review.
+      3. Client approves its own version.
+      4. Client publishes the approved version.
+
+      This uses the existing RPC architecture.
+      No admin-only Edge Function is used.
     */
 
     await saveStructured();
 
-    const u =
-      await supabaseClient
-        .from('offer_versions')
-        .update({
-          status: 'review',
+    const submit =
+      await supabaseClient.rpc(
+        'client_submit_offer_version_for_review',
+        {
+          p_version_id:
+            state.versionId
+        }
+      );
 
-          title:
-            $('#fName')
-              .value
-              .trim(),
-
-          description:
-            $('#fDescription')
-              .value
-              .trim(),
-
-          metadata: {
-            ai_knowledge_summary:
-              $('#fKnowledge')
-                .value
-                .trim()
-          }
-        })
-        .eq(
-          'id',
-          state.versionId
-        );
-
-    if (u.error) {
-      throw u.error;
+    if (submit.error) {
+      throw submit.error;
     }
 
-    /*
-      Important:
-      offers.status stays draft during review.
-      review is stored on offer_versions.
-    */
+    const approve =
+      await supabaseClient.rpc(
+        'client_approve_offer_version',
+        {
+          p_version_id:
+            state.versionId,
 
-    if (
-      (
-        state.user.email ||
-        ''
-      ).toLowerCase() ===
-      'admin@glime.online'
-    ) {
-      try {
-        await edge(
-          'services-offer-approval',
-          {
-            action: 'approve',
-            version_id:
-              state.versionId
-          }
-        );
-
-        await edge(
-          'services-offer-approval',
-          {
-            action: 'publish',
-            version_id:
-              state.versionId
-          }
-        );
-
-        toast(
-          'Service published',
-          'ok'
-        );
-
-      } catch (e) {
-        console.warn(e);
-
-        toast(
-          'Submitted for review. Admin publish step is still pending.',
-          'ok'
-        );
-      }
-
-    } else {
-      toast(
-        'Service submitted for GLIME review.',
-        'ok'
+          p_notes:
+            'Client approved from Services wizard.'
+        }
       );
+
+    if (approve.error) {
+      throw approve.error;
+    }
+
+    const publish =
+      await supabaseClient.rpc(
+        'client_publish_offer_version',
+        {
+          p_version_id:
+            state.versionId
+        }
+      );
+
+    if (publish.error) {
+      throw publish.error;
     }
 
     await loadServices();
 
     renderAll();
+
+    toast(
+      'Service published successfully.',
+      'ok'
+    );
 
     closeWizard();
 
@@ -1783,7 +2420,7 @@ async function submitPublish() {
 
     showAlert(
       e.message ||
-      'Publish submission failed.'
+      'Service could not be published.'
     );
   }
 }
@@ -1801,56 +2438,58 @@ function updateCapabilities() {
     ) || {};
 
   state.capabilities =
-    t.capabilities || {};
+    t.capabilities ||
+    {};
 
   const c =
     state.capabilities;
 
-  $('#capabilityNote').innerHTML = `
-    <span>✦</span>
+  $('#capabilityNote')
+    .innerHTML = `
+      <span>✦</span>
 
-    <div>
-      <strong>
-        ${esc(
-          t.label ||
-          'Service'
-        )}
-        configuration
-      </strong>
+      <div>
+        <strong>
+          ${esc(
+            t.label ||
+            'Service'
+          )}
+          configuration
+        </strong>
 
-      <p>
-        ${
-          c.duration
-            ? 'Duration enabled · '
-            : ''
-        }
+        <p>
+          ${
+            c.duration
+              ? 'Duration enabled · '
+              : ''
+          }
 
-        ${
-          c.variants
-            ? 'Variants enabled · '
-            : ''
-        }
+          ${
+            c.variants
+              ? 'Variants enabled · '
+              : ''
+          }
 
-        ${
-          c.availability
-            ? 'Availability enabled · '
-            : ''
-        }
+          ${
+            c.availability
+              ? 'Availability enabled · '
+              : ''
+          }
 
-        ${
-          c.booking
-            ? 'Booking enabled · '
-            : ''
-        }
+          ${
+            c.booking
+              ? 'Booking enabled · '
+              : ''
+          }
 
-        ${
-          !Object.keys(c).length
-            ? 'Standard fields only.'
-            : ''
-        }
-      </p>
-    </div>
-  `;
+          ${
+            !Object.keys(c).length
+              ? 'Standard fields only.'
+              : ''
+          }
+        </p>
+      </div>
+    `;
 
   $('#availabilityDisabled')
     .classList.toggle(
@@ -1865,9 +2504,10 @@ function updateCapabilities() {
     );
 
   const durationField =
-    $('#fDuration')?.closest(
-      '.field'
-    );
+    $('#fDuration')
+      ?.closest(
+        '.field'
+      );
 
   if (durationField) {
     durationField.style.display =
@@ -1888,10 +2528,11 @@ function updateCapabilities() {
         : 'none';
   }
 
-  $('#variantList').style.display =
-    c.variants
-      ? 'flex'
-      : 'none';
+  $('#variantList')
+    .style.display =
+      c.variants
+        ? 'flex'
+        : 'none';
 }
 
 /* =========================================================
@@ -1899,46 +2540,53 @@ function updateCapabilities() {
 ========================================================= */
 
 function renderVariants() {
-  $('#variantList').innerHTML =
-    state.variants
-      .map(
-        (v, i) =>
-          `
-          <div class="variant-row">
+  $('#variantList')
+    .innerHTML =
+      state.variants
+        .map(
+          (v, i) =>
+            `
+            <div class="variant-row">
 
-            <input
-              data-v="name"
-              data-i="${i}"
-              value="${esc(v.name)}"
-              placeholder="Variant name"
-            >
+              <input
+                data-v="name"
+                data-i="${i}"
+                value="${esc(
+                  v.name
+                )}"
+                placeholder="Variant name"
+              >
 
-            <input
-              data-v="price"
-              data-i="${i}"
-              type="number"
-              value="${esc(v.price || '')}"
-              placeholder="Price"
-            >
+              <input
+                data-v="price"
+                data-i="${i}"
+                type="number"
+                value="${esc(
+                  v.price || ''
+                )}"
+                placeholder="Price"
+              >
 
-            <input
-              data-v="sku"
-              data-i="${i}"
-              value="${esc(v.sku || '')}"
-              placeholder="SKU"
-            >
+              <input
+                data-v="sku"
+                data-i="${i}"
+                value="${esc(
+                  v.sku || ''
+                )}"
+                placeholder="SKU"
+              >
 
-            <button
-              class="remove-row"
-              data-remove-variant="${i}"
-            >
-              ×
-            </button>
+              <button
+                class="remove-row"
+                data-remove-variant="${i}"
+              >
+                ×
+              </button>
 
-          </div>
-          `
-      )
-      .join('');
+            </div>
+            `
+        )
+        .join('');
 }
 
 /* =========================================================
@@ -1956,54 +2604,55 @@ function renderDays() {
     'Sunday'
   ];
 
-  $('#dayRows').innerHTML =
-    names
-      .map(
-        (n, i) =>
-          `
-          <div class="day-row">
+  $('#dayRows')
+    .innerHTML =
+      names
+        .map(
+          (n, i) =>
+            `
+            <div class="day-row">
 
-            <label>
-              ${n}
-            </label>
+              <label>
+                ${n}
+              </label>
 
-            <input
-              type="time"
-              data-day-start="${i}"
-              value="${
-                i < 6
-                  ? '09:00'
-                  : ''
-              }"
-            >
-
-            <input
-              type="time"
-              data-day-end="${i}"
-              value="${
-                i < 6
-                  ? '18:00'
-                  : ''
-              }"
-            >
-
-            <label>
               <input
-                type="checkbox"
-                data-day-on="${i}"
-                ${
+                type="time"
+                data-day-start="${i}"
+                value="${
                   i < 6
-                    ? 'checked'
+                    ? '09:00'
                     : ''
-                }
+                }"
               >
-              Available
-            </label>
 
-          </div>
-          `
-      )
-      .join('');
+              <input
+                type="time"
+                data-day-end="${i}"
+                value="${
+                  i < 6
+                    ? '18:00'
+                    : ''
+                }"
+              >
+
+              <label>
+                <input
+                  type="checkbox"
+                  data-day-on="${i}"
+                  ${
+                    i < 6
+                      ? 'checked'
+                      : ''
+                  }
+                >
+                Available
+              </label>
+
+            </div>
+            `
+        )
+        .join('');
 }
 
 /* =========================================================
@@ -2011,77 +2660,84 @@ function renderDays() {
 ========================================================= */
 
 function renderMedia() {
-  $('#mediaList').innerHTML =
-    state.media
-      .map(
-        (m, i) =>
-          `
-          <div class="media-item">
+  $('#mediaList')
+    .innerHTML =
+      state.media
+        .map(
+          (m, i) =>
+            `
+            <div class="media-item">
 
-            <div class="media-thumb">
-              ${
-                m.url
-                  ? `<img
-                      src="${esc(m.url)}"
-                      alt=""
-                    >`
-                  : '▶'
-              }
-            </div>
-
-            <div class="media-info">
-
-              <input
-                value="${esc(
-                  m.alt || ''
-                )}"
-                data-media-alt="${i}"
-                placeholder="Alt text"
-              >
-
-              <div class="media-controls">
-
-                <button
-                  data-primary="${i}"
-                  class="${
-                    m.primary
-                      ? 'primary-mini'
-                      : ''
-                  }"
-                >
-                  ${
-                    m.primary
-                      ? '★ Primary'
-                      : 'Set primary'
-                  }
-                </button>
-
-                <button
-                  data-remove-media="${i}"
-                >
-                  Remove
-                </button>
-
+              <div class="media-thumb">
+                ${
+                  m.url
+                    ? `<img
+                        src="${esc(
+                          m.url
+                        )}"
+                        alt=""
+                      >`
+                    : '▶'
+                }
               </div>
 
+              <div class="media-info">
+
+                <input
+                  value="${esc(
+                    m.alt || ''
+                  )}"
+                  data-media-alt="${i}"
+                  placeholder="Alt text"
+                >
+
+                <div class="media-controls">
+
+                  <button
+                    data-primary="${i}"
+                    class="${
+                      m.primary
+                        ? 'primary-mini'
+                        : ''
+                    }"
+                  >
+                    ${
+                      m.primary
+                        ? '★ Primary'
+                        : 'Set primary'
+                    }
+                  </button>
+
+                  <button
+                    data-remove-media="${i}"
+                  >
+                    Remove
+                  </button>
+
+                </div>
+
+              </div>
             </div>
-          </div>
-          `
-      )
-      .join('');
+            `
+        )
+        .join('');
 
   const p =
     state.media.find(
-      m => m.primary
+      m =>
+        m.primary
     );
 
-  $('#previewMedia').innerHTML =
-    p?.url
-      ? `<img
-          src="${esc(p.url)}"
-          alt=""
-        >`
-      : 'No primary media';
+  $('#previewMedia')
+    .innerHTML =
+      p?.url
+        ? `<img
+            src="${esc(
+              p.url
+            )}"
+            alt=""
+          >`
+        : 'No primary media';
 }
 
 /* =========================================================
@@ -2092,7 +2748,9 @@ function updateChecklist() {
   const checks = [
     [
       'Service name',
-      !!$('#fName').value.trim(),
+      !!$('#fName')
+        .value
+        .trim(),
       'Customer-facing name is present.'
     ],
 
@@ -2125,47 +2783,58 @@ function updateChecklist() {
       x => x[1]
     ).length;
 
-  $('#checkCount').textContent =
-    `${ok}/${checks.length}`;
+  $('#checkCount')
+    .textContent =
+      `${ok}/${checks.length}`;
 
-  $('#publishChecklist').innerHTML =
-    checks
-      .map(
-        x =>
-          `
-          <div
-            class="check-row ${
-              x[1] ? 'ok' : ''
-            }"
-          >
+  $('#publishChecklist')
+    .innerHTML =
+      checks
+        .map(
+          x =>
+            `
+            <div
+              class="check-row ${
+                x[1]
+                  ? 'ok'
+                  : ''
+              }"
+            >
 
-            <span class="check-icon">
-              ${x[1] ? '✓' : '!'}
-            </span>
+              <span class="check-icon">
+                ${
+                  x[1]
+                    ? '✓'
+                    : '!'
+                }
+              </span>
 
-            <div>
-              <strong>
-                ${esc(x[0])}
-              </strong>
+              <div>
+                <strong>
+                  ${esc(x[0])}
+                </strong>
 
-              <small>
-                ${esc(x[2])}
-              </small>
+                <small>
+                  ${esc(x[2])}
+                </small>
+              </div>
+
             </div>
+            `
+        )
+        .join('');
 
-          </div>
-          `
-      )
-      .join('');
+  $('#publishBtn')
+    .disabled =
+      ok !==
+      checks.length;
 
-  $('#publishBtn').disabled =
-    ok !== checks.length;
-
-  $('#previewName').textContent =
-    $('#fName')
-      .value
-      .trim() ||
-    'Service name';
+  $('#previewName')
+    .textContent =
+      $('#fName')
+        .value
+        .trim() ||
+      'Service name';
 
   $('#previewDescription')
     .textContent =
@@ -2192,7 +2861,9 @@ async function generateAI(targetId) {
   const el =
     $('#' + targetId);
 
-  if (!el) return;
+  if (!el) {
+    return;
+  }
 
   const name =
     $('#fName')
@@ -2208,7 +2879,8 @@ async function generateAI(targetId) {
   }
 
   try {
-    el.disabled = true;
+    el.disabled =
+      true;
 
     el.classList.add(
       'ai-loading'
@@ -2252,7 +2924,9 @@ async function generateAI(targetId) {
         typeof text ===
         'string'
           ? text
-          : JSON.stringify(text);
+          : JSON.stringify(
+              text
+            );
     }
 
     updateChecklist();
@@ -2269,7 +2943,8 @@ async function generateAI(targetId) {
     );
 
   } finally {
-    el.disabled = false;
+    el.disabled =
+      false;
 
     el.classList.remove(
       'ai-loading'
@@ -2310,24 +2985,37 @@ function bindUI() {
 
   $('#refreshBtn').onclick =
     async () => {
-      await Promise.all([
-        loadCategories(),
-        loadServices()
-      ]);
+      try {
+        await Promise.all([
+          loadCategories(),
+          loadServices()
+        ]);
 
-      renderAll();
+        renderAll();
 
-      toast(
-        'Catalog refreshed',
-        'ok'
-      );
+        toast(
+          'Catalog refreshed',
+          'ok'
+        );
+
+      } catch (e) {
+        console.error(e);
+
+        toast(
+          e.message ||
+          'Catalog refresh failed.',
+          'bad'
+        );
+      }
     };
 
   $('#addServiceBtn').onclick =
-    () => openWizard();
+    () =>
+      openWizard();
 
   $('#emptyAddBtn').onclick =
-    () => openWizard();
+    () =>
+      openWizard();
 
   $('#serviceSearch').oninput =
     e => {
@@ -2352,7 +3040,9 @@ function bindUI() {
           '[data-category]'
         );
 
-      if (!b) return;
+      if (!b) {
+        return;
+      }
 
       state.category =
         b.dataset.category;
@@ -2374,13 +3064,35 @@ function bindUI() {
     closeWizard;
 
   $('#prevStep').onclick =
-    () =>
+    async () => {
       setStep(
         Math.max(
           1,
           state.step - 1
         )
       );
+    };
+
+  /*
+    NEXT STEP
+
+    Step 1:
+      Save service + version + price.
+
+    Step 2:
+      Save price/variants.
+
+    Step 3:
+      Validate availability and save it.
+
+    Step 4:
+      Save media through the existing
+      services-media-persistence-addon.js
+      wrapper around saveStructured().
+
+    Step 5:
+      Review / Knowledge Base / Publish.
+  */
 
   $('#nextStep').onclick =
     async () => {
@@ -2391,22 +3103,27 @@ function bindUI() {
 
       if (err) {
         showAlert(err);
+
         return;
       }
 
       if (
         state.step < 5
       ) {
-        if (
-          state.step === 1 ||
-          state.step === 2
-        ) {
-          const saved =
-            await saveDraft(
-              true
-            );
+        /*
+          Every wizard step before Step 5
+          gets persisted.
 
-          if (!saved) return;
+          This is important because Step 3
+          and Step 4 previously had no
+          independent save boundary.
+        */
+
+        const saved =
+          await saveDraft(true);
+
+        if (!saved) {
+          return;
         }
 
         setStep(
@@ -2416,7 +3133,8 @@ function bindUI() {
     };
 
   $('#saveDraftBtn').onclick =
-    () => saveDraft();
+    () =>
+      saveDraft();
 
   $('#publishBtn').onclick =
     submitPublish;
@@ -2439,6 +3157,14 @@ function bindUI() {
       }
     };
 
+  /*
+    AI buttons are optional.
+
+    The old Step-5 fKnowledge button
+    has been removed from services.html,
+    so there is no dependency on it here.
+  */
+
   document
     .querySelectorAll(
       '[data-ai-target]'
@@ -2451,26 +3177,35 @@ function bindUI() {
           );
     });
 
+  /*
+    fKnowledge intentionally removed.
+  */
+
   [
     'fName',
     'fDescription',
     'fPrice',
     'fCurrency',
-    'fShort',
-    'fKnowledge'
+    'fShort'
   ].forEach(id => {
-    $('#' + id)?.addEventListener(
-      'input',
-      updateChecklist
-    );
+    $('#' + id)
+      ?.addEventListener(
+        'input',
+        updateChecklist
+      );
   });
+
+  /* =======================================================
+     VARIANTS
+  ======================================================= */
 
   $('#addVariantBtn').onclick =
     () => {
       state.variants.push({
         name: '',
         price: '',
-        sku: ''
+        sku: '',
+        description: ''
       });
 
       renderVariants();
@@ -2501,28 +3236,43 @@ function bindUI() {
           '[data-remove-variant]'
         );
 
-      if (b) {
-        state.variants.splice(
-          Number(
-            b.dataset
-              .removeVariant
-          ),
-          1
-        );
-
-        renderVariants();
+      if (!b) {
+        return;
       }
+
+      state.variants.splice(
+        Number(
+          b.dataset
+            .removeVariant
+        ),
+        1
+      );
+
+      renderVariants();
     };
+
+  /* =======================================================
+     MEDIA
+  ======================================================= */
 
   $('#chooseMediaBtn').onclick =
     () =>
       $('#mediaInput').click();
 
   $('#mediaInput').onchange =
-    e =>
+    e => {
       handleFiles(
-        [...e.target.files]
+        [
+          ...e.target.files
+        ]
       );
+
+      /*
+        Allow selecting the same file again
+        later if the user removes it first.
+      */
+      e.target.value = '';
+    };
 
   $('#uploadZone').ondragover =
     e => {
@@ -2548,7 +3298,9 @@ function bindUI() {
         .remove('drag');
 
       handleFiles(
-        [...e.dataTransfer.files]
+        [
+          ...e.dataTransfer.files
+        ]
       );
     };
 
@@ -2598,17 +3350,40 @@ function bindUI() {
       }
 
       if (r) {
-        state.media.splice(
+        const index =
           Number(
             r.dataset
               .removeMedia
-          ),
+          );
+
+        state.media.splice(
+          index,
           1
         );
+
+        /*
+          If the removed media was the only
+          primary item, make the first remaining
+          item primary.
+        */
+
+        if (
+          state.media.length &&
+          !state.media.some(
+            m => m.primary
+          )
+        ) {
+          state.media[0].primary =
+            true;
+        }
 
         renderMedia();
       }
     };
+
+  /* =======================================================
+     STEPPER
+  ======================================================= */
 
   $$('.stepper .step')
     .forEach(b => {
@@ -2619,6 +3394,12 @@ function bindUI() {
               b.dataset.step
             );
 
+          /*
+            Do not allow jumping ahead.
+            Previous/completed steps remain
+            directly accessible.
+          */
+
           if (
             n <= state.step
           ) {
@@ -2626,6 +3407,10 @@ function bindUI() {
           }
         };
     });
+
+  /* =======================================================
+     SERVICE GRID
+  ======================================================= */
 
   $('#serviceGrid').onclick =
     e => {
@@ -2663,13 +3448,20 @@ function bindUI() {
         if (s) {
           openWizard({
             ...s,
+
             id: null,
+
             current_version_id:
               null,
+
             name:
               `${s.name} Copy`,
-            status: 'draft',
-            version: null
+
+            status:
+              'draft',
+
+            version:
+              null
           });
 
           toast(
@@ -2680,8 +3472,16 @@ function bindUI() {
       }
     };
 
+  /* =======================================================
+     CATEGORY
+  ======================================================= */
+
   $('#addCategoryBtn').onclick =
     addCategory;
+
+  /* =======================================================
+     COMMAND PALETTE
+  ======================================================= */
 
   $('#commandBtn').onclick =
     openCommand;
@@ -2702,6 +3502,10 @@ function bindUI() {
       }
     };
 
+  /* =======================================================
+     KEYBOARD
+  ======================================================= */
+
   document.addEventListener(
     'keydown',
     e => {
@@ -2713,18 +3517,22 @@ function bindUI() {
           'k'
       ) {
         e.preventDefault();
+
         openCommand();
       }
 
       if (
-        e.key === 'Escape'
+        e.key ===
+        'Escape'
       ) {
         closeCommand();
 
         if (
           !$('#wizardOverlay')
             .classList
-            .contains('hidden')
+            .contains(
+              'hidden'
+            )
         ) {
           closeWizard();
         }
@@ -2732,10 +3540,12 @@ function bindUI() {
 
       if (
         e.key === '/' &&
-        document.activeElement.tagName !==
+        document.activeElement?.tagName !==
           'INPUT' &&
-        document.activeElement.tagName !==
-          'TEXTAREA'
+        document.activeElement?.tagName !==
+          'TEXTAREA' &&
+        document.activeElement?.tagName !==
+          'SELECT'
       ) {
         e.preventDefault();
 
@@ -2751,8 +3561,8 @@ function bindUI() {
 ========================================================= */
 
 function handleFiles(files) {
-  files
-    .filter(
+  const accepted =
+    files.filter(
       f =>
         f.type.startsWith(
           'image/'
@@ -2760,8 +3570,19 @@ function handleFiles(files) {
         f.type.startsWith(
           'video/'
         )
-    )
-    .forEach(file => {
+    );
+
+  if (!accepted.length) {
+    toast(
+      'Only image and video files are supported here.',
+      'bad'
+    );
+
+    return;
+  }
+
+  accepted.forEach(
+    file => {
       const url =
         URL.createObjectURL(
           file
@@ -2769,22 +3590,44 @@ function handleFiles(files) {
 
       state.media.push({
         file,
+
         url,
+
         alt:
           file.name.replace(
             /\.[^.]+$/,
             ''
           ),
+
         primary:
           state.media.length ===
-          0
+          0,
+
+        type:
+          file.type
+            .startsWith(
+              'video/'
+            )
+            ? 'video'
+            : 'image'
       });
-    });
+    }
+  );
 
   renderMedia();
 
+  /*
+    The media persistence addon wraps
+    handleFiles() and saveStructured()
+    when loaded after this file.
+  */
+
   toast(
-    'Media added to this draft',
+    `${accepted.length} media item${
+      accepted.length === 1
+        ? ''
+        : 's'
+    } added to this draft`,
     'ok'
   );
 }
@@ -2806,7 +3649,9 @@ async function addCategory() {
   const slug =
     slugify(name);
 
-  const { error } =
+  const {
+    error
+  } =
     await supabaseClient
       .from(
         'offer_categories'
@@ -2823,9 +3668,11 @@ async function addCategory() {
         sort_order:
           state.categories.length,
 
-        is_active: true,
+        is_active:
+          true,
 
-        is_global: false
+        is_global:
+          false
       });
 
   if (error) {
@@ -2856,8 +3703,8 @@ function openCommand() {
     .classList
     .remove('hidden');
 
-  $('#commandInput').value =
-    '';
+  $('#commandInput')
+    .value = '';
 
   renderCommand();
 
@@ -2886,17 +3733,21 @@ function renderCommand() {
 
   if (
     !q ||
-    'add service'.includes(q)
+    'add service'
+      .includes(q)
   ) {
     results.push({
-      title: 'Add Service',
+      title:
+        'Add Service',
+
       meta:
         'Create a new service',
 
-      action: () => {
-        closeCommand();
-        openWizard();
-      }
+      action:
+        () => {
+          closeCommand();
+          openWizard();
+        }
     });
   }
 
@@ -2909,28 +3760,32 @@ function renderCommand() {
           .includes(q)
     )
     .slice(0, 8)
-    .forEach(s => {
-      results.push({
-        title: s.name,
+    .forEach(
+      s => {
+        results.push({
+          title:
+            s.name,
 
-        meta:
-          `${derivedStatus(
-            s
-          )} · ${
-            s.price
-              ? money(
-                  s.price.amount,
-                  s.price.currency
-                )
-              : 'No price'
-          }`,
+          meta:
+            `${derivedStatus(
+              s
+            )} · ${
+              s.price
+                ? money(
+                    s.price.amount,
+                    s.price.currency
+                  )
+                : 'No price'
+            }`,
 
-        action: () => {
-          closeCommand();
-          openWizard(s);
-        }
-      });
-    });
+          action:
+            () => {
+              closeCommand();
+              openWizard(s);
+            }
+        });
+      }
+    );
 
   state.categories
     .filter(
@@ -2941,71 +3796,88 @@ function renderCommand() {
           .includes(q)
     )
     .slice(0, 5)
-    .forEach(c => {
-      results.push({
-        title: c.name,
-        meta: 'Category',
+    .forEach(
+      c => {
+        results.push({
+          title:
+            c.name,
 
-        action: () => {
-          closeCommand();
+          meta:
+            'Category',
 
-          state.category =
-            c.id;
+          action:
+            () => {
+              closeCommand();
 
-          renderCategories();
-          renderGrid();
-        }
-      });
-    });
+              state.category =
+                c.id;
 
-  $('#commandResults').innerHTML =
-    results.length
-      ? results
-          .map(
-            (r, i) =>
-              `
-              <button
-                class="command-item"
-                data-command-index="${i}"
-              >
-                <strong>
-                  ${esc(r.title)}
-                </strong>
-
-                <small>
-                  ${esc(r.meta)}
-                </small>
-              </button>
-              `
-          )
-          .join('')
-      : `
-          <div class="command-item">
-            <strong>
-              No results
-            </strong>
-
-            <small>
-              Try another search.
-            </small>
-          </div>
-        `;
-
-  $('#commandResults').onclick =
-    e => {
-      const b =
-        e.target.closest(
-          '[data-command-index]'
-        );
-
-      if (b) {
-        results[
-          Number(
-            b.dataset.commandIndex
-          )
-        ].action();
+              renderCategories();
+              renderGrid();
+            }
+        });
       }
-    };
+    );
+
+  $('#commandResults')
+    .innerHTML =
+      results.length
+        ? results
+            .map(
+              (r, i) =>
+                `
+                <button
+                  class="command-item"
+                  data-command-index="${i}"
+                >
+                  <strong>
+                    ${esc(
+                      r.title
+                    )}
+                  </strong>
+
+                  <small>
+                    ${esc(
+                      r.meta
+                    )}
+                  </small>
+                </button>
+                `
+            )
+            .join('')
+        : `
+            <div class="command-item">
+              <strong>
+                No results
+              </strong>
+
+              <small>
+                Try another search.
+              </small>
+            </div>
+          `;
+
+  $('#commandResults')
+    .onclick =
+      e => {
+        const b =
+          e.target.closest(
+            '[data-command-index]'
+          );
+
+        if (!b) {
+          return;
+        }
+
+        const index =
+          Number(
+            b.dataset
+              .commandIndex
+          );
+
+        results[index]
+          ?.action();
+      };
 }
 
 /* =========================================================
@@ -3013,6 +3885,12 @@ function renderCommand() {
 ========================================================= */
 
 function startRealtime() {
+  if (
+    !state.client?.client_id
+  ) {
+    return;
+  }
+
   supabaseClient
     .channel(
       `services-live-${state.client.client_id}`
@@ -3022,14 +3900,20 @@ function startRealtime() {
       'postgres_changes',
       {
         event: '*',
+
         schema: 'public',
+
         table: 'offers',
+
         filter:
           `client_id=eq.${state.client.client_id}`
       },
+
       () =>
         loadServices()
-          .then(renderAll)
+          .then(
+            renderAll
+          )
           .catch(
             console.warn
           )
@@ -3039,12 +3923,18 @@ function startRealtime() {
       'postgres_changes',
       {
         event: '*',
+
         schema: 'public',
-        table: 'offer_versions'
+
+        table:
+          'offer_versions'
       },
+
       () =>
         loadServices()
-          .then(renderAll)
+          .then(
+            renderAll
+          )
           .catch(
             console.warn
           )
@@ -3058,5 +3948,9 @@ function startRealtime() {
 ========================================================= */
 
 init()
-  .then(startRealtime)
-  .catch(console.warn);
+  .then(
+    startRealtime
+  )
+  .catch(
+    console.warn
+  );
