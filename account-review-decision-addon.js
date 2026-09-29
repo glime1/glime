@@ -141,7 +141,6 @@
 
 
           /*
-           * IMPORTANT:
            * Admin review actions require AAL2.
            */
 
@@ -429,14 +428,9 @@
 
 
                   <textarea
-                    id="
-                      glimeReviewAdminNoteAddon
-                    "
+                    id="glimeReviewAdminNoteAddon"
                     rows="5"
-                    placeholder="
-                      Write the response
-                      that the client will see...
-                    "
+                    placeholder="Write the response that the client will see..."
                     style="
                       width:100%;
                       margin-top:10px;
@@ -462,9 +456,7 @@
                   >
 
                     <button
-                      id="
-                        glimeReviewApproveAddon
-                      "
+                      id="glimeReviewApproveAddon"
                       class="btn"
                     >
                       APPROVE & REACTIVATE
@@ -472,9 +464,7 @@
 
 
                     <button
-                      id="
-                        glimeReviewRejectAddon
-                      "
+                      id="glimeReviewRejectAddon"
                       class="btn"
                     >
                       REJECT & KEEP SUSPENDED
@@ -484,9 +474,7 @@
 
 
                   <div
-                    id="
-                      glimeReviewDecisionStatusAddon
-                    "
+                    id="glimeReviewDecisionStatusAddon"
                     style="
                       margin-top:10px;
                       min-height:20px
@@ -534,15 +522,21 @@
           box.appendChild(wrap);
 
 
+          /*
+           * IMPORTANT:
+           * Use document.getElementById().
+           * Do NOT use the old broken multiline-ID selectors.
+           */
+
           const note =
-            wrap.querySelector(
-              '#glimeReviewAdminNoteAddon'
+            document.getElementById(
+              'glimeReviewAdminNoteAddon'
             );
 
 
           const status =
-            wrap.querySelector(
-              '#glimeReviewDecisionStatusAddon'
+            document.getElementById(
+              'glimeReviewDecisionStatusAddon'
             );
 
 
@@ -554,8 +548,13 @@
             action
           ) {
 
+            if (!note || !status) {
+              return;
+            }
+
+
             const text =
-              note?.value.trim() || '';
+              note.value.trim() || '';
 
 
             if (!text) {
@@ -566,7 +565,7 @@
               status.style.color =
                 '#ff9eaa';
 
-              note?.focus();
+              note.focus();
 
               return;
             }
@@ -668,14 +667,14 @@
 
 
           const approve =
-            wrap.querySelector(
-              '#glimeReviewApproveAddon'
+            document.getElementById(
+              'glimeReviewApproveAddon'
             );
 
 
           const reject =
-            wrap.querySelector(
-              '#glimeReviewRejectAddon'
+            document.getElementById(
+              'glimeReviewRejectAddon'
             );
 
 
