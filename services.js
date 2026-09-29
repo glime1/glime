@@ -5,6 +5,8 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_KEY
 );
 
+window.supabaseClient = supabaseClient;
+
 const state = {
   user: null,
   client: null,
@@ -3676,10 +3678,17 @@ function bindUI() {
             Do not allow jumping ahead.
             Previous/completed steps remain
             directly accessible.
+
+            Step 5 (Client Knowledge) is an
+            exception: it can always be opened
+            directly since it holds client-level
+            knowledge rather than a wizard field
+            that depends on earlier steps.
           */
 
           if (
-            n <= state.step
+            n <= state.step ||
+            n === 5
           ) {
             setStep(n);
           }
