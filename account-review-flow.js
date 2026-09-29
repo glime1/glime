@@ -155,10 +155,55 @@
       }
 
       .glime-review-copy{
-        color:#c2ccd8;
-        line-height:1.65;
-        margin:0 0 22px;
-      }
+  color:#c2ccd8;
+  line-height:1.65;
+  margin:0 0 18px;
+}
+
+.glime-review-message-label{
+  display:block;
+  margin:0 0 7px;
+  color:#dbe4ee;
+  font-size:14px;
+  font-weight:800;
+}
+
+.glime-review-message{
+  width:100%;
+  min-height:112px;
+  padding:12px 13px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:11px;
+  background:#09111b;
+  color:#fff;
+  outline:none;
+  resize:vertical;
+  line-height:1.5;
+  font-size:14px;
+}
+
+.glime-review-message:focus{
+  border-color:rgba(255,173,69,.7);
+  box-shadow:0 0 0 3px rgba(255,173,69,.10);
+}
+
+.glime-review-message:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+}
+
+.glime-review-message-wrap{
+  margin:0 0 14px;
+}
+
+.glime-review-message-hint{
+  margin-top:6px;
+  color:#91a0b3;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.glime-review-actions{
 
       .glime-review-actions{
         display:flex;
@@ -337,6 +382,33 @@
             you can submit a request to the GLIME Admin team.
           </p>
 
+          ${
+  pending
+    ? ''
+    : `
+      <div class="glime-review-message-wrap">
+        <label
+          class="glime-review-message-label"
+          for="glimeReviewClientMessage"
+        >
+          Message to GLIME Admin
+        </label>
+
+        <textarea
+          id="glimeReviewClientMessage"
+          class="glime-review-message"
+          maxlength="2000"
+          rows="5"
+          placeholder="Please tell us why you believe your account should be reviewed."
+        ></textarea>
+
+        <div class="glime-review-message-hint">
+          Please include any relevant context. Maximum 2000 characters.
+        </div>
+      </div>
+    `
+          }
+
           <div class="glime-review-actions">
             <button
               id="glimeReviewRequestBtn"
@@ -397,41 +469,116 @@
     );
 
     const status = document.getElementById(
-      'glimeReviewStatus'
-    );
+  'glimeReviewStatus'
+);
 
-    if (btn && !btn.disabled) {
-      btn.onclick = async function () {
-        btn.disabled = true;
-        btn.textContent = 'SUBMITTING…';
+const messageInput = document.getElementById(
+  'glimeReviewClientMessage'
+);
 
-        const result = await sb.rpc(
-          'client_request_account_review',
-          {
-            p_message: null
-          }
-        );
+if (btn && !btn.disabled) {
+  btn.onclick = async function () {
 
-        if (result.error) {
-          btn.disabled = false;
-          btn.textContent = 'REQUEST REVIEW';
+    const message = String(
+      messageInput?.value || ''
+    ).trim();
 
-          status.textContent =
-            result.error.message ||
-            'Review request could not be submitted.';
 
-          status.style.color = '#ff9eaa';
-          return;
-        }
+    if (!message) {
 
-        btn.textContent = 'REVIEW REQUEST SENT';
+      status.textContent =
+        'Please write a short message explaining why you believe your account should be reviewed.';
 
-        status.textContent =
-          'Your review request has been submitted. Our Admin team will review your request within 2–3 working days. During this review, your dashboard and billing access will remain unavailable.';
+      status.style.color =
+        '#ffcf8a';
 
-        status.style.color = '#9feec9';
-      };
+      messageInput?.focus();
+
+      return;
     }
+
+
+    if (message.length > 2000) {
+
+      status.textContent =
+        'Your message is too long. Please keep it within 2000 characters.';
+
+      status.style.color =
+        '#ff9eaa';
+
+      messageInput?.focus();
+
+      return;
+    }
+
+
+    btn.disabled = true;
+
+
+    if (messageInput) {
+      messageInput.disabled = true;
+    }
+
+
+    btn.textContent =
+      'SUBMITTING…';
+
+
+    status.textContent =
+      'Submitting your review request…';
+
+    status.style.color =
+      '#c2ccd8';
+
+
+    const result =
+      await sb.rpc(
+        'client_request_account_review',
+        {
+          p_message: message
+        }
+      );
+
+
+    if (result.error) {
+
+      btn.disabled = false;
+
+
+      if (messageInput) {
+        messageInput.disabled = false;
+      }
+
+
+      btn.textContent =
+        'REQUEST REVIEW';
+
+
+      status.textContent =
+        result.error.message ||
+        'Review request could not be submitted.';
+
+
+      status.style.color =
+        '#ff9eaa';
+
+      return;
+    }
+
+
+    btn.textContent =
+      'REVIEW REQUEST SENT';
+
+
+    status.textContent =
+      'Your review request has been submitted. Our Admin team will review your request within 2–3 working days. During this review, your dashboard and billing access will remain unavailable.';
+
+
+    status.style.color =
+      '#9feec9';
+
+  };
+}
   }
 
   async function clientGate() {
