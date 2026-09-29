@@ -356,10 +356,13 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
   async function q(table,columns='*'){const r=await sb.from(table).select(columns);if(r.error)throw r.error;return r.data||[]}
   async function loadAll(){
     try{
-      const [c,m,cm,s,rg]=await Promise.all([
-        q('client_data','*'),q('modules','*'),q('client_modules','*'),q('glime_billing_subscriptions','*'),q('glime_billing_promotional_grants','*')
+      const [clientRpc,m,cm,s,rg]=await Promise.all([
+        sb.rpc('admin_clients_list',{p_search:null,p_status:null,p_limit:500}),
+        q('modules','*'),q('client_modules','*'),q('glime_billing_subscriptions','*'),q('glime_billing_promotional_grants','*')
       ]);
-      clients=c;modules=m;clientModules=cm;subs=s;rewards=rg;
+      if(clientRpc.error)throw clientRpc.error;
+      clients=(clientRpc.data||[]).map(x=>x.client||x).filter(Boolean);
+      modules=m;clientModules=cm;subs=s;rewards=rg;
       renderOverview();renderClients();renderModules();renderBilling();renderRewards();renderMfa();
       await renderSafety();renderSimpleSections();
     }catch(e){console.error(e);alert('Admin data load failed: '+e.message)}
@@ -405,7 +408,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
   function renderDetail(){
     const c=current,mods=clientModules.filter(x=>x.client_id===c.id),mySubs=subs.filter(x=>x.client_id===c.id||x.client_id===c.client_id);
     $('tab-profile').innerHTML=`<div class="kv"><div><small>Client ID</small><b>${esc(c.client_id)}</b></div><div><small>Email</small><b>${esc(c.email)}</b></div><div><small>Name</small><b>${esc(c.full_name||c.client_name)}</b></div><div><small>Business</small><b>${esc(c.business_name)}</b></div><div><small>Phone</small><b>${esc(c.phone||c.mobile||'—')}</b></div><div><small>Signup</small><b>${dt(c.created_at)}</b></div></div><button class="btn orange" style="margin-top:12px" onclick="window.editProfile()">Edit Profile</button>`;
-    $('tab-account').innerHTML=`<div class="kv"><div><small>Account</small><b>${statusBadge(c.account_status)}</b></div><div><small>Payment</small><b>${statusBadge(c.payment_status)}</b></div><div><small>Suspension Reason</small><b>${esc(c.suspension_reason||'—')}</b></div><div><small>Invoice</small><b>${c.invoice_link?`<a href="${esc(c.invoice_link)}" target="_blank">Open</a>`:'—'}</b></div></div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${(c.account_status||'').toLowerCase()==='suspended'?'<button class="btn green" onclick="window.reactivateClient()">Reactivate</button>':'<button class="btn red" onclick="window.suspendClient()">Suspend Client</button>'}<button class="btn" onclick="window.archiveClient()">Archive</button></div>`;
+    $('tab-account').innerHTML=`<div class="kv"><div><small>Account Status — Source of Truth</small><b>${statusBadge(c.account_status)}</b></div><div><small>Payment</small><b>${statusBadge(c.payment_status)}</b></div><div><small>Suspension Reason</small><b>${esc(c.suspension_reason||'—')}</b></div><div><small>Invoice</small><b>${c.invoice_link?`<a href="${esc(c.invoice_link)}" target="_blank">Open</a>`:'—'}</b></div></div><div style="margin-top:10px" class="notice">Account status is authoritative in client_data. Account review records are workflow/history only and cannot create a second account state.</div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${(c.account_status||'').toLowerCase()==='suspended'?'<button class="btn green" onclick="window.reactivateClient()">Reactivate</button>':'<button class="btn red" onclick="window.suspendClient()">Suspend Client</button>'}<button class="btn" onclick="window.archiveClient()">Archive</button></div>`;
     $('tab-trial').innerHTML=`<div class="kv"><div><small>Trial Status</small><b>${statusBadge(c.free_trial_status)}</b></div><div><small>Trial Start</small><b>${dt(c.free_trial_started_at)}</b></div><div><small>Trial End</small><b>${dt(c.free_trial_ends_at)}</b></div><div><small>Account Status</small><b>${statusBadge(c.account_status)}</b></div></div>`;
     $('tab-modules').innerHTML=`<div style="overflow:auto"><table><thead><tr><th>Module</th><th>Enabled</th><th>Status</th><th>Plan</th><th>Expiry</th></tr></thead><tbody>${mods.map(x=>{const m=modules.find(y=>y.id===x.module_id);return `<tr><td>${esc(m?.name||m?.slug||x.module_id)}</td><td>${x.enabled?'Yes':'No'}</td><td>${statusBadge(x.status)}</td><td>${esc(x.plan||'—')}</td><td>${dt(x.expires_at)}</td></tr>`}).join('')||'<tr><td colspan="5">No modules.</td></tr>'}</tbody></table></div>`;
     $('tab-billing').innerHTML=`<div style="overflow:auto"><table><thead><tr><th>Status</th><th>Plan</th><th>Provider</th><th>Date</th></tr></thead><tbody>${mySubs.map(x=>`<tr><td>${statusBadge(x.status)}</td><td>${esc(x.plan_name||x.plan_code||x.product_code||'—')}</td><td>${esc(x.provider||x.payment_provider||'—')}</td><td>${dt(x.created_at)}</td></tr>`).join('')||'<tr><td colspan="4">No subscription records.</td></tr>'}</tbody></table></div>`;
@@ -416,28 +419,68 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
     $('tab-voice').innerHTML='<div class="notice">Voice Provider/Agent/Provisioning controls remain backend-driven and can be attached to this client detail view without changing the client dashboard.</div>';
   }
 
+  async function refreshCurrentClientFromBackend(){
+    if(!current?.client_id)return;
+    const r=await sb.rpc('admin_client_account_state',{p_client_id:current.client_id});
+    if(r.error)throw r.error;
+    const next=r.data?.client;
+    if(!next)throw new Error('Client state not returned by secure backend.');
+    current=next;
+    clients=clients.map(x=>x.client_id===current.client_id?current:x);
+    renderClients();renderDetail();
+    return r.data;
+  }
+
   window.editProfile=async()=>{
     const name=prompt('Client name:',current.full_name||current.client_name||'');if(name===null)return;
     const phone=prompt('Mobile number:',current.phone||current.mobile||'');if(phone===null)return;
     const business=prompt('Business name:',current.business_name||'');if(business===null)return;
-    const r=await sb.from('client_data').update({full_name:name,client_name:name,phone:phone,business_name:business}).eq('id',current.id).select('*').single();
-    if(r.error){alert(r.error.message);return} current=r.data;clients=clients.map(x=>x.id===current.id?current:x);renderClients();renderDetail();alert('Profile updated.');
+    const r=await sb.rpc('admin_client_profile_update',{
+      p_client_id:current.client_id,
+      p_full_name:name,
+      p_mobile:phone,
+      p_business_name:business
+    });
+    if(r.error){alert(r.error.message);return}
+    await refreshCurrentClientFromBackend();
+    alert('Profile updated.');
   };
+
   window.suspendClient=async()=>{
-    const reason=prompt('Suspension reason (this will be shown to the client):');if(!reason)return;
+    const reason=prompt('Suspension reason (this will be shown to the client):');if(!reason||!reason.trim())return;
     if(!confirm(`Suspend ${current.client_id||current.email}?`))return;
-    const r=await sb.from('client_data').update({account_status:'suspended',suspension_reason:reason}).eq('id',current.id).select('*').single();
-    if(r.error){alert(r.error.message);return}current=r.data;clients=clients.map(x=>x.id===current.id?current:x);renderClients();renderDetail();alert('Client suspended.');
+    const r=await sb.rpc('admin_client_account_action',{
+      p_client_id:current.client_id,
+      p_action:'suspend',
+      p_reason:reason.trim()
+    });
+    if(r.error){alert(r.error.message);return}
+    await refreshCurrentClientFromBackend();
+    alert('Client suspended.');
   };
+
   window.reactivateClient=async()=>{
     if(!confirm(`Reactivate ${current.client_id||current.email}?`))return;
-    const r=await sb.from('client_data').update({account_status:'active',suspension_reason:null}).eq('id',current.id).select('*').single();
-    if(r.error){alert(r.error.message);return}current=r.data;clients=clients.map(x=>x.id===current.id?current:x);renderClients();renderDetail();alert('Client reactivated.');
+    const r=await sb.rpc('admin_client_account_action',{
+      p_client_id:current.client_id,
+      p_action:'reactivate',
+      p_reason:null
+    });
+    if(r.error){alert(r.error.message);return}
+    await refreshCurrentClientFromBackend();
+    alert('Client reactivated.');
   };
+
   window.archiveClient=async()=>{
-    if(!confirm('Archive this client? This first version uses the existing account_status field and does not permanently delete data.'))return;
-    const r=await sb.from('client_data').update({account_status:'archived'}).eq('id',current.id).select('*').single();
-    if(r.error){alert(r.error.message);return}current=r.data;clients=clients.map(x=>x.id===current.id?current:x);renderClients();renderDetail();alert('Client archived.');
+    if(!confirm('Archive this client? This uses the existing account_status field and does not permanently delete data.'))return;
+    const r=await sb.rpc('admin_client_account_action',{
+      p_client_id:current.client_id,
+      p_action:'archive',
+      p_reason:null
+    });
+    if(r.error){alert(r.error.message);return}
+    await refreshCurrentClientFromBackend();
+    alert('Client archived.');
   };
 
   async function loadClientSafety(){
