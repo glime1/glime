@@ -1,14 +1,27 @@
-/* GLIME — Account Review Flow
- *
- * PURPOSE
- * - Suspended Free-Trial and Paid clients are blocked from normal dashboard/billing UI.
- * - Suspended clients can submit one account-review request.
- * - Admin sees the requests inside Admin -> Review Requests.
- * - Admin routes (/admin and /admin.html) NEVER run the client suspension gate.
- *
- * IMPORTANT
- * - This is a UI/access gate. Database/RPC/Edge Function security remains authoritative.
- */
+/* =========================================================
+   GLIME — ACCOUNT REVIEW FLOW
+   =========================================================
+   CLIENT:
+   - Suspended account is blocked.
+   - Suspension reason is shown.
+   - Latest review status is shown.
+   - Client can submit a review message.
+   - If Admin rejects/keeps suspended, Admin Response is shown
+     directly on the client suspension screen.
+
+   ADMIN:
+   - Review Requests appears inside Admin.
+   - Review details open in one modal.
+   - Client message + suspension reason + activity shown.
+   - Admin Response textarea.
+   - APPROVE & REACTIVATE.
+   - REJECT & KEEP SUSPENDED.
+   - Decision uses secure admin RPC.
+
+   IMPORTANT:
+   - client_data.account_status is the account-state source of truth.
+   - account_review_requests is review workflow/history.
+   ========================================================= */
 
 (function () {
   'use strict';
@@ -24,19 +37,14 @@
       .toLowerCase()
       .replace(/\/+$/, '') || '/';
 
-  /*
-   * IMPORTANT:
-   * Your live Admin URL is /admin, not only /admin.html.
-   * Never let the clientGate run on an Admin route.
-   */
   const isAdmin =
     path === '/admin' ||
     path.endsWith('/admin') ||
     path === '/admin.html' ||
     path.endsWith('/admin.html');
 
-  function esc(v) {
-    return String(v ?? '').replace(
+  function esc(value) {
+    return String(value ?? '').replace(
       /[&<>"']/g,
       function (m) {
         return {
@@ -50,10 +58,29 @@
     );
   }
 
+  function supabaseClient() {
+    if (!window.supabase) return null;
+
+    return window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      }
+    );
+  }
+
   function injectStyle() {
-    if (document.getElementById('glimeAccountReviewStyle')) return;
+    if (document.getElementById('glimeAccountReviewStyle')) {
+      return;
+    }
 
     const style = document.createElement('style');
+
     style.id = 'glimeAccountReviewStyle';
 
     style.textContent = `
@@ -78,12 +105,16 @@
       #glimeAccountReviewGate *{
         box-sizing:border-box;
         font-family:
-          system-ui,-apple-system,BlinkMacSystemFont,
-          "Segoe UI",Roboto,sans-serif;
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
       }
 
       .glime-review-shell{
-        width:min(720px,100%);
+        width:min(760px,100%);
         margin-top:4vh;
       }
 
@@ -100,6 +131,11 @@
         box-shadow:0 0 50px rgba(255,83,102,.12);
       }
 
+      .glime-review-alert.pending{
+        border-color:#ffad45;
+        background:rgba(255,173,69,.08);
+      }
+
       .glime-review-flag{
         display:inline-flex;
         align-items:center;
@@ -114,23 +150,18 @@
         padding:7px 11px;
       }
 
+      .glime-review-alert.pending .glime-review-flag{
+        color:#ffd79f;
+        border-color:rgba(255,173,69,.5);
+        background:rgba(255,173,69,.1);
+      }
+
       .glime-review-dot{
         width:9px;
         height:9px;
         border-radius:50%;
         background:#ff5366;
         box-shadow:0 0 14px #ff5366;
-      }
-
-      .glime-review-alert.pending{
-        border-color:#ffad45;
-        background:rgba(255,173,69,.08);
-      }
-
-      .glime-review-alert.pending .glime-review-flag{
-        color:#ffd79f;
-        border-color:rgba(255,173,69,.5);
-        background:rgba(255,173,69,.1);
       }
 
       .glime-review-alert.pending .glime-review-dot{
@@ -155,55 +186,51 @@
       }
 
       .glime-review-copy{
-  color:#c2ccd8;
-  line-height:1.65;
-  margin:0 0 18px;
-}
+        color:#c2ccd8;
+        line-height:1.65;
+        margin:0 0 18px;
+      }
 
-.glime-review-message-label{
-  display:block;
-  margin:0 0 7px;
-  color:#dbe4ee;
-  font-size:14px;
-  font-weight:800;
-}
+      .glime-review-message-wrap{
+        margin:0 0 14px;
+      }
 
-.glime-review-message{
-  width:100%;
-  min-height:112px;
-  padding:12px 13px;
-  border:1px solid rgba(255,255,255,.14);
-  border-radius:11px;
-  background:#09111b;
-  color:#fff;
-  outline:none;
-  resize:vertical;
-  line-height:1.5;
-  font-size:14px;
-}
+      .glime-review-message-label{
+        display:block;
+        margin:0 0 7px;
+        color:#dbe4ee;
+        font-size:14px;
+        font-weight:800;
+      }
 
-.glime-review-message:focus{
-  border-color:rgba(255,173,69,.7);
-  box-shadow:0 0 0 3px rgba(255,173,69,.10);
-}
+      .glime-review-message{
+        width:100%;
+        min-height:112px;
+        padding:12px 13px;
+        border:1px solid rgba(255,255,255,.14);
+        border-radius:11px;
+        background:#09111b;
+        color:#fff;
+        outline:none;
+        resize:vertical;
+        line-height:1.5;
+        font-size:14px;
+      }
 
-.glime-review-message:disabled{
-  opacity:.65;
-  cursor:not-allowed;
-}
+      .glime-review-message:focus{
+        border-color:rgba(255,173,69,.7);
+        box-shadow:0 0 0 3px rgba(255,173,69,.10);
+      }
 
-.glime-review-message-wrap{
-  margin:0 0 14px;
-}
+      .glime-review-message:disabled{
+        opacity:.65;
+      }
 
-.glime-review-message-hint{
-  margin-top:6px;
-  color:#91a0b3;
-  font-size:12px;
-  line-height:1.45;
-}
-
-.glime-review-actions{
+      .glime-review-message-hint{
+        margin-top:6px;
+        color:#91a0b3;
+        font-size:12px;
+      }
 
       .glime-review-actions{
         display:flex;
@@ -234,8 +261,21 @@
         line-height:1.55;
       }
 
-      .glime-review-error{
-        border-color:#ff5366;
+      .glime-admin-response{
+        margin:16px 0;
+        padding:15px;
+        border:1px solid rgba(255,83,102,.42);
+        border-radius:12px;
+        background:rgba(255,83,102,.07);
+        color:#e8edf3;
+        line-height:1.65;
+      }
+
+      .glime-admin-response-title{
+        color:#ff7180;
+        font-weight:900;
+        letter-spacing:.04em;
+        margin-bottom:8px;
       }
 
       #glimeReviewAdminModal{
@@ -254,8 +294,8 @@
       }
 
       .glime-review-admin-box{
-        width:min(720px,100%);
-        max-height:90vh;
+        width:min(820px,100%);
+        max-height:92vh;
         overflow:auto;
         background:#0d1724;
         color:#f4f7fb;
@@ -301,6 +341,74 @@
         color:#cbd5e1;
       }
 
+      .glime-review-activity{
+        margin-top:12px;
+        padding:13px;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:10px;
+      }
+
+      .glime-review-activity-item{
+        padding:8px 0;
+        border-bottom:1px solid rgba(255,255,255,.07);
+      }
+
+      .glime-review-activity-item:last-child{
+        border-bottom:0;
+      }
+
+      .glime-review-admin-decision{
+        margin-top:14px;
+        padding:13px;
+        border:1px solid rgba(0,234,255,.12);
+        border-radius:10px;
+      }
+
+      .glime-review-admin-decision textarea{
+        width:100%;
+        margin-top:10px;
+        padding:12px;
+        border-radius:10px;
+        border:1px solid rgba(255,255,255,.15);
+        background:#09111b;
+        color:#fff;
+        resize:vertical;
+        line-height:1.5;
+      }
+
+      .glime-review-admin-buttons{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top:12px;
+      }
+
+      .glime-review-admin-buttons button{
+        border:1px solid rgba(255,255,255,.12);
+        padding:10px 13px;
+        border-radius:10px;
+        cursor:pointer;
+        color:#fff;
+        background:#132031;
+      }
+
+      .glime-review-admin-buttons .approve{
+        background:rgba(0,232,138,.10);
+        color:#00e88a;
+        border-color:rgba(0,232,138,.35);
+      }
+
+      .glime-review-admin-buttons .reject{
+        background:rgba(255,83,102,.10);
+        color:#ff5366;
+        border-color:rgba(255,83,102,.35);
+      }
+
+      .glime-review-admin-buttons button:disabled{
+        opacity:.55;
+        cursor:not-allowed;
+      }
+
       @media(max-width:600px){
         #glimeAccountReviewGate{
           padding:16px 12px 28px;
@@ -314,10 +422,6 @@
           font-size:16px;
         }
 
-        .glime-review-copy{
-          font-size:14px;
-        }
-
         .glime-review-admin-kv{
           grid-template-columns:1fr;
         }
@@ -327,34 +431,45 @@
     document.head.appendChild(style);
   }
 
-  function setGatePending(on) {
+  function setGatePending(value) {
     document.documentElement.classList.toggle(
       'glime-account-gate-pending',
-      !!on
+      !!value
     );
   }
 
   function removeClientGate() {
-    const gate = document.getElementById(
-      'glimeAccountReviewGate'
-    );
+    const gate =
+      document.getElementById(
+        'glimeAccountReviewGate'
+      );
 
     if (gate) gate.remove();
 
     setGatePending(false);
   }
 
-  function reviewScreenHtml(client, review) {
+  /* =========================================================
+     CLIENT SCREEN
+     ========================================================= */
+
+  function clientScreenHtml(client, review) {
+
     const reason =
       client?.suspension_reason ||
       'Access to this GLIME account has been suspended.';
 
-    const pending =
-      String(review?.status || '').toLowerCase() ===
-      'pending';
+    const status =
+      String(review?.status || '').toLowerCase();
+
+    const pending = status === 'pending';
+
+    const hasAdminResponse =
+      !!String(review?.admin_note || '').trim();
 
     return `
       <div class="glime-review-shell">
+
         <div class="glime-review-alert ${pending ? 'pending' : ''}">
 
           <div class="glime-review-flag">
@@ -378,238 +493,273 @@
             Your GLIME account is currently suspended.
             Dashboard and billing access are unavailable
             while the suspension is active.
-            If you believe this suspension should be reviewed,
-            you can submit a request to the GLIME Admin team.
           </p>
 
           ${
-  pending
-    ? ''
-    : `
-      <div class="glime-review-message-wrap">
-        <label
-          class="glime-review-message-label"
-          for="glimeReviewClientMessage"
-        >
-          Message to GLIME Admin
-        </label>
+            hasAdminResponse
+              ? `
+                <div class="glime-admin-response">
 
-        <textarea
-          id="glimeReviewClientMessage"
-          class="glime-review-message"
-          maxlength="2000"
-          rows="5"
-          placeholder="Please tell us why you believe your account should be reviewed."
-        ></textarea>
+                  <div class="glime-admin-response-title">
+                    ADMIN RESPONSE
+                  </div>
 
-        <div class="glime-review-message-hint">
-          Please include any relevant context. Maximum 2000 characters.
-        </div>
-      </div>
-    `
+                  <div>
+                    ${esc(review.admin_note)}
+                  </div>
+
+                </div>
+              `
+              : ''
           }
 
-          <div class="glime-review-actions">
-            <button
-              id="glimeReviewRequestBtn"
-              class="glime-review-btn"
-              ${pending ? 'disabled' : ''}
-            >
-              ${
-                pending
-                  ? 'REVIEW REQUEST SENT'
-                  : 'REQUEST REVIEW'
-              }
-            </button>
-          </div>
+          ${
+            pending
+              ? `
+                <div class="glime-review-status">
+                  Your review request is currently being reviewed
+                  by the GLIME Admin team. Your account will remain
+                  suspended until a decision is made.
+                </div>
+              `
+              : `
+                <div class="glime-review-message-wrap">
 
-          <div
-            id="glimeReviewStatus"
-            class="glime-review-status"
-          >
-            ${
-              pending
-                ? 'Your request is waiting for Admin review. Our Admin team will review your request within 2–3 working days. During this review, your dashboard and billing access will remain unavailable.'
-                : ''
-            }
-          </div>
+                  <label
+                    class="glime-review-message-label"
+                    for="glimeReviewClientMessage"
+                  >
+                    Message to GLIME Admin
+                  </label>
+
+                  <textarea
+                    id="glimeReviewClientMessage"
+                    class="glime-review-message"
+                    maxlength="2000"
+                    rows="5"
+                    placeholder="Explain why you believe your account should be reviewed."
+                  ></textarea>
+
+                  <div class="glime-review-message-hint">
+                    Maximum 2000 characters.
+                  </div>
+
+                </div>
+
+                <div class="glime-review-actions">
+
+                  <button
+                    id="glimeReviewRequestBtn"
+                    class="glime-review-btn"
+                  >
+                    REQUEST REVIEW
+                  </button>
+
+                </div>
+
+                <div
+                  id="glimeReviewStatus"
+                  class="glime-review-status"
+                ></div>
+              `
+          }
 
         </div>
+
       </div>
     `;
   }
 
-  async function createClientGate(sb, client) {
-    setGatePending(true);
+  async function getLatestClientReview(sb) {
 
-    const existingResult = await sb
+    const result = await sb
       .from('account_review_requests')
-      .select('id,status,created_at')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
+      .select(
+        'id,status,created_at,client_message,admin_note,reviewed_at'
+      )
+      .order(
+        'created_at',
+        { ascending:false }
+      )
       .limit(1);
 
-    const existing =
-      existingResult?.error
-        ? null
-        : (existingResult.data || [])[0] || null;
+    if (result.error) {
+      return null;
+    }
 
-    const wrap = document.createElement('div');
-    wrap.id = 'glimeAccountReviewGate';
+    return result.data?.[0] || null;
+  }
 
-    wrap.innerHTML = reviewScreenHtml(
-      client,
-      existing
-    );
+  async function createClientGate(sb, client) {
+
+    setGatePending(true);
+
+    const review =
+      await getLatestClientReview(sb);
+
+    const wrap =
+      document.createElement('div');
+
+    wrap.id =
+      'glimeAccountReviewGate';
+
+    wrap.innerHTML =
+      clientScreenHtml(
+        client,
+        review
+      );
 
     document.body.prepend(wrap);
 
-    const btn = document.getElementById(
-      'glimeReviewRequestBtn'
-    );
-
-    const status = document.getElementById(
-  'glimeReviewStatus'
-);
-
-const messageInput = document.getElementById(
-  'glimeReviewClientMessage'
-);
-
-if (btn && !btn.disabled) {
-  btn.onclick = async function () {
-
-    const message = String(
-      messageInput?.value || ''
-    ).trim();
-
-
-    if (!message) {
-
-      status.textContent =
-        'Please write a short message explaining why you believe your account should be reviewed.';
-
-      status.style.color =
-        '#ffcf8a';
-
-      messageInput?.focus();
-
-      return;
-    }
-
-
-    if (message.length > 2000) {
-
-      status.textContent =
-        'Your message is too long. Please keep it within 2000 characters.';
-
-      status.style.color =
-        '#ff9eaa';
-
-      messageInput?.focus();
-
-      return;
-    }
-
-
-    btn.disabled = true;
-
-
-    if (messageInput) {
-      messageInput.disabled = true;
-    }
-
-
-    btn.textContent =
-      'SUBMITTING…';
-
-
-    status.textContent =
-      'Submitting your review request…';
-
-    status.style.color =
-      '#c2ccd8';
-
-
-    const result =
-      await sb.rpc(
-        'client_request_account_review',
-        {
-          p_message: message
-        }
+    const btn =
+      document.getElementById(
+        'glimeReviewRequestBtn'
       );
 
+    const status =
+      document.getElementById(
+        'glimeReviewStatus'
+      );
 
-    if (result.error) {
+    const messageInput =
+      document.getElementById(
+        'glimeReviewClientMessage'
+      );
 
-      btn.disabled = false;
-
-
-      if (messageInput) {
-        messageInput.disabled = false;
-      }
-
-
-      btn.textContent =
-        'REQUEST REVIEW';
-
-
-      status.textContent =
-        result.error.message ||
-        'Review request could not be submitted.';
-
-
-      status.style.color =
-        '#ff9eaa';
-
+    if (!btn) {
       return;
     }
 
+    btn.onclick = async function () {
 
-    btn.textContent =
-      'REVIEW REQUEST SENT';
+      const message =
+        String(
+          messageInput?.value || ''
+        ).trim();
 
+      if (!message) {
 
-    status.textContent =
-      'Your review request has been submitted. Our Admin team will review your request within 2–3 working days. During this review, your dashboard and billing access will remain unavailable.';
+        if (status) {
+          status.textContent =
+            'Please write a message before submitting the review request.';
 
+          status.style.color =
+            '#ffcf8a';
+        }
 
-    status.style.color =
-      '#9feec9';
+        messageInput?.focus();
 
-  };
-}
+        return;
+      }
+
+      if (message.length > 2000) {
+
+        if (status) {
+          status.textContent =
+            'Your message must be 2000 characters or less.';
+
+          status.style.color =
+            '#ff9eaa';
+        }
+
+        messageInput?.focus();
+
+        return;
+      }
+
+      btn.disabled = true;
+
+      if (messageInput) {
+        messageInput.disabled = true;
+      }
+
+      btn.textContent =
+        'SUBMITTING…';
+
+      if (status) {
+        status.textContent =
+          'Submitting your review request…';
+
+        status.style.color =
+          '#c2ccd8';
+      }
+
+      const result =
+        await sb.rpc(
+          'client_request_account_review',
+          {
+            p_message: message
+          }
+        );
+
+      if (result.error) {
+
+        btn.disabled = false;
+
+        if (messageInput) {
+          messageInput.disabled = false;
+        }
+
+        btn.textContent =
+          'REQUEST REVIEW';
+
+        if (status) {
+          status.textContent =
+            result.error.message ||
+            'Review request could not be submitted.';
+
+          status.style.color =
+            '#ff9eaa';
+        }
+
+        return;
+      }
+
+      btn.textContent =
+        'REVIEW REQUEST SENT';
+
+      if (status) {
+        status.textContent =
+          'Your review request has been submitted. Your account will remain suspended while the Admin review is pending.';
+
+        status.style.color =
+          '#9feec9';
+      }
+
+    };
   }
 
   async function clientGate() {
+
     injectStyle();
+
     setGatePending(true);
 
     if (document.readyState === 'loading') {
-      await new Promise(function (resolve) {
-        document.addEventListener(
-          'DOMContentLoaded',
-          resolve,
-          { once: true }
-        );
-      });
+
+      await new Promise(
+        function (resolve) {
+          document.addEventListener(
+            'DOMContentLoaded',
+            resolve,
+            { once:true }
+          );
+        }
+      );
     }
 
     if (!window.supabase) {
+      setGatePending(false);
       return;
     }
 
-    const sb = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true
-        }
-      }
-    );
+    const sb =
+      supabaseClient();
+
+    if (!sb) {
+      setGatePending(false);
+      return;
+    }
 
     const sessionResult =
       await sb.auth.getSession();
@@ -618,35 +768,50 @@ if (btn && !btn.disabled) {
       sessionResult?.data?.session;
 
     if (!session?.user) {
-      location.replace('login.html');
+
+      location.replace(
+        'login.html'
+      );
+
       return;
     }
 
-    const q = await sb
-      .from('client_data')
-      .select(
-        [
-          'client_id',
-          'full_name',
-          'client_name',
-          'name',
-          'email',
-          'business_name',
-          'account_status',
-          'suspension_reason',
-          'suspended_at'
-        ].join(',')
-      )
-      .eq('auth_user_id', session.user.id)
-      .limit(1);
+    const q =
+      await sb
+        .from('client_data')
+        .select(
+          [
+            'client_id',
+            'full_name',
+            'client_name',
+            'name',
+            'email',
+            'business_name',
+            'account_status',
+            'suspension_reason',
+            'suspended_at'
+          ].join(',')
+        )
+        .eq(
+          'auth_user_id',
+          session.user.id
+        )
+        .limit(1);
 
-    if (q.error || !q.data?.length) {
-      const wrap = document.createElement('div');
-      wrap.id = 'glimeAccountReviewGate';
+    if (
+      q.error ||
+      !q.data?.length
+    ) {
+
+      const wrap =
+        document.createElement('div');
+
+      wrap.id =
+        'glimeAccountReviewGate';
 
       wrap.innerHTML = `
         <div class="glime-review-shell">
-          <div class="glime-review-alert glime-review-error">
+          <div class="glime-review-alert">
 
             <div class="glime-review-title">
               ACCOUNT CHECK FAILED
@@ -662,12 +827,14 @@ if (btn && !btn.disabled) {
             </p>
 
             <div class="glime-review-actions">
+
               <button
                 id="glimeReviewRetry"
                 class="glime-review-btn"
               >
                 RETRY
               </button>
+
             </div>
 
           </div>
@@ -678,81 +845,104 @@ if (btn && !btn.disabled) {
 
       document.getElementById(
         'glimeReviewRetry'
-      ).onclick = function () {
-        location.reload();
-      };
+      ).onclick =
+        function () {
+          location.reload();
+        };
 
       return;
     }
 
-    const client = q.data[0];
+    const client =
+      q.data[0];
 
-    /*
-     * Suspension is independent of subscription/trial.
-     * Paid + suspended is blocked exactly like trial + suspended.
-     */
     if (
-      String(client.account_status || '')
-        .toLowerCase() === 'suspended'
+      String(
+        client.account_status || ''
+      ).toLowerCase() ===
+      'suspended'
     ) {
-      await createClientGate(sb, client);
+
+      await createClientGate(
+        sb,
+        client
+      );
+
       return;
     }
 
     removeClientGate();
   }
 
-  function adminStatusClass(status) {
-    status = String(status || '').toLowerCase();
+  /* =========================================================
+     ADMIN
+     ========================================================= */
 
-    if (status === 'pending') return 'red';
-    if (status === 'approved') return 'green';
-    if (status === 'rejected') return 'orange';
+  function adminStatusClass(status) {
+
+    const s =
+      String(
+        status || ''
+      ).toLowerCase();
+
+    if (s === 'pending')
+      return 'red';
+
+    if (s === 'approved')
+      return 'green';
+
+    if (s === 'rejected')
+      return 'orange';
 
     return 'blue';
   }
 
   async function adminGate() {
+
     injectStyle();
 
     if (document.readyState === 'loading') {
-      await new Promise(function (resolve) {
-        document.addEventListener(
-          'DOMContentLoaded',
-          resolve,
-          { once: true }
-        );
-      });
+
+      await new Promise(
+        function (resolve) {
+          document.addEventListener(
+            'DOMContentLoaded',
+            resolve,
+            { once:true }
+          );
+        }
+      );
     }
 
-    /*
-     * Admin page authentication remains controlled by admin.html.
-     * This addon only adds the Review Requests UI.
-     */
-    const sb = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true
-        }
-      }
-    );
+    const sb =
+      supabaseClient();
 
-    const nav = document.querySelector('nav');
-    const main = document.querySelector('main');
+    if (!sb) return;
+
+    const nav =
+      document.querySelector('nav');
+
+    const main =
+      document.querySelector('main');
 
     if (!nav || !main) return;
 
-    if (document.getElementById('reviewNavBtn')) return;
+    if (
+      document.getElementById(
+        'reviewNavBtn'
+      )
+    ) {
+      return;
+    }
 
     const navButton =
       document.createElement('button');
 
-    navButton.id = 'reviewNavBtn';
-    navButton.dataset.view = 'reviews';
+    navButton.id =
+      'reviewNavBtn';
+
+    navButton.dataset.view =
+      'reviews';
 
     navButton.innerHTML = `
       Review Requests
@@ -767,25 +957,35 @@ if (btn && !btn.disabled) {
       nav.querySelector('.logout');
 
     if (logout) {
-      nav.insertBefore(navButton, logout);
+      nav.insertBefore(
+        navButton,
+        logout
+      );
     } else {
-      nav.appendChild(navButton);
+      nav.appendChild(
+        navButton
+      );
     }
 
     const section =
       document.createElement('section');
 
-    section.className = 'view';
-    section.id = 'view-reviews';
+    section.className =
+      'view';
+
+    section.id =
+      'view-reviews';
 
     section.innerHTML = `
       <div class="card">
 
-        <h3>Account Review Requests</h3>
+        <h3>
+          Account Review Requests
+        </h3>
 
         <p class="sub">
-          Suspended clients who requested an Admin review.
-          Suspension can apply to both Free Trial and Paid clients.
+          Suspended clients who requested
+          an Admin review.
         </p>
 
         <div class="toolbar">
@@ -794,10 +994,21 @@ if (btn && !btn.disabled) {
             id="reviewStatusFilter"
             style="max-width:220px"
           >
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="">All</option>
+            <option value="pending">
+              Pending
+            </option>
+
+            <option value="approved">
+              Approved
+            </option>
+
+            <option value="rejected">
+              Rejected
+            </option>
+
+            <option value="">
+              All
+            </option>
           </select>
 
           <button
@@ -824,7 +1035,9 @@ if (btn && !btn.disabled) {
               </tr>
             </thead>
 
-            <tbody id="reviewRows"></tbody>
+            <tbody
+              id="reviewRows"
+            ></tbody>
 
           </table>
 
@@ -833,30 +1046,43 @@ if (btn && !btn.disabled) {
       </div>
     `;
 
-    main.appendChild(section);
+    main.appendChild(
+      section
+    );
 
     const title =
-      document.getElementById('title');
+      document.getElementById(
+        'title'
+      );
 
     function goReviews() {
+
       document
         .querySelectorAll('.view')
-        .forEach(function (x) {
-          x.classList.remove('active');
-        });
+        .forEach(
+          function (x) {
+            x.classList.remove(
+              'active'
+            );
+          }
+        );
 
-      section.classList.add('active');
+      section.classList.add(
+        'active'
+      );
 
       document
         .querySelectorAll(
           'nav button[data-view]'
         )
-        .forEach(function (x) {
-          x.classList.toggle(
-            'active',
-            x === navButton
-          );
-        });
+        .forEach(
+          function (x) {
+            x.classList.toggle(
+              'active',
+              x === navButton
+            );
+          }
+        );
 
       if (title) {
         title.textContent =
@@ -866,45 +1092,163 @@ if (btn && !btn.disabled) {
       loadReviews();
     }
 
-    navButton.onclick = goReviews;
+    navButton.onclick =
+      goReviews;
 
     document.getElementById(
       'reviewRefreshBtn'
-    ).onclick = loadReviews;
+    ).onclick =
+      loadReviews;
 
     document.getElementById(
       'reviewStatusFilter'
-    ).onchange = loadReviews;
+    ).onchange =
+      loadReviews;
 
-    function openAdminReviewModal(data) {
+    /* =====================================================
+       ADMIN REVIEW MODAL
+       ===================================================== */
+
+    async function openAdminReview(
+      requestId
+    ) {
+
+      const result =
+        await sb.rpc(
+          'admin_account_review_get',
+          {
+            p_request_id:
+              requestId
+          }
+        );
+
+      if (result.error) {
+
+        alert(
+          result.error.message ||
+          'Could not load review.'
+        );
+
+        return;
+      }
+
+      const data =
+        result.data || {};
+
+      const client =
+        data.client || {};
+
+      const request =
+        data.request || {};
+
+      const activity =
+        data.activity || {};
+
       let modal =
         document.getElementById(
           'glimeReviewAdminModal'
         );
 
       if (!modal) {
+
         modal =
-          document.createElement('div');
+          document.createElement(
+            'div'
+          );
 
         modal.id =
           'glimeReviewAdminModal';
 
-        document.body.appendChild(modal);
+        document.body.appendChild(
+          modal
+        );
       }
 
-      const client =
-        data?.client || {};
+      const wa =
+        activity.whatsapp_recent ||
+        [];
 
-      const request =
-        data?.request || {};
+      const ig =
+        activity.instagram_recent ||
+        [];
+
+      function messageList(
+        items
+      ) {
+
+        if (!items.length) {
+
+          return `
+            <span
+              style="color:#91a0b3"
+            >
+              No messages found.
+            </span>
+          `;
+        }
+
+        return items.map(
+          function (m) {
+
+            return `
+              <div
+                class="glime-review-activity-item"
+              >
+                <b>
+                  ${esc(
+                    m.direction || ''
+                  )}
+                </b>
+
+                ·
+
+                ${esc(
+                  m.status || ''
+                )}
+
+                <br>
+
+                ${esc(
+                  m.text_body ||
+                  '[non-text message]'
+                )}
+
+                <br>
+
+                <small
+                  style="color:#91a0b3"
+                >
+                  ${esc(
+                    m.created_at || ''
+                  )}
+                </small>
+              </div>
+            `;
+          }
+        ).join('');
+      }
+
+      const pending =
+        String(
+          request.status || ''
+        ).toLowerCase() ===
+        'pending';
 
       modal.innerHTML = `
-        <div class="glime-review-admin-box">
 
-          <div class="glime-review-admin-head">
+        <div
+          class="glime-review-admin-box"
+        >
+
+          <div
+            class="glime-review-admin-head"
+          >
 
             <div>
-              <h2 style="margin:0">
+
+              <h2
+                style="margin:0"
+              >
                 Account Review
               </h2>
 
@@ -914,8 +1258,12 @@ if (btn && !btn.disabled) {
                   margin-top:4px
                 "
               >
-                ${esc(client.client_id || '—')}
+                ${esc(
+                  client.client_id ||
+                  '—'
+                )}
               </div>
+
             </div>
 
             <button
@@ -927,7 +1275,10 @@ if (btn && !btn.disabled) {
 
           </div>
 
-          <div class="glime-review-admin-kv">
+
+          <div
+            class="glime-review-admin-kv"
+          >
 
             <div>
               <small>Client</small>
@@ -944,21 +1295,30 @@ if (btn && !btn.disabled) {
             <div>
               <small>Email</small>
               <b>
-                ${esc(client.email || '—')}
+                ${esc(
+                  client.email ||
+                  '—'
+                )}
               </b>
             </div>
 
             <div>
               <small>Business</small>
               <b>
-                ${esc(client.business_name || '—')}
+                ${esc(
+                  client.business_name ||
+                  '—'
+                )}
               </b>
             </div>
 
             <div>
               <small>Account Status</small>
               <b>
-                ${esc(client.account_status || '—')}
+                ${esc(
+                  client.account_status ||
+                  '—'
+                )}
               </b>
             </div>
 
@@ -966,7 +1326,8 @@ if (btn && !btn.disabled) {
               <small>Suspension Reason</small>
               <b>
                 ${esc(
-                  client.suspension_reason || '—'
+                  client.suspension_reason ||
+                  '—'
                 )}
               </b>
             </div>
@@ -974,7 +1335,10 @@ if (btn && !btn.disabled) {
             <div>
               <small>Request Status</small>
               <b>
-                ${esc(request.status || '—')}
+                ${esc(
+                  request.status ||
+                  '—'
+                )}
               </b>
             </div>
 
@@ -1010,78 +1374,407 @@ if (btn && !btn.disabled) {
 
           </div>
 
+
           <div
             class="glime-review-admin-message"
           >
-            <b>Client Message</b>
+
+            <b>
+              Client Message
+            </b>
 
             <br><br>
 
             ${esc(
               request.client_message ||
-              'No additional message was provided.'
+              'No client message was provided.'
             )}
+
           </div>
+
 
           <div
             class="glime-review-admin-message"
           >
-            <b>Admin Note</b>
+
+            <b>
+              Admin Response
+            </b>
 
             <br><br>
 
-            ${esc(
-              request.admin_note ||
-              'No Admin note yet.'
-            )}
+            ${
+              request.admin_note
+                ? esc(
+                    request.admin_note
+                  )
+                : 'No Admin response yet.'
+            }
+
           </div>
+
+
+          <div
+            class="glime-review-activity"
+          >
+
+            <b>
+              Messaging Activity
+            </b>
+
+            <br><br>
+
+            WhatsApp total:
+            <b>
+              ${esc(
+                activity.whatsapp_total ??
+                0
+              )}
+            </b>
+
+            &nbsp;|&nbsp;
+
+            outbound:
+            <b>
+              ${esc(
+                activity.whatsapp_outbound ??
+                0
+              )}
+            </b>
+
+            <br>
+
+            Instagram total:
+            <b>
+              ${esc(
+                activity.instagram_total ??
+                0
+              )}
+            </b>
+
+            &nbsp;|&nbsp;
+
+            outbound:
+            <b>
+              ${esc(
+                activity.instagram_outbound ??
+                0
+              )}
+            </b>
+
+          </div>
+
+
+          <div
+            class="glime-review-activity"
+          >
+
+            <b>
+              Recent WhatsApp Messages
+            </b>
+
+            <br><br>
+
+            ${messageList(wa)}
+
+          </div>
+
+
+          <div
+            class="glime-review-activity"
+          >
+
+            <b>
+              Recent Instagram Messages
+            </b>
+
+            <br><br>
+
+            ${messageList(ig)}
+
+          </div>
+
+
+          ${
+            pending
+              ? `
+
+                <div
+                  class="glime-review-admin-decision"
+                >
+
+                  <b>
+                    Admin Decision
+                  </b>
+
+                  <textarea
+                    id="glimeReviewAdminNote"
+                    rows="5"
+                    maxlength="2000"
+                    placeholder="Write the response that the client will see..."
+                  ></textarea>
+
+                  <div
+                    class="glime-review-admin-buttons"
+                  >
+
+                    <button
+                      id="glimeReviewApprove"
+                      class="approve"
+                    >
+                      APPROVE &amp; REACTIVATE
+                    </button>
+
+                    <button
+                      id="glimeReviewReject"
+                      class="reject"
+                    >
+                      REJECT &amp; KEEP SUSPENDED
+                    </button>
+
+                  </div>
+
+                  <div
+                    id="glimeReviewDecisionStatus"
+                    style="
+                      margin-top:10px;
+                      min-height:20px
+                    "
+                  ></div>
+
+                </div>
+
+              `
+              : `
+                <div
+                  class="glime-review-admin-decision"
+                >
+
+                  <b>
+                    Final Decision
+                  </b>
+
+                  <br><br>
+
+                  ${
+                    String(
+                      request.status || ''
+                    ).toLowerCase() ===
+                    'approved'
+                      ? 'Approved and account reactivated.'
+                      : 'Rejected and account remains suspended.'
+                  }
+
+                </div>
+              `
+          }
 
         </div>
       `;
 
-      modal.classList.add('open');
+      modal.classList.add(
+        'open'
+      );
 
       document.getElementById(
         'glimeReviewAdminClose'
-      ).onclick = function () {
-        modal.classList.remove('open');
-      };
+      ).onclick =
+        function () {
+          modal.classList.remove(
+            'open'
+          );
+        };
+
+      const note =
+        document.getElementById(
+          'glimeReviewAdminNote'
+        );
+
+      const approve =
+        document.getElementById(
+          'glimeReviewApprove'
+        );
+
+      const reject =
+        document.getElementById(
+          'glimeReviewReject'
+        );
+
+      const decisionStatus =
+        document.getElementById(
+          'glimeReviewDecisionStatus'
+        );
+
+      async function decide(
+        action
+      ) {
+
+        if (!note ||
+            !decisionStatus) {
+          return;
+        }
+
+        const text =
+          String(
+            note.value || ''
+          ).trim();
+
+        if (!text) {
+
+          decisionStatus.textContent =
+            'Admin response is required.';
+
+          decisionStatus.style.color =
+            '#ff9eaa';
+
+          note.focus();
+
+          return;
+        }
+
+        if (text.length > 2000) {
+
+          decisionStatus.textContent =
+            'Admin response must be 2000 characters or less.';
+
+          decisionStatus.style.color =
+            '#ff9eaa';
+
+          note.focus();
+
+          return;
+        }
+
+        if (approve)
+          approve.disabled = true;
+
+        if (reject)
+          reject.disabled = true;
+
+        note.disabled = true;
+
+        decisionStatus.textContent =
+          'Saving decision…';
+
+        decisionStatus.style.color =
+          '#91a0b3';
+
+        const response =
+          await sb.rpc(
+            'admin_account_review_action',
+            {
+              p_request_id:
+                request.id,
+
+              p_action:
+                action,
+
+              p_admin_note:
+                text
+            }
+          );
+
+        if (response.error) {
+
+          if (approve)
+            approve.disabled = false;
+
+          if (reject)
+            reject.disabled = false;
+
+          note.disabled = false;
+
+          decisionStatus.textContent =
+            response.error.message ||
+            'Could not save decision.';
+
+          decisionStatus.style.color =
+            '#ff9eaa';
+
+          return;
+        }
+
+        decisionStatus.textContent =
+          action === 'approve'
+            ? 'Approved. Account reactivated.'
+            : 'Rejected. Account remains suspended.';
+
+        decisionStatus.style.color =
+          '#9feec9';
+
+        setTimeout(
+          function () {
+
+            modal.classList.remove(
+              'open'
+            );
+
+            loadReviews();
+
+          },
+          700
+        );
+      }
+
+      approve?.addEventListener(
+        'click',
+        function () {
+          decide('approve');
+        }
+      );
+
+      reject?.addEventListener(
+        'click',
+        function () {
+          decide('reject');
+        }
+      );
     }
 
+    /* =====================================================
+       REVIEW LIST
+       ===================================================== */
+
     async function loadReviews() {
-      /*
-       * Do not query the admin RPC until the main admin
-       * authentication flow has reached AAL2.
-       */
+
       const sessionResult =
         await sb.auth.getSession();
 
       const session =
         sessionResult?.data?.session;
 
-      if (!session?.user) return;
+      if (!session?.user) {
+        return;
+      }
 
       const aal =
         await sb.auth.mfa
           .getAuthenticatorAssuranceLevel();
 
       if (
-        aal?.data?.currentLevel !== 'aal2'
+        aal?.data?.currentLevel !==
+        'aal2'
       ) {
         return;
       }
 
-      const status =
+      const filter =
         document.getElementById(
           'reviewStatusFilter'
-        ).value;
+        );
+
+      const status =
+        filter?.value || '';
 
       const result =
         await sb.rpc(
           'admin_account_review_list',
           {
-            p_status: status || null,
-            p_limit: 200
+            p_status:
+              status || null,
+
+            p_limit:
+              200
           }
         );
 
@@ -1093,45 +1786,53 @@ if (btn && !btn.disabled) {
       if (!rows) return;
 
       if (result.error) {
+
         rows.innerHTML = `
           <tr>
             <td colspan="6">
-              ${esc(result.error.message)}
+              ${esc(
+                result.error.message
+              )}
             </td>
           </tr>
         `;
+
         return;
       }
 
       const list =
         result.data || [];
 
-      /*
-       * Badge must always show the total number of
-       * pending requests, even when the selected filter
-       * is Approved/Rejected/All.
-       */
-      let pendingCount = 0;
+      let pendingCount =
+        list.filter(
+          function (x) {
+            return x.status === 'pending';
+          }
+        ).length;
 
       if (status !== 'pending') {
+
         const pendingResult =
           await sb.rpc(
             'admin_account_review_list',
             {
-              p_status: 'pending',
-              p_limit: 200
+              p_status:
+                'pending',
+
+              p_limit:
+                200
             }
           );
 
-        if (!pendingResult.error) {
+        if (
+          !pendingResult.error
+        ) {
           pendingCount =
-            (pendingResult.data || []).length;
+            (
+              pendingResult.data ||
+              []
+            ).length;
         }
-      } else {
-        pendingCount =
-          list.filter(function (x) {
-            return x.status === 'pending';
-          }).length;
       }
 
       const badge =
@@ -1141,10 +1842,13 @@ if (btn && !btn.disabled) {
 
       if (badge) {
         badge.textContent =
-          String(pendingCount);
+          String(
+            pendingCount
+          );
       }
 
       if (!list.length) {
+
         rows.innerHTML = `
           <tr>
             <td
@@ -1155,6 +1859,7 @@ if (btn && !btn.disabled) {
             </td>
           </tr>
         `;
+
         return;
       }
 
@@ -1162,9 +1867,11 @@ if (btn && !btn.disabled) {
         [
           ...new Set(
             list
-              .map(function (x) {
-                return x.client_id;
-              })
+              .map(
+                function (x) {
+                  return x.client_id;
+                }
+              )
               .filter(Boolean)
           )
         ];
@@ -1172,6 +1879,7 @@ if (btn && !btn.disabled) {
       let clients = [];
 
       if (ids.length) {
+
         const q =
           await sb
             .from('client_data')
@@ -1183,185 +1891,233 @@ if (btn && !btn.disabled) {
                 'name',
                 'email',
                 'business_name',
+                'account_status',
                 'suspension_reason'
               ].join(',')
             )
-            .in('client_id', ids);
+            .in(
+              'client_id',
+              ids
+            );
 
         if (!q.error) {
-          clients = q.data || [];
+          clients =
+            q.data || [];
         }
       }
 
       const map =
         new Map(
-          clients.map(function (x) {
-            return [x.client_id, x];
-          })
+          clients.map(
+            function (x) {
+              return [
+                x.client_id,
+                x
+              ];
+            }
+          )
         );
 
       rows.innerHTML =
-        list.map(function (x) {
-          const c =
-            map.get(x.client_id) || {};
+        list.map(
+          function (x) {
 
-          return `
-            <tr>
+            const c =
+              map.get(
+                x.client_id
+              ) || {};
 
-              <td>
-                <b>
+            return `
+              <tr>
+
+                <td>
+                  <b>
+                    ${esc(
+                      c.full_name ||
+                      c.client_name ||
+                      c.name ||
+                      '—'
+                    )}
+                  </b>
+
+                  <br>
+
+                  <span class="sub">
+                    ${esc(
+                      x.client_id
+                    )}
+                  </span>
+                </td>
+
+                <td>
                   ${esc(
-                    c.full_name ||
-                    c.client_name ||
-                    c.name ||
+                    c.email ||
                     '—'
                   )}
-                </b>
-                <br>
-                <span class="sub">
-                  ${esc(x.client_id)}
-                </span>
-              </td>
+                </td>
 
-              <td>
-                ${esc(c.email || '—')}
-              </td>
+                <td>
+                  ${esc(
+                    c.suspension_reason ||
+                    '—'
+                  )}
+                </td>
 
-              <td>
-                ${esc(
-                  c.suspension_reason || '—'
-                )}
-              </td>
+                <td>
+                  ${
+                    x.created_at
+                      ? esc(
+                          new Date(
+                            x.created_at
+                          ).toLocaleString()
+                        )
+                      : '—'
+                  }
+                </td>
 
-              <td>
-                ${
-                  x.created_at
-                    ? esc(
-                        new Date(
-                          x.created_at
-                        ).toLocaleString()
+                <td>
+                  <span
+                    class="badge ${
+                      adminStatusClass(
+                        x.status
                       )
-                    : '—'
-                }
-              </td>
+                    }"
+                  >
+                    ${esc(
+                      x.status
+                    )}
+                  </span>
+                </td>
 
-              <td>
-                <span
-                  class="
-                    badge
-                    ${adminStatusClass(x.status)}
-                  "
-                >
-                  ${esc(x.status)}
-                </span>
-              </td>
+                <td>
 
-              <td>
-                <button
-                  class="btn"
-                  data-review-id="${esc(x.id)}"
-                >
-                  View
-                </button>
-              </td>
+                  <button
+                    class="btn"
+                    data-review-id="${esc(
+                      x.id
+                    )}"
+                  >
+                    View
+                  </button>
 
-            </tr>
-          `;
-        }).join('');
+                </td>
+
+              </tr>
+            `;
+          }
+        ).join('');
 
       rows
         .querySelectorAll(
           '[data-review-id]'
         )
-        .forEach(function (btn) {
-          btn.onclick = async function () {
-            const result =
-              await sb.rpc(
-                'admin_account_review_get',
-                {
-                  p_request_id:
-                    btn.dataset.reviewId
-                }
-              );
+        .forEach(
+          function (button) {
 
-            if (result.error) {
-              alert(
-                result.error.message
-              );
-              return;
-            }
+            button.onclick =
+              function () {
 
-            openAdminReviewModal(
-              result.data || {}
-            );
-          };
-        });
+                openAdminReview(
+                  button.dataset
+                    .reviewId
+                );
+
+              };
+
+          }
+        );
     }
 
-    /*
-     * The Admin page itself decides when AAL2 is reached.
-     * Retry a few times so the Review Requests badge becomes
-     * available after Admin login without affecting login.
-     */
     let attempts = 0;
 
-    const bootTimer =
+    const timer =
       setInterval(
         async function () {
-          attempts += 1;
+
+          attempts++;
 
           try {
+
             const sessionResult =
               await sb.auth.getSession();
 
             if (
               sessionResult?.data?.session
             ) {
+
               const aal =
                 await sb.auth.mfa
                   .getAuthenticatorAssuranceLevel();
 
               if (
-                aal?.data?.currentLevel === 'aal2'
+                aal?.data?.currentLevel ===
+                'aal2'
               ) {
-                clearInterval(bootTimer);
+
+                clearInterval(
+                  timer
+                );
+
                 await loadReviews();
               }
             }
-          } catch (e) {
+
+          } catch (error) {
+
             console.warn(
-              '[GLIME Review Requests]',
-              e
+              '[GLIME Review]',
+              error
             );
+
           }
 
-          if (attempts >= 30) {
-            clearInterval(bootTimer);
+          if (
+            attempts >= 30
+          ) {
+
+            clearInterval(
+              timer
+            );
+
           }
+
         },
         1000
       );
   }
 
-  /*
-   * START
-   */
-  if (isAdmin) {
-    adminGate().catch(function (error) {
-      console.warn(
-        '[GLIME Account Review Admin]',
-        error
-      );
-    });
-  } else {
-    clientGate().catch(function (error) {
-      console.error(
-        '[GLIME Account Review Client]',
-        error
-      );
+  /* =========================================================
+     START
+     ========================================================= */
 
-      setGatePending(false);
-    });
+  if (isAdmin) {
+
+    adminGate().catch(
+      function (error) {
+
+        console.warn(
+          '[GLIME Account Review Admin]',
+          error
+        );
+
+      }
+    );
+
+  } else {
+
+    clientGate().catch(
+      function (error) {
+
+        console.error(
+          '[GLIME Account Review Client]',
+          error
+        );
+
+        setGatePending(false);
+
+      }
+    );
+
   }
 
 })();
