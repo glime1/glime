@@ -9,7 +9,7 @@
 <title>GLIME Billing</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 :root{--bg:#05080c;--panel:#0d151f;--panel2:#09111a;--line:rgba(255,255,255,.09);--text:#fff;--muted:#98a6b5;--green:#00ff88;--cyan:#00f0ff;--danger:#ff5364}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,rgba(0,240,255,.08),transparent 34%),radial-gradient(circle at 0 0,rgba(0,255,136,.07),transparent 32%),var(--bg);color:var(--text);font-family:Poppins,Inter,system-ui,-apple-system,Segoe UI,sans-serif}
@@ -229,11 +229,10 @@ function renderSubscription(){
   if(renew){
     renew.onclick=async()=>{
       try{
-        await call('glime-cashfree-manage-subscription',{
-          action:s.auto_renew?'cancel_auto_renew':'resume_auto_renew'
-        });
+        const action=s.auto_renew?'cancel_auto_renew':'resume_auto_renew';
+        await call('glime-razorpay-manage-subscription',{action,subscription_id:s.id});
         await loadAll();
-        notice('Subscription setting updated.');
+        notice(s.auto_renew?'Auto-renew has been turned off.':'Auto-renew has been turned back on.');
       }catch(e){notice(e.message,true)}
     };
   }
@@ -390,33 +389,75 @@ function renderInvoices(){
   const rows=state.billing?.invoices||[];
   $('invoices').innerHTML=rows.length?`<table><thead><tr><th>Date</th><th>Invoice</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${rows.map((x,i)=>{const url=x.download_url||x.invoice_url||x.pdf_url||x.file_url;return `<tr><td>${esc((x.created_at||'').slice(0,10))}</td><td>${esc(x.invoice_number||'Invoice')}</td><td>${money(x.total_amount??x.amount)}</td><td>${esc(x.status||'—')}</td><td>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Download</a>`:'—'}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No invoices yet.</div>';
 }
-async function checkoutPaymentSession(d){
-  const session=d?.data?.payment_session_id||d?.payment_session_id;
-  if(!session)throw Error('Payment checkout is not ready.');
-  const cf=Cashfree({mode:(d.environment||d.data?.environment||'sandbox')==='production'?'production':'sandbox'});
-  await cf.checkout({paymentSessionId:session});
+async function razorpayCheckoutOrder(d,description){
+  const x=d?.data||d;
+  if(!x?.provider_order_id||!x?.key_id)throw Error('Razorpay order is not ready.');
+  if(typeof Razorpay==='undefined')throw Error('Razorpay Checkout failed to load.');
+  return new Promise((resolve,reject)=>{
+    const rzp=new Razorpay({
+      key:x.key_id,order_id:x.provider_order_id,name:'GLIME',
+      description:description||'GLIME Payment',currency:x.currency||'INR',
+      handler:async()=>{
+        notice('Payment submitted. We are confirming it securely…');
+        setTimeout(async()=>{try{await loadAll();notice('Payment status refreshed.')}catch(e){}},2500);
+        resolve();
+      },
+      modal:{ondismiss:()=>reject(new Error('Payment window closed.'))}
+    });
+    rzp.on('payment.failed',response=>reject(new Error(response?.error?.description||'Payment failed.')));
+    rzp.open();
+  });
+}
+async function razorpayCheckoutSubscription(d,description){
+  const x=d?.data||d;
+  if(!x?.razorpay_subscription_id||!x?.razorpay_key_id)throw Error('Razorpay subscription is not ready.');
+  if(typeof Razorpay==='undefined')throw Error('Razorpay Checkout failed to load.');
+  return new Promise((resolve,reject)=>{
+    const rzp=new Razorpay({
+      key:x.razorpay_key_id,subscription_id:x.razorpay_subscription_id,
+      name:'GLIME',description:description||'GLIME Subscription',
+      handler:async()=>{
+        notice('Subscription authorization submitted. We are confirming it securely…');
+        setTimeout(async()=>{try{await loadAll();notice('Subscription status refreshed.')}catch(e){}},3000);
+        resolve();
+      },
+      modal:{ondismiss:()=>reject(new Error('Subscription window closed.'))}
+    });
+    rzp.on('payment.failed',response=>reject(new Error(response?.error?.description||'Subscription payment failed.')));
+    rzp.open();
+  });
 }
 async function subscribe(code,interval){
-  const d=await call('glime-cashfree-create-subscription',{product_code:code,billing_interval:interval});
-  const session=d?.subscription_session_id||d?.data?.subscription_session_id;
-  if(!session)throw Error('Subscription checkout is not ready.');
-  const cf=Cashfree({mode:(d.environment||d.data?.environment||'sandbox')==='production'?'production':'sandbox'});
-  await cf.checkout({subscriptionSessionId:session});
+  const d=await call('glime-razorpay-create-subscription',{product_code:code,billing_interval:interval});
+  await razorpayCheckoutSubscription(d,code.replace(/^glime_/,'').replace(/_/g,' ')+' subscription');
 }
 async function upgrade(code,interval){
   const q=await call('glime-billing-upgrade-quote',{target_product_code:code,billing_interval:interval});
-  const quote=q.data||q,charge=Number(quote.charge_now??quote.amount_due??0);
-  if(!charge)throw Error('This plan change has no payable upgrade amount right now.');
-  const d=await call('glime-cashfree-create-upgrade-payment',{product_code:code,billing_interval:interval});
-  await checkoutPaymentSession(d);
+  const quote=q?.data||q;
+  const pr=quote?.proration||{};
+  const charge=Number(pr.charge_now||0);
+  const credit=Number(pr.unused_credit||0);
+  if(!Number.isFinite(charge)||charge<0)throw Error('Upgrade amount could not be calculated.');
+  if(!confirm(`Immediate upgrade to ${String(code).replace(/^glime_/,'').replace(/_/g,' ')}\n\nPay now: ${money(charge)}\nUnused current-plan value kept as wallet credit: ${money(credit)}\n\nContinue?`))return;
+  const d=await call('glime-razorpay-create-upgrade-payment',{target_product_code:code,billing_interval:interval});
+  const x=d?.data||d;
+  if(Number(x.amount||0)<=0)throw Error('This upgrade does not require a payment at this moment. Please refresh and try again.');
+  await razorpayCheckoutOrder(d,'GLIME Immediate Plan Upgrade');
+  notice('Upgrade payment submitted. We are verifying it and activating the new plan…');
+  setTimeout(async()=>{try{await loadAll();notice('Upgrade status refreshed. Unused plan value is kept separately as wallet credit.')}catch(e){}},3500);
 }
 async function walletTopup(){
   const amount=Number($('walletAmount').value);
   if(!Number.isFinite(amount)||amount<100){notice('Minimum wallet balance addition is ₹100.',true);return}
-  const d=await call('glime-cashfree-create-wallet-topup',{amount});await checkoutPaymentSession(d);
+  const d=await call('glime-razorpay-create-order',{amount,order_type:'wallet_topup'});
+  await razorpayCheckoutOrder(d,'GLIME Wallet Top-up');
 }
 async function buyCredits(code){
-  const d=await call('glime-cashfree-create-ai-credit-purchase',{product_code:code});await checkoutPaymentSession(d);
+  const item=(state.catalog.credits||[]).find(x=>x?.product?.product_code===code);
+  const pr=getProductPrice(item,'one_time')||{};
+  if(!pr?.amount)throw Error('AI Credit price not found.');
+  const d=await call('glime-razorpay-create-order',{amount:Number(pr.amount),order_type:'ai_credit_purchase',product_code:code});
+  await razorpayCheckoutOrder(d,item?.product?.name||'GLIME AI Credits');
 }
 async function loadAll(){
   const {data:{session}}=await sb.auth.getSession();if(!session){location.replace('login.html');return}
@@ -435,14 +476,11 @@ document.addEventListener('click',async e=>{
       const code=b.dataset.product,interval=b.dataset.interval,current=state.billing?.current_product?.product_code;
       if(!current)await subscribe(code,interval);else if(current!==code)await upgrade(code,interval);
     }else if(b.dataset.dataCode){
-      const d=await call('glime-cashfree-create-business-data-addon',{product_code:b.dataset.dataCode});
-      await checkoutPaymentSession(d);
+      const d=await call('glime-razorpay-create-business-data-addon',{product_code:b.dataset.dataCode});
+      await razorpayCheckoutSubscription(d,'GLIME Business Data Add-on');
     }else if(b.dataset.storageCode){
-      const d=await call('glime-cashfree-create-storage-addon',{product_code:b.dataset.storageCode});
-      const session=d?.data?.subscription_session_id||d?.subscription_session_id;
-      if(!session)throw Error('Storage checkout is not ready.');
-      const cf=Cashfree({mode:(d.environment||d.data?.environment||'sandbox')==='production'?'production':'sandbox'});
-      await cf.checkout({subscriptionSessionId:session});
+      const d=await call('glime-razorpay-create-storage-addon',{product_code:b.dataset.storageCode});
+      await razorpayCheckoutSubscription(d,'GLIME Extra Storage');
     }else if(b.dataset.creditCode){
       await buyCredits(b.dataset.creditCode);
     }
