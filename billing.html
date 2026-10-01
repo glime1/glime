@@ -23,7 +23,7 @@
 .features{padding-left:18px;color:#dbe5f2;line-height:1.75}.stat,.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}.stat:last-child,.row:last-child{border-bottom:0}
 .badge{display:inline-block;padding:4px 9px;border-radius:999px;background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.2);color:var(--cyan);font-size:12px}.success{color:var(--green)}.cyan{color:var(--cyan)}
 .bar{height:9px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:9px 0 5px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:99px}
-.notice{padding:13px 15px;border-radius:12px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.18);margin-bottom:14px}.notice.error{background:rgba(255,83,100,.06);border-color:rgba(255,83,100,.22)}
+.notice{padding:13px 15px;border-radius:12px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.18);margin-bottom:14px}.notice.error{background:rgba(255,83,100,.06);border-color:rgba(255,83,100,.22)}.action-message{padding:11px 13px;border-radius:10px;margin-top:12px;font-size:13px;line-height:1.45;border:1px solid rgba(255,83,100,.28);background:rgba(255,83,100,.07);color:#ff9aa5}.action-message.success{border-color:rgba(0,255,136,.28);background:rgba(0,255,136,.06);color:#7dffba}
 .hidden{display:none!important}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.loader,.empty{color:var(--muted);padding:10px 0}
 table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted)}
 .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);font-weight:800}.heroTitle{font-size:25px;margin:5px 0}.countdown{font-size:24px;font-weight:850;color:var(--green);margin-top:5px}
@@ -56,14 +56,14 @@ table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;
 </section>
 
 <section class="section grid cols">
-  <div class="card"><h3>Business Data</h3><div id="capacity" class="loader">Loading capacity…</div><div id="dataAddons" style="margin-top:12px" class="loader">Loading add-ons…</div></div>
-  <div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1 AI token. Input + output tokens are counted together.</div></div>
+  <div class="card"><h3>Business Data</h3><div id="capacity" class="loader">Loading capacity…</div><div id="dataAddons" style="margin-top:12px" class="loader">Loading add-ons…</div><div id="dataMessage" class="action-message hidden" role="alert"></div></div>
+  <div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div id="creditMessage" class="action-message hidden" role="alert"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1 AI token. Input + output tokens are counted together.</div></div>
 </section>
 
-<section class="section card"><h3>Extra Storage</h3><div id="storageAddons" class="loader">Loading storage options…</div><div class="small muted" style="margin-top:10px">Additional storage is billed monthly and is added to your active subscription.</div></section>
+<section class="section card"><h3>Extra Storage</h3><div id="storageAddons" class="loader">Loading storage options…</div><div id="storageMessage" class="action-message hidden" role="alert"></div><div class="small muted" style="margin-top:10px">Additional storage is billed monthly and is added to your active subscription.</div></section>
 
 <section class="section grid cols">
-  <div class="card"><h3>Wallet</h3><div id="wallet" class="loader">Loading…</div><div class="actions"><input id="walletAmount" class="input" type="number" min="100" step="1" value="100" style="flex:1;min-width:130px"><button class="btn primary" id="walletBtn">Add Balance</button></div><div class="wallet-quick" aria-label="Quick wallet amounts"><button type="button" class="btn" data-wallet-amount="100">₹100</button><button type="button" class="btn" data-wallet-amount="500">₹500</button><button type="button" class="btn" data-wallet-amount="1000">₹1,000</button><button type="button" class="btn" data-wallet-amount="2000">₹2,000</button><button type="button" class="btn" data-wallet-amount="5000">₹5,000</button><button type="button" class="btn" data-wallet-amount="10000">₹10,000</button></div><div class="small muted" style="margin-top:8px">Choose a quick amount or enter any amount from ₹100 upward.</div></div>
+  <div class="card"><h3>Wallet</h3><div id="wallet" class="loader">Loading…</div><div class="actions"><input id="walletAmount" class="input" type="number" min="100" step="1" value="100" style="flex:1;min-width:130px"><button class="btn primary" id="walletBtn">Add Balance</button></div><div class="wallet-quick" aria-label="Quick wallet amounts"><button type="button" class="btn" data-wallet-amount="100">₹100</button><button type="button" class="btn" data-wallet-amount="500">₹500</button><button type="button" class="btn" data-wallet-amount="1000">₹1,000</button><button type="button" class="btn" data-wallet-amount="2000">₹2,000</button><button type="button" class="btn" data-wallet-amount="5000">₹5,000</button><button type="button" class="btn" data-wallet-amount="10000">₹10,000</button></div><div class="small muted" style="margin-top:8px">Choose a quick amount or enter any amount from ₹100 upward.</div><div id="walletMessage" class="action-message hidden" role="alert"></div></div>
   <div class="card"><h3>Usage & Spending</h3><div id="usage" class="loader">Loading…</div></div>
 </section>
 
@@ -86,6 +86,8 @@ function fnUrl(name){return `${SUPABASE_URL}/functions/v1/${name}`}
 async function authHeaders(){const {data:{session},error}=await sb.auth.getSession();if(error||!session){location.replace('login.html');throw Error('LOGIN_REQUIRED')}return {Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'}}
 async function call(name,body=null,method='POST',query=''){const h=await authHeaders();const r=await fetch(fnUrl(name)+query,{method,headers:h,body:method==='GET'?undefined:JSON.stringify(body??{})});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||d.message||'Request failed');return d}
 function notice(msg,error=false){const n=$('notice');n.textContent=msg;n.classList.remove('hidden');n.classList.toggle('error',error)}
+function actionMessage(id,msg,error=true){const n=$(id);if(!n)return;n.textContent=msg;n.classList.remove('hidden');n.classList.toggle('success',!error)}
+function clearActionMessage(id){const n=$(id);if(n){n.textContent='';n.classList.add('hidden');n.classList.remove('success')}}
 async function product(code,cycle){return call('glime-billing-catalog',null,'GET',`?product_code=${encodeURIComponent(code)}&interval=${encodeURIComponent(cycle)}`)}
 async function loadCatalog(){
   const all=await call('glime-billing-catalog',null,'GET','?all=1');
@@ -319,6 +321,7 @@ function renderPlans(){
         ${isCurrent?'disabled':''}>
         ${isCurrent?'Current plan':sameProduct?'Change billing cycle':'Choose plan'}
       </button>
+      <div id="planMessage-${esc(code)}" class="action-message hidden" role="alert"></div>
     </article>`;
   }).join('')||'<div class="card empty">Plans are unavailable right now.</div>';
 }
@@ -447,8 +450,10 @@ async function upgrade(code,interval){
   setTimeout(async()=>{try{await loadAll();notice('Upgrade status refreshed. Unused plan value is kept separately as wallet credit.')}catch(e){}},3500);
 }
 async function walletTopup(){
+  clearActionMessage('walletMessage');
   const amount=Number($('walletAmount').value);
-  if(!Number.isFinite(amount)||amount<100){notice('Minimum wallet balance addition is ₹100.',true);return}
+  if(!Number.isFinite(amount)||amount<100){actionMessage('walletMessage','Minimum wallet balance addition is ₹100.',true);return}
+  if(amount>1000000){actionMessage('walletMessage','Maximum single wallet top-up is ₹10,00,000.',true);return}
   const d=await call('glime-razorpay-create-order',{amount,order_type:'wallet_topup'});
   await razorpayCheckoutOrder(d,'GLIME Wallet Top-up');
 }
@@ -468,22 +473,33 @@ async function loadAll(){
 $('monthly').onclick=async()=>{state.cycle='monthly';$('monthly').classList.add('active');$('yearly').classList.remove('active');try{await loadCatalog();renderPlans()}catch(e){notice(e.message,true)}};
 $('yearly').onclick=async()=>{state.cycle='yearly';$('yearly').classList.add('active');$('monthly').classList.remove('active');try{await loadCatalog();renderPlans()}catch(e){notice(e.message,true)}};
 $('refresh').onclick=async()=>{try{await loadAll();notice('Billing refreshed.')}catch(e){notice(e.message,true)}};
-$('walletBtn').onclick=async()=>{try{await walletTopup()}catch(e){notice(e.message,true)}};
+$('walletBtn').onclick=async()=>{try{await walletTopup()}catch(e){actionMessage('walletMessage',e.message,true)}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-wallet-amount]');if(!b)return;const input=$('walletAmount');input.value=b.dataset.walletAmount;input.focus();});
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
   try{
     if(b.classList.contains('planBtn')&&!b.disabled){
       const code=b.dataset.product,interval=b.dataset.interval,current=state.billing?.current_product?.product_code;
-      if(!current)await subscribe(code,interval);else if(current!==code)await upgrade(code,interval);
+      const target=`planMessage-${code}`;
+      clearActionMessage(target);
+      try{
+        if(!current)await subscribe(code,interval);else if(current!==code)await upgrade(code,interval);
+      }catch(err){actionMessage(target,err.message,true)}
     }else if(b.dataset.dataCode){
-      const d=await call('glime-razorpay-create-business-data-addon',{product_code:b.dataset.dataCode});
-      await razorpayCheckoutSubscription(d,'GLIME Business Data Add-on');
+      clearActionMessage('dataMessage');
+      try{
+        const d=await call('glime-razorpay-create-business-data-addon',{product_code:b.dataset.dataCode});
+        await razorpayCheckoutSubscription(d,'GLIME Business Data Add-on');
+      }catch(err){actionMessage('dataMessage',err.message,true)}
     }else if(b.dataset.storageCode){
-      const d=await call('glime-razorpay-create-storage-addon',{product_code:b.dataset.storageCode});
-      await razorpayCheckoutSubscription(d,'GLIME Extra Storage');
+      clearActionMessage('storageMessage');
+      try{
+        const d=await call('glime-razorpay-create-storage-addon',{product_code:b.dataset.storageCode});
+        await razorpayCheckoutSubscription(d,'GLIME Extra Storage');
+      }catch(err){actionMessage('storageMessage',err.message,true)}
     }else if(b.dataset.creditCode){
-      await buyCredits(b.dataset.creditCode);
+      clearActionMessage('creditMessage');
+      try{await buyCredits(b.dataset.creditCode)}catch(err){actionMessage('creditMessage',err.message,true)}
     }
   }catch(err){notice(err.message,true)}
 });
