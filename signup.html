@@ -17,7 +17,7 @@
 <main class="card">
 <img src="glime_logo_clean.svg" alt="GLIME logo" class="logo">
 <h1>Create your GLIME account</h1>
-<p class="subtitle">Verify your email and mobile number with OTPs to create your secure account.</p>
+<p class="subtitle">Verify your email with an OTP to create your secure account.</p>
 
 <form id="signupForm">
 
@@ -60,6 +60,7 @@
 <script>
 const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const SMS_OTP_ENABLED=false;
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 const form=document.getElementById('signupForm');
