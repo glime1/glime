@@ -33,9 +33,170 @@
 </div>
 
 <div id="emailVerificationStep" class="hidden">
-<div class="step-title">Check your email</div>
-<div class="otp-note">We sent you a confirmation link. Open it to verify your email and continue to your GLIME dashboard.</div>
-<button type="button" id="resendEmailBtn">Resend Confirmation Email</button>
+<div class="step-title">Verify your email</div>
+<div class="otp-note">We sent a 6-digit verification code to your email address. Enter it below.</div>
+<div class="group otp-box" style="margin-top:16px">
+<label for="emailOtp">Email OTP</label>
+<input id="emailOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456">
+</div>
+<button type="button" id="verifyEmailBtn">Verify Email &amp; Continue</button>
+<button type="button" id="resendEmailBtn" class="secondary">Resend Email OTP</button>
+<button type="button" id="changeDetailsBtn" class="secondary">Change Details</button>
+</div>
+
+<div id="errorMessage" class="message error"></div>
+<div id="successMessage" class="message success"></div>
+</form>
+
+<div class="login">Already have an account? <a href="login.html">Log in</a></div>
+</main>
+
+<div class="footer">© 2026 Glime AI Automation.<br><a href="index.html">Home</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+
+const form=document.getElementById('signupForm');
+const detailsStep=document.getElementById('detailsStep');
+const emailVerificationStep=document.getElementById('emailVerificationStep');
+const startBtn=document.getElementById('startBtn');
+const resendEmailBtn=document.getElementById('resendEmailBtn');
+const errorMessage=document.getElementById('errorMessage');
+const successMessage=document.getElementById('successMessage');
+
+function showError(m){errorMessage.textContent=m;errorMessage.style.display='block';successMessage.style.display='none'}
+function showSuccess(m){successMessage.textContent=m;successMessage.style.display='block';errorMessage.style.display='none'}
+function normalizePhone(v){let p=v.trim().replace(/[^\d+]/g,'');if(p.startsWith('0')&&!p.startsWith('+'))p='+91'+p.slice(1);if(/^\d{10}$/.test(p))p='+91'+p;return p}
+
+function getDetails(){
+ const fullName=document.getElementById('fullName').value.trim();
+ const businessName=document.getElementById('businessName').value.trim();
+ const phone=normalizePhone(document.getElementById('phone').value);
+ const email=document.getElementById('email').value.trim().toLowerCase();
+ const password=document.getElementById('password').value;
+ const confirmPassword=document.getElementById('confirmPassword').value;
+ if(fullName.length<2)throw new Error('Please enter your full name.');
+ if(businessName.length<2)throw new Error('Please enter your business name.');
+ if(!/^\+[1-9]\d{9,14}$/.test(phone))throw new Error('Please enter a valid mobile number, for example +919876543210.');
+ if(!/^\S+@\S+\.\S+$/.test(email))throw new Error('Please enter a valid email address.');
+ if(password.length<8)throw new Error('Password must be at least 8 characters.');
+ if(password!==confirmPassword)throw new Error('Passwords do not match.');
+ return {fullName,businessName,phone,email,password};
+}
+
+async function sendEmailOtp(email){
+ const {error}=await supabaseClient.auth.resend({type:'signup',email});
+ if(error)throw error;
+}
+
+async function provisionClient(){
+ const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+ if(sessionError)throw sessionError;
+ const token=sessionData?.session?.access_token;
+ if(!token)throw new Error('Email verification succeeded, but the login session is missing.');
+ const response=await fetch(SUPABASE_URL+'/functions/v1/glime-provision-self',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SUPABASE_KEY},body:'{}'});
+ const body=await response.json().catch(()=>({}));
+ if(!response.ok||!body.ok)throw new Error(body.error||'GLIME account setup could not be completed.');
+ return body;
+}
+
+form.addEventListener('submit',async e=>{
+ e.preventDefault(); errorMessage.style.display='none'; successMessage.style.display='none';
+ try{
+  const d=getDetails(); startBtn.disabled=true; startBtn.textContent='Creating account...';
+  const {data,error}=await supabaseClient.auth.signUp({email:d.email,password:d.password,options:{data:{full_name:d.fullName,business_name:d.businessName,phone:d.phone}}});
+  if(error)throw error;
+  if(data?.session){
+   detailsStep.classList.add('hidden'); emailVerificationStep.classList.remove('hidden');
+   showSuccess('Account created. Preparing your GLIME dashboard...');
+   await provisionClient(); window.location.replace('dashboard.html'); return;
+  }
+  detailsStep.classList.add('hidden'); emailVerificationStep.classList.remove('hidden');
+  document.getElementById('emailOtp').focus();
+  showSuccess('6-digit email OTP sent. Enter it above to verify your email.');
+ }catch(error){
+  console.error('Signup error:',error); const m=String(error?.message||'').toLowerCase();
+  if(m.includes('already registered')||m.includes('already been registered'))showError('An account with this email already exists. Please log in instead.');
+  else if(m.includes('rate limit'))showError('Too many attempts. Please wait and try again.');
+  else showError(error.message||'Could not create your account. Please try again.');
+ }finally{startBtn.disabled=false;startBtn.textContent='Send Email OTP';}
+});
+
+document.getElementById('verifyEmailBtn').addEventListener('click',async()=>{
+ errorMessage.style.display='none'; successMessage.style.display='none';
+ const verifyBtn=document.getElementById('verifyEmailBtn');
+ try{
+  const email=document.getElementById('email').value.trim().toLowerCase();
+  const token=document.getElementById('emailOtp').value.trim();
+  if(!/^\S+@\S+\.\S+$/.test(email))throw new Error('Please enter a valid email address.');
+  if(!/^\d{6}$/.test(token))throw new Error('Please enter the 6-digit email OTP.');
+  verifyBtn.disabled=true; verifyBtn.textContent='Verifying...';
+  const {data,error}=await supabaseClient.auth.verifyOtp({email,token,type:'email'});
+  if(error)throw error;
+  if(!data?.session)throw new Error('Email verification succeeded, but no login session was returned.');
+  showSuccess('Email verified. Setting up your GLIME dashboard...');
+  const provisioned=await provisionClient();
+  if(!provisioned?.client)throw new Error('GLIME client account could not be prepared.');
+  window.location.replace('dashboard.html');
+ }catch(error){
+  console.error('Email OTP verification error:',error); showError(error.message||'Could not verify the email OTP.');
+  verifyBtn.disabled=false; verifyBtn.textContent='Verify Email & Continue';
+ }
+});
+
+resendEmailBtn.addEventListener('click',async()=>{
+ errorMessage.style.display='none'; successMessage.style.display='none';
+ try{
+  const email=document.getElementById('email').value.trim().toLowerCase();
+  if(!/^\S+@\S+\.\S+$/.test(email))throw new Error('Please enter a valid email address.');
+  resendEmailBtn.disabled=true; resendEmailBtn.textContent='Sending...';
+  await sendEmailOtp(email); showSuccess('A new 6-digit email OTP has been sent. Please check your inbox.');
+ }catch(error){console.error('Email OTP resend error:',error);showError(error.message||'Could not resend the email OTP.');}
+ finally{resendEmailBtn.disabled=false;resendEmailBtn.textContent='Resend Email OTP';}
+});
+
+document.getElementById('changeDetailsBtn').addEventListener('click',async()=>{
+ await supabaseClient.auth.signOut({scope:'local'}); emailVerificationStep.classList.add('hidden'); detailsStep.classList.remove('hidden'); document.getElementById('emailOtp').value=''; showSuccess('You can change your signup details and start again.');
+});
+</script>
+<style>
+:root{--bg:#05080c;--card:#111827;--green:#00ff88;--cyan:#00f0ff;--text:#fff;--muted:#9ca3af;--border:rgba(255,255,255,.08)}*{box-sizing:border-box;margin:0;padding:0;font-family:Poppins,sans-serif}body{min-height:100vh;background:radial-gradient(circle at 50% 0,rgba(0,240,255,.09),transparent 34%),radial-gradient(circle at 0 100%,rgba(0,255,136,.07),transparent 30%),var(--bg);color:var(--text);padding:28px 18px 55px}.page{width:100%;max-width:500px;margin:auto}.brand{display:flex;justify-content:center;margin-bottom:22px}.brand a{display:flex;align-items:center;gap:11px;color:#fff;text-decoration:none}.brand img{width:48px;height:48px;object-fit:contain}.brand span{font-size:1.15rem;font-weight:700;letter-spacing:4px}.card{background:rgba(17,24,39,.94);border:1px solid var(--border);border-radius:20px;padding:32px;box-shadow:0 18px 45px rgba(0,0,0,.4)}.logo{width:72px;height:72px;display:block;margin:0 auto 16px;object-fit:contain}h1{text-align:center;font-size:1.65rem;margin-bottom:7px}.subtitle{text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:26px}.group{margin-bottom:16px}label{display:block;color:#dbe3ea;font-size:.82rem;font-weight:600;margin-bottom:7px}input{width:100%;padding:12px 13px;border-radius:10px;border:1px solid var(--border);background:#0a111a;color:#fff;outline:none;font-size:.92rem}input:focus{border-color:rgba(0,240,255,.55);box-shadow:0 0 0 3px rgba(0,240,255,.08)}.hint{font-size:.7rem;color:var(--muted);margin-top:6px;line-height:1.5}button{width:100%;border:0;border-radius:11px;padding:13px 16px;background:linear-gradient(135deg,rgba(0,255,136,.18),rgba(0,240,255,.16));border:1px solid rgba(0,240,255,.42);color:#fff;font-weight:700;cursor:pointer;margin-top:5px}button.secondary{margin-top:8px;background:transparent;border-color:var(--border);font-weight:600}button:disabled{opacity:.55;cursor:not-allowed}.message{display:none;margin-top:15px;padding:11px 12px;border-radius:10px;font-size:.82rem;line-height:1.55}.error{background:rgba(255,82,99,.08);border:1px solid rgba(255,82,99,.28);color:#ff9aa6}.success{background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.25);color:#8dffc5}.hidden{display:none!important}.login{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}.login a,.footer a,.terms a{color:var(--cyan);text-decoration:none}.footer{text-align:center;color:#697586;font-size:.72rem;margin-top:20px;line-height:1.8}.terms{color:var(--muted);font-size:.72rem;line-height:1.55;margin:5px 0 16px}.otp-box input{text-align:center;letter-spacing:8px;font-size:1.15rem;font-weight:700}.otp-note{text-align:center;color:var(--muted);font-size:.72rem;margin-top:8px}.step-title{font-size:1rem;font-weight:700;text-align:center;margin-bottom:8px}
+@media(max-width:520px){.card{padding:24px 20px}h1{font-size:1.45rem}}
+</style>
+</head>
+<body><div class="page">
+<div class="brand"><a href="index.html" aria-label="GLIME Home"><img src="glime_logo_clean.svg" alt="GLIME"><span>GLIME</span></a></div>
+
+<main class="card">
+<img src="glime_logo_clean.svg" alt="GLIME logo" class="logo">
+<h1>Create your GLIME account</h1>
+<p class="subtitle">Create your account and verify your email to get started.</p>
+
+<form id="signupForm">
+
+<div id="detailsStep">
+<div class="group"><label for="fullName">Full Name</label><input id="fullName" type="text" autocomplete="name" placeholder="Your full name" maxlength="100" required></div>
+<div class="group"><label for="businessName">Business Name</label><input id="businessName" type="text" autocomplete="organization" placeholder="Your business name" maxlength="150" required></div>
+<div class="group"><label for="phone">Mobile Number</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 9876543210" maxlength="20" required></div>
+<div class="group"><label for="email">Email Address</label><input id="email" type="email" autocomplete="email" placeholder="you@company.com" maxlength="254" required></div>
+<div class="group"><label for="password">Password</label><input id="password" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" minlength="8" required></div>
+<div class="group"><label for="confirmPassword">Confirm Password</label><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Re-enter your password" minlength="8" required></div>
+<div class="terms">By creating an account, you agree to GLIME's <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</div>
+<button type="submit" id="startBtn">Send Email OTP</button>
+</div>
+
+<div id="emailVerificationStep" class="hidden">
+<div class="step-title">Verify your email</div>
+<div class="otp-note">We sent a 6-digit verification code to your email address. Enter it below.</div>
+<div class="group otp-box" style="margin-top:16px">
+<label for="emailOtp">Email OTP</label>
+<input id="emailOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456">
+</div>
+<button type="button" id="verifyEmailBtn">Verify Email &amp; Continue</button>
+<button type="button" id="resendEmailBtn" class="secondary">Resend Email OTP</button>
 <button type="button" id="changeDetailsBtn" class="secondary">Change Details</button>
 </div>
 
