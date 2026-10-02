@@ -476,11 +476,7 @@ registerModule({
   render:renderChannels
 });
 
-/*
-  Placeholder core sections.
-  They intentionally do not invent new database behaviour.
-  Future addons can replace/extend these by registering real modules.
-*/
+/* Core navigation placeholders. Feature logic is supplied by addons. */
 registerModule({
   id:'ai',
   label:'AI',
@@ -489,9 +485,9 @@ registerModule({
     container.innerHTML = `
       <div class="section-head">
         <h2>AI</h2>
-        <p>AI-specific settings will be added here as an addon using the existing GLIME AI architecture.</p>
+        <p>The AI settings module is loading…</p>
       </div>
-      <div class="empty">No additional AI settings module is installed yet.</div>`;
+      <div class="empty">Please wait for the AI settings module to load.</div>`;
   }
 });
 
@@ -517,7 +513,7 @@ registerModule({
     container.innerHTML = `
       <div class="section-head">
         <h2>Follow-ups</h2>
-        <p>Follow-up settings can be added here without creating a second settings page.</p>
+        <p>Follow-up settings can be added here without changing the Settings shell.</p>
       </div>
       <div class="empty">No additional follow-up settings module is installed yet.</div>`;
   }
@@ -588,7 +584,25 @@ async function init(){
   openModule(state.activeModule || 'channels');
 }
 
-init();
+async function loadSettingsAddon(src){
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src=src;
+    script.async=false;
+    script.onload=resolve;
+    script.onerror=()=>reject(new Error(`Could not load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+(async()=>{
+  try{
+    await loadSettingsAddon('settings-ai-addon.js');
+  }catch(error){
+    console.error('Settings addon load error:',error);
+  }
+  init();
+})();
 </script>
 </body>
 </html>
