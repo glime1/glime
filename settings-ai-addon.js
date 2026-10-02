@@ -1,636 +1,183 @@
-/* =========================================================
-   GLIME SETTINGS — AI MODULE ADDON
-   Uses existing:
-   - client_ai_brains
-   - client_ai_brain_channels
-   - client_knowledge_items
-   - offers
-
-   Client controls:
-   - AI Status
-   - Language
-   - Tone
-   - Services & Client Knowledge
-   - Conversation Memory
-   - Lead Context
-   - Sales Instructions
-
-   Hidden / GLIME-managed:
-   - AI Provider
-   - AI Model
-   - Core System Instructions
-   - Safety Instructions
-
-   Voice AI intentionally excluded.
-   ========================================================= */
-
-(function () {
+(() => {
   'use strict';
 
-  const MODULE_ID = 'ai';
+  const shell = window.GLIME_SETTINGS;
 
-  const CHANNELS = ['whatsapp', 'instagram'];
+  if (!shell?.state || !shell?.api || !shell?.ui) {
+    throw new Error('GLIME Settings shell is not initialized.');
+  }
 
-  let supabaseClient = null;
-  let clientId = null;
+  const { state, api, ui } = shell;
+  const db = api.supabase;
+  const esc = ui.escapeHtml;
+
   let brain = null;
-  let channelRows = [];
-
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  function getSupabase() {
-    if (supabaseClient) return supabaseClient;
-
-    if (window.supabaseClient) {
-      supabaseClient = window.supabaseClient;
-      return supabaseClient;
-    }
-
-    if (window.supabase) {
-      if (typeof window.supabase.from === 'function') {
-        supabaseClient = window.supabase;
-        return supabaseClient;
-      }
-    }
-
-    return null;
-  }
-
-  async function resolveClientId() {
-    const sb = getSupabase();
-
-    if (!sb) {
-      throw new Error('Supabase client is not available.');
-    }
-
-    const {
-      data: { user },
-      error: userError
-    } = await sb.auth.getUser();
-
-    if (userError) throw userError;
-
-    if (!user) {
-      throw new Error('You are not logged in.');
-    }
-
-    const { data, error } = await sb
-      .from('clients')
-      .select('client_id')
-      .eq('auth_user_id', user.id)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (!data?.client_id) {
-      throw new Error('Client account could not be resolved.');
-    }
-
-    return data.client_id;
-  }
+  let channels = [];
+  let context = {
+    knowledge: 0,
+    offers: 0
+  };
 
   async function loadBrain() {
-    const sb = getSupabase();
-
-    const { data, error } = await sb
+    const { data, error } = await db
       .from('client_ai_brains')
-      .select([
-        'id',
-        'client_id',
-        'brain_key',
-        'name',
-        'status',
-        'language',
-        'tone',
-        'system_instructions',
-        'sales_instructions',
-        'safety_instructions',
-        'knowledge_enabled',
-        'conversation_memory_enabled',
-        'lead_context_enabled',
-        'created_at',
-        'updated_at'
-      ].join(','))
-      .eq('client_id', clientId)
+      .select(
+        'id,client_id,brain_key,name,status,language,tone,sales_instructions,knowledge_enabled,conversation_memory_enabled,lead_context_enabled,created_at,updated_at'
+      )
+      .eq('client_id', state.client.client_id)
       .maybeSingle();
 
     if (error) throw error;
 
-    brain = data || null;
+    if (!data) {
+      throw new Error(
+        'Central Client AI Brain is not initialized for this client.'
+      );
+    }
 
-    return brain;
+    brain = data;
   }
 
   async function loadChannels() {
-    const sb = getSupabase();
-
-    const { data, error } = await sb
+    const { data, error } = await db
       .from('client_ai_brain_channels')
-      .select('brain_id, client_id, channel, enabled')
-      .eq('client_id', clientId)
-      .in('channel', CHANNELS);
+      .select('channel,enabled')
+      .eq('client_id', state.client.client_id)
+      .in('channel', ['whatsapp', 'instagram'])
+      .order('channel', {
+        ascending: true
+      });
 
     if (error) throw error;
 
-    channelRows = data || [];
-
-    return channelRows;
+    channels = data || [];
   }
 
-  async function loadKnowledgeCount() {
-    const sb = getSupabase();
+  async function loadContext() {
+    const [knowledgeResult, offersResult] =
+      await Promise.all([
+        db
+          .from('client_knowledge_items')
+          .select('id', {
+            count: 'exact',
+            head: true
+          })
+          .eq('client_id', state.client.client_id)
+          .eq('status', 'active'),
 
-    const { count, error } = await sb
-      .from('client_knowledge_items')
-      .select('id', {
-        count: 'exact',
-        head: true
-      })
-      .eq('client_id', clientId)
-      .eq('status', 'active');
+        db
+          .from('offers')
+          .select('id', {
+            count: 'exact',
+            head: true
+          })
+          .eq('client_id', state.client.client_id)
+          .eq('status', 'active')
+      ]);
 
-    if (error) {
-      console.warn(
-        '[GLIME AI Settings] Knowledge count unavailable:',
-        error
-      );
-
-      return null;
+    if (knowledgeResult.error) {
+      throw knowledgeResult.error;
     }
 
-    return Number(count || 0);
-  }
-
-  async function loadOffersCount() {
-    const sb = getSupabase();
-
-    const { count, error } = await sb
-      .from('offers')
-      .select('id', {
-        count: 'exact',
-        head: true
-      })
-      .eq('client_id', clientId)
-      .eq('status', 'active');
-
-    if (error) {
-      console.warn(
-        '[GLIME AI Settings] Offers count unavailable:',
-        error
-      );
-
-      return null;
+    if (offersResult.error) {
+      throw offersResult.error;
     }
 
-    return Number(count || 0);
+    context = {
+      knowledge: knowledgeResult.count || 0,
+      offers: offersResult.count || 0
+    };
   }
 
-  function findModuleRoot() {
-    return (
-      document.querySelector('[data-settings-module="ai"]') ||
-      document.getElementById('settings-ai-module') ||
-      document.querySelector('.settings-ai-module')
-    );
-  }
-
-  function channelStatus(channel) {
-    const row = channelRows.find(
+  function attached(channel) {
+    const row = channels.find(
       item => item.channel === channel
     );
 
-    return row?.enabled === true;
+    return row
+      ? row.enabled !== false
+      : false;
   }
 
-  function render(root, knowledgeCount, offersCount) {
-    if (!root) {
-      console.warn(
-        '[GLIME AI Settings] AI module container not found.'
+  function switchHtml(field, checked) {
+    return `
+      <label class="sw">
+        <input
+          type="checkbox"
+          data-ai-field="${esc(field)}"
+          ${checked ? 'checked' : ''}
+        >
+        <span></span>
+      </label>
+    `;
+  }
+
+  async function save(button, container) {
+    if (!container || !brain) {
+      return;
+    }
+
+    const languageEl =
+      container.querySelector(
+        '[data-ai-field="language"]'
+      );
+
+    const toneEl =
+      container.querySelector(
+        '[data-ai-field="tone"]'
+      );
+
+    const statusEl =
+      container.querySelector(
+        '[data-ai-field="status"]'
+      );
+
+    const salesInstructionsEl =
+      container.querySelector(
+        '[data-ai-field="sales_instructions"]'
+      );
+
+    const knowledgeEl =
+      container.querySelector(
+        '[data-ai-field="knowledge_enabled"]'
+      );
+
+    const memoryEl =
+      container.querySelector(
+        '[data-ai-field="conversation_memory_enabled"]'
+      );
+
+    const leadContextEl =
+      container.querySelector(
+        '[data-ai-field="lead_context_enabled"]'
+      );
+
+    const language =
+      languageEl?.value.trim() || '';
+
+    const tone =
+      toneEl?.value.trim() || '';
+
+    if (!language || !tone) {
+      ui.toast(
+        'Language and tone are required.',
+        true
       );
       return;
     }
 
-    const isActive =
-      !brain || brain.status === 'active';
-
-    const language =
-      brain?.language || 'Auto';
-
-    const tone =
-      brain?.tone || 'Professional';
-
-    const knowledgeEnabled =
-      brain?.knowledge_enabled !== false;
-
-    const memoryEnabled =
-      brain?.conversation_memory_enabled !== false;
-
-    const leadContextEnabled =
-      brain?.lead_context_enabled !== false;
-
-    const salesInstructions =
-      brain?.sales_instructions || '';
-
-    const whatsappEnabled =
-      channelStatus('whatsapp');
-
-    const instagramEnabled =
-      channelStatus('instagram');
-
-    root.innerHTML = `
-      <div class="glime-ai-settings">
-
-        <div class="glime-ai-header">
-          <div>
-            <h2>AI</h2>
-            <p>
-              आपके सभी client-facing AI specialists के लिए
-              central AI context और behavior controls।
-            </p>
-          </div>
-
-          <div class="glime-ai-status-pill ${
-            isActive ? 'active' : 'paused'
-          }">
-            ${isActive ? 'AI Active' : 'AI Paused'}
-          </div>
-        </div>
-
-        <div class="glime-ai-card">
-
-          <div class="glime-ai-card-header">
-            <div>
-              <h3>AI Status</h3>
-              <p>
-                Client AI brain को active या paused रखें।
-              </p>
-            </div>
-          </div>
-
-          <div class="glime-ai-field">
-
-            <label class="glime-ai-switch-row">
-
-              <span>
-                <strong>AI enabled</strong>
-                <small>
-                  AI specialists को responses generate करने की अनुमति।
-                </small>
-              </span>
-
-              <input
-                id="glime-ai-status"
-                type="checkbox"
-                ${isActive ? 'checked' : ''}
-              >
-
-            </label>
-
-          </div>
-
-        </div>
-
-
-        <div class="glime-ai-card">
-
-          <div class="glime-ai-card-header">
-            <div>
-              <h3>Language & Tone</h3>
-              <p>
-                AI बातचीत में आपकी पसंद का communication style।
-              </p>
-            </div>
-          </div>
-
-          <div class="glime-ai-grid">
-
-            <div class="glime-ai-field">
-              <label for="glime-ai-language">
-                Language
-              </label>
-
-              <input
-                id="glime-ai-language"
-                type="text"
-                value="${escapeHtml(language)}"
-                placeholder="Auto"
-              >
-            </div>
-
-            <div class="glime-ai-field">
-              <label for="glime-ai-tone">
-                Tone
-              </label>
-
-              <input
-                id="glime-ai-tone"
-                type="text"
-                value="${escapeHtml(tone)}"
-                placeholder="Professional"
-              >
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="glime-ai-card">
-
-          <div class="glime-ai-card-header">
-            <div>
-              <h3>Services & Client Knowledge</h3>
-              <p>
-                Services और saved business knowledge को
-                AI context में इस्तेमाल करें।
-              </p>
-            </div>
-          </div>
-
-          <label class="glime-ai-switch-row">
-
-            <span>
-              <strong>Use Services & Client Knowledge</strong>
-              <small>
-                Active services/offers और client knowledge को
-                AI context में उपलब्ध कराएँ।
-              </small>
-            </span>
-
-            <input
-              id="glime-ai-knowledge"
-              type="checkbox"
-              ${knowledgeEnabled ? 'checked' : ''}
-            >
-
-          </label>
-
-          <div class="glime-ai-context-stats">
-
-            <div class="glime-ai-stat">
-              <span>Active Knowledge</span>
-              <strong>
-                ${
-                  knowledgeCount === null
-                    ? '—'
-                    : knowledgeCount
-                }
-              </strong>
-            </div>
-
-            <div class="glime-ai-stat">
-              <span>Active Offers</span>
-              <strong>
-                ${
-                  offersCount === null
-                    ? '—'
-                    : offersCount
-                }
-              </strong>
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="glime-ai-card">
-
-          <div class="glime-ai-card-header">
-            <div>
-              <h3>Conversation Memory</h3>
-              <p>
-                AI को previous conversation context उपलब्ध हो।
-              </p>
-            </div>
-          </div>
-
-          <label class="glime-ai-switch-row">
-
-            <span>
-              <strong>Conversation Memory</strong>
-              <small>
-                Conversation history से relevant context use करें।
-              </small>
-            </span>
-
-            <input
-              id="glime-ai-memory"
-              type="checkbox"
-              ${memoryEnabled ? 'checked' : ''}
-            >
-
-          </label>
-
-        </div>
-
-
-        <div class="glime-ai-card">
-
-          <div class="glime-ai-card-header">
-            <div>
-              <h3>Lead Context</h3>
-              <p>
-                AI को lead/customer context उपलब्ध हो।
-              </p>
-            </div>
-          </div>
-
-          <label class="glime-ai-switch-row">
-
-            <span>
-              <strong>Lead Context</strong>
-              <small>
-                Lead information को AI conversation context में use करें।
-              </small>
-            </span>
-
-            <input
-              id="glime-ai-lead-context"
-              type="checkbox"
-              ${leadContextEnabled ? 'checked' : ''}
-            >
-
-          </label>
-
-        </div>
-
-
-        <div class="glime-ai-card">
-
-          <div class="glime-ai-card-header">
-            <div>
-              <h3>Sales Instructions</h3>
-              <p>
-                अपने business के अनुसार AI को अतिरिक्त sales guidance दें।
-              </p>
-            </div>
-          </div>
-
-          <div class="glime-ai-field">
-
-            <textarea
-              id="glime-ai-sales-instructions"
-              rows="7"
-              placeholder="उदाहरण: ग्राहक को पहले उसकी आवश्यकता समझने में मदद करें..."
-            >${escapeHtml(salesInstructions)}</textarea>
-
-          </div>
-
-        </div>
-
-
-        <div class="glime-ai-card">
-
-          <div class="glime-ai-card-header">
-            <div>
-              <h3>Central AI Brain</h3>
-              <p>
-                WhatsApp और Instagram एक ही client AI context से जुड़े हैं।
-              </p>
-            </div>
-          </div>
-
-          <div class="glime-ai-channel-grid">
-
-            <div class="glime-ai-channel">
-
-              <div>
-                <strong>WhatsApp</strong>
-                <small>
-                  Central Client AI Brain
-                </small>
-              </div>
-
-              <span class="${
-                whatsappEnabled ? 'connected' : 'disabled'
-              }">
-                ${
-                  whatsappEnabled
-                    ? 'Enabled'
-                    : 'Not Enabled'
-                }
-              </span>
-
-            </div>
-
-
-            <div class="glime-ai-channel">
-
-              <div>
-                <strong>Instagram</strong>
-                <small>
-                  Central Client AI Brain
-                </small>
-              </div>
-
-              <span class="${
-                instagramEnabled ? 'connected' : 'disabled'
-              }">
-                ${
-                  instagramEnabled
-                    ? 'Enabled'
-                    : 'Not Enabled'
-                }
-              </span>
-
-            </div>
-
-          </div>
-
-          <div class="glime-ai-info">
-            Provider, Model, Core System Instructions और
-            Safety configuration GLIME द्वारा managed हैं।
-          </div>
-
-        </div>
-
-
-        <div class="glime-ai-actions">
-
-          <button
-            type="button"
-            id="glime-ai-save"
-            class="glime-ai-save-btn"
-          >
-            Save AI Settings
-          </button>
-
-          <span
-            id="glime-ai-save-status"
-            class="glime-ai-save-status"
-          ></span>
-
-        </div>
-
-      </div>
-    `;
-
-    bindEvents(root);
-  }
-
-  function setStatus(message, type) {
-    const el = document.getElementById(
-      'glime-ai-save-status'
-    );
-
-    if (!el) return;
-
-    el.textContent = message;
-
-    el.className =
-      'glime-ai-save-status ' +
-      (type || '');
-  }
-
-  async function saveSettings(root) {
-    const sb = getSupabase();
-
-    if (!sb || !clientId) {
-      throw new Error(
-        'Supabase client or client ID unavailable.'
-      );
-    }
-
-    const statusEl =
-      document.getElementById('glime-ai-status');
-
-    const languageEl =
-      document.getElementById('glime-ai-language');
-
-    const toneEl =
-      document.getElementById('glime-ai-tone');
-
-    const knowledgeEl =
-      document.getElementById('glime-ai-knowledge');
-
-    const memoryEl =
-      document.getElementById('glime-ai-memory');
-
-    const leadContextEl =
-      document.getElementById('glime-ai-lead-context');
-
-    const salesInstructionsEl =
-      document.getElementById(
-        'glime-ai-sales-instructions'
-      );
-
     const payload = {
-      status: statusEl?.checked
-        ? 'active'
-        : 'paused',
+      status:
+        statusEl?.value === 'paused'
+          ? 'paused'
+          : 'active',
 
-      language:
-        languageEl?.value.trim() || 'Auto',
+      language,
 
-      tone:
-        toneEl?.value.trim() || 'Professional',
+      tone,
+
+      sales_instructions:
+        salesInstructionsEl?.value.trim() || '',
 
       knowledge_enabled:
         knowledgeEl?.checked === true,
@@ -641,210 +188,575 @@
       lead_context_enabled:
         leadContextEl?.checked === true,
 
-      sales_instructions:
-        salesInstructionsEl?.value || ''
+      updated_by:
+        state.session.user.id,
+
+      updated_at:
+        new Date().toISOString()
     };
 
-    setStatus('Saving...', 'saving');
+    button.disabled = true;
+    button.textContent = 'Saving...';
 
-    const { data, error } = await sb
-      .from('client_ai_brains')
-      .update(payload)
-      .eq('client_id', clientId)
-      .select([
-        'id',
-        'client_id',
-        'brain_key',
-        'name',
-        'status',
-        'language',
-        'tone',
-        'system_instructions',
-        'sales_instructions',
-        'safety_instructions',
-        'knowledge_enabled',
-        'conversation_memory_enabled',
-        'lead_context_enabled',
-        'created_at',
-        'updated_at'
-      ].join(','))
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (!data) {
-      throw new Error(
-        'AI settings could not be updated. No matching client AI brain found.'
-      );
-    }
-
-    brain = data;
-
-    setStatus(
-      'AI settings saved successfully.',
-      'success'
-    );
-
-    setTimeout(() => {
-      setStatus('', '');
-    }, 3000);
-  }
-
-  function bindEvents(root) {
-    const saveButton =
-      root.querySelector('#glime-ai-save');
-
-    if (!saveButton) return;
-
-    saveButton.addEventListener(
-      'click',
-      async () => {
-
-        saveButton.disabled = true;
-
-        try {
-          await saveSettings(root);
-        } catch (error) {
-
-          console.error(
-            '[GLIME AI Settings] Save failed:',
-            error
-          );
-
-          setStatus(
-            error?.message ||
-              'AI settings save failed.',
-            'error'
-          );
-
-        } finally {
-          saveButton.disabled = false;
-        }
-
-      }
-    );
-  }
-
-  async function ensureBrainIfMissing() {
-    if (brain) return brain;
-
-    const sb = getSupabase();
-
-    /*
-     * We intentionally do NOT create a new function/table.
-     * Existing client AI brain must already exist.
-     *
-     * If the brain is missing, the Settings page reports it
-     * instead of silently creating another architecture.
-     */
-
-    return null;
-  }
-
-  async function init() {
     try {
+      const {
+        data,
+        error
+      } = await db
+        .from('client_ai_brains')
+        .update(payload)
+        .eq('id', brain.id)
+        .eq(
+          'client_id',
+          state.client.client_id
+        )
+        .select(
+          'id,client_id,brain_key,name,status,language,tone,sales_instructions,knowledge_enabled,conversation_memory_enabled,lead_context_enabled,created_at,updated_at'
+        )
+        .single();
 
-      supabaseClient = getSupabase();
-
-      if (!supabaseClient) {
-        throw new Error(
-          'Supabase client is not available.'
-        );
+      if (error) {
+        throw error;
       }
 
-      clientId = await resolveClientId();
+      brain = data;
 
-      await loadBrain();
-
-      await ensureBrainIfMissing();
-
-      await loadChannels();
-
-      const [
-        knowledgeCount,
-        offersCount
-      ] = await Promise.all([
-        loadKnowledgeCount(),
-        loadOffersCount()
-      ]);
-
-      const root = findModuleRoot();
-
-      if (!root) {
-        throw new Error(
-          'AI Settings module container was not found.'
-        );
-      }
-
-      render(
-        root,
-        knowledgeCount,
-        offersCount
+      ui.toast(
+        'AI settings saved successfully.'
       );
+
+      render(container);
 
     } catch (error) {
-
       console.error(
-        '[GLIME AI Settings] Initialization failed:',
+        '[GLIME AI Settings] Save error:',
         error
       );
 
-      const root = findModuleRoot();
+      ui.toast(
+        error?.message ||
+          'Could not save AI settings.',
+        true
+      );
 
-      if (root) {
-        root.innerHTML = `
-          <div class="glime-ai-error">
-            <strong>AI Settings could not be loaded.</strong>
-            <p>
-              ${escapeHtml(
-                error?.message ||
-                'Unknown error'
-              )}
-            </p>
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Save AI settings';
+    }
+  }
+
+  function render(container) {
+    if (!brain) {
+      container.innerHTML = `
+        <div class="section-head">
+          <h2>AI</h2>
+          <p>Central Client AI Brain</p>
+        </div>
+
+        <div class="error">
+          Central Client AI Brain is not initialized
+          for this client.
+        </div>
+      `;
+
+      return;
+    }
+
+    const isActive =
+      brain.status === 'active';
+
+    container.innerHTML = `
+      <div class="section-head">
+        <h2>AI</h2>
+
+        <p>
+          One central Client AI Brain for the
+          client-facing AI layer.
+          Provider and model selection stay
+          under GLIME control.
+        </p>
+      </div>
+
+
+      <!-- AI BRAIN -->
+
+      <div
+        class="channel-card"
+        data-ai-root
+      >
+
+        <div class="channel-head">
+
+          <div class="channel-name">
+            🧠 Client AI Brain
+          </div>
+
+          <span
+            class="badge ${
+              isActive ? 'on' : 'off'
+            }"
+          >
+            ${
+              isActive
+                ? '● Active'
+                : 'Paused'
+            }
+          </span>
+
+        </div>
+
+
+        <!-- STATUS -->
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>AI status</b>
+
+            <small>
+              Central Client AI Brain profile status.
+            </small>
+
+          </div>
+
+          <select
+            class="select"
+            data-ai-field="status"
+          >
+
+            <option
+              value="active"
+              ${
+                isActive
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Active
+            </option>
+
+            <option
+              value="paused"
+              ${
+                !isActive
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Paused
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- LANGUAGE -->
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>Language</b>
+
+            <small>
+              Preferred response language
+              for the central AI profile.
+            </small>
+
+          </div>
+
+          <input
+            class="select"
+            style="min-width:180px"
+            data-ai-field="language"
+            value="${esc(
+              brain.language || ''
+            )}"
+            placeholder="Auto"
+          >
+
+        </div>
+
+
+        <!-- TONE -->
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>Tone</b>
+
+            <small>
+              Business-facing communication tone.
+            </small>
+
+          </div>
+
+          <input
+            class="select"
+            style="min-width:180px"
+            data-ai-field="tone"
+            value="${esc(
+              brain.tone || ''
+            )}"
+            placeholder="Professional"
+          >
+
+        </div>
+
+
+        <!-- KNOWLEDGE -->
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>
+              Services & Client Knowledge
+            </b>
+
+            <small>
+              Existing business knowledge
+              setting in the central AI profile.
+            </small>
+
+          </div>
+
+          ${switchHtml(
+            'knowledge_enabled',
+            brain.knowledge_enabled === true
+          )}
+
+        </div>
+
+
+        <!-- MEMORY -->
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>
+              Conversation Memory
+            </b>
+
+            <small>
+              Existing central AI memory setting.
+            </small>
+
+          </div>
+
+          ${switchHtml(
+            'conversation_memory_enabled',
+            brain.conversation_memory_enabled === true
+          )}
+
+        </div>
+
+
+        <!-- LEAD CONTEXT -->
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>
+              Lead Context
+            </b>
+
+            <small>
+              Existing central AI lead/customer
+              context setting.
+            </small>
+
+          </div>
+
+          ${switchHtml(
+            'lead_context_enabled',
+            brain.lead_context_enabled === true
+          )}
+
+        </div>
+
+
+        <!-- SALES INSTRUCTIONS -->
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>
+              Sales Instructions
+            </b>
+
+            <small>
+              Business-specific sales guidance.
+              Core system and safety instructions
+              stay under GLIME control.
+            </small>
+
+          </div>
+
+          <textarea
+            data-ai-field="sales_instructions"
+            style="
+              width:min(100%,520px);
+              min-height:120px;
+              resize:vertical;
+              background:var(--surf2);
+              color:var(--tx);
+              border:1px solid var(--bd);
+              border-radius:10px;
+              padding:10px;
+              outline:none
+            "
+            placeholder="Describe your business-specific sales guidance..."
+          >${esc(
+            brain.sales_instructions || ''
+          )}</textarea>
+
+        </div>
+
+
+        <!-- SAVE -->
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            data-ai-save
+          >
+            Save AI settings
+          </button>
+
+        </div>
+
+
+        <p class="note">
+          Provider, model, core system instructions
+          and safety controls are managed by GLIME
+          and are not editable here.
+        </p>
+
+      </div>
+
+
+      <!-- CENTRAL CHANNELS -->
+
+      <div class="channel-card">
+
+        <div class="channel-head">
+
+          <div class="channel-name">
+            🔗 Central AI channels
+          </div>
+
+          <span class="badge">
+            Existing brain links
+          </span>
+
+        </div>
+
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>WhatsApp</b>
+
+            <small>
+              Attached to the same Client AI Brain.
+              Channel on/off behaviour remains in
+              Channels.
+            </small>
+
+          </div>
+
+          <span
+            class="badge ${
+              attached('whatsapp')
+                ? 'on'
+                : 'off'
+            }"
+          >
+            ${
+              attached('whatsapp')
+                ? '● Attached'
+                : 'Not attached'
+            }
+          </span>
+
+        </div>
+
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>Instagram</b>
+
+            <small>
+              Attached to the same Client AI Brain.
+              Channel on/off behaviour remains in
+              Channels.
+            </small>
+
+          </div>
+
+          <span
+            class="badge ${
+              attached('instagram')
+                ? 'on'
+                : 'off'
+            }"
+          >
+            ${
+              attached('instagram')
+                ? '● Attached'
+                : 'Not attached'
+            }
+          </span>
+
+        </div>
+
+
+        <p class="note">
+          Voice AI is intentionally outside
+          the central Settings AI module for now.
+        </p>
+
+      </div>
+
+
+      <!-- BUSINESS CONTEXT -->
+
+      <div class="channel-card">
+
+        <div class="channel-head">
+
+          <div class="channel-name">
+            📚 Central business context
+          </div>
+
+          <span class="badge on">
+            ● Existing data
+          </span>
+
+        </div>
+
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>
+              Active client knowledge
+            </b>
+
+            <small>
+              Existing Client Knowledge items
+              from the Services knowledge layer.
+            </small>
+
+          </div>
+
+          <span class="badge on">
+            ${context.knowledge} items
+          </span>
+
+        </div>
+
+
+        <div class="row">
+
+          <div class="row-info">
+
+            <b>
+              Active offers
+            </b>
+
+            <small>
+              Existing active business offers
+              from the catalog architecture.
+            </small>
+
+          </div>
+
+          <span class="badge on">
+            ${context.offers} offers
+          </span>
+
+        </div>
+
+
+        <p class="note">
+          Read-only. Services remains the source
+          of business knowledge and offers.
+        </p>
+
+      </div>
+    `;
+
+    const saveButton =
+      container.querySelector(
+        '[data-ai-save]'
+      );
+
+    if (saveButton) {
+      saveButton.onclick = () =>
+        save(saveButton, container);
+    }
+  }
+
+
+  /*
+   * IMPORTANT:
+   * Register using the exact API expected
+   * by the existing settings.html shell.
+   */
+
+  shell.register({
+    id: 'ai',
+
+    label: 'AI',
+
+    order: 20,
+
+    render: async ({ container }) => {
+
+      container.innerHTML =
+        '<div class="loading">Loading AI settings…</div>';
+
+      try {
+
+        await Promise.all([
+          loadBrain(),
+          loadChannels(),
+          loadContext()
+        ]);
+
+        render(container);
+
+      } catch (error) {
+
+        console.error(
+          '[GLIME AI Settings] Load error:',
+          error
+        );
+
+        container.innerHTML = `
+          <div class="error">
+            Could not load AI settings.
+            ${esc(
+              error?.message ||
+              'Unknown error'
+            )}
           </div>
         `;
       }
     }
-  }
-
-  /*
-   * Register module with existing Settings shell.
-   */
-  function register() {
-
-    if (
-      window.GLIME_SETTINGS &&
-      typeof window.GLIME_SETTINGS.register ===
-        'function'
-    ) {
-
-      window.GLIME_SETTINGS.register(
-        MODULE_ID,
-        {
-          init
-        }
-      );
-
-      return true;
-    }
-
-    return false;
-  }
-
-  /*
-   * Register immediately if shell is already ready.
-   * Otherwise wait for DOM.
-   */
-  if (!register()) {
-
-    document.addEventListener(
-      'DOMContentLoaded',
-      function () {
-        register();
-      },
-      { once: true }
-    );
-
-  }
+  });
 
 })();
