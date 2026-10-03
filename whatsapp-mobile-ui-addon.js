@@ -1,414 +1,383 @@
 /*
- * GLIME — WhatsApp Mobile UI Add-on
- * ----------------------------------
- * Purpose:
- *   Mobile-first navigation/presentation only.
+ * GLIME — WhatsApp Mobile UI Add-on (SAFE VERSION)
+ * -------------------------------------------------
+ * UI/navigation only.
  *
- * Does NOT:
- *   - change Supabase queries
- *   - change WhatsApp API calls
- *   - change AI generation/send logic
- *   - change handoff logic
- *   - change conversation/message data
+ * Does NOT modify:
+ * - Supabase/database logic
+ * - WhatsApp API logic
+ * - AI generation/send logic
+ * - approval logic
+ * - handoff logic
+ * - conversation/message data
  *
- * Expected placement:
- *   Load this file AFTER:
- *     whatsapp-sales-specialist.js
- *     whatsapp-sales-context-addon.js
- *     whatsapp-handoff-addon.js
+ * Load AFTER:
+ *   whatsapp-sales-specialist.js
+ *   whatsapp-sales-context-addon.js
+ *   whatsapp-handoff-addon.js
  *
- * The addon automatically loads:
+ * CSS file expected beside this file:
  *   whatsapp-mobile-ui-addon.css
  */
-
 (function () {
   "use strict";
 
-  const MOBILE_BREAKPOINT = 720;
-  const CSS_FILE = "whatsapp-mobile-ui-addon.css";
-
-  function loadCssOnce() {
-    const existing = document.querySelector(
-      'link[data-glime-mobile-wa-css="1"]'
-    );
-
-    if (existing) return;
-
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = CSS_FILE;
-    link.dataset.glimeMobileWaCss = "1";
-    document.head.appendChild(link);
-  }
+  var BREAKPOINT = 720;
+  var CSS_FILE = "whatsapp-mobile-ui-addon.css";
+  var selectedId = null;
+  var started = false;
 
   function isMobile() {
     return window.matchMedia(
-      `(max-width:${MOBILE_BREAKPOINT}px)`
+      "(max-width: " + BREAKPOINT + "px)"
     ).matches;
   }
 
-  function getShell() {
-    return document.querySelector(".specialist-shell");
+  function shell() {
+    return document.querySelector(
+      ".specialist-shell"
+    );
   }
 
-  function getConversationPanel() {
-    return document.querySelector(".conversation-panel");
-  }
-
-  function getChatPanel() {
-    return document.querySelector(".chat-panel");
-  }
-
-  function getChatView() {
-    return document.getElementById("chatView");
-  }
-
-  function getChatEmpty() {
-    return document.getElementById("chatEmpty");
-  }
-
-  function getActiveConversation() {
+  function activeConversation() {
     return document.querySelector(
       ".conversation-item.active"
     );
   }
 
-  function setMobileChatOpen(open) {
-    const shell = getShell();
-    if (!shell) return;
-
-    if (!isMobile()) {
-      shell.classList.remove("mobile-chat-open");
+  function addCss() {
+    if (
+      document.querySelector(
+        'link[data-glime-wa-mobile="1"]'
+      )
+    ) {
       return;
     }
 
-    shell.classList.toggle(
-      "mobile-chat-open",
-      Boolean(open)
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = CSS_FILE;
+    link.setAttribute(
+      "data-glime-wa-mobile",
+      "1"
     );
+
+    document.head.appendChild(link);
   }
 
-  function showInbox() {
-    setMobileChatOpen(false);
+  function setChat(open) {
+    var el = shell();
 
-    /*
-     * Keep the underlying selected conversation intact.
-     * This is navigation only; we do not alter application state.
-     */
-    window.setTimeout(function () {
-      const search = document.getElementById(
-        "conversationSearch"
+    if (!el) return;
+
+    if (!isMobile()) {
+      el.classList.remove(
+        "mobile-chat-open"
       );
+      return;
+    }
 
-      if (
-        isMobile() &&
-        search &&
-        !document.activeElement?.matches?.(
-          "input,textarea"
-        )
-      ) {
-        /* Intentionally no focus: avoids opening the mobile keyboard. */
-      }
-    }, 0);
+    if (open) {
+      el.classList.add(
+        "mobile-chat-open"
+      );
+    } else {
+      el.classList.remove(
+        "mobile-chat-open"
+      );
+    }
   }
 
-  function showChat() {
+  function goToChat() {
     if (!isMobile()) return;
 
-    const active = getActiveConversation();
+    if (!activeConversation()) return;
 
-    /*
-     * Only enter the chat screen when the existing specialist
-     * has actually selected a conversation.
-     */
-    if (!active) return;
-
-    setMobileChatOpen(true);
+    setChat(true);
   }
 
-  function ensureBackButton() {
-    const header = document.querySelector(".chat-header");
-    if (!header) return null;
+  function goToInbox() {
+    setChat(false);
+  }
 
-    let button = document.getElementById(
-      "glimeMobileWaBack"
-    );
+  function addBackButton() {
+    var header =
+      document.querySelector(
+        ".chat-header"
+      );
 
-    if (button) return button;
+    if (!header) return;
 
-    button = document.createElement("button");
+    var button =
+      document.getElementById(
+        "glimeMobileWaBack"
+      );
+
+    if (button) return;
+
+    button =
+      document.createElement(
+        "button"
+      );
+
     button.type = "button";
-    button.id = "glimeMobileWaBack";
-    button.className = "glime-wa-mobile-back";
+
+    button.id =
+      "glimeMobileWaBack";
+
+    button.className =
+      "glime-wa-mobile-back";
+
     button.setAttribute(
       "aria-label",
       "Back to conversations"
     );
-    button.title = "Back to conversations";
+
+    button.setAttribute(
+      "title",
+      "Back to conversations"
+    );
+
     button.textContent = "‹";
 
-    header.insertBefore(button, header.firstChild);
+    header.insertBefore(
+      button,
+      header.firstChild
+    );
 
-    button.addEventListener("click", function () {
-      showInbox();
-    });
+    button.addEventListener(
+      "click",
+      function (event) {
+        event.preventDefault();
+        event.stopPropagation();
 
-    return button;
+        goToInbox();
+      }
+    );
   }
 
-  function getOrCreateContextButton() {
-    const header = document.querySelector(".chat-header");
-    if (!header) return null;
-
+  function prepareContextButton() {
     /*
-     * Prefer the existing context addon button if it already exists.
-     * This preserves its existing data-loading behavior.
+     * whatsapp-sales-context-addon.js owns
+     * the actual context action.
+     *
+     * We only make its existing button
+     * mobile-friendly.
      */
-    const existing = document.getElementById(
-      "glimeWaContextTrigger"
-    );
 
-    if (existing) {
-      existing.classList.add(
-        "glime-wa-mobile-context-button"
+    var button =
+      document.getElementById(
+        "glimeWaContextTrigger"
       );
-      existing.textContent = "Context";
-      return existing;
-    }
-
-    /*
-     * Fallback: create a small trigger that opens the existing
-     * context modal created by whatsapp-sales-context-addon.js.
-     */
-    let button = document.getElementById(
-      "glimeMobileWaContext"
-    );
-
-    if (button) return button;
-
-    button = document.createElement("button");
-    button.type = "button";
-    button.id = "glimeMobileWaContext";
-    button.className =
-      "ghost-btn glime-wa-mobile-context-button";
-    button.textContent = "Context";
-    button.setAttribute(
-      "aria-label",
-      "Open customer context"
-    );
-
-    button.addEventListener("click", function () {
-      const existingTrigger =
-        document.getElementById(
-          "glimeWaContextTrigger"
-        );
-
-      if (existingTrigger) {
-        existingTrigger.click();
-        return;
-      }
-
-      const modal = document.getElementById(
-        "glimeWaContextModal"
-      );
-
-      if (modal) {
-        modal.classList.remove("hidden");
-      }
-    });
-
-    header.appendChild(button);
-
-    return button;
-  }
-
-  function improveExistingContextTrigger() {
-    const button = getOrCreateContextButton();
 
     if (!button) return;
 
-    /*
-     * The existing context addon may be loaded slightly later.
-     * We keep this purely presentational.
-     */
     button.classList.add(
       "glime-wa-mobile-context-button"
     );
 
-    if (
-      button.id === "glimeWaContextTrigger" ||
-      button.id === "glimeMobileWaContext"
-    ) {
-      button.textContent = "Context";
-    }
-  }
+    button.textContent =
+      "Context";
 
-  function closeContextModal() {
-    const modal = document.getElementById(
-      "glimeWaContextModal"
+    button.setAttribute(
+      "aria-label",
+      "Open customer context"
     );
-
-    if (modal) {
-      modal.classList.add("hidden");
-    }
   }
 
-  function bindModalEscape() {
-    if (window.__glimeWaMobileEscapeBound) {
-      return;
-    }
-
-    window.__glimeWaMobileEscapeBound = true;
-
-    document.addEventListener("keydown", function (event) {
-      if (event.key !== "Escape") return;
-
-      const modal = document.getElementById(
-        "glimeWaContextModal"
+  function bindConversationList() {
+    var list =
+      document.getElementById(
+        "conversationList"
       );
-
-      if (modal && !modal.classList.contains("hidden")) {
-        closeContextModal();
-      }
-    });
-  }
-
-  function bindConversationClicks() {
-    const list = document.getElementById(
-      "conversationList"
-    );
 
     if (!list) return;
 
-    /*
-     * Event delegation means this continues working when the
-     * existing specialist rerenders conversation rows.
-     */
-    if (list.dataset.glimeMobileBound === "1") {
+    if (
+      list.getAttribute(
+        "data-glime-wa-mobile-bound"
+      ) === "1"
+    ) {
       return;
     }
 
-    list.dataset.glimeMobileBound = "1";
+    list.setAttribute(
+      "data-glime-wa-mobile-bound",
+      "1"
+    );
 
-    list.addEventListener("click", function (event) {
-      const item = event.target.closest(
-        ".conversation-item"
-      );
+    /*
+     * Event delegation works even when
+     * the main specialist replaces rows.
+     */
 
-      if (!item) return;
+    list.addEventListener(
+      "click",
+      function (event) {
+        var item =
+          event.target.closest(
+            ".conversation-item"
+          );
 
-      /*
-       * Let the original click handler finish first.
-       * It owns selection, message loading and data state.
-       */
-      window.setTimeout(function () {
-        showChat();
-        improveExistingContextTrigger();
-      }, 0);
-    });
+        if (!item) return;
+
+        /*
+         * Original specialist handler
+         * gets time to finish first.
+         */
+
+        window.setTimeout(
+          function () {
+            goToChat();
+
+            addBackButton();
+
+            prepareContextButton();
+          },
+          0
+        );
+      }
+    );
   }
 
-  function syncFromExistingSelection() {
+  function syncSelection() {
     if (!isMobile()) {
-      setMobileChatOpen(false);
+      setChat(false);
+
+      selectedId = null;
+
       return;
     }
 
-    const active = getActiveConversation();
+    var item =
+      activeConversation();
 
-    /*
-     * The main specialist owns selection. We only mirror its
-     * rendered active row into mobile navigation state.
-     */
-    if (active) {
-      showChat();
+    if (!item) return;
+
+    var id =
+      item.getAttribute(
+        "data-id"
+      ) || "active";
+
+    if (id !== selectedId) {
+      selectedId = id;
+
+      setChat(true);
+
+      addBackButton();
+
+      prepareContextButton();
     }
   }
 
-  function syncUi() {
-    loadCssOnce();
-    ensureBackButton();
-    improveExistingContextTrigger();
-    bindConversationClicks();
-    bindModalEscape();
-    syncFromExistingSelection();
-  }
-
-  function startObserver() {
-    if (window.__glimeWaMobileObserverStarted) {
+  function closeContextOnEscape() {
+    if (
+      window.__glimeWaMobileEscapeBound
+    ) {
       return;
     }
 
-    window.__glimeWaMobileObserverStarted = true;
+    window.__glimeWaMobileEscapeBound =
+      true;
 
-    /*
-     * The specialist dynamically renders:
-     *   - conversation rows
-     *   - chat header
-     *   - context trigger
-     *
-     * We observe only DOM structure. No application data is changed.
-     */
-    const observer = new MutationObserver(function () {
-      syncUi();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    window.__glimeWaMobileObserver = observer;
-  }
-
-  function bindResize() {
-    if (window.__glimeWaMobileResizeBound) {
-      return;
-    }
-
-    window.__glimeWaMobileResizeBound = true;
-
-    window.addEventListener(
-      "resize",
-      function () {
-        if (!isMobile()) {
-          setMobileChatOpen(false);
-          closeContextModal();
+    document.addEventListener(
+      "keydown",
+      function (event) {
+        if (
+          event.key !== "Escape"
+        ) {
           return;
         }
 
-        syncUi();
-      },
+        var modal =
+          document.getElementById(
+            "glimeWaContextModal"
+          );
+
+        if (!modal) return;
+
+        if (
+          !modal.classList.contains(
+            "hidden"
+          )
+        ) {
+          modal.classList.add(
+            "hidden"
+          );
+        }
+      }
+    );
+  }
+
+  function handleResize() {
+    if (!isMobile()) {
+      setChat(false);
+      return;
+    }
+
+    syncSelection();
+
+    addBackButton();
+
+    prepareContextButton();
+  }
+
+  function start() {
+    if (started) return;
+
+    started = true;
+
+    addCss();
+
+    bindConversationList();
+
+    closeContextOnEscape();
+
+    syncSelection();
+
+    window.addEventListener(
+      "resize",
+      handleResize,
       { passive: true }
     );
-  }
-
-  function boot() {
-    loadCssOnce();
-    syncUi();
-    startObserver();
-    bindResize();
 
     /*
-     * A few delayed syncs cover script-order timing without
-     * touching the original specialist implementation.
+     * Small, low-frequency state check only.
+     *
+     * No MutationObserver.
+     * No DOM rewriting loop.
      */
-    window.setTimeout(syncUi, 150);
-    window.setTimeout(syncUi, 500);
-    window.setTimeout(syncUi, 1000);
+
+    window.setInterval(
+      function () {
+        if (!isMobile()) return;
+
+        bindConversationList();
+
+        syncSelection();
+
+        addBackButton();
+
+        prepareContextButton();
+      },
+      1000
+    );
 
     console.log(
-      "[GLIME WA Mobile] UI addon loaded."
+      "[GLIME WA Mobile] Safe UI addon loaded."
     );
   }
 
-  if (document.readyState === "loading") {
+  if (
+    document.readyState ===
+    "loading"
+  ) {
     document.addEventListener(
       "DOMContentLoaded",
-      boot,
+      start,
       { once: true }
     );
   } else {
-    boot();
+    start();
   }
 })();
