@@ -14,6 +14,8 @@
  * - MutationObserver इस्तेमाल नहीं करती
  * - setInterval इस्तेमाल नहीं करती
  *
+ * यह केवल mobile UI को WhatsApp-style बनाती है।
+ *
  * इसे HTML में सबसे LAST में load करें:
  *
  * whatsapp-sales-specialist.js
@@ -149,8 +151,11 @@
         }
 
         /*
-         * Main specialist container
+         * ----------------------------------------
+         * MAIN SPECIALIST CONTAINER
+         * ----------------------------------------
          */
+
         .specialist-shell {
           display: block !important;
           width: 100%;
@@ -173,9 +178,11 @@
         }
 
         /*
-         * Mobile default:
-         * Inbox दिखाई देगी
+         * ----------------------------------------
+         * MOBILE DEFAULT = INBOX
+         * ----------------------------------------
          */
+
         .specialist-shell:not(.mobile-chat-open)
           .conversation-panel {
           display: flex !important;
@@ -187,9 +194,11 @@
         }
 
         /*
-         * Conversation खोलने के बाद:
-         * केवल Chat दिखाई देगा
+         * ----------------------------------------
+         * OPEN CONVERSATION = FULL SCREEN CHAT
+         * ----------------------------------------
          */
+
         .specialist-shell.mobile-chat-open
           .conversation-panel {
           display: none !important;
@@ -201,16 +210,21 @@
         }
 
         /*
-         * Desktop context sidebar mobile पर hidden.
-         * Existing context addon अपना modal इस्तेमाल करेगा।
+         * ----------------------------------------
+         * CONTEXT SIDEBAR
+         * ----------------------------------------
          */
+
         .context-panel {
           display: none !important;
         }
 
         /*
+         * ----------------------------------------
          * INBOX
+         * ----------------------------------------
          */
+
         .conversation-panel {
           padding: 9px !important;
           overflow: hidden !important;
@@ -276,8 +290,11 @@
         }
 
         /*
-         * CHAT
+         * ----------------------------------------
+         * CHAT CONTAINER
+         * ----------------------------------------
          */
+
         .chat-panel {
           position: relative;
           background: #071019;
@@ -288,6 +305,12 @@
           height: 100% !important;
           min-height: 0 !important;
         }
+
+        /*
+         * ----------------------------------------
+         * CHAT HEADER
+         * ----------------------------------------
+         */
 
         .chat-header {
           flex: 0 0 58px;
@@ -330,8 +353,11 @@
         }
 
         /*
-         * Mobile back button
+         * ----------------------------------------
+         * MOBILE BACK BUTTON
+         * ----------------------------------------
          */
+
         .glime-wa-mobile-back {
           width: 37px;
           height: 37px;
@@ -354,8 +380,11 @@
         }
 
         /*
-         * Existing Context button
+         * ----------------------------------------
+         * EXISTING CONTEXT BUTTON
+         * ----------------------------------------
          */
+
         #glimeWaContextTrigger {
           display: inline-flex !important;
           align-items: center;
@@ -375,33 +404,245 @@
         }
 
         /*
-         * MESSAGE LIST
+         * ========================================
+         * WHATSAPP-STYLE MESSAGE AREA
+         * ========================================
+         *
+         * यह केवल mobile chat के अंदर लागू होगा।
          */
+
         .message-list {
           min-height: 0 !important;
-          padding: 12px 9px 16px !important;
+
+          padding: 12px 8px 16px !important;
+
           overflow: auto !important;
+
           overscroll-behavior: contain;
+
           -webkit-overflow-scrolling: touch;
-        }
 
-        .message-row {
-          margin: 5px 0 !important;
-        }
+          /*
+           * WhatsApp-style warm beige wallpaper
+           */
+          background-color: #efeae2 !important;
 
-        .bubble {
-          max-width: 84% !important;
-          padding: 9px 10px !important;
-          border-radius: 13px !important;
-          font-size: .69rem !important;
-          line-height: 1.52 !important;
+          /*
+           * Subtle doodle-style pattern.
+           * यह custom pattern है, external image/API नहीं।
+           */
+          background-image:
+            radial-gradient(
+              circle at 10% 12%,
+              rgba(90,80,70,.075) 0 2px,
+              transparent 3px
+            ),
+
+            radial-gradient(
+              circle at 82% 16%,
+              rgba(90,80,70,.065) 0 3px,
+              transparent 4px
+            ),
+
+            radial-gradient(
+              circle at 24% 58%,
+              rgba(90,80,70,.06) 0 2px,
+              transparent 3px
+            ),
+
+            radial-gradient(
+              circle at 74% 72%,
+              rgba(90,80,70,.055) 0 3px,
+              transparent 4px
+            ),
+
+            linear-gradient(
+              45deg,
+              transparent 46%,
+              rgba(90,80,70,.028) 47%,
+              rgba(90,80,70,.028) 53%,
+              transparent 54%
+            ),
+
+            linear-gradient(
+              -45deg,
+              transparent 46%,
+              rgba(90,80,70,.022) 47%,
+              rgba(90,80,70,.022) 53%,
+              transparent 54%
+            );
+
+          background-size:
+            110px 110px,
+            170px 170px,
+            145px 145px,
+            190px 190px,
+            82px 82px,
+            105px 105px;
+
+          background-attachment: local;
         }
 
         /*
-         * COMPOSER
+         * ----------------------------------------
+         * MESSAGE ROW
+         * ----------------------------------------
+         *
+         * Bubble को stretch होने से रोकता है।
          */
+
+        .message-row {
+          display: flex !important;
+
+          width: 100% !important;
+
+          height: auto !important;
+
+          min-height: 0 !important;
+
+          margin: 3px 0 !important;
+
+          align-items: flex-start !important;
+        }
+
+        /*
+         * Incoming = LEFT
+         */
+
+        .message-row.inbound {
+          justify-content: flex-start !important;
+        }
+
+        /*
+         * Outgoing = RIGHT
+         */
+
+        .message-row.outbound {
+          justify-content: flex-end !important;
+        }
+
+        /*
+         * ----------------------------------------
+         * MESSAGE BUBBLE
+         * ----------------------------------------
+         *
+         * अब box सिर्फ अपने content जितना होगा।
+         */
+
+        .message-row .bubble {
+          display: inline-block !important;
+
+          width: fit-content !important;
+
+          max-width: 82% !important;
+
+          height: auto !important;
+
+          min-height: 0 !important;
+
+          flex: 0 1 auto !important;
+
+          align-self: flex-start !important;
+
+          padding: 6px 8px 5px !important;
+
+          border-radius: 8px !important;
+
+          font-size: .72rem !important;
+
+          line-height: 1.38 !important;
+
+          box-sizing: border-box !important;
+
+          word-break: break-word !important;
+
+          overflow-wrap: anywhere !important;
+
+          white-space: pre-wrap !important;
+
+          box-shadow:
+            0 1px 1px rgba(0,0,0,.08);
+
+          color: #111 !important;
+        }
+
+        /*
+         * ----------------------------------------
+         * INCOMING MESSAGE
+         * ----------------------------------------
+         */
+
+        .message-row.inbound .bubble {
+          margin-right: auto !important;
+
+          background: #ffffff !important;
+
+          border: 0 !important;
+
+          border-top-left-radius: 3px !important;
+
+          border-top-right-radius: 8px !important;
+
+          border-bottom-right-radius: 8px !important;
+
+          border-bottom-left-radius: 8px !important;
+        }
+
+        /*
+         * ----------------------------------------
+         * OUTGOING MESSAGE
+         * ----------------------------------------
+         */
+
+        .message-row.outbound .bubble {
+          margin-left: auto !important;
+
+          background: #d9fdd3 !important;
+
+          border: 0 !important;
+
+          border-top-left-radius: 8px !important;
+
+          border-top-right-radius: 3px !important;
+
+          border-bottom-right-radius: 8px !important;
+
+          border-bottom-left-radius: 8px !important;
+        }
+
+        /*
+         * ----------------------------------------
+         * MESSAGE TIME / STATUS
+         * ----------------------------------------
+         */
+
+        .message-row .bubble-meta {
+          display: inline-block !important;
+
+          margin-top: 2px !important;
+
+          margin-left: 6px !important;
+
+          color: #667781 !important;
+
+          font-size: .48rem !important;
+
+          line-height: 1 !important;
+
+          white-space: nowrap !important;
+
+          vertical-align: bottom !important;
+        }
+
+        /*
+         * ----------------------------------------
+         * COMPOSER
+         * ----------------------------------------
+         */
+
         .composer {
           flex: 0 0 auto;
+
           padding: 8px 8px
             calc(
               8px +
@@ -410,21 +651,29 @@
                 0px
               )
             ) !important;
+
           background: rgba(7,16,25,.98);
+
           position: relative;
+
           z-index: 6;
         }
 
         .composer textarea {
           min-height: 43px;
+
           max-height: 112px;
+
           padding: 9px 10px !important;
+
           font-size: .69rem !important;
+
           border-radius: 11px !important;
         }
 
         .composer-bottom {
           gap: 6px !important;
+
           margin-top: 6px !important;
         }
 
@@ -435,13 +684,17 @@
 
         .composer-bottom .ghost-btn {
           padding: 7px 8px !important;
+
           font-size: .55rem !important;
+
           white-space: nowrap;
         }
 
         .composer-bottom .primary-btn {
           padding: 7px 11px !important;
+
           font-size: .59rem !important;
+
           white-space: nowrap;
         }
 
@@ -449,28 +702,47 @@
           display: none !important;
         }
 
+        /*
+         * ----------------------------------------
+         * AI SUGGESTION
+         * ----------------------------------------
+         */
+
         .ai-suggestion {
           max-height: 130px;
+
           overflow: auto;
+
           margin-bottom: 7px;
+
           padding: 8px !important;
         }
 
         /*
-         * Context modal = bottom sheet
+         * ----------------------------------------
+         * CONTEXT MODAL = BOTTOM SHEET
+         * ----------------------------------------
          */
+
         #glimeWaContextModal {
           align-items: flex-end !important;
+
           justify-content: center !important;
+
           padding: 0 !important;
+
           background: rgba(0,0,0,.62) !important;
         }
 
         #glimeWaContextModal .modal-card {
           width: 100% !important;
+
           max-width: none !important;
+
           max-height: 82dvh !important;
+
           margin: 0 !important;
+
           padding: 16px 14px
             calc(
               16px +
@@ -479,57 +751,81 @@
                 0px
               )
             ) !important;
+
           border-radius: 20px 20px 0 0 !important;
+
           overflow: auto !important;
+
           border-bottom: 0 !important;
         }
 
         #glimeWaContextModal h2 {
           font-size: 1rem !important;
+
           margin: 4px 0 12px !important;
         }
 
         #glimeWaContextModal .modal-close {
           width: 35px;
+
           height: 35px;
+
           border-radius: 10px;
         }
 
         #glimeWaContextModal
           .glime-wa-context-modal-body {
           max-height: none !important;
+
           overflow: visible !important;
         }
 
         /*
-         * Existing empty state must not overlay
-         * the mobile chat.
+         * ----------------------------------------
+         * EMPTY STATE
+         * ----------------------------------------
          */
+
         .specialist-shell.mobile-chat-open
           #chatEmpty {
           display: none !important;
         }
+
+        /*
+         * ----------------------------------------
+         * TOUCH
+         * ----------------------------------------
+         */
 
         .specialist-shell button {
           touch-action: manipulation;
         }
       }
 
+      /*
+       * ----------------------------------------
+       * VERY SMALL PHONES
+       * ----------------------------------------
+       */
+
       @media (max-width: 380px) {
 
         #connectBtn {
           padding-left: 7px !important;
+
           padding-right: 7px !important;
+
           font-size: .56rem !important;
         }
 
         .chat-actions .ghost-btn {
           padding-left: 7px !important;
+
           padding-right: 7px !important;
         }
 
-        .bubble {
-          max-width: 88% !important;
+        .message-row .bubble {
+          max-width: 86% !important;
         }
       }
     `;
@@ -540,7 +836,11 @@
   }
 
   /*
-   * Back button is purely UI.
+   * ----------------------------------------
+   * MOBILE BACK BUTTON
+   * ----------------------------------------
+   *
+   * Pure UI.
    */
   function addBackButton() {
     var header =
@@ -596,6 +896,7 @@
       "click",
       function (event) {
         event.preventDefault();
+
         event.stopPropagation();
 
         setMobileChat(false);
@@ -604,8 +905,14 @@
   }
 
   /*
-   * Existing conversation list को ही use करता है।
-   * नया conversation selection system नहीं बनाता।
+   * ----------------------------------------
+   * EXISTING CONVERSATION LIST
+   * ----------------------------------------
+   *
+   * Existing selectConversation()
+   * को ही use करता है।
+   *
+   * नया selection system नहीं बनाता।
    */
   function bindConversationClicks() {
     var list =
@@ -633,6 +940,7 @@
     list.addEventListener(
       "click",
       function (event) {
+
         var item =
           event.target.closest(
             ".conversation-item"
@@ -647,7 +955,7 @@
          *
          * selectConversation(...)
          *
-         * उसके बाद हमारा UI switch होता है।
+         * फिर mobile UI switch होता है।
          */
         window.setTimeout(
           function () {
@@ -656,6 +964,7 @@
               isMobile() &&
               getActiveConversation()
             ) {
+
               setMobileChat(true);
 
               addBackButton();
@@ -668,9 +977,18 @@
     );
   }
 
+  /*
+   * ----------------------------------------
+   * MOBILE STATE
+   * ----------------------------------------
+   */
+
   function syncMobileState() {
+
     if (!isMobile()) {
+
       setMobileChat(false);
+
       return;
     }
 
@@ -681,12 +999,22 @@
     if (
       getActiveConversation()
     ) {
+
       setMobileChat(true);
+
       addBackButton();
     }
   }
 
+  /*
+   * ----------------------------------------
+   * ESCAPE
+   * ----------------------------------------
+   *
+   * Existing context modal को बंद करने के लिए।
+   */
   function bindEscape() {
+
     if (
       window.__glimeWaMobileEscapeBound
     ) {
@@ -718,6 +1046,7 @@
             "hidden"
           )
         ) {
+
           modal.classList.add(
             "hidden"
           );
@@ -726,7 +1055,14 @@
     );
   }
 
+  /*
+   * ----------------------------------------
+   * START
+   * ----------------------------------------
+   */
+
   function start() {
+
     if (started) {
       return;
     }
@@ -736,6 +1072,7 @@
     /*
      * केवल UI initialization.
      */
+
     injectStyles();
 
     addBackButton();
@@ -760,12 +1097,15 @@
   }
 
   /*
-   * यह main GLIME boot/auth को wait या modify नहीं करता।
+   * यह main GLIME boot/auth को
+   * wait या modify नहीं करता।
    */
+
   if (
     document.readyState ===
     "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       start,
@@ -773,7 +1113,9 @@
         once: true
       }
     );
+
   } else {
+
     start();
   }
 
