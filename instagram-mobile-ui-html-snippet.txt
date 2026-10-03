@@ -1,0 +1,16 @@
+<!-- instagram-sales-specialist.html
+Add these two lines AFTER the existing Instagram addon scripts,
+just before </body>.
+-->
+
+<script src="instagram-content-context-addon.js"></script>
+<script src="instagram-sales-qualification-addon.js"></script>
+
+<!-- NEW MOBILE UI ADD-ON -->
+<script src="instagram-mobile-ui-addon.js"></script>
+
+<!--
+The mobile add-on itself loads:
+instagram-mobile-ui-addon.css
+Do not add the CSS again manually.
+-->
