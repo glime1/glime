@@ -1,203 +1,888 @@
-/*
- * GLIME — Instagram Mobile UI Add-on
- * SAFE / SELF-CONTAINED VERSION
- *
- * UI ONLY.
- * - No Supabase/API/AI/auth calls
- * - Does not replace Instagram sales logic
- * - Uses existing conversation selection, message list and send controls
- * - Mobile navigation is an off-canvas menu
- * - Mobile chat is styled as a native DM-like conversation surface
- */
 (function () {
-  "use strict";
+  'use strict';
 
-  var BREAKPOINT = 720;
-  var started = false;
+  /*
+   * GLIME — Instagram Mobile UI Add-on
+   * SINGLE-FILE VERSION
+   *
+   * UI ONLY:
+   * - No Supabase calls
+   * - No AI calls
+   * - No Instagram API calls
+   * - No authentication changes
+   * - Does not replace existing Instagram sales logic
+   * - Mobile CSS is contained inside this file
+   */
 
-  function mobile() {
-    return window.matchMedia
-      ? window.matchMedia("(max-width:" + BREAKPOINT + "px)").matches
-      : window.innerWidth <= BREAKPOINT;
+  var BP = 720;
+  var CSS_ID = 'glime-instagram-mobile-ui-css-v2';
+  var MENU_ID = 'glime-instagram-mobile-menu-v2';
+
+  function isMobile() {
+    return window.innerWidth <= BP;
   }
 
-  function shell() {
-    return document.querySelector(".workspace");
-  }
-
-  function activeConversation() {
-    return document.querySelector(".conversation-item.active");
-  }
-
-  function setChat(open) {
-    var s = shell();
-
-    if (!s) {
+  function addStyles() {
+    if (document.getElementById(CSS_ID)) {
       return;
     }
 
-    if (!mobile()) {
-      s.classList.remove("ig-mobile-chat-open");
-      return;
-    }
+    var style = document.createElement('style');
 
-    s.classList.toggle("ig-mobile-chat-open", !!open);
+    style.id = CSS_ID;
+
+    style.textContent = `
+@media (max-width:720px){
+
+  html,
+  body{
+    margin:0!important;
+    width:100%!important;
+    min-height:100%!important;
+    overflow-x:hidden!important;
+    background:#fff!important;
+    color:#111!important;
   }
 
-  function injectCss() {
-    if (document.getElementById("glimeInstagramMobileCss")) {
-      return;
-    }
-
-    var link = document.createElement("link");
-
-    link.id = "glimeInstagramMobileCss";
-    link.rel = "stylesheet";
-    link.href = "instagram-mobile-ui-addon.css";
-
-    document.head.appendChild(link);
+  body{
+    font-family:Poppins,sans-serif!important;
   }
 
-  function addMenuButton() {
-    var topbar = document.querySelector(".topbar");
+  body.ig-mobile-lock{
+    overflow:hidden!important;
+  }
+
+  .main{
+    width:100%!important;
+    min-width:0!important;
+    padding:0!important;
+  }
+
+  .topbar{
+    position:relative!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:7px!important;
+    min-height:62px!important;
+    padding:7px 9px!important;
+    background:#fff!important;
+    color:#111!important;
+    border-bottom:1px solid #e9e9e9!important;
+  }
+
+  .topbar>div:first-child{
+    min-width:0!important;
+    flex:1!important;
+  }
+
+  .topbar .eyebrow,
+  .topbar p,
+  .connection-badge{
+    display:none!important;
+  }
+
+  .topbar h1{
+    font-size:1.05rem!important;
+    line-height:1.2!important;
+    margin:0!important;
+    color:#111!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+
+  .top-actions{
+    display:flex!important;
+    align-items:center!important;
+    gap:4px!important;
+    margin-left:auto!important;
+  }
+
+  #connect{
+    min-height:35px!important;
+    padding:7px 9px!important;
+    border-radius:18px!important;
+    font-size:.55rem!important;
+    white-space:nowrap!important;
+  }
+
+  .ig-mob-menu-btn{
+    display:grid!important;
+    place-items:center!important;
+    width:40px!important;
+    height:40px!important;
+    flex:0 0 40px!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:50%!important;
+    background:#f4f4f4!important;
+    color:#111!important;
+    font-size:22px!important;
+    line-height:1!important;
+  }
+
+  .ig-mob-menu-btn span{
+    display:block!important;
+    transform:translateY(-1px)!important;
+  }
+
+
+  /* =========================
+     MAIN MOBILE WORKSPACE
+     ========================= */
+
+  .workspace{
+    display:block!important;
+    width:100%!important;
+    height:calc(100dvh - 62px)!important;
+    min-height:0!important;
+    margin:0!important;
+    border:0!important;
+    border-radius:0!important;
+    overflow:hidden!important;
+    position:relative!important;
+    background:#fff!important;
+  }
+
+  .inbox,
+  .chat{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:#fff!important;
+    color:#111!important;
+  }
+
+  .inbox{
+    display:flex!important;
+    flex-direction:column!important;
+    padding:8px 9px!important;
+    overflow:hidden!important;
+  }
+
+  .context{
+    display:none!important;
+  }
+
+  .workspace.ig-chat-open .inbox{
+    display:none!important;
+  }
+
+  .workspace:not(.ig-chat-open) .chat{
+    display:none!important;
+  }
+
+
+  /* =========================
+     INBOX
+     ========================= */
+
+  .panel-head{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    min-height:44px!important;
+  }
+
+  .panel-head h2{
+    font-size:1rem!important;
+    margin:2px 0!important;
+    color:#111!important;
+  }
+
+  .kicker{
+    font-size:.52rem!important;
+    color:#8b8b8b!important;
+    letter-spacing:1.5px!important;
+  }
+
+  .search-box{
+    display:flex!important;
+    align-items:center!important;
+    min-height:43px!important;
+    margin:7px 0!important;
+    padding:8px 10px!important;
+    background:#f4f4f4!important;
+    border:1px solid #e8e8e8!important;
+    border-radius:22px!important;
+    color:#777!important;
+  }
+
+  .search-box input{
+    color:#111!important;
+    font-size:.72rem!important;
+    background:transparent!important;
+  }
+
+  .filters{
+    display:grid!important;
+    grid-template-columns:repeat(3,1fr)!important;
+    gap:6px!important;
+    margin-bottom:5px!important;
+  }
+
+  .filters button{
+    min-height:34px!important;
+    padding:6px!important;
+    border:1px solid #e3e3e3!important;
+    border-radius:17px!important;
+    background:#fff!important;
+    color:#444!important;
+    font-size:.56rem!important;
+  }
+
+  .filters button.active{
+    background:#111!important;
+    color:#fff!important;
+    border-color:#111!important;
+  }
+
+  .conversation-list{
+    flex:1!important;
+    min-height:0!important;
+    margin-top:3px!important;
+    overflow:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+
+  .conversation-item{
+    display:flex!important;
+    gap:9px!important;
+    min-height:64px!important;
+    padding:9px 6px!important;
+    margin:0!important;
+    border:0!important;
+    border-bottom:1px solid #f0f0f0!important;
+    border-radius:0!important;
+    background:#fff!important;
+  }
+
+  .conversation-item.active{
+    background:#f6f6f6!important;
+    border-color:#eee!important;
+  }
+
+  .conversation-item .avatar{
+    width:46px!important;
+    height:46px!important;
+    flex:0 0 46px!important;
+    background:#eee!important;
+    color:#222!important;
+  }
+
+  .conv-top strong,
+  .conv-preview{
+    color:#111!important;
+  }
+
+  .conv-time,
+  .conv-preview{
+    color:#777!important;
+  }
+
+  .order-link{
+    display:flex!important;
+    flex:0 0 auto!important;
+    justify-content:space-between!important;
+    margin-top:6px!important;
+    padding:9px!important;
+    background:#f7f7f7!important;
+    border:1px solid #e8e8e8!important;
+    border-radius:11px!important;
+    color:#111!important;
+  }
+
+
+  /* =========================
+     CHAT HEADER
+     ========================= */
+
+  .chat{
+    display:flex!important;
+    flex-direction:column!important;
+  }
+
+  .chat-view{
+    display:flex!important;
+    flex-direction:column!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    background:#fff!important;
+  }
+
+  .chat-header{
+    display:flex!important;
+    align-items:center!important;
+    flex:0 0 62px!important;
+    min-height:62px!important;
+    padding:7px 8px!important;
+    gap:7px!important;
+    background:#fff!important;
+    color:#111!important;
+    border-bottom:1px solid #ededed!important;
+    box-shadow:0 1px 4px rgba(0,0,0,.04)!important;
+  }
+
+  .ig-mob-back{
+    display:grid!important;
+    place-items:center!important;
+    width:34px!important;
+    height:40px!important;
+    flex:0 0 34px!important;
+    padding:0 0 4px!important;
+    border:0!important;
+    background:transparent!important;
+    color:#111!important;
+    font-size:34px!important;
+    line-height:1!important;
+  }
+
+  .chat-header .avatar{
+    width:40px!important;
+    height:40px!important;
+    flex:0 0 40px!important;
+    background:#eee!important;
+    color:#111!important;
+  }
+
+  .chat-title{
+    flex:1!important;
+    min-width:0!important;
+  }
+
+  .chat-title b{
+    display:block!important;
+    color:#111!important;
+    font-size:.76rem!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+
+  .chat-title small{
+    display:block!important;
+    color:#777!important;
+    font-size:.53rem!important;
+    margin-top:2px!important;
+  }
+
+  .chat-actions{
+    display:flex!important;
+    align-items:center!important;
+    gap:0!important;
+    margin-left:auto!important;
+  }
+
+  .chat-actions #closeConversation{
+    display:none!important;
+  }
+
+  .ig-chat-action{
+    display:grid!important;
+    place-items:center!important;
+    width:34px!important;
+    height:36px!important;
+    padding:0!important;
+    border:0!important;
+    background:transparent!important;
+    color:#111!important;
+    font-size:20px!important;
+  }
+
+
+  /* =========================
+     MESSAGES
+     ========================= */
+
+  .messages{
+    flex:1!important;
+    min-height:0!important;
+    padding:13px 9px 16px!important;
+    overflow:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    background:#fff!important;
+    color:#111!important;
+  }
+
+  .message-row{
+    display:flex!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    margin:5px 0!important;
+    align-items:flex-end!important;
+  }
+
+  .message-row.inbound{
+    justify-content:flex-start!important;
+  }
+
+  .message-row.outbound{
+    justify-content:flex-end!important;
+  }
+
+  .message-row .bubble{
+    display:inline-block!important;
+    width:auto!important;
+    max-width:78%!important;
+    min-height:0!important;
+    padding:9px 12px!important;
+    border:0!important;
+    border-radius:19px!important;
+    font-size:.82rem!important;
+    line-height:1.35!important;
+    word-break:break-word!important;
+    overflow-wrap:anywhere!important;
+    white-space:pre-wrap!important;
+    box-shadow:none!important;
+    color:#111!important;
+  }
+
+  .message-row.inbound .bubble{
+    margin-right:auto!important;
+    background:#efefef!important;
+    border-top-left-radius:6px!important;
+  }
+
+  .message-row.outbound .bubble{
+    margin-left:auto!important;
+    background:linear-gradient(
+      135deg,
+      #833ab4,
+      #e1306c,
+      #fd1d1d,
+      #fcb045
+    )!important;
+    color:#fff!important;
+    border-top-right-radius:6px!important;
+  }
+
+  .bubble-meta{
+    display:block!important;
+    margin-top:3px!important;
+    font-size:.47rem!important;
+    text-align:right!important;
+    color:#777!important;
+  }
+
+  .message-row.outbound .bubble-meta{
+    color:rgba(255,255,255,.78)!important;
+  }
+
+
+  /* =========================
+     COMPOSER
+     ========================= */
+
+  .composer{
+    flex:0 0 auto!important;
+    padding:
+      7px
+      8px
+      calc(8px + env(safe-area-inset-bottom,0px))
+      !important;
+    background:#fff!important;
+    border-top:1px solid #ededed!important;
+  }
+
+  .ig-composer-wrap{
+    display:flex!important;
+    align-items:center!important;
+    gap:4px!important;
+    min-height:46px!important;
+    padding:4px 6px!important;
+    background:#f0f0f0!important;
+    border:1px solid #e4e4e4!important;
+    border-radius:24px!important;
+  }
+
+  .ig-composer-wrap textarea{
+    flex:1!important;
+    min-width:0!important;
+    min-height:34px!important;
+    max-height:90px!important;
+    margin:0!important;
+    padding:7px 4px!important;
+    border:0!important;
+    outline:0!important;
+    resize:none!important;
+    background:transparent!important;
+    color:#111!important;
+    font-size:.78rem!important;
+  }
+
+  .ig-composer-wrap textarea::placeholder{
+    color:#777!important;
+  }
+
+  .ig-composer-btn{
+    display:grid!important;
+    place-items:center!important;
+    width:34px!important;
+    height:34px!important;
+    flex:0 0 34px!important;
+    padding:0!important;
+    border:0!important;
+    background:transparent!important;
+    color:#111!important;
+    font-size:20px!important;
+  }
+
+  .ig-composer-plus{
+    width:32px!important;
+    height:32px!important;
+    border:1px solid #777!important;
+    border-radius:50%!important;
+    font-size:21px!important;
+  }
+
+  .composer-bottom{
+    display:flex!important;
+    align-items:center!important;
+    gap:5px!important;
+    margin-top:6px!important;
+  }
+
+  .composer-bottom #suggest{
+    font-size:.54rem!important;
+    padding:6px 8px!important;
+  }
+
+  .composer-bottom #send{
+    margin-left:auto!important;
+    padding:7px 13px!important;
+    border-radius:18px!important;
+    font-size:.57rem!important;
+    background:linear-gradient(
+      135deg,
+      #833ab4,
+      #e1306c,
+      #fd1d1d
+    )!important;
+    color:#fff!important;
+  }
+
+  .composer-bottom #sendHint{
+    display:none!important;
+  }
+
+
+  /* =========================
+     MOBILE MENU
+     ========================= */
+
+  .ig-mobile-drawer-overlay{
+    position:fixed!important;
+    inset:0!important;
+    z-index:9000!important;
+    background:rgba(0,0,0,.45)!important;
+    opacity:0!important;
+    visibility:hidden!important;
+    transition:opacity .2s ease!important;
+  }
+
+  .ig-mobile-drawer{
+    position:fixed!important;
+    left:0!important;
+    top:0!important;
+    bottom:0!important;
+    z-index:9001!important;
+    width:min(310px,86vw)!important;
+    padding:16px 11px 12px!important;
+    background:#fff!important;
+    color:#111!important;
+    box-shadow:12px 0 35px rgba(0,0,0,.25)!important;
+    transform:translateX(-105%)!important;
+    transition:transform .22s ease!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+
+  body.ig-menu-open .ig-mobile-drawer-overlay{
+    opacity:1!important;
+    visibility:visible!important;
+  }
+
+  body.ig-menu-open .ig-mobile-drawer{
+    transform:translateX(0)!important;
+  }
+
+  .ig-drawer-head{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    padding-bottom:10px!important;
+    border-bottom:1px solid #eee!important;
+  }
+
+  .ig-drawer-head img{
+    width:82px!important;
+    height:42px!important;
+    object-fit:contain!important;
+  }
+
+  .ig-drawer-close{
+    display:grid!important;
+    place-items:center!important;
+    width:38px!important;
+    height:38px!important;
+    border:0!important;
+    border-radius:50%!important;
+    background:#f3f3f3!important;
+    color:#111!important;
+    font-size:24px!important;
+  }
+
+  .ig-drawer-label{
+    padding:12px 8px 7px!important;
+    color:#777!important;
+    font-size:.52rem!important;
+    letter-spacing:1.5px!important;
+    font-weight:700!important;
+  }
+
+  .ig-drawer-nav{
+    display:grid!important;
+    gap:3px!important;
+    overflow:auto!important;
+  }
+
+  .ig-drawer-nav a{
+    display:flex!important;
+    align-items:center!important;
+    gap:11px!important;
+    min-height:46px!important;
+    padding:8px 11px!important;
+    border-radius:10px!important;
+    color:#222!important;
+    font-size:.72rem!important;
+    font-weight:600!important;
+  }
+
+  .ig-drawer-nav a.active{
+    background:#f0f0f0!important;
+    font-weight:700!important;
+  }
+
+  .ig-drawer-bottom{
+    margin-top:auto!important;
+    padding-top:9px!important;
+    border-top:1px solid #eee!important;
+  }
+
+  .ig-drawer-workspace{
+    display:flex!important;
+    align-items:center!important;
+    gap:8px!important;
+    padding:9px!important;
+    border-radius:10px!important;
+    background:#f6f6f6!important;
+  }
+
+  .ig-drawer-dot{
+    width:8px!important;
+    height:8px!important;
+    border-radius:50%!important;
+    background:#18b968!important;
+  }
+
+  .ig-drawer-workspace b,
+  .ig-drawer-workspace small{
+    display:block!important;
+  }
+
+  .ig-drawer-workspace b{
+    font-size:.63rem!important;
+  }
+
+  .ig-drawer-workspace small{
+    font-size:.5rem!important;
+    color:#777!important;
+    margin-top:2px!important;
+  }
+
+  .ig-drawer-logout{
+    width:100%!important;
+    margin-top:7px!important;
+    min-height:39px!important;
+    border:1px solid #f0c8ce!important;
+    border-radius:10px!important;
+    background:#fff5f6!important;
+    color:#b42332!important;
+    font-size:.58rem!important;
+    font-weight:700!important;
+  }
+}
+
+@media(max-width:380px){
+
+  .ig-chat-action{
+    width:29px!important;
+    font-size:18px!important;
+  }
+
+  .message-row .bubble{
+    max-width:82%!important;
+  }
+
+  #connect{
+    display:none!important;
+  }
+}
+`;
+
+    document.head.appendChild(style);
+  }
+
+
+  function closeMenu() {
+    document.body.classList.remove(
+      'ig-menu-open',
+      'ig-mobile-lock'
+    );
+  }
+
+
+  function openMenu() {
+    document.body.classList.add(
+      'ig-menu-open',
+      'ig-mobile-lock'
+    );
+  }
+
+
+  function addMenu() {
 
     if (
-      !topbar ||
-      document.getElementById("glimeIgMobileMenu")
-    ) {
-      return;
-    }
-
-    var b = document.createElement("button");
-
-    b.type = "button";
-    b.id = "glimeIgMobileMenu";
-    b.className = "ig-mobile-menu-button";
-    b.setAttribute(
-      "aria-label",
-      "Open GLIME menu"
-    );
-
-    b.innerHTML = "☰";
-
-    b.onclick = function () {
-      document.body.classList.add(
-        "ig-menu-open"
-      );
-    };
-
-    topbar.insertBefore(
-      b,
-      topbar.firstElementChild
-    );
-  }
-
-  function buildMenuDrawer() {
-    if (
-      document.getElementById(
-        "glimeIgMobileDrawer"
-      )
+      document.getElementById(MENU_ID)
     ) {
       return;
     }
 
     var overlay =
-      document.createElement("div");
+      document.createElement('div');
 
     overlay.id =
-      "glimeIgMobileOverlay";
+      'glimeInstagramMobileOverlay';
 
     overlay.className =
-      "ig-mobile-menu-overlay";
+      'ig-mobile-drawer-overlay';
+
+    overlay.addEventListener(
+      'click',
+      closeMenu
+    );
+
 
     var drawer =
-      document.createElement("aside");
+      document.createElement('aside');
 
     drawer.id =
-      "glimeIgMobileDrawer";
+      MENU_ID;
 
     drawer.className =
-      "ig-mobile-drawer";
+      'ig-mobile-drawer';
 
     drawer.setAttribute(
-      "aria-label",
-      "GLIME navigation"
+      'aria-label',
+      'GLIME menu'
     );
+
 
     var sidebar =
       document.querySelector(
-        ".sidebar"
+        '.sidebar'
       );
 
-    var nav =
+    var links =
       sidebar
-        ? sidebar.querySelector("nav")
-        : null;
+        ? sidebar.querySelectorAll(
+            'nav a'
+          )
+        : [];
+
+    var navHtml = '';
+
+
+    Array.prototype.forEach.call(
+      links,
+      function (a) {
+
+        navHtml +=
+          '<a href="' +
+          (a.getAttribute('href') || '#') +
+          '"' +
+          (
+            a.classList.contains(
+              'active'
+            )
+            ? ' class="active"'
+            : ''
+          ) +
+          '>' +
+          a.innerHTML +
+          '</a>';
+      }
+    );
+
 
     drawer.innerHTML =
-      '<div class="ig-mobile-drawer-head">' +
-        '<img src="glime_logo_clean.svg" alt="GLIME">' +
-        '<button type="button" id="glimeIgMobileMenuClose" aria-label="Close menu">×</button>' +
+      '<div class="ig-drawer-head">' +
+
+        '<img ' +
+        'src="glime_logo_clean.svg" ' +
+        'alt="GLIME">' +
+
+        '<button ' +
+        'type="button" ' +
+        'class="ig-drawer-close" ' +
+        'aria-label="Close menu">' +
+        '×' +
+        '</button>' +
+
       '</div>' +
 
-      '<div class="ig-mobile-drawer-caption">' +
-        'AI BUSINESS WORKSPACE' +
+      '<div class="ig-drawer-label">' +
+        'GLIME BUSINESS WORKSPACE' +
       '</div>' +
 
-      '<nav class="ig-mobile-drawer-nav"></nav>' +
+      '<nav class="ig-drawer-nav">' +
+        navHtml +
+      '</nav>' +
 
-      '<div class="ig-mobile-drawer-bottom">' +
-        '<div class="ig-mobile-workspace">' +
-          '<span></span>' +
+      '<div class="ig-drawer-bottom">' +
+
+        '<div class="ig-drawer-workspace">' +
+
+          '<span class="ig-drawer-dot"></span>' +
+
           '<div>' +
-            '<b id="igMobileBusiness">Business</b>' +
-            '<small id="igMobileClient">Workspace</small>' +
+
+            '<b id="igMobileBusiness">' +
+              'Business' +
+            '</b>' +
+
+            '<small id="igMobileClient">' +
+              'Loading…' +
+            '</small>' +
+
           '</div>' +
+
         '</div>' +
 
-        '<button type="button" id="igMobileLogout">' +
+        '<button ' +
+          'type="button" ' +
+          'class="ig-drawer-logout">' +
           'Secure Logout' +
         '</button>' +
+
       '</div>';
 
-    var targetNav =
-      drawer.querySelector(
-        ".ig-mobile-drawer-nav"
-      );
-
-    if (nav) {
-      Array.prototype.forEach.call(
-        nav.querySelectorAll("a"),
-        function (a) {
-
-          var item =
-            document.createElement("a");
-
-          item.href =
-            a.getAttribute("href") || "#";
-
-          item.innerHTML =
-            a.innerHTML;
-
-          if (
-            a.classList.contains("active")
-          ) {
-            item.classList.add("active");
-          }
-
-          item.addEventListener(
-            "click",
-            function () {
-              document.body.classList.remove(
-                "ig-menu-open"
-              );
-            }
-          );
-
-          targetNav.appendChild(item);
-        }
-      );
-    }
 
     document.body.appendChild(
       overlay
@@ -207,338 +892,450 @@
       drawer
     );
 
-    overlay.addEventListener(
-      "click",
-      function () {
-        document.body.classList.remove(
-          "ig-menu-open"
+
+    drawer
+      .querySelector(
+        '.ig-drawer-close'
+      )
+      .addEventListener(
+        'click',
+        closeMenu
+      );
+
+
+    drawer
+      .querySelector(
+        '.ig-drawer-logout'
+      )
+      .addEventListener(
+        'click',
+        function () {
+
+          var logout =
+            document.getElementById(
+              'logout'
+            );
+
+          if (logout) {
+            logout.click();
+          }
+
+        }
+      );
+
+
+    Array.prototype.forEach.call(
+      drawer.querySelectorAll('a'),
+      function (a) {
+
+        a.addEventListener(
+          'click',
+          closeMenu
         );
+
       }
     );
-
-    document.getElementById(
-      "glimeIgMobileMenuClose"
-    ).onclick = function () {
-      document.body.classList.remove(
-        "ig-menu-open"
-      );
-    };
-
-    var logout =
-      document.getElementById(
-        "logout"
-      );
-
-    document.getElementById(
-      "igMobileLogout"
-    ).onclick = function () {
-
-      if (logout) {
-        logout.click();
-      }
-
-    };
   }
 
-  function syncWorkspaceIdentity() {
+
+  function addMenuButton() {
+
+    if (
+      document.getElementById(
+        'glimeInstagramMobileMenuButton'
+      )
+    ) {
+      return;
+    }
+
+    var topbar =
+      document.querySelector(
+        '.topbar'
+      );
+
+    if (!topbar) {
+      return;
+    }
+
+
+    var button =
+      document.createElement(
+        'button'
+      );
+
+    button.type =
+      'button';
+
+    button.id =
+      'glimeInstagramMobileMenuButton';
+
+    button.className =
+      'ig-mob-menu-btn';
+
+    button.setAttribute(
+      'aria-label',
+      'Open menu'
+    );
+
+    button.innerHTML =
+      '<span>☰</span>';
+
+
+    button.addEventListener(
+      'click',
+      openMenu
+    );
+
+
+    topbar.insertBefore(
+      button,
+      topbar.firstElementChild
+    );
+  }
+
+
+  function syncIdentity() {
+
     var business =
       document.getElementById(
-        "businessName"
+        'businessName'
       );
 
     var client =
       document.getElementById(
-        "clientId"
+        'clientId'
       );
 
     var b =
       document.getElementById(
-        "igMobileBusiness"
+        'igMobileBusiness'
       );
 
     var c =
       document.getElementById(
-        "igMobileClient"
+        'igMobileClient'
       );
 
-    if (business && b) {
+
+    if (
+      business &&
+      b
+    ) {
       b.textContent =
         business.textContent;
     }
 
-    if (client && c) {
+
+    if (
+      client &&
+      c
+    ) {
       c.textContent =
         client.textContent;
     }
   }
 
+
+  function showInbox() {
+
+    var workspace =
+      document.querySelector(
+        '.workspace'
+      );
+
+    if (workspace) {
+      workspace.classList.remove(
+        'ig-chat-open'
+      );
+    }
+
+    if (isMobile()) {
+      closeMenu();
+    }
+  }
+
+
+  function showChat() {
+
+    var workspace =
+      document.querySelector(
+        '.workspace'
+      );
+
+    if (
+      workspace &&
+      isMobile()
+    ) {
+      workspace.classList.add(
+        'ig-chat-open'
+      );
+    }
+  }
+
+
   function addBackButton() {
+
     var header =
       document.querySelector(
-        ".chat-header"
+        '.chat-header'
       );
 
     if (
       !header ||
       document.getElementById(
-        "glimeIgMobileBack"
+        'glimeInstagramMobileBack'
       )
     ) {
       return;
     }
 
-    var b =
+
+    var button =
       document.createElement(
-        "button"
+        'button'
       );
 
-    b.type = "button";
+    button.type =
+      'button';
 
-    b.id =
-      "glimeIgMobileBack";
+    button.id =
+      'glimeInstagramMobileBack';
 
-    b.className =
-      "ig-mobile-back";
+    button.className =
+      'ig-mob-back';
 
-    b.setAttribute(
-      "aria-label",
-      "Back to Instagram conversations"
+    button.setAttribute(
+      'aria-label',
+      'Back to conversations'
     );
 
-    b.innerHTML = "‹";
+    button.textContent =
+      '‹';
 
-    b.onclick =
+
+    button.addEventListener(
+      'click',
       function (e) {
 
         e.preventDefault();
 
-        e.stopPropagation();
+        showInbox();
 
-        setChat(false);
-      };
+      }
+    );
+
 
     header.insertBefore(
-      b,
+      button,
       header.firstElementChild
     );
   }
 
-  function addChatHeaderActions() {
+
+  function addHeaderActions() {
+
     var actions =
       document.querySelector(
-        ".chat-actions"
+        '.chat-actions'
       );
 
     if (
       !actions ||
       document.getElementById(
-        "glimeIgHeaderCall"
+        'glimeIgCall'
       )
     ) {
       return;
     }
 
-    [
+
+    var items = [
+
       [
-        "glimeIgHeaderCall",
-        "☎",
-        "Call"
+        'glimeIgCall',
+        '☎',
+        'Call'
       ],
+
       [
-        "glimeIgHeaderVideo",
-        "▣",
-        "Video call"
+        'glimeIgVideo',
+        '▣',
+        'Video'
       ],
+
       [
-        "glimeIgHeaderTag",
-        "◇",
-        "Customer tag"
+        'glimeIgTag',
+        '◇',
+        'Tag'
       ]
-    ].forEach(
+
+    ];
+
+
+    items.forEach(
       function (item) {
 
-        var b =
+        var button =
           document.createElement(
-            "button"
+            'button'
           );
 
-        b.type = "button";
+        button.type =
+          'button';
 
-        b.id = item[0];
+        button.id =
+          item[0];
 
-        b.className =
-          "ig-chat-icon";
+        button.className =
+          'ig-chat-action';
 
-        b.setAttribute(
-          "aria-label",
+        button.setAttribute(
+          'aria-label',
           item[2]
         );
 
-        b.textContent =
+        button.textContent =
           item[1];
 
-        /*
-         * UI-only controls.
-         * No action is executed.
-         */
 
         actions.insertBefore(
-          b,
+          button,
           actions.firstChild
         );
+
       }
     );
   }
 
-  function addComposerChrome() {
+
+  function addComposer() {
+
     var composer =
       document.querySelector(
-        ".composer"
+        '.composer'
       );
 
     var textarea =
       document.getElementById(
-        "input"
+        'input'
       );
+
 
     if (
       !composer ||
       !textarea ||
       document.getElementById(
-        "glimeIgComposerRow"
+        'glimeIgComposerWrap'
       )
     ) {
       return;
     }
 
-    var row =
+
+    var wrap =
       document.createElement(
-        "div"
+        'div'
       );
 
-    row.id =
-      "glimeIgComposerRow";
+    wrap.id =
+      'glimeIgComposerWrap';
 
-    row.className =
-      "ig-composer-row";
+    wrap.className =
+      'ig-composer-wrap';
+
 
     var camera =
       document.createElement(
-        "button"
+        'button'
       );
 
-    camera.type = "button";
+    camera.type =
+      'button';
 
     camera.className =
-      "ig-composer-icon";
+      'ig-composer-btn';
 
     camera.setAttribute(
-      "aria-label",
-      "Camera"
+      'aria-label',
+      'Camera'
     );
 
     camera.textContent =
-      "◉";
+      '◉';
+
 
     var gallery =
       document.createElement(
-        "button"
+        'button'
       );
 
-    gallery.type = "button";
+    gallery.type =
+      'button';
 
     gallery.className =
-      "ig-composer-icon";
+      'ig-composer-btn';
 
     gallery.setAttribute(
-      "aria-label",
-      "Gallery"
+      'aria-label',
+      'Gallery'
     );
 
     gallery.textContent =
-      "▧";
+      '▧';
+
 
     var plus =
       document.createElement(
-        "button"
+        'button'
       );
 
-    plus.type = "button";
+    plus.type =
+      'button';
 
     plus.className =
-      "ig-composer-icon ig-plus";
+      'ig-composer-btn ig-composer-plus';
 
     plus.setAttribute(
-      "aria-label",
-      "More"
+      'aria-label',
+      'More'
     );
 
     plus.textContent =
-      "+";
+      '+';
+
 
     textarea.parentNode.insertBefore(
-      row,
+      wrap,
       textarea
     );
 
-    row.appendChild(
+
+    wrap.appendChild(
       camera
     );
 
-    row.appendChild(
+    wrap.appendChild(
       gallery
     );
 
-    row.appendChild(
+    wrap.appendChild(
       textarea
     );
 
-    row.appendChild(
+    wrap.appendChild(
       plus
     );
 
-    var bottom =
-      composer.querySelector(
-        ".composer-bottom"
-      );
-
-    var send =
-      document.getElementById(
-        "send"
-      );
-
-    var suggest =
-      document.getElementById(
-        "suggest"
-      );
-
-    if (bottom) {
-      bottom.classList.add(
-        "ig-mobile-composer-bottom"
-      );
-    }
-
-    if (suggest) {
-      suggest.classList.add(
-        "ig-mobile-suggest"
-      );
-    }
-
-    if (send) {
-      send.classList.add(
-        "ig-mobile-send"
-      );
-    }
 
     [
       camera,
       gallery,
       plus
     ].forEach(
-      function (b) {
+      function (button) {
 
-        b.addEventListener(
-          "click",
+        button.addEventListener(
+          'click',
           function () {
             textarea.focus();
           }
@@ -548,170 +1345,259 @@
     );
   }
 
-  function bindConversationClicks() {
+
+  function bindConversationList() {
+
     var list =
       document.getElementById(
-        "list"
+        'list'
       );
+
 
     if (
       !list ||
       list.getAttribute(
-        "data-ig-mobile-bound"
-      ) === "1"
+        'data-glime-ig-mobile'
+      ) === '1'
     ) {
       return;
     }
 
+
     list.setAttribute(
-      "data-ig-mobile-bound",
-      "1"
+      'data-glime-ig-mobile',
+      '1'
     );
 
+
     list.addEventListener(
-      "click",
+      'click',
       function (event) {
 
         var item =
           event.target.closest(
-            ".conversation-item"
+            '.conversation-item'
           );
+
 
         if (!item) {
           return;
         }
 
-        window.setTimeout(
+
+        setTimeout(
           function () {
 
+            var view =
+              document.getElementById(
+                'view'
+              );
+
+            var empty =
+              document.getElementById(
+                'empty'
+              );
+
+
             if (
-              mobile() &&
-              activeConversation()
+              isMobile() &&
+              view &&
+              !view.classList.contains(
+                'hidden'
+              ) &&
+              (
+                !empty ||
+                empty.classList.contains(
+                  'hidden'
+                )
+              )
             ) {
+
+              showChat();
 
               addBackButton();
 
-              addChatHeaderActions();
+              addHeaderActions();
 
-              addComposerChrome();
+              addComposer();
 
-              setChat(true);
             }
 
           },
-          0
+          30
         );
       }
     );
   }
 
-  function syncState() {
-    if (!mobile()) {
 
-      document.body.classList.remove(
-        "ig-menu-open"
+  function bindBackBehavior() {
+
+    var close =
+      document.getElementById(
+        'closeConversation'
       );
 
-      setChat(false);
-
-      return;
-    }
 
     if (
-      activeConversation()
+      close &&
+      close.getAttribute(
+        'data-glime-mobile-bound'
+      ) !== '1'
     ) {
 
-      addBackButton();
+      close.setAttribute(
+        'data-glime-mobile-bound',
+        '1'
+      );
 
-      addChatHeaderActions();
 
-      addComposerChrome();
+      close.addEventListener(
+        'click',
+        function () {
 
-      setChat(true);
+          if (isMobile()) {
+            showInbox();
+          }
+
+        }
+      );
     }
   }
 
-  function bindEscape() {
+
+  function observeView() {
+
+    var view =
+      document.getElementById(
+        'view'
+      );
+
+
     if (
-      window.__glimeIgMobileEscape
+      !view ||
+      window.__glimeIgMobileObserver
     ) {
       return;
     }
 
-    window.__glimeIgMobileEscape =
-      true;
 
-    document.addEventListener(
-      "keydown",
-      function (e) {
+    window.__glimeIgMobileObserver =
+      new MutationObserver(
+        function () {
 
-        if (
-          e.key !== "Escape"
-        ) {
-          return;
+          if (!isMobile()) {
+            return;
+          }
+
+
+          if (
+            !view.classList.contains(
+              'hidden'
+            )
+          ) {
+
+            showChat();
+
+            addBackButton();
+
+            addHeaderActions();
+
+            addComposer();
+
+          } else {
+
+            showInbox();
+
+          }
+
         }
+      );
 
-        document.body.classList.remove(
-          "ig-menu-open"
-        );
 
-        if (mobile()) {
-          setChat(false);
-        }
+    window.__glimeIgMobileObserver.observe(
+      view,
+      {
+        attributes:true,
+        attributeFilter:['class']
       }
     );
   }
 
+
   function start() {
-    if (started) {
-      return;
-    }
 
-    started = true;
+    addStyles();
 
-    injectCss();
+    addMenu();
 
     addMenuButton();
 
-    buildMenuDrawer();
-
-    syncWorkspaceIdentity();
+    syncIdentity();
 
     addBackButton();
 
-    addChatHeaderActions();
+    addHeaderActions();
 
-    addComposerChrome();
+    addComposer();
 
-    bindConversationClicks();
+    bindConversationList();
 
-    bindEscape();
+    bindBackBehavior();
 
-    syncState();
+    observeView();
+
 
     window.addEventListener(
-      "resize",
-      syncState,
+      'resize',
+      function () {
+
+        if (!isMobile()) {
+
+          showInbox();
+
+          closeMenu();
+
+        }
+
+      },
       {
-        passive: true
+        passive:true
       }
     );
 
-    console.log(
-      "[GLIME IG Mobile] Safe mobile UI addon loaded."
+
+    document.addEventListener(
+      'keydown',
+      function (e) {
+
+        if (
+          e.key === 'Escape'
+        ) {
+
+          closeMenu();
+
+          if (isMobile()) {
+            showInbox();
+          }
+
+        }
+
+      }
     );
   }
 
+
   if (
     document.readyState ===
-    "loading"
+    'loading'
   ) {
 
     document.addEventListener(
-      "DOMContentLoaded",
+      'DOMContentLoaded',
       start,
       {
-        once: true
+        once:true
       }
     );
 
