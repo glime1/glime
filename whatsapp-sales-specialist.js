@@ -650,6 +650,410 @@ function renderConversations(){
    RENDER MESSAGES
 -------------------------------------------------- */
 
+function getMediaStorage(message){
+  const metadata=message?.metadata;
+  const storage=metadata?.media_storage;
+
+  if(!storage)
+    return null;
+
+  if(typeof storage==='string')
+    return {path:storage};
+
+  if(typeof storage!=='object')
+    return null;
+
+  return storage;
+}
+
+function mediaUrlFromStorage(storage){
+  if(!storage)
+    return '';
+
+  return (
+    storage.url||
+    storage.public_url||
+    storage.signed_url||
+    storage.download_url||
+    storage.src||
+    ''
+  );
+}
+
+function mediaPathFromStorage(storage){
+  if(!storage||typeof storage!=='object')
+    return '';
+
+  return (
+    storage.path||
+    storage.storage_path||
+    storage.object_path||
+    storage.file_path||
+    ''
+  );
+}
+
+function mediaBucketFromStorage(storage){
+  if(!storage||typeof storage!=='object')
+    return 'client-assets';
+
+  return (
+    storage.bucket||
+    storage.storage_bucket||
+    'client-assets'
+  );
+}
+
+function safeMediaUrl(url){
+  if(!url)
+    return '';
+
+  try{
+    const parsed=new URL(url,window.location.href);
+
+    if(
+      parsed.protocol!=='http:'&&
+      parsed.protocol!=='https:'
+    )
+      return '';
+
+    return parsed.href;
+  }catch(e){
+    return '';
+  }
+}
+
+async function resolveMediaUrl(message){
+  const storage=getMediaStorage(message);
+
+  if(!storage)
+    return '';
+
+  const direct=safeMediaUrl(
+    mediaUrlFromStorage(storage)
+  );
+
+  if(direct)
+    return direct;
+
+  const path=mediaPathFromStorage(storage);
+
+  if(!path)
+    return '';
+
+  try{
+    const bucket=mediaBucketFromStorage(storage);
+
+    const {data,error}=await supabase
+      .storage
+      .from(bucket)
+      .createSignedUrl(path,3600);
+
+    if(error)
+      throw error;
+
+    return safeMediaUrl(
+      data?.signedUrl||''
+    );
+  }catch(e){
+    console.warn(
+      'WhatsApp media URL resolution failed:',
+      e
+    );
+
+    return '';
+  }
+}
+
+function mediaType(message){
+  const type=String(
+    message?.message_type||''
+  ).toLowerCase();
+
+  if(
+    type==='image'||
+    type==='photo'
+  )
+    return 'image';
+
+  if(
+    type==='video'
+  )
+    return 'video';
+
+  if(
+    type==='audio'||
+    type==='voice'
+  )
+    return 'audio';
+
+  if(
+    type==='document'||
+    type==='file'
+  )
+    return 'document';
+
+  return '';
+}
+
+function mediaMime(message){
+  const storage=getMediaStorage(message);
+
+  return (
+    storage?.mime_type||
+    storage?.mimeType||
+    message?.mime_type||
+    message?.mimeType||
+    ''
+  ).toLowerCase();
+}
+
+function mediaFileName(message){
+  const storage=getMediaStorage(message);
+
+  return (
+    storage?.file_name||
+    storage?.filename||
+    storage?.name||
+    message?.file_name||
+    message?.filename||
+    'WhatsApp document'
+  );
+}
+
+function mediaBody(message){
+  const type=mediaType(message);
+  const caption=message?.text_body||'';
+  const hasMedia=!!getMediaStorage(message);
+
+  if(!type)
+    return esc(
+      caption||
+      message?.message_type||
+      ''
+    );
+
+  if(!hasMedia){
+    return `
+      <div class="wa-media-unavailable">
+        <span>${esc(
+          type==='image'
+            ?'📷 Image'
+            :type==='video'
+              ?'🎥 Video'
+              :type==='audio'
+                ?'🎵 Audio'
+                :'📄 Document'
+        )}</span>
+        <small>Media preview unavailable</small>
+      </div>
+      ${caption?`<div class="wa-media-caption">${esc(caption)}</div>`:''}
+    `;
+  }
+
+  const loadingLabel=
+    type==='image'
+      ?'Loading image…'
+      :type==='video'
+        ?'Loading video…'
+        :type==='audio'
+          ?'Loading audio…'
+          :mediaFileName(message);
+
+  if(type==='document'){
+    return `
+      <a
+        class="wa-document"
+        data-media-message="1"
+        data-message-id="${esc(message.id||'')}"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span class="wa-document-icon">📄</span>
+        <span class="wa-document-copy">
+          <strong>${esc(mediaFileName(message))}</strong>
+          <small>${esc(mediaMime(message)||'Document')}</small>
+        </span>
+        <span class="wa-document-open">↗</span>
+      </a>
+      ${caption?`<div class="wa-media-caption">${esc(caption)}</div>`:''}
+      <span class="wa-media-loading" data-media-loading="${esc(message.id||'')}">${esc(loadingLabel)}</span>
+    `;
+  }
+
+  if(type==='image'){
+    return `
+      <div class="wa-image-wrap">
+        <a
+          data-media-message="1"
+          data-message-id="${esc(message.id||'')}"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            class="wa-media-image"
+            data-media-image="${esc(message.id||'')}"
+            alt="WhatsApp image"
+            loading="lazy"
+          >
+        </a>
+      </div>
+      ${caption?`<div class="wa-media-caption">${esc(caption)}</div>`:''}
+      <span class="wa-media-loading" data-media-loading="${esc(message.id||'')}">${esc(loadingLabel)}</span>
+    `;
+  }
+
+  if(type==='video'){
+    return `
+      <video
+        class="wa-media-video"
+        data-media-video="${esc(message.id||'')}"
+        controls
+        playsinline
+        preload="metadata"
+      ></video>
+      ${caption?`<div class="wa-media-caption">${esc(caption)}</div>`:''}
+      <span class="wa-media-loading" data-media-loading="${esc(message.id||'')}">${esc(loadingLabel)}</span>
+    `;
+  }
+
+  return `
+    <audio
+      class="wa-media-audio"
+      data-media-audio="${esc(message.id||'')}"
+      controls
+      preload="metadata"
+    ></audio>
+    ${caption?`<div class="wa-media-caption">${esc(caption)}</div>`:''}
+    <span class="wa-media-loading" data-media-loading="${esc(message.id||'')}">${esc(loadingLabel)}</span>
+  `;
+}
+
+function messageStatusMarkup(message){
+  const status=String(
+    message?.status||''
+  ).toLowerCase();
+
+  if(message?.direction!=='outbound')
+    return '';
+
+  if(status==='failed'||status==='error')
+    return '<span class="wa-status failed">!</span>';
+
+  if(status==='read')
+    return '<span class="wa-status read">✓✓</span>';
+
+  if(
+    status==='delivered'||
+    status==='sent'
+  )
+    return '<span class="wa-status">✓✓</span>';
+
+  return '<span class="wa-status">✓</span>';
+}
+
+function messageMeta(message){
+  return `
+    <span class="bubble-meta">
+      <span>${time(message.created_at)}</span>
+      ${messageStatusMarkup(message)}
+    </span>
+  `;
+}
+
+async function hydrateMediaMessages(){
+  const mediaMessages=state.messages.filter(
+    m=>mediaType(m)&&getMediaStorage(m)
+  );
+
+  await Promise.all(
+    mediaMessages.map(async message=>{
+      const url=await resolveMediaUrl(message);
+
+      const id=String(message.id||'');
+
+      if(!url){
+        const loading=document.querySelector(
+          `[data-media-loading="${CSS.escape(id)}"]`
+        );
+
+        if(loading){
+          loading.textContent='Media unavailable';
+          loading.classList.add('error');
+        }
+
+        return;
+      }
+
+      const image=document.querySelector(
+        `[data-media-image="${CSS.escape(id)}"]`
+      );
+
+      const video=document.querySelector(
+        `[data-media-video="${CSS.escape(id)}"]`
+      );
+
+      const audio=document.querySelector(
+        `[data-media-audio="${CSS.escape(id)}"]`
+      );
+
+      const links=document.querySelectorAll(
+        `[data-media-message="1"][data-message-id="${CSS.escape(id)}"]`
+      );
+
+      links.forEach(link=>{
+        link.href=url;
+      });
+
+      if(image){
+        image.src=url;
+        image.addEventListener(
+          'load',
+          ()=>{
+            const loading=document.querySelector(
+              `[data-media-loading="${CSS.escape(id)}"]`
+            );
+            if(loading)
+              loading.remove();
+          },
+          {once:true}
+        );
+      }
+
+      if(video)
+        video.src=url;
+
+      if(audio)
+        audio.src=url;
+
+      if(video||audio){
+        const media=video||audio;
+        media.addEventListener(
+          'loadedmetadata',
+          ()=>{
+            const loading=document.querySelector(
+              `[data-media-loading="${CSS.escape(id)}"]`
+            );
+            if(loading)
+              loading.remove();
+          },
+          {once:true}
+        );
+      }
+
+      if(!image&&!video&&!audio){
+        const loading=document.querySelector(
+          `[data-media-loading="${CSS.escape(id)}"]`
+        );
+        if(loading)
+          loading.remove();
+      }
+    })
+  );
+}
+
 function renderMessages(){
 
   const html=
@@ -657,23 +1061,15 @@ function renderMessages(){
       .map(
         m=>`
 
-          <div class="message-row ${m.direction}">
+          <div class="message-row ${esc(m.direction||'inbound')}">
 
-            <div class="bubble">
+            <div class="bubble ${mediaType(m)?'has-media':''}">
 
-              ${esc(
-                m.text_body||
-                `[${m.message_type}]`
-              )}
+              <div class="bubble-content">
+                ${mediaBody(m)}
+              </div>
 
-              <span class="bubble-meta">
-                ${time(m.created_at)}
-                ${
-                  m.status
-                    ?` · ${esc(m.status)}`
-                    :''
-                }
-              </span>
+              ${messageMeta(m)}
 
             </div>
 
@@ -693,6 +1089,8 @@ function renderMessages(){
       $('messageList').scrollTop=
         $('messageList').scrollHeight
   );
+
+  hydrateMediaMessages();
 }
 
 /* --------------------------------------------------
