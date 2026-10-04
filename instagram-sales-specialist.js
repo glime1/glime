@@ -283,7 +283,8 @@ function renderMessages(){
     const sameAsPrev=!!prev&&!newBlock&&(prev.direction==='inbound')===isIn;
     const sameAsNext=!!next&&(stamp(next)-t)<=3600000&&(next.direction==='inbound')===isIn;
     if(newBlock)html+=`<div class="ig-sep">${esc(sepLabel(t))}</div>`;
-    const cls=`message-row ${isIn?'in':'out'}${sameAsPrev?'':' first'}${sameAsNext?'':' last'}`;
+    /* inbound/outbound kept for add-ons that read these classes */
+    const cls=`message-row ${isIn?'in inbound':'out outbound'}${sameAsPrev?'':' first'}${sameAsNext?'':' last'}`;
     const av=isIn?`<span class="m-av${sameAsNext?' sp':''}">${initial}</span>`:'';
     html+=`<div class="${cls}" data-message-id="${esc(m.id)}" data-direction="${esc(m.direction||'')}">${av}<div class="bubble-wrap">${bubbleHtml(m)}<span class="ig-time">${esc(time(m.created_at||m.provider_timestamp))}</span></div></div>`;
     if(i===lastOut&&!isIn){
