@@ -2,111 +2,208 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05080c">
 <title>WhatsApp Sales Specialist | GLIME</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="whatsapp-sales-specialist.css">
+<link rel="stylesheet" href="whatsapp-sales-specialist.css?v=20261004-1">
 </head>
 <body>
-<div id="bootScreen" class="boot-screen"><img src="glime_logo_clean.svg" alt="GLIME"><div class="boot-spinner"></div><div>Securing your GLIME workspace…</div></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path style="fill:currentColor;stroke:none" d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a.99.99 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".9" style="fill:currentColor"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" style="fill:currentColor"/></symbol>
+<symbol id="i-wa" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/></symbol>
+<symbol id="i-trend" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" style="fill:currentColor"/></symbol>
+<symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18"/></symbol>
+</defs></svg>
+
+<div id="boot" class="boot"><img src="glime_logo_clean.svg" alt="GLIME"><div class="boot-spinner"></div><span>Securing your GLIME workspace…</span></div>
+
 <div class="app-shell">
+<div id="scrim" class="scrim"></div>
+
 <aside class="sidebar" id="sidebar">
-  <div class="brand"><img src="glime_logo_clean.svg" class="brand-logo" alt="GLIME"><div class="brand-caption">AI BUSINESS WORKSPACE</div></div>
-  <button class="mobile-close" id="closeSidebar">×</button>
-  <nav class="side-nav">
-    <a href="dashboard.html" class="nav-link">⌂ <span>Dashboard</span></a>
-    <a href="services.html" class="nav-link">▦ <span>Services</span></a>
-    <a href="instagram-sales-specialist.html" class="nav-link">◎ <span>Instagram Sales</span></a>
-    <a href="whatsapp-sales-specialist.html" class="nav-link active">◉ <span>WhatsApp Sales</span></a>
-    <a href="customer.html" class="nav-link">👤 <span>Customers</span></a>
-    <a href="follow-up.html" class="nav-link">↗ <span>Follow-up</span></a>
-    <a href="leads.html" class="nav-link">◈ <span>Leads AI</span></a>
-    <a href="orders.html" class="nav-link">🛒 <span>Orders</span></a>
-    <a href="billing.html" class="nav-link">▣ <span>Billing</span></a>
+  <div class="brand"><img src="glime_logo_clean.svg" alt="GLIME"><small>AI BUSINESS WORKSPACE</small></div>
+  <nav>
+    <a href="dashboard.html"><svg class="ni"><use href="#i-home"/></svg><span>Dashboard</span></a>
+    <a href="services.html"><svg class="ni"><use href="#i-grid"/></svg><span>Services</span></a>
+    <a href="instagram-sales-specialist.html"><svg class="ni"><use href="#i-ig"/></svg><span>Instagram Sales</span></a>
+    <a class="active" href="whatsapp-sales-specialist.html"><svg class="ni"><use href="#i-wa"/></svg><span>WhatsApp Sales</span></a>
+    <a href="customer.html"><svg class="ni"><use href="#i-users"/></svg><span>Customers</span></a>
+    <a href="follow-up.html"><svg class="ni"><use href="#i-trend"/></svg><span>Follow-up</span></a>
+    <a href="leads.html"><svg class="ni"><use href="#i-target"/></svg><span>Leads AI</span></a>
+    <a href="orders.html"><svg class="ni"><use href="#i-bag"/></svg><span>Orders</span></a>
+    <a href="billing.html"><svg class="ni"><use href="#i-card"/></svg><span>Billing</span></a>
   </nav>
   <div class="side-bottom">
-    <div class="workspace-mini"><span class="status-dot"></span><div><strong id="businessName">Business</strong><small id="clientId">Loading…</small></div></div>
-    <button id="logoutBtn" class="logout-btn">Secure Logout</button>
+    <div class="workspace-mini"><i></i><div><b id="businessName">Business</b><small id="clientId">Loading…</small></div></div>
+    <button id="logout" type="button">Secure Logout</button>
   </div>
 </aside>
+
 <main class="main">
 <header class="topbar">
-  <button class="mobile-menu" id="openSidebar">☰</button>
-  <div><div class="eyebrow">WHATSAPP SALES SPECIALIST</div><h1>WhatsApp Sales</h1><p>Conversations, AI sales, orders and customer context in one workspace.</p></div>
-  <div class="top-actions"><span id="connectionBadge" class="connection-badge offline">● Not connected</span><button id="connectBtn" class="primary-btn">Connect WhatsApp</button></div>
+  <button id="menuBtn" class="icon-btn menu-btn" type="button" aria-label="Menu"><svg class="ni"><use href="#i-menu"/></svg></button>
+  <div class="title-block">
+    <div class="eyebrow">WHATSAPP SALES SPECIALIST</div>
+    <h1>WhatsApp Sales</h1>
+    <p>Conversations, AI sales, orders and customer context in one workspace.</p>
+  </div>
+  <div class="top-actions">
+    <span id="connection" class="connection-badge offline">● Checking…</span>
+    <button id="connectBtn" class="primary-btn" type="button">Connect</button>
+  </div>
 </header>
 
-<section class="specialist-shell">
-  <div class="conversation-panel">
-    <div class="panel-head"><div><div class="section-kicker">INBOX</div><h2>Conversations</h2></div><button id="refreshBtn" class="icon-btn">↻</button></div>
-    <label class="search-box">⌕ <input id="conversationSearch" placeholder="Search customer or number…"></label>
-    <div class="filter-row"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="open">Open</button><button class="filter" data-filter="closed">Closed</button></div>
-    <div id="conversationList" class="conversation-list"><div class="loading-state">Loading conversations…</div></div>
-    <a class="side-addon" href="orders.html"><span>🛒</span><div><strong>Orders</strong><small>View WhatsApp, Instagram & website orders</small></div><b>→</b></a>
-    <div class="addon-buttons"><a href="orders.html#new" class="addon-btn">＋ New Order</a><button id="addonsBtn" class="addon-btn">＋ Add-on</button></div>
+<section class="workspace" id="workspace">
+
+<aside class="inbox">
+  <div class="panel-head">
+    <div><div class="kicker">WHATSAPP INBOX</div><h2>Chats</h2></div>
+    <button id="refresh" class="icon-btn" type="button" aria-label="Refresh"><svg class="ni"><use href="#i-refresh"/></svg></button>
+  </div>
+  <label class="search-box"><svg class="ni"><use href="#i-search"/></svg><input id="search" type="search" placeholder="Search name or number" autocomplete="off"></label>
+  <div class="filters">
+    <button type="button" class="active" data-filter="all">All</button>
+    <button type="button" data-filter="open">Open</button>
+    <button type="button" data-filter="closed">Closed</button>
+  </div>
+  <div id="list" class="conversation-list"><div class="loading-state">Loading conversations…</div></div>
+  <a class="order-link" href="orders.html"><span>Orders</span><small>WhatsApp, Instagram &amp; website →</small></a>
+</aside>
+
+<section class="chat">
+  <div id="emptyChat" class="empty-chat">
+    <div class="wa-orb"><svg class="ni"><use href="#i-wa"/></svg></div>
+    <h2>WhatsApp Sales</h2>
+    <p>Select a chat to see the full conversation, customer context, AI suggestion and sales controls.</p>
   </div>
 
-  <section class="chat-panel">
-    <div id="chatEmpty" class="chat-empty">
-      <div class="empty-kicker">WHATSAPP SALES INBOX</div>
-      <h2>Start with a conversation</h2>
-      <p>Select a customer conversation from the inbox. Once selected, their existing GLIME business context appears here.</p>
-      <div class="empty-context-grid">
-        <div class="empty-context-item"><strong>Customer</strong><span>Existing customer profile</span></div>
-        <div class="empty-context-item"><strong>Lead</strong><span>Existing GLIME Lead</span></div>
-        <div class="empty-context-item"><strong>Follow-up</strong><span>Existing GLIME Follow-up</span></div>
-        <div class="empty-context-item"><strong>Orders</strong><span>Existing GLIME Orders</span></div>
+  <div id="chatView" class="chat-view hidden">
+    <header class="chat-header">
+      <button id="backBtn" class="back-btn" type="button" aria-label="Back"><svg class="ni"><use href="#i-back"/></svg></button>
+      <div id="avatar" class="avatar">W</div>
+      <div class="chat-title"><b id="name">Customer</b><small id="phone">—</small></div>
+      <div class="chat-actions">
+        <button id="toggleStatus" class="icon-btn" type="button" title="Close conversation" aria-label="Close conversation"><svg class="ni"><use href="#i-check"/></svg></button>
+        <button id="infoBtn" class="icon-btn info-btn" type="button" title="Customer details" aria-label="Customer details"><svg class="ni"><use href="#i-info"/></svg></button>
       </div>
-      <div class="empty-help">Choose a conversation from the inbox to continue.</div>
-    </div>
-    <div id="chatView" class="chat-view hidden">
-      <div class="chat-header"><div class="avatar" id="chatAvatar">W</div><div class="chat-title"><strong id="chatName">Customer</strong><span id="chatPhone">—</span></div><div class="chat-actions"><button id="closeConversationBtn" class="ghost-btn">Close</button></div></div>
-      <div id="messageList" class="message-list"></div>
-      <div class="composer">
-        <div id="aiSuggestion" class="ai-suggestion hidden"><div><span class="ai-label">✦ AI SUGGESTION</span><p id="suggestionText"></p></div><div class="suggestion-actions"><button id="useSuggestion" class="secondary-btn">Use</button><button id="refreshSuggestion" class="icon-btn">↻</button></div></div>
-        <textarea id="messageInput" rows="3" placeholder="Write a WhatsApp message…"></textarea>
-        <div class="composer-bottom"><button id="suggestBtn" class="ghost-btn">✦ Suggest reply</button><span id="sendHint">Manual send</span><button id="sendBtn" class="primary-btn">Send →</button></div>
-      </div>
-    </div>
-  </section>
+    </header>
 
-  <aside class="context-panel">
-    <div class="context-head"><div><div class="section-kicker">CUSTOMER CONTEXT</div><h2 id="contextName">Customer</h2></div><span id="leadStatus" class="status-pill">Lead</span></div>
-    <div class="context-card"><div class="card-label">CONTACT</div><div class="context-value" id="contextPhone">—</div><div class="context-muted" id="contextCustomer">No customer profile</div></div>
-    <div class="context-card"><div class="card-label">LEAD</div><div class="context-grid"><div><small>Interest</small><strong id="leadInterest">—</strong></div><div><small>Budget</small><strong id="leadBudget">—</strong></div><div><small>Product</small><strong id="leadProduct">—</strong></div><div><small>Source</small><strong id="leadSource">WhatsApp</strong></div></div></div>
-    <div class="context-card"><div class="card-label">AI SALES MODE</div><div class="mode-grid"><button class="mode active" data-mode="auto">AUTO<span>AI can send</span></button><button class="mode" data-mode="approval">AI + APPROVAL<span>Review first</span></button><button class="mode" data-mode="manual">MANUAL<span>You send</span></button></div></div>
-    <div class="context-card"><div class="card-label">SERVICES</div><div id="serviceContext" class="service-context"><span>Loading catalog…</span></div></div>
-    <div class="context-card"><div class="card-label">ACTIONS</div><div class="context-actions"><a id="openLeadBtn" href="leads.html" class="secondary-btn">Open Lead</a><a href="orders.html" class="secondary-btn">View Orders</a><button id="addLeadBtn" class="primary-btn">＋ Add to Leads</button></div></div>
-    <div class="context-card timeline-card"><div class="card-label">TIMELINE</div><div id="timeline" class="timeline"><span>No events loaded.</span></div></div>
-  </aside>
+    <div id="messages" class="messages"></div>
+
+    <div class="composer">
+      <div id="approvalBox" class="wa-card approval hidden">
+        <div><span class="wa-label">✦ PENDING APPROVAL</span><p id="approvalText"></p></div>
+        <div class="card-actions">
+          <button id="approveBtn" class="wa-btn" type="button">Approve</button>
+          <button id="rejectBtn" class="wa-btn ghost" type="button" aria-label="Reject"><svg class="ni"><use href="#i-x"/></svg></button>
+        </div>
+      </div>
+      <div id="aiSuggestion" class="wa-card hidden">
+        <div><span class="wa-label">✦ AI SUGGESTION</span><p id="suggestionText"></p></div>
+        <div class="card-actions">
+          <button id="useSuggestion" class="wa-btn" type="button">Use</button>
+          <button id="refreshSuggestion" class="wa-btn ghost" type="button" aria-label="New suggestion"><svg class="ni"><use href="#i-refresh"/></svg></button>
+        </div>
+      </div>
+      <div class="quick">
+        <button id="suggest" class="chip" type="button">✦ Suggest reply</button>
+        <button id="modeChip" class="chip soft" type="button">AUTO</button>
+        <span id="winChip" class="chip warn hidden">24h window closed</span>
+      </div>
+      <div class="input-row">
+        <textarea id="input" rows="1" placeholder="Message" enterkeyhint="send"></textarea>
+        <button id="send" class="send-btn" type="button" aria-label="Send"><svg class="ni"><use href="#i-send"/></svg></button>
+      </div>
+    </div>
+  </div>
 </section>
-</main></div>
 
-<div id="connectModal" class="modal hidden"><div class="modal-card"><button class="modal-close" id="closeConnect">×</button><div class="section-kicker">WHATSAPP CONNECTION</div><h2>Connect your WhatsApp Business</h2><p>GLIME will use Meta's approved WhatsApp Business flow. Your access token stays server-side.</p><div class="connect-steps"><div><b>1</b><span>Start secure connection</span></div><div><b>2</b><span>Complete Meta verification</span></div><div><b>3</b><span>Return to GLIME</span></div></div><button id="startConnect" class="primary-btn full">Continue with Meta →</button><p id="connectStatus" class="modal-status"></p></div></div>
-<script>
-window.fbAsyncInit = function () {
-  FB.init({
-    appId: '1682940610216509',
-    cookie: true,
-    xfbml: false,
-    version: 'v26.0'
-  });
-};
-</script>
+<aside class="context" id="context">
+  <div class="context-head">
+    <div><div class="kicker">CUSTOMER CONTEXT</div><h2 id="ctxName">Customer</h2></div>
+    <div class="head-right">
+      <span id="leadStatus" class="status-pill">New</span>
+      <button id="ctxClose" class="icon-btn ctx-close" type="button" aria-label="Close details"><svg class="ni"><use href="#i-x"/></svg></button>
+    </div>
+  </div>
 
-<script
-  async
-  defer
-  crossorigin="anonymous"
-  src="https://connect.facebook.net/en_US/sdk.js">
-</script>
-  
-<script src="whatsapp-sales-specialist.js"></script>
-<script src="whatsapp-sales-context-addon.js"></script>
-<script src="whatsapp-handoff-addon.js"></script>  
+  <div class="context-card">
+    <div class="card-label">CONTACT</div>
+    <div id="ctxPhone" class="context-value">—</div>
+    <div id="ctxCustomer" class="context-muted">No customer profile</div>
+  </div>
 
+  <div class="context-card">
+    <div class="card-label">LEAD</div>
+    <div class="context-grid">
+      <div><small>Interest</small><strong id="leadInterest">—</strong></div>
+      <div><small>Budget</small><strong id="leadBudget">—</strong></div>
+      <div><small>Product</small><strong id="leadProduct">—</strong></div>
+      <div><small>Source</small><strong id="leadSource">whatsapp</strong></div>
+    </div>
+  </div>
+
+  <div class="context-card">
+    <div class="card-label">AI SALES MODE</div>
+    <div class="mode-grid">
+      <button type="button" class="mode" data-mode="auto">AUTO<span>AI can send</span></button>
+      <button type="button" class="mode" data-mode="approval">AI + APPROVAL<span>Review first</span></button>
+      <button type="button" class="mode" data-mode="manual">MANUAL<span>You send</span></button>
+    </div>
+  </div>
+
+  <div id="ctxDynamic"></div>
+
+  <div class="context-card">
+    <div class="card-label">SERVICES / CATALOG</div>
+    <div id="serviceContext" class="service-context"><span>Loading catalog…</span></div>
+  </div>
+
+  <div class="context-card">
+    <div class="card-label">ACTIONS</div>
+    <div class="context-actions">
+      <a id="openLead" href="leads.html" class="secondary-btn">Open Lead</a>
+      <a href="orders.html" class="secondary-btn">View Orders</a>
+      <button id="addLead" class="primary-btn full" type="button">＋ Add to Leads</button>
+    </div>
+  </div>
+</aside>
+
+</section>
+</main>
+</div>
+
+<div id="connectModal" class="modal hidden"><div class="modal-card">
+  <button class="modal-close" id="closeConnect" type="button" aria-label="Close">×</button>
+  <div class="kicker">WHATSAPP CONNECTION</div>
+  <h2>Connect your WhatsApp Business</h2>
+  <p>GLIME uses Meta's approved WhatsApp Business flow. Your access token stays server-side.</p>
+  <div class="connect-steps">
+    <div><b>1</b><span>Start secure connection</span></div>
+    <div><b>2</b><span>Complete Meta verification</span></div>
+    <div><b>3</b><span>Return to GLIME</span></div>
+  </div>
+  <button id="startConnect" class="primary-btn full" type="button">Continue with Meta →</button>
+  <p id="connectStatus" class="modal-status"></p>
+</div></div>
+
+<script src="whatsapp-sales-specialist.js?v=20261004-1"></script>
 </body>
 </html>
