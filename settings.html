@@ -165,6 +165,9 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
 
   Do not create another settings.html for a new settings area.
   Add a module/addon instead and reuse the shared API/helpers.
+
+  Deep links:  settings.html#ai            opens the AI module
+               settings.html#ai-knowledge  opens AI > Knowledge
 */
 
 const sb = supabase.createClient(
@@ -588,7 +591,7 @@ async function init(){
   }
 
   renderNavigation();
-  openModule(state.activeModule || 'channels');
+  await openModule(state.activeModule || 'channels');
 }
 
 async function loadSettingsAddon(src){
@@ -608,7 +611,19 @@ async function loadSettingsAddon(src){
   }catch(error){
     console.error('Settings addon load error:',error);
   }
-  init();
+
+  /* Deep links, e.g. settings.html#ai-knowledge (used by the Services page) */
+  const hash = (location.hash || '').replace('#','').toLowerCase();
+  if(hash === 'ai' || hash.startsWith('ai-')){
+    state.activeModule = 'ai';
+  }
+
+  await init();
+
+  if(hash === 'ai-knowledge'){
+    const tab = document.querySelector('[data-act="tab"][data-v="knowledge"]');
+    if(tab) tab.click();
+  }
 })();
 </script>
 </body>
