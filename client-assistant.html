@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f3f5f6">
   <title>GLIME Client Assistant</title>
   <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,124 +12,188 @@
   <link rel="stylesheet" href="client-assistant.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
-  <div class="ambient ambient-cyan"></div>
-  <div class="ambient ambient-green"></div>
+  <div id="assistantApp" class="assistant-app">
+    <header class="app-header">
+      <a class="glime-brand" href="dashboard.html" aria-label="GLIME Dashboard">
+        <img class="brand-logo" src="glime_logo_clean.svg" alt="GLIME">
+      </a>
 
-  <header class="glime-header">
-    <a class="glime-brand" href="dashboard.html" aria-label="GLIME Dashboard">
-      <img class="brand-logo" src="glime_logo_clean.svg" alt="GLIME">
-    </a>
-
-    <div class="secure-pill">
-      <span class="secure-dot"></span>
-      <span>SECURE CLIENT SESSION</span>
-    </div>
-  </header>
-
-  <main class="page-shell">
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="eyebrow">GLIME CLIENT ASSISTANT</div>
-        <h1>Business clarity,<br><span>one question away.</span></h1>
-        <p>
-          Ask about your business data — leads, customers, orders, sales,
-          products, appointments, and performance. GLIME turns your data
-          into clear insights and practical next steps.
-        </p>
-
-        <div class="hero-points">
-          <div class="hero-point"><span class="point-icon">01</span> Authorized business data</div>
-          <div class="hero-point"><span class="point-icon">02</span> Clear recommendations</div>
-          <div class="hero-point"><span class="point-icon">03</span> Client-isolated access</div>
-        </div>
-      </div>
-
-      <aside class="privacy-card">
-        <div class="privacy-icon">◈</div>
-        <div class="privacy-title">Your business data</div>
-        <p>
-          The assistant resolves your authorized <code>client_id</code>
-          from your authenticated session. Requests cannot be used to
-          access another client’s data.
-        </p>
-        <div class="privacy-line"></div>
-        <div class="privacy-status">
-          <span class="status-dot"></span>
-          AUTHENTICATED CLIENT ACCESS
-        </div>
-      </aside>
-    </section>
-
-    <section class="assistant-card" aria-label="GLIME Client Assistant">
-      <div class="assistant-topbar">
-        <div class="assistant-identity">
-          <div class="ai-avatar">✦</div>
-          <div>
-            <div class="assistant-name">GLIME Client Assistant</div>
-            <div class="assistant-subtitle" id="clientName">Business Intelligence</div>
-          </div>
-        </div>
-
-        <button id="clearBtn" class="clear-btn" type="button">Clear chat</button>
-      </div>
-
-      <div id="messages" class="messages" aria-live="polite">
-        <div class="message assistant">
-          <div class="message-label">GLIME AI</div>
-          <div class="bubble">
-            Hello. I can help you understand your GLIME business data.
-            <br><br>
-            You can ask things like:
-            <br>• How many customers do I have?
-            <br>• How much did I sell this month?
-            <br>• Which products have the most orders?
-            <br>• What are my current leads?
-            <br>• What should my business focus on next?
+      <div class="assistant-title-block">
+        <div class="assistant-title-row">
+          <span class="ai-avatar" aria-hidden="true">✦</span>
+          <div class="assistant-heading">
+            <h1>GLIME Client Assistant</h1>
+            <div class="assistant-meta">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span id="clientName">Business Assistant</span>
+              <span class="meta-separator" aria-hidden="true">·</span>
+              <span>Secure session</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="suggestions">
-        <button type="button" data-prompt="How many customers do I have?">Customer count</button>
-        <button type="button" data-prompt="How much did I sell this month?">Monthly sales</button>
-        <button type="button" data-prompt="How many leads do I have?">Lead count</button>
-        <button type="button" data-prompt="What should my business focus on next?">Next step</button>
+      <div class="header-actions">
+        <span class="online-pill" aria-label="Assistant status: ready">
+          <span class="online-dot" aria-hidden="true"></span>READY
+        </span>
+        <button id="clearBtn" class="icon-btn" type="button"
+          title="Start a new conversation" aria-label="Start a new conversation">↻</button>
+      </div>
+    </header>
+
+    <main class="assistant-main">
+      <section id="conversationContainer" class="conversation"
+        aria-label="GLIME Client Assistant conversation">
+
+        <div id="emptyState" class="empty-state">
+          <div class="empty-mark" aria-hidden="true">✦</div>
+          <h2>What can I help you with?</h2>
+          <p>Ask about customers, leads, products, orders, appointments, performance, or other authorized business data.</p>
+          <div id="suggestions" class="suggestions" aria-label="Suggested questions">
+            <button type="button" data-prompt="How many customers do I have?">Customer count</button>
+            <button type="button" data-prompt="How much did I sell this month?">Monthly sales</button>
+            <button type="button" data-prompt="How many leads do I have?">Lead count</button>
+            <button type="button" data-prompt="What should my business focus on next?">Next step</button>
+          </div>
+        </div>
+
+        <div id="messages" class="messages" aria-live="polite" aria-relevant="additions text"></div>
+
+        <div id="thinkingIndicator" class="thinking-indicator" hidden aria-live="polite">
+          <div class="message-avatar" aria-hidden="true">✦</div>
+          <div class="thinking-bubble">
+            <span>GLIME is thinking</span>
+            <span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+        </div>
+
+        <div id="assistantUiActions" class="ui-actions" hidden aria-live="polite"></div>
+
+        <section id="assistantActionProposal" class="action-proposal" hidden aria-label="Change proposal">
+          <div class="proposal-header">
+            <div>
+              <div class="eyebrow">ACTION PROPOSAL</div>
+              <h2 id="proposalTitle">Review requested change</h2>
+            </div>
+            <span id="proposalRisk" class="risk-badge">Review required</span>
+          </div>
+
+          <div class="proposal-target">
+            <span class="label">Target</span>
+            <strong id="proposalTarget">—</strong>
+            <span id="proposalReason" class="supporting-text"></span>
+          </div>
+
+          <div class="change-grid">
+            <div class="change-panel">
+              <span class="label">Before</span>
+              <div id="proposalBefore" class="change-value">—</div>
+            </div>
+            <div class="change-arrow" aria-hidden="true">→</div>
+            <div class="change-panel change-panel-after">
+              <span class="label">After</span>
+              <div id="proposalAfter" class="change-value">—</div>
+            </div>
+          </div>
+
+          <div class="proposal-note">
+            <span class="note-icon" aria-hidden="true">!</span>
+            <span>Nothing is changed until you explicitly approve this proposal.</span>
+          </div>
+
+          <div class="proposal-actions">
+            <button id="proposalCancelBtn" class="secondary-action" type="button">Cancel</button>
+            <button id="proposalApproveBtn" class="primary-action" type="button">Approve change</button>
+          </div>
+
+          <div id="proposalStatus" class="proposal-status" aria-live="polite" hidden></div>
+        </section>
+
+        <section id="assistantExecutionStatus" class="execution-status" hidden aria-label="Change execution status">
+          <div class="execution-header">
+            <div>
+              <div class="eyebrow">EXECUTION STATUS</div>
+              <h2>Change progress</h2>
+            </div>
+            <span id="executionCurrentStatus" class="execution-badge">Proposed</span>
+          </div>
+
+          <div class="execution-steps" aria-live="polite">
+            <div class="execution-step" data-status="proposed">
+              <span class="step-marker" aria-hidden="true">1</span>
+              <div><strong>Proposed</strong><span>Change prepared for review</span></div>
+            </div>
+            <div class="execution-step" data-status="approved">
+              <span class="step-marker" aria-hidden="true">2</span>
+              <div><strong>Approved</strong><span>Approval received</span></div>
+            </div>
+            <div class="execution-step" data-status="queued">
+              <span class="step-marker" aria-hidden="true">3</span>
+              <div><strong>Queued</strong><span>Execution safely queued</span></div>
+            </div>
+            <div class="execution-step" data-status="processing">
+              <span class="step-marker" aria-hidden="true">4</span>
+              <div><strong>Processing</strong><span>Applying the approved change</span></div>
+            </div>
+            <div class="execution-step" data-status="completed">
+              <span class="step-marker" aria-hidden="true">5</span>
+              <div><strong>Completed</strong><span>Change applied successfully</span></div>
+            </div>
+          </div>
+          <div id="executionMessage" class="execution-message" aria-live="polite"></div>
+        </section>
+
+        <section id="assistantCreditsExhausted" class="credits-card" hidden aria-live="assertive">
+          <div class="credits-icon" aria-hidden="true">◎</div>
+          <div class="credits-content">
+            <div class="eyebrow">AI CREDITS</div>
+            <h2>Your AI credits are exhausted</h2>
+            <p>Please open Billing to continue using the Client Assistant.</p>
+            <button id="goBillingBtn" class="primary-action" type="button" data-target="billing">Go to Billing</button>
+          </div>
+        </section>
+
+        <div id="attachmentError" class="inline-error" hidden role="alert"></div>
+      </section>
+    </main>
+
+    <footer class="composer-dock">
+      <div id="attachmentTray" class="attachment-tray" hidden aria-live="polite">
+        <div class="attachment-tray-header">
+          <span>Attached files</span>
+          <button id="clearAttachmentsBtn" class="tray-clear" type="button">Clear</button>
+        </div>
+        <div id="attachmentList" class="attachment-list"></div>
       </div>
 
-      <form id="chatForm" class="composer">
+      <form id="chatForm" class="composer" novalidate>
+        <input id="attachmentInput" class="visually-hidden" type="file"
+          accept="image/*,video/*,.pdf,.doc,.docx,.txt" multiple>
+
+        <button id="attachmentBtn" class="composer-icon-btn" type="button"
+          title="Attach photos or files" aria-label="Attach photos or files">+</button>
+
         <div class="input-wrap">
-          <textarea
-            id="messageInput"
-            maxlength="2000"
-            rows="2"
-            placeholder="Ask GLIME about your business…"
-            aria-label="Message"
-          ></textarea>
+          <textarea id="messageInput" maxlength="2000" rows="1"
+            placeholder="Message GLIME…" aria-label="Message GLIME Client Assistant"
+            autocomplete="off" spellcheck="true"></textarea>
           <div class="input-meta">
             <span>Enter to send · Shift + Enter for a new line</span>
             <span id="charCount">0 / 2000</span>
           </div>
         </div>
 
-        <button id="sendBtn" class="send-btn" type="submit">
-          <span>Send</span>
-          <span class="send-arrow">→</span>
+        <button id="sendBtn" class="send-btn" type="submit" aria-label="Send message">
+          <span class="send-icon" aria-hidden="true">↑</span>
         </button>
       </form>
 
-      <div id="status" class="status"></div>
-    </section>
-
-    <footer class="page-footer">
-      <span>GLIME</span>
-      <span>•</span>
-      <span>Business Intelligence Assistant</span>
-      <span>•</span>
-      <span>Client data remains access-controlled</span>
+      <div id="status" class="status" aria-live="polite"></div>
+      <div class="composer-disclaimer">GLIME only acts on authorized client data and requires approval for business changes.</div>
     </footer>
-  </main>
+  </div>
 
   <script src="client-assistant.js"></script>
   <script src="client-assistant-action-addon.js"></script>
