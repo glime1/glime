@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f3f5f6">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7f8">
   <title>GLIME Client Assistant</title>
   <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,20 +12,34 @@
   <link rel="stylesheet" href="client-assistant.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
-  <div id="assistantApp" class="assistant-app">
+  <div class="assistant-app" id="assistantApp">
+
+    <!-- =====================================================
+         APP HEADER
+         ===================================================== -->
     <header class="app-header">
-      <a class="glime-brand" href="dashboard.html" aria-label="GLIME Dashboard">
-        <img class="brand-logo" src="glime_logo_clean.svg" alt="GLIME">
-      </a>
+      <button
+        id="conversationMenuBtn"
+        class="header-icon-btn"
+        type="button"
+        aria-label="Open conversations and settings"
+        aria-expanded="false"
+        aria-controls="conversationDrawer"
+      >
+        <span class="hamburger-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+      </button>
 
       <div class="assistant-title-block">
         <div class="assistant-title-row">
-          <span class="ai-avatar" aria-hidden="true">✦</span>
+          <span class="ai-avatar" aria-hidden="true">
+            <img src="glime_logo_clean.svg" alt="">
+          </span>
           <div class="assistant-heading">
             <h1>GLIME Client Assistant</h1>
             <div class="assistant-meta">
-              <span class="status-dot" aria-hidden="true"></span>
+              <span class="online-dot" aria-hidden="true"></span>
               <span id="clientName">Business Assistant</span>
               <span class="meta-separator" aria-hidden="true">·</span>
               <span>Secure session</span>
@@ -35,23 +49,117 @@
       </div>
 
       <div class="header-actions">
-        <span class="online-pill" aria-label="Assistant status: ready">
-          <span class="online-dot" aria-hidden="true"></span>READY
-        </span>
-        <button id="clearBtn" class="icon-btn" type="button"
-          title="Start a new conversation" aria-label="Start a new conversation">↻</button>
+        <button
+          id="newChatBtn"
+          class="header-action-btn"
+          type="button"
+          aria-label="New chat"
+          title="New chat"
+        >
+          <span aria-hidden="true">↗</span>
+        </button>
+        <button
+          id="moreMenuBtn"
+          class="header-action-btn"
+          type="button"
+          aria-label="More options"
+          aria-expanded="false"
+          aria-controls="moreMenu"
+        >
+          <span aria-hidden="true">⋮</span>
+        </button>
       </div>
     </header>
 
-    <main class="assistant-main">
-      <section id="conversationContainer" class="conversation"
-        aria-label="GLIME Client Assistant conversation">
+    <!-- =====================================================
+         CONVERSATION DRAWER
+         Each conversation is independent and deletable.
+         Backend deletion is handled by the later JS/runtime layer.
+         ===================================================== -->
+    <aside
+      id="conversationDrawer"
+      class="conversation-drawer"
+      aria-label="Conversations"
+      aria-hidden="true"
+    >
+      <div class="drawer-header">
+        <div>
+          <div class="drawer-eyebrow">GLIME</div>
+          <h2>Conversations</h2>
+        </div>
+        <button id="closeDrawerBtn" class="drawer-close-btn" type="button" aria-label="Close conversations">
+          ×
+        </button>
+      </div>
 
+      <button id="drawerNewChatBtn" class="drawer-new-chat" type="button">
+        <span aria-hidden="true">＋</span>
+        <span>New chat</span>
+      </button>
+
+      <div id="conversationList" class="conversation-list" aria-live="polite">
+        <!-- JS will render independent conversation rows here. -->
+        <div id="conversationEmpty" class="conversation-empty">
+          <span>No conversations yet.</span>
+        </div>
+      </div>
+
+      <div class="drawer-divider"></div>
+
+      <button id="settingsBtn" class="drawer-settings-btn" type="button">
+        <span class="drawer-row-icon" aria-hidden="true">⚙</span>
+        <span>Settings</span>
+      </button>
+    </aside>
+
+    <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+
+    <!-- =====================================================
+         MORE MENU
+         ===================================================== -->
+    <div id="moreMenu" class="more-menu" hidden role="menu" aria-label="Conversation actions">
+      <button id="moreNewChatBtn" type="button" role="menuitem">
+        <span aria-hidden="true">＋</span>
+        <span>New chat</span>
+      </button>
+      <button id="renameConversationBtn" type="button" role="menuitem">
+        <span aria-hidden="true">✎</span>
+        <span>Rename conversation</span>
+      </button>
+      <button id="exportConversationBtn" type="button" role="menuitem">
+        <span aria-hidden="true">⇩</span>
+        <span>Export conversation</span>
+      </button>
+      <button id="copyConversationBtn" type="button" role="menuitem">
+        <span aria-hidden="true">▣</span>
+        <span>Copy conversation</span>
+      </button>
+      <button id="clearConversationBtn" type="button" role="menuitem">
+        <span aria-hidden="true">⌫</span>
+        <span>Clear current chat</span>
+      </button>
+    </div>
+
+    <!-- =====================================================
+         MAIN CHAT VIEW
+         ===================================================== -->
+    <main class="assistant-main">
+      <section
+        id="conversationContainer"
+        class="conversation"
+        aria-label="GLIME Client Assistant conversation"
+      >
         <div id="emptyState" class="empty-state">
-          <div class="empty-mark" aria-hidden="true">✦</div>
+          <div class="empty-mark" aria-hidden="true">
+            <img src="glime_logo_clean.svg" alt="">
+          </div>
           <h2>What can I help you with?</h2>
-          <p>Ask about customers, leads, products, orders, appointments, performance, or other authorized business data.</p>
-          <div id="suggestions" class="suggestions" aria-label="Suggested questions">
+          <p>
+            Ask about customers, leads, products, orders, appointments,
+            performance, or other authorized business data.
+          </p>
+
+          <div class="suggestions" id="suggestions" aria-label="Suggested questions">
             <button type="button" data-prompt="How many customers do I have?">Customer count</button>
             <button type="button" data-prompt="How much did I sell this month?">Monthly sales</button>
             <button type="button" data-prompt="How many leads do I have?">Lead count</button>
@@ -61,16 +169,25 @@
 
         <div id="messages" class="messages" aria-live="polite" aria-relevant="additions text"></div>
 
+        <!-- ===================================================
+             GLIME THINKING
+             UI-only for now. The rotating GLIME mark is the
+             visual contract that can later be connected to the
+             backend thinking mode.
+             =================================================== -->
         <div id="thinkingIndicator" class="thinking-indicator" hidden aria-live="polite">
-          <div class="message-avatar" aria-hidden="true">✦</div>
-          <div class="thinking-bubble">
-            <span>GLIME is thinking</span>
+          <div class="thinking-logo" aria-hidden="true">
+            <img src="glime_logo_clean.svg" alt="">
+          </div>
+          <div class="thinking-content">
+            <span class="thinking-title">GLIME Thinking</span>
             <span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
           </div>
         </div>
 
         <div id="assistantUiActions" class="ui-actions" hidden aria-live="polite"></div>
 
+        <!-- Universal mutation proposal -->
         <section id="assistantActionProposal" class="action-proposal" hidden aria-label="Change proposal">
           <div class="proposal-header">
             <div>
@@ -111,6 +228,7 @@
           <div id="proposalStatus" class="proposal-status" aria-live="polite" hidden></div>
         </section>
 
+        <!-- Universal execution lifecycle -->
         <section id="assistantExecutionStatus" class="execution-status" hidden aria-label="Change execution status">
           <div class="execution-header">
             <div>
@@ -122,36 +240,35 @@
 
           <div class="execution-steps" aria-live="polite">
             <div class="execution-step" data-status="proposed">
-              <span class="step-marker" aria-hidden="true">1</span>
-              <div><strong>Proposed</strong><span>Change prepared for review</span></div>
+              <span class="step-marker">1</span><div><strong>Proposed</strong><span>Change prepared for review</span></div>
             </div>
             <div class="execution-step" data-status="approved">
-              <span class="step-marker" aria-hidden="true">2</span>
-              <div><strong>Approved</strong><span>Approval received</span></div>
+              <span class="step-marker">2</span><div><strong>Approved</strong><span>Approval received</span></div>
             </div>
             <div class="execution-step" data-status="queued">
-              <span class="step-marker" aria-hidden="true">3</span>
-              <div><strong>Queued</strong><span>Execution safely queued</span></div>
+              <span class="step-marker">3</span><div><strong>Queued</strong><span>Execution safely queued</span></div>
             </div>
             <div class="execution-step" data-status="processing">
-              <span class="step-marker" aria-hidden="true">4</span>
-              <div><strong>Processing</strong><span>Applying the approved change</span></div>
+              <span class="step-marker">4</span><div><strong>Processing</strong><span>Applying the approved change</span></div>
             </div>
             <div class="execution-step" data-status="completed">
-              <span class="step-marker" aria-hidden="true">5</span>
-              <div><strong>Completed</strong><span>Change applied successfully</span></div>
+              <span class="step-marker">5</span><div><strong>Completed</strong><span>Change applied successfully</span></div>
             </div>
           </div>
+
           <div id="executionMessage" class="execution-message" aria-live="polite"></div>
         </section>
 
+        <!-- AI credits exhausted -->
         <section id="assistantCreditsExhausted" class="credits-card" hidden aria-live="assertive">
           <div class="credits-icon" aria-hidden="true">◎</div>
           <div class="credits-content">
             <div class="eyebrow">AI CREDITS</div>
             <h2>Your AI credits are exhausted</h2>
             <p>Please open Billing to continue using the Client Assistant.</p>
-            <button id="goBillingBtn" class="primary-action" type="button" data-target="billing">Go to Billing</button>
+            <button id="goBillingBtn" class="primary-action" type="button" data-target="billing">
+              Go to Billing
+            </button>
           </div>
         </section>
 
@@ -159,6 +276,9 @@
       </section>
     </main>
 
+    <!-- =====================================================
+         COMPOSER + PLUS SHEET
+         ===================================================== -->
     <footer class="composer-dock">
       <div id="attachmentTray" class="attachment-tray" hidden aria-live="polite">
         <div class="attachment-tray-header">
@@ -169,16 +289,35 @@
       </div>
 
       <form id="chatForm" class="composer" novalidate>
-        <input id="attachmentInput" class="visually-hidden" type="file"
-          accept="image/*,video/*,.pdf,.doc,.docx,.txt" multiple>
+        <input
+          id="attachmentInput"
+          class="visually-hidden"
+          type="file"
+          accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+          multiple
+        >
 
-        <button id="attachmentBtn" class="composer-icon-btn" type="button"
-          title="Attach photos or files" aria-label="Attach photos or files">+</button>
+        <button
+          id="attachmentBtn"
+          class="composer-icon-btn"
+          type="button"
+          aria-label="Open attachments and tools"
+          aria-expanded="false"
+          aria-controls="attachmentMenu"
+        >
+          <span aria-hidden="true">+</span>
+        </button>
 
         <div class="input-wrap">
-          <textarea id="messageInput" maxlength="2000" rows="1"
-            placeholder="Message GLIME…" aria-label="Message GLIME Client Assistant"
-            autocomplete="off" spellcheck="true"></textarea>
+          <textarea
+            id="messageInput"
+            maxlength="2000"
+            rows="1"
+            placeholder="Message GLIME…"
+            aria-label="Message GLIME Client Assistant"
+            autocomplete="off"
+            spellcheck="true"
+          ></textarea>
           <div class="input-meta">
             <span>Enter to send · Shift + Enter for a new line</span>
             <span id="charCount">0 / 2000</span>
@@ -191,8 +330,59 @@
       </form>
 
       <div id="status" class="status" aria-live="polite"></div>
-      <div class="composer-disclaimer">GLIME only acts on authorized client data and requires approval for business changes.</div>
+      <div class="composer-disclaimer">
+        GLIME only acts on authorized client data and requires approval for business changes.
+      </div>
     </footer>
+
+    <!-- Plus-menu bottom sheet / desktop popover -->
+    <div id="attachmentBackdrop" class="sheet-backdrop" hidden></div>
+
+    <section
+      id="attachmentMenu"
+      class="attachment-menu"
+      hidden
+      aria-label="Attachments and tools"
+    >
+      <div class="sheet-handle" aria-hidden="true"></div>
+
+      <button id="cameraBtn" class="tool-row" type="button">
+        <span class="tool-icon camera-icon" aria-hidden="true">⌾</span>
+        <span>Camera</span>
+      </button>
+
+      <button id="photosBtn" class="tool-row" type="button">
+        <span class="tool-icon photos-icon" aria-hidden="true">▧</span>
+        <span>Photos</span>
+      </button>
+
+      <button id="filesBtn" class="tool-row" type="button">
+        <span class="tool-icon files-icon" aria-hidden="true">⌕</span>
+        <span>Files</span>
+      </button>
+
+      <button id="connectorBtn" class="tool-row" type="button">
+        <span class="tool-icon connector-icon" aria-hidden="true">◉</span>
+        <span>Connector</span>
+      </button>
+
+      <button
+        id="glimeThinkingBtn"
+        class="tool-row thinking-tool"
+        type="button"
+        data-mode="glime-thinking"
+        aria-pressed="false"
+      >
+        <span class="tool-icon thinking-tool-icon" aria-hidden="true">
+          <img src="glime_logo_clean.svg" alt="">
+        </span>
+        <span class="tool-row-main">
+          <strong>GLIME Thinking</strong>
+          <small>Enhanced reasoning mode</small>
+        </span>
+        <span class="tool-toggle" aria-hidden="true"></span>
+      </button>
+    </section>
   </div>
 
   <script src="client-assistant.js"></script>
