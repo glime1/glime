@@ -1,1876 +1,254 @@
 /* =========================================================
-   GLIME — SERVICES CLIENT KNOWLEDGE BASE ADDON
+   GLIME - SERVICES: CLIENT KNOWLEDGE SUMMARY (v2)
    ---------------------------------------------------------
-   Purpose:
-   - Step 5 में Client Knowledge Base देना
-   - हर client की knowledge अलग रखना
-   - 5 Omnidim-inspired use-case categories
-   - केवल TEXT knowledge
-   - कोई document upload नहीं
-   - कोई Voice AI Agent creation नहीं
-   - Existing client-storage-knowledge Edge Function का use
-   - Existing client_knowledge_items table का use
-   - Admin इस flow का हिस्सा नहीं
-========================================================= */
+   Client knowledge now lives in ONE place: Settings > AI > Knowledge.
+   WhatsApp, Instagram and Voice all read from it.
 
+   This card (Step 5 of the service wizard) only shows a live summary
+   of that central knowledge and links to it. It never edits knowledge,
+   so there is no second Knowledge Base to keep in sync.
+
+   - Same client-storage-knowledge Edge Function as Settings
+   - Same client_business_profiles table as Settings
+   - Client is resolved from the signed-in user (never from browser input)
+   - Uses the Supabase client created by services.js
+========================================================= */
 (() => {
   'use strict';
 
   const HOST_ID = 'knowledgeBaseHost';
+  const SETTINGS_URL = 'settings.html#ai-knowledge';
 
-  const CATEGORIES = [
-    {
-      key: 'lead_generation',
-      label: 'Lead Generation',
-      description:
-        'Leads, prospects, qualification और follow-up से जुड़ी business knowledge.',
-      examples: [
-        'Lead qualification rules',
-        'Ideal customer information',
-        'Follow-up rules',
-        'Common prospect questions'
-      ]
-    },
+  const SPECIALIST_CATS = ['lead_generation', 'appointments', 'support', 'negotiation', 'collections'];
 
-    {
-      key: 'appointments',
-      label: 'Appointments',
-      description:
-        'Booking, appointments, consultations और reminders से जुड़ी knowledge.',
-      examples: [
-        'Booking rules',
-        'Appointment timings',
-        'Rescheduling rules',
-        'Cancellation / no-show policy'
-      ]
-    },
-
-    {
-      key: 'support',
-      label: 'Support',
-      description:
-        'Customer support, product questions और business policies से जुड़ी knowledge.',
-      examples: [
-        'Product information',
-        'Refund policy',
-        'Return / warranty rules',
-        'Frequently asked questions'
-      ]
-    },
-
-    {
-      key: 'negotiation',
-      label: 'Negotiation',
-      description:
-        'Pricing, discounts, payment arrangements और negotiation rules.',
-      examples: [
-        'Allowed discounts',
-        'Negotiation limits',
-        'Payment plans',
-        'When to escalate'
-      ]
-    },
-
-    {
-      key: 'collections',
-      label: 'Collections',
-      description:
-        'Payment reminders, renewals और follow-up communication से जुड़ी knowledge.',
-      examples: [
-        'Payment reminder rules',
-        'Overdue payment process',
-        'Renewal reminders',
-        'Approved follow-up wording'
-      ]
-    }
-  ];
-
-  let knowledgeItems = [];
-  let selectedCategory = 'lead_generation';
-  let editingId = null;
   let mounted = false;
 
-  function $(id) {
-    return document.getElementById(id);
+  const $ = id => document.getElementById(id);
+
+  const esc = value =>
+    String(value ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[c]));
+
+  function sb() {
+    // services.js declares: const supabaseClient = window.supabase.createClient(...)
+    // A top-level const is shared between classic scripts, but is not on window.
+    if (typeof supabaseClient !== 'undefined' && supabaseClient?.functions) return supabaseClient;
+    if (window.supabaseClient?.functions) return window.supabaseClient;
+    return null;
   }
 
-  function esc(value) {
-    return String(value ?? '').replace(
-      /[&<>"']/g,
-      char => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      }[char])
-    );
-  }
-
-  function getCategory(key) {
-    return CATEGORIES.find(
-      category => category.key === key
-    );
-  }
-
-  function getCategoryLabel(key) {
-    return (
-      getCategory(key)?.label ||
-      'Uncategorized'
-    );
-  }
-
-  /* =======================================================
-     SUPABASE SESSION
-  ======================================================= */
-
-  async function getSession() {
-
-    if (
-      !window.supabaseClient ||
-      typeof window.supabaseClient.auth?.getSession !==
-        'function'
-    ) {
-      throw new Error(
-        'GLIME Supabase client is not available.'
-      );
-    }
-
-    const {
-      data,
-      error
-    } =
-      await window.supabaseClient.auth.getSession();
+  async function listKnowledge(client) {
+    const { data, error } = await client.functions.invoke('client-storage-knowledge', {
+      body: { action: 'list_knowledge' }
+    });
 
     if (error) {
-      throw error;
+      let message = error.message || 'Could not load knowledge.';
+      try {
+        const body = await error.context.json();
+        if (body?.error) message = body.error;
+      } catch (_) { /* keep default */ }
+      throw new Error(message);
     }
 
-    if (!data?.session) {
-      throw new Error(
-        'Your session has expired. Please sign in again.'
-      );
-    }
-
-    return data.session;
+    if (!data || data.ok === false) throw new Error(data?.error || 'Could not load knowledge.');
+    return Array.isArray(data.items) ? data.items : [];
   }
 
-  /* =======================================================
-     EXISTING EDGE FUNCTION
-  ======================================================= */
+  async function loadProfile(client) {
+    const { data, error } = await client
+      .from('client_business_profiles')
+      .select('business_type,description,location,working_hours')
+      .limit(1)
+      .maybeSingle();
 
-  async function knowledgeApi(
-    action,
-    payload = {}
-  ) {
-
-    const session =
-      await getSession();
-
-    const supabaseUrl =
-      window.SUPABASE_URL ||
-      (
-        typeof SUPABASE_URL !==
-        'undefined'
-          ? SUPABASE_URL
-          : ''
-      );
-
-    const supabaseKey =
-      window.SUPABASE_KEY ||
-      (
-        typeof SUPABASE_KEY !==
-        'undefined'
-          ? SUPABASE_KEY
-          : ''
-      );
-
-    if (!supabaseUrl) {
-      throw new Error(
-        'Supabase URL is not configured.'
-      );
-    }
-
-    const response =
-      await fetch(
-        `${supabaseUrl}/functions/v1/client-storage-knowledge`,
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json',
-
-            Authorization:
-              `Bearer ${session.access_token}`,
-
-            ...(supabaseKey
-              ? {
-                  apikey:
-                    supabaseKey
-                }
-              }
-              : {})
-          },
-
-          body: JSON.stringify({
-            action,
-            ...payload
-          })
-        }
-      );
-
-    const result =
-      await response
-        .json()
-        .catch(() => ({}));
-
-    if (
-      !response.ok ||
-      result?.ok === false
-    ) {
-      throw new Error(
-        result?.error ||
-        `Knowledge request failed (${response.status}).`
-      );
-    }
-
-    return result;
+    if (error) throw error;
+    return data || null;
   }
 
-  /* =======================================================
-     STATUS
-  ======================================================= */
-
-  function setStatus(
-    message,
-    isError = false
-  ) {
-
-    const el =
-      $('kbStatus');
-
-    if (!el) return;
-
-    el.textContent =
-      message || '';
-
-    el.classList.toggle(
-      'error',
-      Boolean(isError)
-    );
+  function scopeOf(item) {
+    const scope = item.knowledge_scope || 'general';
+    if (scope === 'general') {
+      const legacy = item.metadata && item.metadata.use_case_category;
+      if (SPECIALIST_CATS.includes(legacy)) return 'specialist';
+    }
+    return scope;
   }
 
-  /* =======================================================
-     CATEGORY FILTER
-  ======================================================= */
+  function profileState(p) {
+    if (!p) return { label: 'Not set', ok: false };
 
-  function getVisibleItems() {
+    const hours = p.working_hours && typeof p.working_hours === 'object'
+      && Object.values(p.working_hours).some(d => d && d.enabled === true);
 
-    if (
-      selectedCategory ===
-      'all'
-    ) {
-      return knowledgeItems;
-    }
+    const filled = [p.business_type, p.description, p.location].filter(v => String(v || '').trim()).length + (hours ? 1 : 0);
 
-    if (
-      selectedCategory ===
-      'uncategorized'
-    ) {
-      return knowledgeItems.filter(
-        item =>
-          !item?.metadata
-            ?.use_case_category
-      );
-    }
-
-    return knowledgeItems.filter(
-      item =>
-        item?.metadata
-          ?.use_case_category ===
-        selectedCategory
-    );
+    if (filled >= 4) return { label: 'Complete', ok: true };
+    if (filled > 0) return { label: 'Incomplete', ok: false };
+    return { label: 'Not set', ok: false };
   }
 
-  /* =======================================================
-     CATEGORY UI
-  ======================================================= */
-
-  function renderCategories() {
-
-    const host =
-      $('kbCategories');
-
-    if (!host) return;
-
-    const list = [
-      {
-        key: 'all',
-        label: 'All'
-      },
-
-      ...CATEGORIES,
-
-      {
-        key: 'uncategorized',
-        label: 'Uncategorized'
-      }
-    ];
-
-    host.innerHTML =
-      list
-        .map(
-          category => `
-            <button
-              type="button"
-              class="kb-category ${
-                selectedCategory ===
-                category.key
-                  ? 'active'
-                  : ''
-              }"
-              data-kb-category="${esc(
-                category.key
-              )}"
-            >
-              ${esc(
-                category.label
-              )}
-            </button>
-          `
-        )
-        .join('');
-
-    host
-      .querySelectorAll(
-        '[data-kb-category]'
-      )
-      .forEach(button => {
-
-        button.addEventListener(
-          'click',
-          () => {
-
-            selectedCategory =
-              button.dataset
-                .kbCategory ||
-              'all';
-
-            cancelEdit(
-              false
-            );
-
-            renderAll();
-          }
-        );
-      });
-  }
-
-  /* =======================================================
-     REFERENCE INFORMATION
-  ======================================================= */
-
-  function renderReference() {
-
-    const host =
-      $('kbReference');
-
-    if (!host) return;
-
-    if (
-      selectedCategory ===
-        'all' ||
-      selectedCategory ===
-        'uncategorized'
-    ) {
-
-      host.innerHTML = `
-        <div class="kb-reference-note">
-          These five categories are only for organizing
-          your business knowledge. They do not create
-          or configure a Voice AI Assistant.
-        </div>
-      `;
-
-      return;
-    }
-
-    const category =
-      getCategory(
-        selectedCategory
-      );
-
-    if (!category) {
-      host.innerHTML = '';
-      return;
-    }
-
-    host.innerHTML = `
-      <div class="kb-reference-title">
-        ${esc(
-          category.label
-        )}
-      </div>
-
-      <p class="kb-reference-description">
-        ${esc(
-          category.description
-        )}
-      </p>
-
-      <div class="kb-example-list">
-        ${
-          category.examples
-            .map(
-              example => `
-                <div class="kb-example">
-                  <span>•</span>
-                  <span>
-                    ${esc(example)}
-                  </span>
-                </div>
-              `
-            )
-            .join('')
-        }
-      </div>
-
-      <div class="kb-reference-note">
-        Use these examples only as guidance.
-        Enter your own actual business information below.
-      </div>
-    `;
-  }
-
-  /* =======================================================
-     SELECTED CATEGORY LABEL
-  ======================================================= */
-
-  function updateSelectedCategoryLabel() {
-
-    const el =
-      $('kbSelectedCategory');
-
-    if (!el) return;
-
-    if (
-      selectedCategory ===
-      'all'
-    ) {
-
-      el.textContent =
-        'All';
-
-      return;
-    }
-
-    if (
-      selectedCategory ===
-      'uncategorized'
-    ) {
-
-      el.textContent =
-        'Uncategorized';
-
-      return;
-    }
-
-    el.textContent =
-      getCategoryLabel(
-        selectedCategory
-      );
-  }
-
-  /* =======================================================
-     KNOWLEDGE LIST
-  ======================================================= */
-
-  function renderItems() {
-
-    const host =
-      $('kbItems');
-
-    if (!host) return;
-
-    const items =
-      getVisibleItems();
-
-    if (!items.length) {
-
-      host.innerHTML = `
-        <div class="kb-empty">
-          No knowledge has been added
-          in this category yet.
-        </div>
-      `;
-
-      return;
-    }
-
-    host.innerHTML =
-      items
-        .map(item => {
-
-          const category =
-            item?.metadata
-              ?.use_case_category;
-
-          return `
-            <article
-              class="kb-item"
-            >
-
-              <div
-                class="kb-item-top"
-              >
-
-                <div
-                  class="kb-item-heading"
-                >
-
-                  <strong>
-                    ${esc(
-                      item.title
-                    )}
-                  </strong>
-
-                  <span
-                    class="kb-pill"
-                  >
-                    ${esc(
-                      getCategoryLabel(
-                        category
-                      )
-                    )}
-                  </span>
-
-                </div>
-
-                <div
-                  class="kb-item-actions"
-                >
-
-                  <button
-                    type="button"
-                    class="kb-action"
-                    data-kb-edit="${esc(
-                      item.id
-                    )}"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    class="kb-action danger"
-                    data-kb-delete="${esc(
-                      item.id
-                    )}"
-                  >
-                    Delete
-                  </button>
-
-                </div>
-
-              </div>
-
-              <div
-                class="kb-item-content"
-              >
-                ${esc(
-                  item.content
-                )}
-              </div>
-
-            </article>
-          `;
-        })
-        .join('');
-
-    host
-      .querySelectorAll(
-        '[data-kb-edit]'
-      )
-      .forEach(button => {
-
-        button.addEventListener(
-          'click',
-          () => {
-
-            startEdit(
-              button.dataset
-                .kbEdit
-            );
-
-          }
-        );
-
-      });
-
-    host
-      .querySelectorAll(
-        '[data-kb-delete]'
-      )
-      .forEach(button => {
-
-        button.addEventListener(
-          'click',
-          () => {
-
-            deleteKnowledge(
-              button.dataset
-                .kbDelete
-            );
-
-          }
-        );
-
-      });
-  }
-
-  /* =======================================================
-     EDITOR
-  ======================================================= */
-
-  function resetEditor() {
-
-    const title =
-      $('kbTitle');
-
-    const content =
-      $('kbContent');
-
-    if (title) {
-      title.value = '';
-    }
-
-    if (content) {
-      content.value = '';
-    }
-
-    editingId = null;
-
-    const save =
-      $('kbSave');
-
-    if (save) {
-      save.textContent =
-        'Save knowledge';
-
-      save.disabled =
-        false;
-    }
-
-    const cancel =
-      $('kbCancel');
-
-    if (cancel) {
-      cancel.classList.add(
-        'hidden'
-      );
-    }
-  }
-
-  function cancelEdit(
-    showMessage = true
-  ) {
-
-    resetEditor();
-
-    if (showMessage) {
-      setStatus('');
-    }
-
-    renderAll();
-  }
-
-  function startEdit(id) {
-
-    const item =
-      knowledgeItems.find(
-        knowledge =>
-          knowledge.id === id
-      );
-
-    if (!item) return;
-
-    editingId =
-      item.id;
-
-    selectedCategory =
-      item?.metadata
-        ?.use_case_category ||
-      'uncategorized';
-
-    const title =
-      $('kbTitle');
-
-    const content =
-      $('kbContent');
-
-    if (title) {
-      title.value =
-        item.title || '';
-    }
-
-    if (content) {
-      content.value =
-        item.content || '';
-    }
-
-    const save =
-      $('kbSave');
-
-    if (save) {
-      save.textContent =
-        'Update knowledge';
-    }
-
-    const cancel =
-      $('kbCancel');
-
-    if (cancel) {
-      cancel.classList.remove(
-        'hidden'
-      );
-    }
-
-    renderAll();
-
-    if (title) {
-      title.focus();
-    }
-  }
-
-  /* =======================================================
-     SAVE KNOWLEDGE
-  ======================================================= */
-
-  async function saveKnowledge() {
-
-    const title =
-      $('kbTitle')
-        ?.value
-        ?.trim() ||
-      '';
-
-    const content =
-      $('kbContent')
-        ?.value
-        ?.trim() ||
-      '';
-
-    if (!title) {
-
-      setStatus(
-        'Knowledge title is required.',
-        true
-      );
-
-      return;
-    }
-
-    if (!content) {
-
-      setStatus(
-        'Knowledge content is required.',
-        true
-      );
-
-      return;
-    }
-
-    if (
-      selectedCategory ===
-        'all' ||
-      selectedCategory ===
-        'uncategorized'
-    ) {
-
-      setStatus(
-        'Please select one of the five use-case categories.',
-        true
-      );
-
-      return;
-    }
-
-    const existing =
-      editingId
-        ? knowledgeItems.find(
-            item =>
-              item.id ===
-              editingId
-          )
-        : null;
-
-    const metadata = {
-      ...(existing?.metadata &&
-      typeof existing.metadata ===
-        'object'
-        ? existing.metadata
-        : {}),
-
-      use_case_category:
-        selectedCategory,
-
-      knowledge_scope:
-        'client'
+  function summarize(items, profile) {
+    const active = items.filter(i => i.status === 'active');
+    const count = scope => active.filter(i => {
+      const s = scopeOf(i);
+      return scope === 'specialist' ? s === 'specialist' || s === 'general' : s === scope;
+    }).length;
+
+    return {
+      profile: profileState(profile),
+      faq: count('faq'),
+      policy: count('policy'),
+      rule: count('rule'),
+      specialist: count('specialist')
     };
-
-    const saveButton =
-      $('kbSave');
-
-    try {
-
-      if (saveButton) {
-        saveButton.disabled =
-          true;
-
-        saveButton.textContent =
-          editingId
-            ? 'Updating...'
-            : 'Saving...';
-      }
-
-      setStatus(
-        'Saving knowledge...'
-      );
-
-      const result =
-        await knowledgeApi(
-          'save_knowledge',
-          {
-            id:
-              editingId ||
-              undefined,
-
-            title,
-
-            content,
-
-            source_type:
-              'manual',
-
-            status:
-              'active',
-
-            metadata
-          }
-        );
-
-      const saved =
-        result?.item;
-
-      if (!saved) {
-        throw new Error(
-          'Knowledge was not returned after saving.'
-        );
-      }
-
-      if (editingId) {
-
-        knowledgeItems =
-          knowledgeItems.map(
-            item =>
-              item.id ===
-              saved.id
-                ? saved
-                : item
-          );
-
-      } else {
-
-        knowledgeItems = [
-          saved,
-          ...knowledgeItems
-        ];
-
-      }
-
-      resetEditor();
-
-      setStatus(
-        'Knowledge saved successfully.'
-      );
-
-      renderAll();
-
-    } catch (error) {
-
-      console.error(
-        'Knowledge save error:',
-        error
-      );
-
-      setStatus(
-        error?.message ||
-        'Unable to save knowledge.',
-        true
-      );
-
-    } finally {
-
-      if (saveButton) {
-        saveButton.disabled =
-          false;
-
-        if (!editingId) {
-          saveButton.textContent =
-            'Save knowledge';
-        }
-      }
-
-    }
   }
 
-  /* =======================================================
-     DELETE KNOWLEDGE
-  ======================================================= */
+  function tile(label, value, done) {
+    return `
+      <div class="kbs-tile ${done ? 'done' : ''}">
+        <span class="kbs-val">${esc(value)}</span>
+        <span class="kbs-lab">${esc(label)}</span>
+      </div>`;
+  }
 
-  async function deleteKnowledge(
-    id
-  ) {
-
-    if (!id) return;
-
-    const item =
-      knowledgeItems.find(
-        knowledge =>
-          knowledge.id === id
-      );
-
-    if (!item) return;
-
-    const confirmed =
-      window.confirm(
-        `Delete "${item.title}" from this client's knowledge base?`
-      );
-
-    if (!confirmed) {
+  function render(host, state) {
+    if (state.status === 'loading') {
+      host.innerHTML = `
+        <section class="kbs">
+          ${header()}
+          <div class="kbs-load">Loading your knowledge…</div>
+        </section>`;
       return;
     }
 
-    try {
-
-      setStatus(
-        'Deleting knowledge...'
-      );
-
-      await knowledgeApi(
-        'delete_knowledge',
-        {
-          id
-        }
-      );
-
-      knowledgeItems =
-        knowledgeItems.filter(
-          knowledge =>
-            knowledge.id !== id
-        );
-
-      if (
-        editingId === id
-      ) {
-        resetEditor();
-      }
-
-      setStatus(
-        'Knowledge deleted successfully.'
-      );
-
-      renderAll();
-
-    } catch (error) {
-
-      console.error(
-        'Knowledge delete error:',
-        error
-      );
-
-      setStatus(
-        error?.message ||
-        'Unable to delete knowledge.',
-        true
-      );
-    }
-  }
-
-  /* =======================================================
-     LOAD KNOWLEDGE
-  ======================================================= */
-
-  async function loadKnowledge() {
-
-    try {
-
-      setStatus(
-        'Loading your business knowledge...'
-      );
-
-      const result =
-        await knowledgeApi(
-          'list_knowledge'
-        );
-
-      knowledgeItems =
-        Array.isArray(
-          result?.items
-        )
-          ? result.items
-          : [];
-
-      setStatus(
-        knowledgeItems.length
-          ? `${knowledgeItems.length} knowledge item${
-              knowledgeItems.length === 1
-                ? ''
-                : 's'
-            } loaded.`
-          : 'No knowledge added yet.'
-      );
-
-      renderAll();
-
-    } catch (error) {
-
-      console.error(
-        'Knowledge load error:',
-        error
-      );
-
-      knowledgeItems = [];
-
-      setStatus(
-        error?.message ||
-        'Unable to load client knowledge.',
-        true
-      );
-
-      renderAll();
-    }
-  }
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
-
-  function renderAll() {
-
-    renderCategories();
-
-    renderReference();
-
-    renderItems();
-
-    updateSelectedCategoryLabel();
-
-    const count =
-      $('kbCount');
-
-    if (count) {
-
-      const activeCount =
-        knowledgeItems.filter(
-          item =>
-            item.status ===
-            'active'
-        ).length;
-
-      count.textContent =
-        `${activeCount} active`;
-    }
-  }
-
-  /* =======================================================
-     MOUNT HTML
-  ======================================================= */
-
-  function mount() {
-
-    if (mounted) {
+    if (state.status === 'error') {
+      host.innerHTML = `
+        <section class="kbs">
+          ${header()}
+          <div class="kbs-err"><b>Could not load your knowledge.</b>${esc(state.error)}</div>
+          <div class="kbs-actions">
+            <button type="button" class="kbs-btn ghost" id="kbsRetry">Try again</button>
+            <a class="kbs-btn" href="${SETTINGS_URL}">Open Knowledge →</a>
+          </div>
+        </section>`;
+      $('kbsRetry')?.addEventListener('click', load);
       return;
     }
 
-    const host =
-      $(HOST_ID);
+    const s = state.summary;
+    const missing = [];
+    if (!s.profile.ok) missing.push('your Business Profile');
+    if (!s.faq) missing.push('FAQs');
+    if (!s.policy) missing.push('policies');
+    if (!s.rule) missing.push('business rules');
 
-    if (!host) {
-      return;
-    }
-
-    mounted = true;
+    const tip = missing.length
+      ? `Tip: add ${missing.slice(0, 3).join(', ')} so AI answers consistently.`
+      : 'Your AI has a complete knowledge base to work with.';
 
     host.innerHTML = `
-      <section
-        id="kbRoot"
-        class="kb-root"
-      >
-
-        <div
-          class="kb-header"
-        >
-
-          <div>
-
-            <span
-              class="kb-kicker"
-            >
-              CLIENT KNOWLEDGE BASE
-            </span>
-
-            <h4>
-              Your Private Business Knowledge
-            </h4>
-
-            <p>
-              Add the information that your
-              customer-facing specialists are
-              allowed to use for this client.
-            </p>
-
-          </div>
-
-          <span
-            class="kb-count"
-            id="kbCount"
-          >
-            0 active
-          </span>
-
+      <section class="kbs">
+        ${header()}
+        <div class="kbs-grid">
+          ${tile('Business Profile', s.profile.label, s.profile.ok)}
+          ${tile('FAQs', s.faq, s.faq > 0)}
+          ${tile('Policies', s.policy, s.policy > 0)}
+          ${tile('Rules', s.rule, s.rule > 0)}
+          ${tile('Specialist', s.specialist, s.specialist > 0)}
         </div>
-
-
-        <div
-          class="kb-warning"
-        >
-          <strong>
-            Important:
-          </strong>
-
-          This knowledge belongs only to
-          your business/client account.
-          WhatsApp and Instagram specialists
-          can use this client's knowledge later.
-          These categories do not create a
-          Voice AI Assistant.
+        <p class="kbs-tip">${esc(tip)}</p>
+        <div class="kbs-actions">
+          <a class="kbs-btn" href="${SETTINGS_URL}">Manage Knowledge →</a>
         </div>
-
-
-        <div
-          class="kb-categories"
-          id="kbCategories"
-        ></div>
-
-
-        <div
-          id="kbReference"
-        ></div>
-
-
-        <div
-          class="kb-editor"
-        >
-
-          <div
-            class="kb-editor-title"
-          >
-
-            <div>
-
-              <strong>
-                Add Business Knowledge
-              </strong>
-
-              <span>
-                Selected category:
-                <b
-                  id="kbSelectedCategory"
-                >
-                  Lead Generation
-                </b>
-              </span>
-
-            </div>
-
-          </div>
-
-
-          <input
-            id="kbTitle"
-            type="text"
-            maxlength="200"
-            autocomplete="off"
-            placeholder="Knowledge title — e.g. Refund Policy"
-          />
-
-
-          <textarea
-            id="kbContent"
-            rows="7"
-            maxlength="10000"
-            placeholder="Enter the exact business information that your specialist is allowed to use..."
-          ></textarea>
-
-
-          <div
-            class="kb-editor-actions"
-          >
-
-            <button
-              type="button"
-              class="kb-save"
-              id="kbSave"
-            >
-              Save knowledge
-            </button>
-
-            <button
-              type="button"
-              class="kb-cancel hidden"
-              id="kbCancel"
-            >
-              Cancel
-            </button>
-
-          </div>
-
-
-          <div
-            id="kbStatus"
-            class="kb-status"
-            aria-live="polite"
-          ></div>
-
-        </div>
-
-
-        <div
-          class="kb-list-title"
-        >
-          Saved Knowledge
-        </div>
-
-
-        <div
-          id="kbItems"
-          class="kb-items"
-        ></div>
-
-      </section>
-    `;
-
-
-    $('kbSave')
-      ?.addEventListener(
-        'click',
-        saveKnowledge
-      );
-
-
-    $('kbCancel')
-      ?.addEventListener(
-        'click',
-        () =>
-          cancelEdit(true)
-      );
-
-
-    renderAll();
-
-    loadKnowledge();
+      </section>`;
   }
 
-  /* =======================================================
-     STYLES
-  ======================================================= */
+  function header() {
+    return `
+      <div class="kbs-head">
+        <span class="kbs-kicker">CLIENT KNOWLEDGE</span>
+        <h4>One knowledge base for WhatsApp, Instagram &amp; Voice</h4>
+        <p>Services and pricing are managed here. FAQs, policies, rules and your business profile are managed in Settings → AI, so every channel gives customers the same answers.</p>
+      </div>`;
+  }
+
+  async function load() {
+    const host = $(HOST_ID);
+    if (!host) return;
+
+    render(host, { status: 'loading' });
+
+    const client = sb();
+    if (!client) {
+      render(host, { status: 'error', error: 'The GLIME connection is not available. Please refresh the page.' });
+      return;
+    }
+
+    try {
+      const [items, profile] = await Promise.all([
+        listKnowledge(client),
+        loadProfile(client).catch(error => {
+          console.error('[GLIME Services] business profile load error:', error);
+          return null;
+        })
+      ]);
+
+      render(host, { status: 'ready', summary: summarize(items, profile) });
+    } catch (error) {
+      console.error('[GLIME Services] knowledge summary error:', error);
+      render(host, { status: 'error', error: error?.message || 'Unknown error.' });
+    }
+  }
 
   function injectStyles() {
+    if ($('glimeKnowledgeSummaryStyles')) return;
 
-    if (
-      $('glimeKnowledgeBaseStyles')
-    ) {
-      return;
-    }
-
-    const style =
-      document.createElement(
-        'style'
-      );
-
-    style.id =
-      'glimeKnowledgeBaseStyles';
-
+    const style = document.createElement('style');
+    style.id = 'glimeKnowledgeSummaryStyles';
     style.textContent = `
-
-      #knowledgeBaseHost {
-        margin-top: 18px;
-        margin-bottom: 24px;
+      #knowledgeBaseHost{margin:16px 0 20px}
+      .kbs{border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;background:rgba(255,255,255,.03);color:#fff}
+      .kbs-kicker{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.14em;color:#fff;opacity:.8}
+      .kbs-head h4{margin:5px 0 6px;font-size:1.05rem;line-height:1.3}
+      .kbs-head p{margin:0 0 14px;font-size:.82rem;line-height:1.55;color:rgba(255,255,255,.82)}
+      .kbs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+      .kbs-tile{border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;background:rgba(0,0,0,.2);min-width:0}
+      .kbs-tile.done{border-color:rgba(255,255,255,.4)}
+      .kbs-val{display:block;font-size:1.15rem;font-weight:800;line-height:1.2;word-break:break-word}
+      .kbs-lab{display:block;margin-top:3px;font-size:.74rem;color:rgba(255,255,255,.78)}
+      .kbs-tip{margin:12px 0 0;font-size:.8rem;line-height:1.5;color:rgba(255,255,255,.88)}
+      .kbs-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+      .kbs-btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:12px;border:0;background:linear-gradient(135deg,#00ff88,#00f0ff);color:#061016;font-weight:800;font-size:.9rem;text-decoration:none;cursor:pointer}
+      .kbs-btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3)}
+      .kbs-load{padding:18px 0;font-size:.85rem;color:rgba(255,255,255,.8);text-align:center}
+      .kbs-err{border:1px solid rgba(255,100,114,.4);background:rgba(255,100,114,.07);border-radius:12px;padding:12px;font-size:.82rem;color:#fff}
+      .kbs-err b{display:block;margin-bottom:3px}
+      @media(min-width:600px){
+        .kbs-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+        .kbs-actions{flex-direction:row}
       }
-
-
-      .kb-root {
-        border: 1px solid
-          rgba(26, 208, 219, .24);
-
-        border-radius: 18px;
-
-        padding: 18px;
-
-        background:
-          rgba(8, 20, 23, .76);
-
-        box-shadow:
-          0 18px 40px
-          rgba(0, 0, 0, .18);
-      }
-
-
-      .kb-header {
-        display: flex;
-
-        justify-content:
-          space-between;
-
-        align-items:
-          flex-start;
-
-        gap: 16px;
-
-        margin-bottom: 14px;
-      }
-
-
-      .kb-kicker {
-        display: inline-block;
-
-        font-size: 11px;
-
-        font-weight: 800;
-
-        letter-spacing: .12em;
-
-        opacity: .72;
-      }
-
-
-      .kb-header h4 {
-        margin:
-          5px 0 6px;
-
-        font-size: 21px;
-      }
-
-
-      .kb-header p {
-        margin: 0;
-
-        line-height: 1.55;
-
-        opacity: .76;
-      }
-
-
-      .kb-count {
-        white-space: nowrap;
-
-        border:
-          1px solid
-          rgba(26, 208, 219, .30);
-
-        border-radius: 999px;
-
-        padding:
-          7px 11px;
-
-        font-size: 12px;
-
-        font-weight: 800;
-      }
-
-
-      .kb-warning {
-        border:
-          1px solid
-          rgba(26, 208, 219, .18);
-
-        border-radius: 12px;
-
-        padding:
-          11px 13px;
-
-        background:
-          rgba(26, 208, 219, .07);
-
-        line-height: 1.55;
-
-        font-size: 13px;
-
-        margin-bottom: 15px;
-      }
-
-
-      .kb-categories {
-        display: flex;
-
-        flex-wrap: wrap;
-
-        gap: 9px;
-
-        margin-bottom: 14px;
-      }
-
-
-      .kb-category {
-        appearance: none;
-
-        border:
-          1px solid
-          rgba(255, 255, 255, .10);
-
-        background:
-          rgba(255, 255, 255, .05);
-
-        color: inherit;
-
-        border-radius: 999px;
-
-        padding:
-          9px 13px;
-
-        cursor: pointer;
-
-        font-weight: 800;
-      }
-
-
-      .kb-category.active {
-        border-color:
-          rgba(26, 208, 219, .55);
-
-        background:
-          rgba(26, 208, 219, .16);
-      }
-
-
-      .kb-reference-title {
-        font-size: 15px;
-
-        font-weight: 900;
-
-        margin-bottom: 5px;
-      }
-
-
-      .kb-reference-description {
-        margin:
-          0 0 10px;
-
-        font-size: 13px;
-
-        line-height: 1.5;
-
-        opacity: .74;
-      }
-
-
-      .kb-example-list {
-        display: grid;
-
-        grid-template-columns:
-          repeat(
-            2,
-            minmax(0, 1fr)
-          );
-
-        gap: 8px;
-
-        margin-bottom: 10px;
-      }
-
-
-      .kb-example {
-        display: flex;
-
-        gap: 8px;
-
-        border:
-          1px solid
-          rgba(255, 255, 255, .08);
-
-        border-radius: 11px;
-
-        padding: 10px;
-
-        background:
-          rgba(255, 255, 255, .035);
-
-        font-size: 12px;
-
-        line-height: 1.45;
-      }
-
-
-      .kb-example span:first-child {
-        opacity: .7;
-      }
-
-
-      .kb-reference-note {
-        border-radius: 12px;
-
-        padding:
-          10px 12px;
-
-        background:
-          rgba(26, 208, 219, .06);
-
-        border:
-          1px solid
-          rgba(26, 208, 219, .14);
-
-        line-height: 1.5;
-
-        font-size: 12px;
-
-        margin:
-          10px 0 14px;
-      }
-
-
-      .kb-editor {
-        margin-top: 17px;
-
-        border-top:
-          1px solid
-          rgba(255, 255, 255, .08);
-
-        padding-top: 17px;
-      }
-
-
-      .kb-editor-title {
-        margin-bottom: 7px;
-      }
-
-
-      .kb-editor-title strong {
-        display: block;
-
-        font-size: 15px;
-      }
-
-
-      .kb-editor-title span {
-        display: block;
-
-        margin-top: 4px;
-
-        font-size: 12px;
-
-        opacity: .65;
-      }
-
-
-      .kb-editor input,
-      .kb-editor textarea {
-        width: 100%;
-
-        box-sizing: border-box;
-
-        border:
-          1px solid
-          rgba(255, 255, 255, .10);
-
-        background:
-          rgba(0, 0, 0, .22);
-
-        color: inherit;
-
-        border-radius: 12px;
-
-        padding: 12px;
-
-        margin-top: 9px;
-
-        outline: none;
-      }
-
-
-      .kb-editor input:focus,
-      .kb-editor textarea:focus {
-        border-color:
-          rgba(26, 208, 219, .48);
-
-        box-shadow:
-          0 0 0 2px
-          rgba(26, 208, 219, .08);
-      }
-
-
-      .kb-editor textarea {
-        resize: vertical;
-
-        min-height: 140px;
-
-        line-height: 1.55;
-      }
-
-
-      .kb-editor-actions {
-        display: flex;
-
-        flex-wrap: wrap;
-
-        gap: 9px;
-
-        margin-top: 10px;
-      }
-
-
-      .kb-save,
-      .kb-cancel,
-      .kb-action {
-        border-radius: 10px;
-
-        border:
-          1px solid
-          rgba(26, 208, 219, .35);
-
-        background:
-          rgba(26, 208, 219, .10);
-
-        color: inherit;
-
-        padding:
-          9px 13px;
-
-        font-weight: 800;
-
-        cursor: pointer;
-      }
-
-
-      .kb-save:disabled {
-        opacity: .55;
-
-        cursor: wait;
-      }
-
-
-      .kb-cancel,
-      .kb-action {
-        border-color:
-          rgba(255, 255, 255, .11);
-
-        background:
-          rgba(255, 255, 255, .045);
-      }
-
-
-      .kb-action.danger {
-        border-color:
-          rgba(255, 100, 100, .24);
-      }
-
-
-      .kb-status {
-        min-height: 18px;
-
-        margin-top: 9px;
-
-        font-size: 12px;
-
-        opacity: .72;
-      }
-
-
-      .kb-status.error {
-        opacity: 1;
-      }
-
-
-      .kb-list-title {
-        margin-top: 19px;
-
-        margin-bottom: 9px;
-
-        font-weight: 900;
-      }
-
-
-      .kb-items {
-        display: grid;
-
-        gap: 9px;
-      }
-
-
-      .kb-item {
-        border:
-          1px solid
-          rgba(255, 255, 255, .08);
-
-        border-radius: 13px;
-
-        padding: 12px;
-
-        background:
-          rgba(255, 255, 255, .03);
-      }
-
-
-      .kb-item-top {
-        display: flex;
-
-        justify-content:
-          space-between;
-
-        align-items:
-          flex-start;
-
-        gap: 10px;
-      }
-
-
-      .kb-item-heading {
-        min-width: 0;
-      }
-
-
-      .kb-item-heading strong {
-        display: inline-block;
-
-        margin-right: 7px;
-      }
-
-
-      .kb-pill {
-        display: inline-block;
-
-        padding:
-          4px 7px;
-
-        border-radius: 999px;
-
-        font-size: 10px;
-
-        font-weight: 800;
-
-        border:
-          1px solid
-          rgba(26, 208, 219, .24);
-      }
-
-
-      .kb-item-actions {
-        display: flex;
-
-        gap: 7px;
-
-        flex-wrap: wrap;
-      }
-
-
-      .kb-item-content {
-        margin-top: 10px;
-
-        white-space: pre-wrap;
-
-        line-height: 1.55;
-
-        font-size: 13px;
-
-        opacity: .84;
-      }
-
-
-      .kb-empty {
-        border:
-          1px dashed
-          rgba(255, 255, 255, .10);
-
-        border-radius: 12px;
-
-        padding: 16px;
-
-        text-align: center;
-
-        opacity: .62;
-      }
-
-
-      .hidden {
-        display: none !important;
-      }
-
-
-      @media (
-        max-width: 760px
-      ) {
-
-        .kb-header {
-          flex-direction:
-            column;
-        }
-
-        .kb-example-list {
-          grid-template-columns:
-            1fr;
-        }
-
-        .kb-item-top {
-          flex-direction:
-            column;
-        }
-
-        .kb-item-actions {
-          justify-content:
-            flex-start;
-        }
-
-      }
-
     `;
-
-    document.head.appendChild(
-      style
-    );
+    document.head.appendChild(style);
   }
-
-  /* =======================================================
-     START
-  ======================================================= */
 
   function start() {
+    if (mounted) return;
+    if (!$(HOST_ID)) return;
 
+    mounted = true;
     injectStyles();
-
-    mount();
-
+    load();
   }
 
-  if (
-    document.readyState ===
-    'loading'
-  ) {
-
-    document.addEventListener(
-      'DOMContentLoaded',
-      start,
-      {
-        once: true
-      }
-    );
-
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
   } else {
-
     start();
-
   }
-
 })();
-
-            
