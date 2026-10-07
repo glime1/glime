@@ -184,6 +184,7 @@ const state = {
   client: null,
   settings: [],
   connections: [],
+  instagramConnection: null,
   activeModule: null
 };
 
@@ -522,21 +523,59 @@ registerModule({
 /* ---------- Data loading ---------- */
 
 async function loadChannelData(){
-  const [settingsResult, connectionsResult] = await Promise.all([
+  const [settingsResult, connectionsResult, instagramResult] = await Promise.all([
     sb.from('client_channel_settings')
       .select('client_id,channel,enabled,connection_enabled,ai_enabled,automation_enabled,followups_enabled,ai_mode,updated_by,created_at,updated_at')
       .eq('client_id', state.client.client_id),
 
     sb.from('client_channel_connections')
       .select('client_id,channel,status,customer_reachable,can_send,connected_at,last_verified_at')
+      .eq('client_id', state.client.client_id),
+
+    sb.from('instagram_connections')
+      .select('status,connected_at,updated_at')
       .eq('client_id', state.client.client_id)
+      .maybeSingle()
   ]);
 
   if(settingsResult.error) throw settingsResult.error;
   if(connectionsResult.error) throw connectionsResult.error;
+  if(instagramResult.error) throw instagramResult.error;
 
   state.settings = settingsResult.data || [];
   state.connections = connectionsResult.data || [];
+  state.instagramConnection = instagramResult.data || null;
+
+  if(state.instagramConnection){
+    const instagramStatus =
+      state.instagramConnection.status === 'connected'
+        ? 'connected'
+        : state.instagramConnection.status;
+
+    const existingInstagram =
+      state.connections.find(x => x.channel === 'instagram');
+
+    if(existingInstagram){
+      existingInstagram.status = instagramStatus;
+      existingInstagram.connected_at =
+        state.instagramConnection.connected_at ||
+        existingInstagram.connected_at;
+
+      existingInstagram.last_verified_at =
+        state.instagramConnection.updated_at ||
+        existingInstagram.last_verified_at;
+    }else{
+      state.connections.push({
+        client_id: state.client.client_id,
+        channel: 'instagram',
+        status: instagramStatus,
+        customer_reachable: instagramStatus === 'connected',
+        can_send: instagramStatus === 'connected',
+        connected_at: state.instagramConnection.connected_at || null,
+        last_verified_at: state.instagramConnection.updated_at || null
+      });
+    }
+  }
 }
 
 async function init(){
