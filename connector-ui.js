@@ -6,8 +6,10 @@
    - ai-connections.html          (standalone Connector Hub)
 
    Rules:
-   - No provider secrets, no provider API calls.
-   - Accepts configuration + callbacks, renders cards.
+   - No provider secrets, no client ID / client secret in the frontend.
+   - OAuth is owned by the backend (glime-google-calendar-oauth);
+     the frontend only receives the authorization URL and redirects.
+   - Calendar data goes through glime-calendar-gateway only.
    - Never marks a provider "Connected" unless real data says so.
    - data.loadAiStatus() only READS existing tables:
      modules, client_modules, ai_connections, ai_connection_permissions.
@@ -37,7 +39,7 @@ const registry=[
   {id:'gmail',name:'Gmail',category:'Google Workspace',description:'Connect business email workflows.',icon:'mail',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:30},
   {id:'google-drive',name:'Google Drive',category:'Google Workspace',description:'Connect business files, Docs and storage.',icon:'drive',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:40},
   {id:'google-sheets',name:'Google Sheets',category:'Google Workspace',description:'Connect business spreadsheets.',icon:'sheet',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:50},
-  {id:'google-calendar',name:'Google Calendar',category:'Google Workspace',description:'Connect business calendars and appointments.',icon:'calendar',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:55},
+  {id:'google-calendar',name:'Google Calendar',category:'Google Workspace',description:'Connect business calendars and appointments.',icon:'calendar',backend:'existing',kind:'calendar',state:'dynamic',capabilities:[],sort:55},
   {id:'shopify',name:'Shopify',category:'Commerce',description:'Connect products, orders and customer data.',icon:'bag',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:60},
   {id:'slack',name:'Slack',category:'Team Communication',description:'Connect team communication and workflows.',icon:'hash',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:70}
 ];
@@ -64,10 +66,12 @@ const CSS=`
 .gcx *{box-sizing:border-box}
 .gcx-status{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--gcx-surf);border:1px solid var(--gcx-bd);color:var(--gcx-mu);font-size:.8rem}
 .gcx-status.err{color:var(--gcx-rd);border-color:rgba(255,130,145,.32)}
+.gcx-status.ok{color:var(--gcx-gr);border-color:rgba(80,245,168,.32)}
 .gcx-group{margin-bottom:24px}
 .gcx-group-title{margin:0 2px 10px;font-size:.68rem;letter-spacing:.12em;font-weight:800;color:var(--gcx-mu);text-transform:uppercase}
 .gcx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .gcx-card{display:flex;flex-direction:column;gap:10px;min-width:0;padding:16px;border-radius:18px;border:1px solid var(--gcx-bd);background:linear-gradient(160deg,rgba(82,232,255,.045),transparent 55%),var(--gcx-surf)}
+.gcx-card.wide{grid-column:1/-1}
 .gcx-card[data-state=connected]{border-color:rgba(80,245,168,.32)}
 .gcx-top{display:flex;align-items:center;gap:12px;min-width:0}
 .gcx-ico{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--gcx-surf2);border:1px solid var(--gcx-bd);color:var(--gcx-cy)}
@@ -79,10 +83,13 @@ const CSS=`
 .gcx-badge.soon{color:var(--gcx-cy);border-color:rgba(82,232,255,.28)}
 .gcx-badge.off{color:var(--gcx-rd);border-color:rgba(255,130,145,.32)}
 .gcx-desc{margin:0;color:var(--gcx-mu);font-size:.8rem;overflow-wrap:anywhere}
+.gcx-meta{margin:0;color:var(--gcx-mu);font-size:.72rem;overflow-wrap:anywhere}
+.gcx-meta.warn{color:var(--gcx-rd)}
 .gcx-actions{margin-top:auto;padding-top:4px}
 .gcx-btn{min-height:44px;border:1px solid var(--gcx-bd);background:transparent;color:var(--gcx-tx);border-radius:10px;padding:10px 16px;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer}
 .gcx-btn:hover:not(:disabled){border-color:rgba(82,232,255,.45)}
 .gcx-btn.primary{background:linear-gradient(105deg,var(--gcx-gr),var(--gcx-cy));color:#031014;border:0}
+.gcx-btn.danger{color:var(--gcx-rd);border-color:rgba(255,130,145,.38)}
 .gcx-btn:disabled{opacity:.55;cursor:default}
 .gcx-btn:focus-visible,.gcx-note a:focus-visible{outline:2px solid var(--gcx-cy);outline-offset:2px}
 .gcx-panel{padding:14px;border-radius:14px;background:var(--gcx-surf2);border:1px solid var(--gcx-bd)}
@@ -95,6 +102,23 @@ const CSS=`
 .gcx-small{margin:10px 0 0;color:var(--gcx-mu);font-size:.72rem}
 .gcx-note{margin-top:4px;color:var(--gcx-mu);font-size:.76rem}
 .gcx-note a{color:var(--gcx-cy);font-weight:800}
+.gcx-input{width:100%;min-height:44px;background:var(--gcx-surf);color:var(--gcx-tx);border:1px solid var(--gcx-bd);border-radius:10px;padding:10px 12px;font:inherit;font-size:.82rem;color-scheme:dark}
+textarea.gcx-input{min-height:80px;resize:vertical}
+.gcx-input:focus-visible{outline:2px solid var(--gcx-cy);outline-offset:2px}
+.gcx-cal-bar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.gcx-evs{display:flex;flex-direction:column;gap:8px}
+.gcx-ev{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--gcx-bd);border-radius:12px;background:var(--gcx-surf)}
+.gcx-ev-main{min-width:0;flex:1 1 200px;display:flex;flex-direction:column}
+.gcx-ev-main b{overflow-wrap:anywhere;font-size:.84rem}
+.gcx-ev-main small{color:var(--gcx-mu);font-size:.72rem;overflow-wrap:anywhere}
+.gcx-ev-act{display:flex;gap:8px;flex-wrap:wrap}
+.gcx-form{margin:12px 0;padding:14px;border-radius:14px;border:1px solid var(--gcx-bd);background:var(--gcx-surf)}
+.gcx-field{display:block;margin-bottom:10px}
+.gcx-field .gcx-label{display:block}
+.gcx-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gcx-check{display:flex;align-items:center;gap:8px;margin:2px 0 10px;font-size:.78rem;min-height:32px}
+.gcx-check input{width:18px;height:18px;accent-color:#50f5a8}
+.gcx-danger-zone{margin-top:16px;padding-top:12px;border-top:1px solid var(--gcx-bd)}
 .gcx-perms{padding:18px;border-radius:18px;border:1px solid var(--gcx-bd);background:var(--gcx-surf)}
 .gcx-perms h3{margin:0 0 4px;font-size:1.02rem}
 .gcx-perm-list{margin-top:10px}
@@ -103,11 +127,17 @@ const CSS=`
 .gcx-perm .allowed{color:var(--gcx-gr)}
 .gcx-perm .blocked{color:var(--gcx-mu)}
 @media(max-width:700px){.gcx-grid{grid-template-columns:1fr}}
-@media(max-width:520px){.gcx-btn{width:100%}.gcx-ep .gcx-btn{width:100%}.gcx-card{padding:14px}}
+@media(max-width:520px){.gcx-btn{width:100%}.gcx-ep .gcx-btn{width:100%}.gcx-card{padding:14px}.gcx-row2{grid-template-columns:1fr}}
 `;
 
 function esc(v){
   return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function cleanMsg(e){
+  if(e&&e.code==='SESSION_EXPIRED')return 'Your session has expired. Please sign in again.';
+  const m=String((e&&e.message)||'').trim();
+  return (m&&m.length<=160)?m:'Calendar request failed. Please try again.';
 }
 
 function injectStyles(){
@@ -138,6 +168,360 @@ function resolveState(p,states){
   return STATE_BADGE[p.state]?p.state:'coming_soon';
 }
 
+function fmtDate(iso){
+  const d=new Date(iso);
+  return isNaN(d)?'':d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+}
+
+/* ======================================================
+   GOOGLE CALENDAR — API client (backend already exists)
+   OAuth start : POST  /functions/v1/glime-google-calendar-oauth
+   Gateway     : /functions/v1/glime-calendar-gateway?action=...
+   ====================================================== */
+function mkErr(message,code){const e=new Error(message);e.code=code;return e;}
+
+function createCalendarApi(sb,cfg){
+  cfg=cfg||{};
+  const base=String(cfg.baseUrl||sb.supabaseUrl||'').replace(/\/$/,'');
+  const apiKey=cfg.apiKey||sb.supabaseKey||'';
+
+  async function token(){
+    const r=await sb.auth.getSession();
+    const s=r&&r.data&&r.data.session;
+    if(!s)throw mkErr('Your session has expired. Please sign in again.','SESSION_EXPIRED');
+    return s.access_token;
+  }
+
+  async function call(fn,o){
+    o=o||{};
+    const t=await token();
+    const headers={Authorization:'Bearer '+t};
+    if(apiKey)headers.apikey=apiKey;
+    const init={method:o.method||'POST',headers};
+    if(init.method!=='GET'){headers['Content-Type']='application/json';init.body=JSON.stringify(o.body||{});}
+    let res;
+    try{res=await fetch(base+'/functions/v1/'+fn+(o.query||''),init);}
+    catch(e){throw mkErr('Unable to reach GLIME right now. Please try again.','NETWORK');}
+    const data=await res.json().catch(()=>null);
+    if(!res.ok)throw mkErr((data&&data.error)||'Calendar request failed.',res.status);
+    return data;
+  }
+
+  const gw=(action,body,method)=>call('glime-calendar-gateway',{method:method||'POST',query:'?action='+encodeURIComponent(action),body});
+
+  return {
+    async status(){
+      try{
+        const info=await gw('status',null,'GET');
+        return {state:(info&&info.status==='connected')?'connected':'not_connected',info:info||null};
+      }catch(e){
+        if(e.code===400&&/not connected/i.test(e.message))return {state:'not_connected',info:null};
+        throw e;
+      }
+    },
+    async startOAuth(){
+      const out=await call('glime-google-calendar-oauth',{method:'POST'});
+      const url=out&&out.authorization_url;
+      if(typeof url!=='string'||url.indexOf('https://accounts.google.com/')!==0)throw mkErr('Google authorization could not be started.','OAUTH');
+      window.location.assign(url);
+    },
+    calendars:()=>gw('calendars.list',{}),
+    events:(p)=>gw('events.list',p),
+    createEvent:(calendar_id,event)=>gw('event.create',{calendar_id,event}),
+    updateEvent:(calendar_id,event_id,event)=>gw('event.update',{calendar_id,event_id,event}),
+    deleteEvent:(calendar_id,event_id)=>gw('event.delete',{calendar_id,event_id}),
+    disconnect:()=>gw('disconnect',{})
+  };
+}
+
+/* ---------- Calendar manager helpers ---------- */
+const pad=n=>String(n).padStart(2,'0');
+
+function localInput(iso){
+  const d=new Date(iso);
+  if(isNaN(d))return '';
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+function addDays(dateStr,n){
+  const d=new Date(dateStr+'T00:00:00');
+  if(isNaN(d))return dateStr;
+  d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+
+function fmtEv(ev){
+  const s=ev.start||{},e=ev.end||{};
+  if(s.date){
+    const d=new Date(s.date+'T00:00:00');
+    return 'All day · '+(isNaN(d)?s.date:d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}));
+  }
+  const a=new Date(s.dateTime),b=new Date(e.dateTime);
+  if(isNaN(a))return '';
+  const day=a.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+  const t=d=>d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+  return day+' · '+t(a)+(isNaN(b)?'':' – '+t(b));
+}
+
+function newForm(){
+  const d=new Date();
+  d.setMinutes(0,0,0);
+  d.setHours(d.getHours()+1);
+  const e=new Date(d.getTime()+3600000);
+  return {id:null,original:null,title:'',allDay:false,start:localInput(d.toISOString()),end:localInput(e.toISOString()),location:'',description:''};
+}
+
+function toForm(ev){
+  const s=ev.start||{},e=ev.end||{};
+  const allDay=!!s.date;
+  return {
+    id:ev.id,original:ev,title:ev.summary||'',allDay,
+    start:allDay?s.date:localInput(s.dateTime),
+    end:allDay?addDays(e.date||s.date,-1):localInput(e.dateTime),
+    location:ev.location||'',description:ev.description||''
+  };
+}
+
+function stripEvent(ev){
+  const o={...ev};
+  ['etag','kind','htmlLink','created','updated'].forEach(k=>{delete o[k];});
+  return o;
+}
+
+function buildEvent(f){
+  const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const ev={...(f.original?stripEvent(f.original):{}),summary:f.title,location:f.location,description:f.description};
+  if(f.allDay){
+    ev.start={date:f.start};
+    ev.end={date:addDays(f.end||f.start,1)};
+  }else{
+    ev.start={dateTime:new Date(f.start).toISOString(),timeZone:tz};
+    ev.end={dateTime:new Date(f.end).toISOString(),timeZone:tz};
+  }
+  return ev;
+}
+
+function validateForm(f){
+  if(!f.title)return 'Please enter an event title.';
+  if(!f.start)return 'Please choose a start.';
+  if(f.allDay){
+    if(f.end&&f.end<f.start)return 'The end date cannot be before the start date.';
+  }else{
+    if(!f.end||new Date(f.end)<=new Date(f.start))return 'The end must be after the start.';
+  }
+  return '';
+}
+
+function readForm(root,f){
+  const g=k=>{const n=root.querySelector('[data-f="'+k+'"]');return n?n.value:'';};
+  const ad=root.querySelector('[data-f="allDay"]');
+  return {...f,title:g('title').trim(),allDay:!!(ad&&ad.checked),start:g('start'),end:g('end'),location:g('location').trim(),description:g('description').trim()};
+}
+
+function formHtml(f){
+  const type=f.allDay?'date':'datetime-local';
+  return `
+  <div class="gcx-form" data-cal-form>
+    <p class="gcx-panel-title">${f.id?'Edit event':'New event'}</p>
+    <label class="gcx-field"><span class="gcx-label">Title</span><input class="gcx-input" data-f="title" maxlength="200" value="${esc(f.title)}"></label>
+    <label class="gcx-check"><input type="checkbox" data-f="allDay" data-cal-allday ${f.allDay?'checked':''}> All-day event</label>
+    <div class="gcx-row2">
+      <label class="gcx-field"><span class="gcx-label">Start</span><input class="gcx-input" type="${type}" data-f="start" value="${esc(f.start)}"></label>
+      <label class="gcx-field"><span class="gcx-label">End</span><input class="gcx-input" type="${type}" data-f="end" value="${esc(f.end)}"></label>
+    </div>
+    <label class="gcx-field"><span class="gcx-label">Location</span><input class="gcx-input" data-f="location" maxlength="300" value="${esc(f.location)}"></label>
+    <label class="gcx-field"><span class="gcx-label">Description</span><textarea class="gcx-input" data-f="description" maxlength="2000">${esc(f.description)}</textarea></label>
+    <div class="gcx-cal-bar" style="margin-bottom:0">
+      <button type="button" class="gcx-btn primary" data-cal-act="save">${f.id?'Save changes':'Create event'}</button>
+      <button type="button" class="gcx-btn" data-cal-act="cancel">Cancel</button>
+    </div>
+  </div>`;
+}
+
+function eventsHtml(st){
+  if(!st.calendars)return '';
+  if(st.eLoading)return '<div class="gcx-status" role="status">Loading events…</div>';
+  if(st.eError)return `<div class="gcx-status err" role="alert">${esc(st.eError)}</div>`;
+  if(!st.events)return '';
+  if(!st.events.length)return '<div class="gcx-status">No events in the next 30 days.</div>';
+  return '<div class="gcx-evs">'+st.events.map(ev=>{
+    const title=ev.summary||'(No title)';
+    return `
+    <div class="gcx-ev">
+      <div class="gcx-ev-main">
+        <b>${esc(title)}</b>
+        <small>${esc(fmtEv(ev))}</small>
+        ${ev.location?`<small>${esc(ev.location)}</small>`:''}
+      </div>
+      <div class="gcx-ev-act">
+        <button type="button" class="gcx-btn" data-cal-act="edit" data-id="${esc(ev.id)}" aria-label="${esc('Edit event '+title)}">Edit</button>
+        <button type="button" class="gcx-btn danger" data-cal-act="delete" data-id="${esc(ev.id)}" aria-label="${esc('Delete event '+title)}">Delete</button>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function calHtml(st,info){
+  const acct=(info&&(info.email||info.display_name))?`<p class="gcx-small" style="margin-top:0">Connected account: <b>${esc(info.email||info.display_name)}</b></p>`:'';
+  const msg=st.msg?`<div class="gcx-status ${st.msg.type==='ok'?'ok':'err'}" role="${st.msg.type==='ok'?'status':'alert'}" style="margin-top:12px">${esc(st.msg.text)}</div>`:'';
+  let body='';
+  if(!st.calendars){
+    body=st.loading
+      ?'<div class="gcx-status" role="status">Loading calendars…</div>'
+      :'<div class="gcx-cal-bar"><button type="button" class="gcx-btn" data-cal-act="retry">Retry</button></div>';
+  }else if(!st.calendars.length){
+    body='<div class="gcx-status">No calendars were found on this Google account.</div>';
+  }else{
+    const opts=st.calendars.map(c=>`<option value="${esc(c.id)}" ${c.id===st.calId?'selected':''}>${esc(c.summaryOverride||c.summary||c.id)}${c.primary?' (primary)':''}</option>`).join('');
+    body=`
+      <label class="gcx-field"><span class="gcx-label">Calendar</span><select class="gcx-input" data-cal-select aria-label="Calendar">${opts}</select></label>
+      <div class="gcx-cal-bar">
+        <button type="button" class="gcx-btn primary" data-cal-act="new">New event</button>
+        <button type="button" class="gcx-btn" data-cal-act="refresh">Refresh</button>
+      </div>
+      ${st.form?formHtml(st.form):''}
+      ${eventsHtml(st)}`;
+  }
+  return `
+    ${acct}${msg}${body}
+    <div class="gcx-danger-zone">
+      <button type="button" class="gcx-btn danger" data-cal-act="disconnect" aria-label="Disconnect Google Calendar">Disconnect Google Calendar</button>
+      <p class="gcx-small">Disconnecting revokes GLIME's access to your Google Calendar. Your events in Google are not deleted.</p>
+    </div>`;
+}
+
+function afterDisconnect(container){
+  const o=container._gcxOpts||{};
+  o.states=Object.assign({},o.states,{'google-calendar':'not_connected'});
+  o.details=Object.assign({},o.details,{'google-calendar':null});
+  if(container._gcxOpen)container._gcxOpen.delete('google-calendar');
+  container._gcxCal=null;
+  container._gcxBanner={type:'ok',text:'Google Calendar disconnected.'};
+  render(container,o);
+}
+
+function mountCalendar(container,root){
+  const opts=container._gcxOpts||{};
+  const api=opts.calendarApi;
+  if(!api){root.innerHTML='<div class="gcx-status err" role="alert">Calendar tools are unavailable right now.</div>';return;}
+  const st=container._gcxCal||(container._gcxCal={calendars:null,calId:'primary',events:null,form:null,msg:null,loading:false,eLoading:false,eError:null});
+  const info=(opts.details&&opts.details['google-calendar'])||null;
+  const alive=()=>root.isConnected;
+  const draw=()=>{if(alive())root.innerHTML=calHtml(st,info);};
+
+  async function loadCalendars(){
+    st.loading=true;draw();
+    try{
+      const r=await api.calendars();
+      st.calendars=(r&&r.items)||[];
+      if(!st.calendars.some(c=>c.id===st.calId)){
+        const prim=st.calendars.find(c=>c.primary);
+        st.calId=prim?prim.id:(st.calendars[0]&&st.calendars[0].id)||'primary';
+      }
+    }catch(e){
+      console.error('GLIME calendar list error:',e);
+      st.msg={type:'err',text:cleanMsg(e)};
+    }
+    st.loading=false;draw();
+  }
+
+  async function loadEvents(){
+    st.eLoading=true;st.eError=null;st.events=null;draw();
+    try{
+      const now=new Date(),max=new Date(now.getTime()+30*864e5);
+      const r=await api.events({calendar_id:st.calId,time_min:now.toISOString(),time_max:max.toISOString(),max_results:50});
+      st.events=(r&&r.items)||[];
+    }catch(e){
+      console.error('GLIME calendar events error:',e);
+      st.eError=cleanMsg(e);
+    }
+    st.eLoading=false;draw();
+  }
+
+  root.addEventListener('click',async ev=>{
+    const b=ev.target.closest('[data-cal-act]');
+    if(!b||!root.contains(b))return;
+    const act=b.dataset.calAct;
+    st.msg=null;
+    try{
+      if(act==='refresh'){await loadEvents();return;}
+      if(act==='retry'){await loadCalendars();if(st.calendars)await loadEvents();return;}
+      if(act==='new'){st.form=newForm();draw();return;}
+      if(act==='cancel'){st.form=null;draw();return;}
+      if(act==='edit'){
+        const e0=(st.events||[]).find(x=>x.id===b.dataset.id);
+        if(e0){st.form=toForm(e0);draw();}
+        return;
+      }
+      if(act==='delete'){
+        if(!window.confirm('Delete this event from Google Calendar?'))return;
+        b.disabled=true;
+        await api.deleteEvent(st.calId,b.dataset.id);
+        st.msg={type:'ok',text:'Event deleted.'};
+        await loadEvents();
+        return;
+      }
+      if(act==='save'){
+        const f=readForm(root,st.form);
+        st.form=f;
+        const problem=validateForm(f);
+        if(problem){st.msg={type:'err',text:problem};draw();return;}
+        b.disabled=true;
+        const body=buildEvent(f);
+        if(f.id)await api.updateEvent(st.calId,f.id,body);else await api.createEvent(st.calId,body);
+        st.form=null;
+        st.msg={type:'ok',text:f.id?'Event updated.':'Event created.'};
+        await loadEvents();
+        return;
+      }
+      if(act==='disconnect'){
+        if(!window.confirm('Disconnect Google Calendar? GLIME will stop accessing your calendar and its Google access will be revoked.'))return;
+        b.disabled=true;
+        await api.disconnect();
+        afterDisconnect(container);
+        return;
+      }
+    }catch(e){
+      console.error('GLIME calendar action error:',e);
+      st.msg={type:'err',text:cleanMsg(e)};
+      draw();
+    }
+  });
+
+  root.addEventListener('change',ev=>{
+    const t=ev.target;
+    if(!t||!t.matches)return;
+    if(t.matches('[data-cal-select]')){
+      st.calId=t.value;st.msg=null;st.form=null;
+      loadEvents();
+      return;
+    }
+    if(t.matches('[data-cal-allday]')&&st.form){
+      const f=readForm(root,st.form);
+      if(f.allDay){
+        f.start=(f.start||'').slice(0,10);
+        f.end=(f.end||'').slice(0,10);
+      }else{
+        f.start=f.start&&f.start.length===10?f.start+'T09:00':f.start;
+        f.end=f.end&&f.end.length===10?f.end+'T10:00':f.end;
+      }
+      st.form=f;draw();
+    }
+  });
+
+  st.loading=false;st.eLoading=false;
+  if(!st.calendars){
+    loadCalendars().then(()=>{if(st.calendars&&alive())loadEvents();});
+  }else if(!st.events&&!st.eError){
+    loadEvents();
+  }else{
+    draw();
+  }
+}
+
+/* ======================================================
+   Cards
+   ====================================================== */
 function panelHtml(p,state,opts){
   const connected=state==='connected';
   const steps=connected?'':`
@@ -164,17 +548,36 @@ function panelHtml(p,state,opts){
 
 function cardHtml(p,state,opts,open){
   const badge=STATE_BADGE[state];
-  const interactive=p.backend==='existing'&&(state==='connected'||state==='not_connected');
+  const cal=p.kind==='calendar';
+  const stable=state==='connected'||state==='not_connected';
+  const interactiveAi=!cal&&p.backend==='existing'&&stable;
+  const interactiveCal=cal&&stable;
   let action;
-  if(interactive){
+  if(interactiveAi){
     const label=open?'Hide setup':(state==='connected'?'View connection':'Open setup');
     action=`<button type="button" class="gcx-btn ${state==='not_connected'?'primary':''}" data-gcx-toggle="${esc(p.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gcx-panel-${esc(p.id)}" aria-label="${esc(label+' for '+p.name)}">${esc(label)}</button>`;
+  }else if(interactiveCal&&state==='not_connected'){
+    action=`<button type="button" class="gcx-btn primary" data-gcx-connect="${esc(p.id)}" aria-label="${esc('Connect '+p.name)}">Connect</button>`;
+  }else if(interactiveCal){
+    const label=open?'Hide manager':'Manage';
+    action=`<button type="button" class="gcx-btn" data-gcx-toggle="${esc(p.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gcx-panel-${esc(p.id)}" aria-label="${esc(label+' '+p.name)}">${esc(label)}</button>`;
   }else{
     const label=STATE_LABEL[state]||'Coming soon';
     action=`<button type="button" class="gcx-btn" disabled aria-disabled="true" aria-label="${esc(p.name+': '+label)}">${esc(label)}</button>`;
   }
+
+  const info=(cal&&state==='connected'&&opts.details)?opts.details[p.id]:null;
+  const meta=info?`
+    <p class="gcx-meta">Account: ${esc(info.email||info.display_name||'Google account')}${info.last_verified_at?' · Verified '+esc(fmtDate(info.last_verified_at)):''}</p>
+    ${info.last_error?'<p class="gcx-meta warn">A recent request failed. Open Manage to retry, or reconnect.</p>':''}`:'';
+
+  let panel='';
+  if(open&&interactiveAi)panel=panelHtml(p,state,opts);
+  else if(open&&interactiveCal&&state==='connected')panel=`<div class="gcx-panel gcx-cal" id="gcx-panel-${esc(p.id)}" data-gcx-cal></div>`;
+
+  const wide=(cal&&open&&state==='connected')?' wide':'';
   return `
-  <article class="gcx-card" data-provider="${esc(p.id)}" data-state="${esc(state)}">
+  <article class="gcx-card${wide}" data-provider="${esc(p.id)}" data-state="${esc(state)}">
     <div class="gcx-top">
       <span class="gcx-ico" aria-hidden="true"><svg viewBox="0 0 24 24">${ICONS[p.icon]||ICONS.plug}</svg></span>
       <div class="gcx-titles">
@@ -183,8 +586,9 @@ function cardHtml(p,state,opts,open){
       </div>
     </div>
     <p class="gcx-desc">${esc(p.description)}</p>
+    ${meta}
     <div class="gcx-actions">${action}</div>
-    ${interactive&&open?panelHtml(p,state,opts):''}
+    ${panel}
   </article>`;
 }
 
@@ -206,8 +610,15 @@ async function copyText(text){
 function bind(container){
   if(container._gcxBound)return;
   container._gcxBound=true;
+
+  /* Restoring the page from the back/forward cache (e.g. after Google consent is abandoned) */
+  window.addEventListener('pageshow',ev=>{
+    if(ev.persisted&&container._gcxOpts)render(container,container._gcxOpts);
+  });
+
   container.addEventListener('click',async ev=>{
     const opts=container._gcxOpts||{};
+
     const toggle=ev.target.closest('[data-gcx-toggle]');
     if(toggle){
       const id=toggle.dataset.gcxToggle;
@@ -220,6 +631,22 @@ function bind(container){
       if(typeof opts.onAction==='function'){try{opts.onAction(id,opening?'setup-open':'setup-close');}catch(e){console.error(e);}}
       return;
     }
+
+    const conn=ev.target.closest('[data-gcx-connect]');
+    if(conn){
+      if(!opts.calendarApi)return;
+      conn.disabled=true;
+      conn.textContent='Redirecting…';
+      try{
+        await opts.calendarApi.startOAuth();
+      }catch(e){
+        console.error('GLIME calendar connect error:',e);
+        container._gcxBanner={type:'err',text:cleanMsg(e)};
+        render(container,opts);
+      }
+      return;
+    }
+
     const copy=ev.target.closest('[data-gcx-copy]');
     if(copy){
       const ok=await copyText(copy.dataset.gcxCopy);
@@ -235,7 +662,9 @@ function bind(container){
   opts: {
     status:   'loading' | 'ready' | 'error'
     states:   { providerId: 'connected'|'not_connected'|'unavailable'|'error'|'loading'|'coming_soon' }
-    mcpEndpoint, errorMessage, only:[ids], note:{text,linkText,href}, onAction(id, action)
+    details:  { 'google-calendar': {email, display_name, last_verified_at, last_error} }
+    calendarApi, mcpEndpoint, errorMessage, banner:{type:'ok'|'err',text},
+    only:[ids], note:{text,linkText,href}, onAction(id, action)
   }
 */
 function render(container,opts){
@@ -243,17 +672,24 @@ function render(container,opts){
   opts=opts||{};
   injectStyles();
   container.classList.add('gcx');
+  const fresh=container._gcxOpts!==opts;
   container._gcxOpts=opts;
   container._gcxOpen=container._gcxOpen||new Set();
+  if(fresh&&Object.prototype.hasOwnProperty.call(opts,'banner'))container._gcxBanner=opts.banner;
   bind(container);
 
   const list=getProviders(opts);
+
+  const bn=container._gcxBanner;
+  let banner='';
+  if(bn&&bn.text)banner=`<div class="gcx-status ${bn.type==='ok'?'ok':'err'}" role="${bn.type==='ok'?'status':'alert'}">${esc(bn.text)}</div>`;
+
   let status='';
   if(opts.status==='loading')status='<div class="gcx-status" role="status">Loading connectors…</div>';
   else if(opts.status==='error')status=`<div class="gcx-status err" role="alert">${esc(opts.errorMessage||'Connector status could not be loaded.')}</div>`;
 
   if(!list.length){
-    container.innerHTML=status+'<div class="gcx-status">No connectors are available yet.</div>';
+    container.innerHTML=banner+status+'<div class="gcx-status">No connectors are available yet.</div>';
     return;
   }
 
@@ -278,7 +714,8 @@ function render(container,opts){
     note=`<p class="gcx-note">${esc(opts.note.text)}${link}</p>`;
   }
 
-  container.innerHTML=status+groups+note;
+  container.innerHTML=banner+status+groups+note;
+  container.querySelectorAll('[data-gcx-cal]').forEach(root=>mountCalendar(container,root));
 }
 
 function renderPermissions(container,rows,opts){
@@ -303,7 +740,7 @@ function renderPermissions(container,rows,opts){
     </section>`;
 }
 
-/* ---------- Read-only data helper (existing tables only) ---------- */
+/* ---------- Read-only data helpers ---------- */
 async function loadAiStatus(sb,opts){
   opts=opts||{};
   const none={entitled:false,states:{chatgpt:'unavailable',claude:'unavailable'},permissions:[]};
@@ -346,12 +783,45 @@ async function loadAiStatus(sb,opts){
   return {entitled:true,states,permissions:[...merged].map(([permission_key,enabled])=>({permission_key,enabled}))};
 }
 
+/* AI/MCP status and Google Calendar status load independently;
+   one failing never blocks the other. */
+async function loadAll(sb,opts){
+  opts=opts||{};
+  const cal=createCalendarApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
+  const [ai,cs]=await Promise.allSettled([loadAiStatus(sb,opts),cal.status()]);
+
+  const states={},details={};
+  let entitled=false,permissions=[],aiFailed=false,failed=false;
+
+  if(ai.status==='fulfilled'){
+    Object.assign(states,ai.value.states);
+    entitled=ai.value.entitled;
+    permissions=ai.value.permissions;
+  }else{
+    console.error('GLIME AI connection status error:',ai.reason);
+    states.chatgpt='error';states.claude='error';
+    aiFailed=true;failed=true;
+  }
+
+  if(cs.status==='fulfilled'){
+    states['google-calendar']=cs.value.state;
+    details['google-calendar']=cs.value.info||null;
+  }else{
+    console.error('GLIME Google Calendar status error:',cs.reason);
+    states['google-calendar']='error';
+    failed=true;
+  }
+
+  return {states,details,entitled,permissions,aiFailed,failed,calendarApi:cal};
+}
+
 window.GLIME_CONNECTOR_UI={
   render,
   renderPermissions,
   registerProvider,
   getProviders:()=>registry.slice(),
   injectStyles,
-  data:{loadAiStatus}
+  calendar:{create:createCalendarApi},
+  data:{loadAiStatus,loadAll}
 };
 })();
