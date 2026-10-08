@@ -10,6 +10,26 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="client-assistant.css">
+  <style id="assistant-message-proposal-styles">
+    /* Messaging proposal (assistant_message.v1) + delivery status */
+    .msg-proposal{border-color:rgba(11,143,140,.25)}
+    .mp-kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;align-items:baseline;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
+    .mp-kv .label{margin:0}
+    .mp-kv strong{overflow-wrap:anywhere;font-size:14px}
+    .mp-recipients{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+    .mp-recipients li{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;overflow-wrap:anywhere;font-size:14px}
+    .mp-row{margin-top:12px;overflow-wrap:anywhere}
+    .mp-message{margin-top:4px;padding:10px 12px;border:1px solid rgba(20,241,160,.4);border-radius:12px;background:rgba(20,241,160,.07);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font-size:14px;line-height:1.55}
+    .mp-meta{margin-top:6px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+    .mp-warn{margin-top:12px;padding:9px 11px;border:1px solid rgba(192,57,43,.22);border-radius:11px;background:rgba(192,57,43,.06);color:var(--danger);font-size:12.5px}
+    .msg-outcome{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-2)}
+    .msg-results{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+    .msg-results li{display:flex;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px}
+    .msg-results li span{min-width:0;overflow-wrap:anywhere}
+    .msg-results li b{flex:0 0 auto;font-size:12px;color:#0a6b57}
+    .msg-results li b.is-bad{color:var(--danger)}
+    @media (max-width:720px){.card-actions .btn{flex:1 1 0}.mp-kv{grid-template-columns:1fr;gap:2px}.mp-kv strong{margin-bottom:6px}}
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -107,10 +127,10 @@
     <div class="composer-foot"><span id="thinkingBadge" class="thinking-badge" hidden>GLIME Thinking on</span><span id="status" class="status" aria-live="polite"></span></div>
   </footer>
 
-  <!-- Hidden file inputs -->
+  <!-- Hidden file inputs: only types the backend accepts (PNG, JPEG, WebP, GIF, PDF) -->
   <input id="cameraInput" class="visually-hidden" type="file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
-  <input id="photosInput" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp" multiple tabindex="-1" aria-hidden="true">
-  <input id="filesInput" class="visually-hidden" type="file" accept=".pdf,.doc,.docx,.txt" multiple tabindex="-1" aria-hidden="true">
+  <input id="photosInput" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple tabindex="-1" aria-hidden="true">
+  <input id="filesInput" class="visually-hidden" type="file" accept=".pdf,application/pdf" multiple tabindex="-1" aria-hidden="true">
 
   <!-- Overlays -->
   <div id="overlayBackdrop" class="backdrop" data-open="false"></div>
@@ -143,8 +163,8 @@
   <section id="attachmentMenu" class="sheet" data-open="false" inert aria-label="Attachments and tools">
     <div class="sheet-handle" aria-hidden="true"></div>
     <button id="cameraBtn" class="tool-row" type="button"><span class="tool-icon"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></span><span class="tool-main"><strong>Camera</strong></span></button>
-    <button id="photosBtn" class="tool-row" type="button"><span class="tool-icon"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></span><span class="tool-main"><strong>Photos</strong></span></button>
-    <button id="filesBtn" class="tool-row" type="button"><span class="tool-icon"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg></span><span class="tool-main"><strong>Files</strong></span></button>
+    <button id="photosBtn" class="tool-row" type="button"><span class="tool-icon"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></span><span class="tool-main"><strong>Photos</strong><small>PNG, JPEG, WebP, GIF</small></span></button>
+    <button id="filesBtn" class="tool-row" type="button"><span class="tool-icon"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg></span><span class="tool-main"><strong>Files</strong><small>PDF up to 4.5 MB</small></span></button>
     <button id="connectorBtn" class="tool-row" type="button"><span class="tool-icon"><svg class="ic" aria-hidden="true"><use href="#i-plug"/></svg></span><span class="tool-main"><strong>Connector</strong></span></button>
     <button id="glimeThinkingBtn" class="tool-row" type="button" aria-pressed="false" data-mode="glime-thinking">
       <span class="tool-icon"><img class="logo-mark" src="glime_logo_clean.svg" width="20" height="20" alt=""></span>
@@ -166,7 +186,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<!-- Universal proposal -->
+<!-- Data-mutation proposal -->
 <template id="proposalTemplate">
   <section class="card proposal" aria-label="Action proposal">
     <div class="card-head">
@@ -177,7 +197,7 @@
     <div class="change-list" data-role="changes"></div>
     <p class="proposal-note" data-role="note">Nothing is changed until you explicitly approve this proposal.</p>
     <div class="card-actions" data-role="actions">
-      <button type="button" class="btn btn-secondary" data-role="cancel">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-role="cancel">Reject</button>
       <button type="button" class="btn btn-primary" data-role="approve">Approve change</button>
     </div>
     <div class="card-status" data-role="status" aria-live="polite" hidden></div>
@@ -185,7 +205,7 @@
   </section>
 </template>
 
-<!-- Execution lifecycle -->
+<!-- Execution lifecycle (data mutations) -->
 <template id="executionTemplate">
   <div class="execution" aria-label="Execution status">
     <div class="card-head"><div class="eyebrow">EXECUTION STATUS</div><span class="badge" data-role="badge">Proposed</span></div>
@@ -211,6 +231,5 @@
 </template>
 
 <script src="client-assistant.js"></script>
-<script src="client-assistant-action-addon.js"></script>
 </body>
 </html>
