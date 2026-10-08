@@ -11,7 +11,7 @@
 
   const CONFIG = Object.freeze({
     nav: Object.freeze({ billing: 'billing.html', settings: 'settings.html', connector: 'ai-connections.html', login: 'login.html' }),
-    navLabels: Object.freeze({ billing: 'Go to Billing', settings: 'Open Settings', connector: 'Open Connectors' }),
+    navLabels: Object.freeze({ billing: 'Go to Billing', settings: 'Open Settings', connector: 'Open Connector' }),
     maxMessage: 2000,
     historyTurns: 12,
     maxAttachments: 4,
