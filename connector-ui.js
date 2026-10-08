@@ -16,7 +16,7 @@
 'use strict';
 if(window.GLIME_CONNECTOR_UI)return;
 
-const CATEGORY_ORDER=['AI Assistants','Google Workspace','Commerce','Team & Development'];
+const CATEGORY_ORDER=['AI Assistants','Google Workspace','Commerce','Team Communication'];
 
 const ICONS={
   chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
@@ -24,9 +24,9 @@ const ICONS={
   mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
   drive:'<path d="M9 3h6l6 10-3 6H6l-3-6z"/><path d="M3 13h18"/>',
   sheet:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   bag:'<path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/>',
   hash:'<path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/>',
-  branch:'<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="9" r="2"/><path d="M6 7v10M18 11c0 4-6 3-12 6"/>',
   plug:'<path d="M9 3v5M15 3v5M7 8h10v4a5 5 0 0 1-10 0zM12 17v4"/>'
 };
 
@@ -37,9 +37,9 @@ const registry=[
   {id:'gmail',name:'Gmail',category:'Google Workspace',description:'Connect business email workflows.',icon:'mail',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:30},
   {id:'google-drive',name:'Google Drive',category:'Google Workspace',description:'Connect business files, Docs and storage.',icon:'drive',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:40},
   {id:'google-sheets',name:'Google Sheets',category:'Google Workspace',description:'Connect business spreadsheets.',icon:'sheet',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:50},
+  {id:'google-calendar',name:'Google Calendar',category:'Google Workspace',description:'Connect business calendars and appointments.',icon:'calendar',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:55},
   {id:'shopify',name:'Shopify',category:'Commerce',description:'Connect products, orders and customer data.',icon:'bag',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:60},
-  {id:'slack',name:'Slack',category:'Team & Development',description:'Connect team communication and workflows.',icon:'hash',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:70},
-  {id:'github',name:'GitHub',category:'Team & Development',description:'Connect repositories and development workflows.',icon:'branch',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:80}
+  {id:'slack',name:'Slack',category:'Team Communication',description:'Connect team communication and workflows.',icon:'hash',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:70}
 ];
 
 const PERMISSION_LABELS={
