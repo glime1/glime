@@ -14,7 +14,7 @@
     navLabels: Object.freeze({ billing: 'Go to Billing', settings: 'Open Settings', connector: 'Open Connectors' }),
     maxMessage: 2000,
     historyTurns: 12,
-    maxAttachments: 5,
+    maxAttachments: 4,
     requestTimeoutMs: 60000,
     image: Object.freeze({ maxDim: 1600, quality: 0.82, minBytes: 200 * 1024, maxInputBytes: 20 * 1024 * 1024, optimizable: ['image/jpeg', 'image/png', 'image/webp', 'image/bmp'] }),
     doc: Object.freeze({ maxBytes: 10 * 1024 * 1024, ext: ['pdf', 'doc', 'docx', 'txt'] }),
@@ -22,14 +22,17 @@
     storageKey: 'glime.clientAssistant.conversationId'
   });
 
-  /* Conversation operations the current backend does NOT expose yet.
-   * Flip a flag to true only when the backend implements it. Contract (POST FUNCTION_URL):
-   *  list   {op:'list_conversations'}                      -> {conversations:[{id,title,updated_at}]}
-   *  load   {op:'load_conversation',conversation_id}       -> {conversation:{id,title,turns:[{role,content,meta,created_at}]}}
-   *  rename {op:'rename_conversation',conversation_id,title}-> {ok:true}
-   *  remove {op:'delete_conversation',conversation_id}     -> {ok:true}   (must validate ownership + cascade) */
-  const BACKEND_OPS = Object.freeze({ list: false, load: false, rename: false, remove: false });
-  const OP_NAMES = Object.freeze({ list: 'list_conversations', load: 'load_conversation', rename: 'rename_conversation', remove: 'delete_conversation' });
+  /* Conversation operations (backend client-assistant v56+). Contract (POST FUNCTION_URL):
+   * list   {op:'list', limit?}                          -> {conversations:[{id,title,updated_at}]}
+   * load   {op:'load', conversation_id}                 -> {conversation:{id,title,turns:[{role,content,created_at,intent,proposal}]}}
+   * rename {op:'rename', conversation_id, title}        -> {ok:true}
+   * remove {op:'delete', conversation_id}               -> {ok:true} (ownership validated; chat + turns permanently deleted) */
+  const BACKEND_OPS = Object.freeze({ list: true, load: true, rename: true, remove: true });
+  const OP_NAMES = Object.freeze({ list: 'list', load: 'load', rename: 'rename', remove: 'delete' });
+
+  /* Files the assistant can actually read (backend accepts only these). */
+  const AI_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'];
+  const AI_MAX_BYTES = 4500000;
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const STATUS_ORDER = ['proposed', 'approved', 'queued', 'processing', 'completed'];
@@ -40,6 +43,15 @@
   const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
   const appError = (code, message) => Object.assign(new Error(message || code), { code });
   const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
+
+  function toB64(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result).split(',')[1] || '');
+      r.onerror = () => reject(r.error || new Error('read'));
+      r.readAsDataURL(file);
+    });
+  }
 
   function el(tag, cls, text) {
     const n = document.createElement(tag);
@@ -116,7 +128,7 @@
   /* ===================== EXTENSION API ===================== */
   const extensions = { uiActions: new Map(), onMessage: [] };
   window.GlimeAssistant = Object.freeze({
-    version: '2.0.0',
+    version: '2.1.0',
     extend(spec) {
       if (!spec || typeof spec !== 'object') return false;
       if (spec.uiActions && typeof spec.uiActions === 'object') {
@@ -374,9 +386,18 @@
       const data = await conversationOp('load', { conversation_id: id });
       const conv = data.conversation; if (!conv) throw appError('BACKEND');
       closeOverlay(true); clearMessagesView(); setConversationId(conv.id || id);
-      (conv.turns || []).forEach((t) => addMessage({ id: uuid(), role: t.role === 'user' ? 'user' : 'assistant', text: String(t.content || ''), at: t.created_at ? Date.parse(t.created_at) : Date.now(), attachments: (t.meta && t.meta.attachments) || [] }));
+      (conv.turns || [])
+        .filter((t) => !String(t.content || '').startsWith('[client '))
+        .forEach((t) => addMessage({ id: uuid(), role: t.role === 'user' ? 'user' : 'assistant', text: String(t.content || ''), at: t.created_at ? Date.parse(t.created_at) : Date.now(), attachments: (t.meta && t.meta.attachments) || [] }));
       renderConversationList();
-    } catch (e) { toast(userMessageFor(e)); }
+    } catch (e) {
+      if (e && e.code === 'BACKEND') {
+        /* The conversation may have been deleted elsewhere: drop it from the list. */
+        state.conversations = state.conversations.filter((c) => c.id !== id);
+        renderConversationList();
+      }
+      toast(userMessageFor(e));
+    }
   }
   async function renameConversation() {
     const current = state.conversations.find((c) => c.id === state.conversationId);
@@ -448,6 +469,7 @@
     }
     throw Object.assign(new Error('unsupported'), { userMessage: 'This file type is not supported.' });
   }
+
   async function addFiles(fileList, kind) {
     for (const f of Array.from(fileList || [])) {
       if (state.attachments.length >= CONFIG.maxAttachments) { toast('You can attach up to ' + CONFIG.maxAttachments + ' files.'); break; }
@@ -458,6 +480,7 @@
   }
   function releaseAttachment(a) { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); }
   function clearAttachments() { state.attachments.forEach(releaseAttachment); state.attachments = []; renderTray(); }
+
   function renderTray() {
     dom.trayList.replaceChildren();
     dom.tray.hidden = state.attachments.length === 0;
@@ -498,13 +521,15 @@
   function isCreditsExhausted(status, data) {
     return status === 402 || !!(data && (data.code === 'AI_CREDITS_EXHAUSTED' || data.error_code === 'AI_CREDITS_EXHAUSTED' || (data.credits && data.credits.blocked === true)));
   }
+
   async function handleSend() {
     if (state.sending) return;
     const text = dom.input.value.trim();
     if (!text) { if (state.attachments.length) toast('Add a message to send with your attachments.'); return; }
     closeOverlay(true);
     const thinkingAtSend = state.thinking;
-    const sentAtt = state.attachments.splice(0).map((a) => ({ id: a.id, kind: a.kind, name: a.name, type: a.type, size: a.size, originalSize: a.originalSize, optimized: a.optimized, previewUrl: a.previewUrl }));
+    const pending = state.attachments.splice(0);
+    const sentAtt = pending.map((a) => ({ id: a.id, kind: a.kind, name: a.name, type: a.type, size: a.size, originalSize: a.originalSize, optimized: a.optimized, previewUrl: a.previewUrl }));
     renderTray();
     const history = buildHistory();
     const userMsg = { id: uuid(), role: 'user', text, at: Date.now(), attachments: sentAtt };
@@ -513,16 +538,21 @@
     setSending(true);
     let row = null;
     try {
+      /* Only images and PDFs up to ~4.5 MB can be read by the assistant; other files are skipped (not sent). */
+      const readable = pending.filter((a) => AI_MIME.includes(a.type) && a.size <= AI_MAX_BYTES && a.file).slice(0, 4);
+      const skipped = pending.length - readable.length;
+      const aiFiles = await Promise.all(readable.map(async (a) => ({ name: a.name, mime_type: a.type, data_base64: await toB64(a.file) })));
+
       const { res, data } = await postAssistant({
         message: text, history, conversation_id: state.conversationId || undefined, request_id: uuid(),
         mode: thinkingAtSend ? 'glime_thinking' : 'standard',
-        attachments: sentAtt.map((a) => ({ name: a.name, type: a.type, size: a.size, original_size: a.originalSize }))
+        thinking: thinkingAtSend,
+        attachments: aiFiles
       });
       if (res.status === 401) throw appError('SESSION_EXPIRED');
       if (isCreditsExhausted(res.status, data)) { dom.messages.appendChild(tpl('creditsTemplate')); scrollToEnd(); return; }
       if (res.status === 403) throw appError('NOT_ENABLED');
       if (!res.ok || !data || data.error) throw appError('BACKEND');
-
       if (data.conversation_id && UUID_RE.test(data.conversation_id)) {
         setConversationId(data.conversation_id);
         upsertConversation(data.conversation_id, data.title || text.slice(0, 48), Date.now());
@@ -532,8 +562,8 @@
       if (data.report) renderReport(data.report, row);
       if (Array.isArray(data.ui_actions) && data.ui_actions.length) renderUiActions(data.ui_actions, row);
       if (data.proposal && typeof data.proposal === 'object') row.appendChild(renderProposal(data.proposal));
-      if (thinkingAtSend && data.reasoning_mode !== 'enhanced') addNotice('Enhanced reasoning is not available from the server yet, so this answer used standard mode.', false, row);
-      if (sentAtt.length && !Array.isArray(data.attachments)) addNotice('Attachment contents were not processed yet; only file names were shared with the assistant.', false, row);
+      if (thinkingAtSend && !(data.thinking && data.thinking.applied)) addNotice('Enhanced reasoning was not applied for this answer.', false, row);
+      if (skipped) addNotice(skipped + ' file(s) could not be read (only images and PDF up to 4.5 MB are supported).', false, row);
       scrollToEnd();
     } catch (e) {
       addNotice(userMessageFor(e), true);
@@ -638,6 +668,23 @@
       ui.status.textContent = userMessageFor(e);
     }
   }
+  async function rejectProposal(ui, requestId) {
+    ui.approve.disabled = true; ui.cancel.disabled = true;
+    ui.status.hidden = false; ui.status.textContent = 'Rejecting\u2026';
+    try {
+      const { res, data } = await postAssistant({
+        conversation_id: state.conversationId || undefined, request_id: uuid(),
+        approval: { action_request_id: requestId, decision: 'reject' }
+      });
+      if (res.status === 401) throw appError('SESSION_EXPIRED');
+      if (!res.ok || !data || data.error) throw appError('BACKEND');
+      ui.stopped = true; ui.actions.hidden = true; ui.status.hidden = true;
+      ui.note.hidden = false; ui.note.textContent = 'Rejected. Nothing was changed.';
+    } catch (e) {
+      ui.approve.disabled = false; ui.cancel.disabled = false;
+      ui.status.textContent = userMessageFor(e);
+    }
+  }
   function renderProposal(p) {
     const root = tpl('proposalTemplate').firstElementChild;
     root.style.alignSelf = 'stretch';
@@ -657,7 +704,7 @@
     });
     if (!UUID_RE.test(id)) { ui.actions.hidden = true; q('note').textContent = 'This proposal cannot be approved from here.'; return root; }
     ui.approve.addEventListener('click', () => approveProposal(ui, id));
-    ui.cancel.addEventListener('click', () => { ui.stopped = true; ui.actions.hidden = true; ui.note.textContent = 'Dismissed. Nothing was changed.'; });
+    ui.cancel.addEventListener('click', () => rejectProposal(ui, id));
     const initial = normalizeStatus(p.status);
     if (initial && initial !== 'proposed') {
       ui.actions.hidden = true; ui.note.hidden = true; ui.lastStatus = initial;
@@ -696,18 +743,15 @@
     on('filesBtn', 'click', () => { closeOverlay(true); dom.inputs.files.click(); });
     Object.entries(dom.inputs).forEach(([kind, input]) => input.addEventListener('change', async () => { const files = Array.from(input.files || []); input.value = ''; await addFiles(files, kind); }));
     dom.thinkingBtn.addEventListener('click', () => { setThinkingMode(!state.thinking); closeOverlay(); });
-
     dom.dlg.cancel.addEventListener('click', () => finishDialog(false));
     dom.dlg.confirm.addEventListener('click', () => finishDialog(true));
     dom.dlg.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); finishDialog(true); } });
-
     dom.list.addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-id]'); if (!btn) return;
       if (btn.dataset.action === 'delete') deleteConversation(btn.dataset.id); else openConversation(btn.dataset.id);
     });
     dom.messages.addEventListener('click', (e) => { const b = e.target.closest('[data-ui-navigate]'); if (b) navigate(b.dataset.uiNavigate); });
     dom.empty.addEventListener('click', (e) => { const b = e.target.closest('[data-prompt]'); if (!b) return; dom.input.value = b.dataset.prompt || ''; autosize(); dom.input.focus(); });
-
     dom.backdrop.addEventListener('click', () => closeOverlay());
     document.addEventListener('click', (e) => {
       if (!activeOverlay || activeOverlay === 'dialog') return;
@@ -715,7 +759,6 @@
       if (!o.el.contains(e.target) && !(o.trigger && o.trigger.contains(e.target))) closeOverlay();
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && activeOverlay) { e.preventDefault(); closeOverlay(); } });
-
     dom.form.addEventListener('submit', (e) => { e.preventDefault(); handleSend(); });
     dom.input.addEventListener('input', autosize);
     dom.input.addEventListener('focus', () => setTimeout(scrollToEnd, 250));
@@ -745,5 +788,6 @@
     } catch { /* recovery is best-effort */ }
     syncMenuState();
   }
+
   init();
 })();
