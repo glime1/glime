@@ -1,8 +1,13 @@
-/* GLIME Client Assistant — central frontend runtime.
- * Backend is authoritative. This file never touches business tables, never selects client_id,
- * and routes every approval through the existing approve RPC. */
+/* GLIME Client Assistant — central frontend runtime (v3).
+ * ONE authoritative flow: proposal -> render -> approve/reject -> backend result -> final state.
+ * Backend is authoritative. This file never sends client_id, never calls a provider directly,
+ * and never claims success that the backend has not confirmed.
+ * Messaging proposals (assistant_message.v1) are approved/rejected ONLY through the canonical
+ * client-assistant endpoint. Data-mutation proposals keep their existing approve RPC. */
 (() => {
   'use strict';
+  if (window.__glimeClientAssistantStarted) return; // idempotent init
+  window.__glimeClientAssistantStarted = true;
 
   /* ===================== CONFIG ===================== */
   const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
@@ -12,36 +17,38 @@
   const CONFIG = Object.freeze({
     nav: Object.freeze({ billing: 'billing.html', settings: 'settings.html', connector: 'ai-connections.html', login: 'login.html' }),
     navLabels: Object.freeze({ billing: 'Go to Billing', settings: 'Open Settings', connector: 'Open Connector' }),
-    maxMessage: 2000,
     historyTurns: 12,
     maxAttachments: 4,
     requestTimeoutMs: 60000,
-    image: Object.freeze({ maxDim: 1600, quality: 0.82, minBytes: 200 * 1024, maxInputBytes: 20 * 1024 * 1024, optimizable: ['image/jpeg', 'image/png', 'image/webp', 'image/bmp'] }),
-    doc: Object.freeze({ maxBytes: 10 * 1024 * 1024, ext: ['pdf', 'doc', 'docx', 'txt'] }),
+    approvalTimeoutMs: 90000,
+    image: Object.freeze({ maxDim: 1600, quality: 0.82, minBytes: 200 * 1024, maxInputBytes: 20 * 1024 * 1024, optimizable: ['image/jpeg', 'image/png', 'image/webp'] }),
     poll: Object.freeze({ intervalMs: 2000, maxAttempts: 60 }),
     storageKey: 'glime.clientAssistant.conversationId'
   });
 
-  /* Conversation operations (backend client-assistant v56+). Contract (POST FUNCTION_URL):
-   * list   {op:'list', limit?}                          -> {conversations:[{id,title,updated_at}]}
-   * load   {op:'load', conversation_id}                 -> {conversation:{id,title,turns:[{role,content,created_at,intent,proposal}]}}
-   * rename {op:'rename', conversation_id, title}        -> {ok:true}
-   * remove {op:'delete', conversation_id}               -> {ok:true} (ownership validated; chat + turns permanently deleted) */
-  const BACKEND_OPS = Object.freeze({ list: true, load: true, rename: true, remove: true });
-  const OP_NAMES = Object.freeze({ list: 'list', load: 'load', rename: 'rename', remove: 'delete' });
+  /* Conversation operations (backend client-assistant): list / load / open / rename / delete. */
+  const OP_NAMES = Object.freeze({ list: 'list', load: 'load', open: 'open', rename: 'rename', remove: 'delete' });
 
-  /* Files the assistant can actually read (backend accepts only these). */
-  const AI_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'];
+  /* Attachment types the live backend accepts. */
+  const AI_IMAGE_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  const AI_PDF_MIME = 'application/pdf';
   const AI_MAX_BYTES = 4500000;
+
+  const DEFAULT_LIMITS = Object.freeze({ max_recipients: 5, max_message_characters: 300, max_message_lines: 3 });
+  const CHANNEL_LABEL = Object.freeze({ whatsapp: 'WhatsApp', instagram: 'Instagram' });
+  const TARGET_MODE_LABEL = Object.freeze({ single: 'Single recipient', selected: 'Selected recipients', audience: 'Audience' });
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const STATUS_ORDER = ['proposed', 'approved', 'queued', 'processing', 'completed'];
-  const STATUS_LABEL = { proposed: 'Proposed', approved: 'Approved', queued: 'Queued', processing: 'Processing', completed: 'Completed', failed: 'Failed' };
+  const STATUS_LABEL = { proposed: 'Proposed', approved: 'Approved', queued: 'Queued', processing: 'Processing', completed: 'Completed', failed: 'Failed', rejected: 'Rejected', unknown: 'Outcome unknown' };
+  const MSG_BADGE = { queued: 'Queued', processing: 'Processing', completed: 'Sent', partial: 'Partially sent', blocked: 'Blocked', failed: 'Failed', unknown: 'Delivery unknown', rejected: 'Rejected' };
+  const RES_LABEL = { completed: 'Sent', failed: 'Failed', blocked: 'Blocked', unknown: 'Unknown', queued: 'Queued', processing: 'Sending', partial: 'Partial' };
 
   /* ===================== HELPERS ===================== */
   const $ = (id) => document.getElementById(id);
   const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
   const appError = (code, message) => Object.assign(new Error(message || code), { code });
+  const userErr = (message) => Object.assign(new Error(message), { userMessage: message });
   const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
 
   function toB64(file) {
@@ -95,13 +102,22 @@
     try { return JSON.stringify(v).slice(0, 400); } catch { return '\u2014'; }
   }
   function userMessageFor(err) {
+    if (err && err.userMessage) return err.userMessage;
     switch (err && err.code) {
       case 'SESSION_EXPIRED': return 'Your session has expired. Please sign in again.';
       case 'NETWORK': return 'Unable to reach GLIME right now. Please try again.';
+      case 'TIMEOUT': return 'GLIME did not respond in time. Retrying sends the same request, so your message will not be duplicated.';
       case 'NOT_ENABLED': return 'The Client Assistant is not enabled for this account.';
-      case 'BACKEND_CONTRACT_MISSING': return 'This feature needs backend support that is not available yet.';
       default: return 'GLIME could not complete this request.';
     }
+  }
+  function prim(v) {
+    if (v == null) return '';
+    if (typeof v === 'object') {
+      if (Array.isArray(v)) return '';
+      return Object.entries(v).filter(([, x]) => x != null && typeof x !== 'object').map(([k, x]) => fieldLabel(k) + ': ' + x).join(', ');
+    }
+    return String(v);
   }
 
   /* ===================== STATE + DOM ===================== */
@@ -110,6 +126,7 @@
     conversations: [],
     messages: [],
     attachments: [],
+    rendered: new Set(), // action_request_ids already shown in this view
     thinking: false,
     sending: false,
     toastTimer: null
@@ -128,7 +145,7 @@
   /* ===================== EXTENSION API ===================== */
   const extensions = { uiActions: new Map(), onMessage: [] };
   window.GlimeAssistant = Object.freeze({
-    version: '2.1.0',
+    version: '3.0.0',
     extend(spec) {
       if (!spec || typeof spec !== 'object') return false;
       if (spec.uiActions && typeof spec.uiActions === 'object') {
@@ -254,6 +271,7 @@
   /* ===================== MESSAGES ===================== */
   function scrollToEnd() { requestAnimationFrame(() => { dom.container.scrollTop = dom.container.scrollHeight; }); }
   function syncEmpty() { dom.empty.hidden = dom.messages.childElementCount > 0 || state.sending; }
+  function findRow(id) { return Array.from(dom.messages.children).find((n) => n.dataset && n.dataset.id === String(id)) || null; }
 
   function buildAttachmentCard(a) {
     if (a.kind === 'image' && a.previewUrl) {
@@ -276,6 +294,8 @@
     return row;
   }
   function addMessage(msg) {
+    const existing = findRow(msg.id);
+    if (existing) return existing; // never render the same turn twice
     state.messages.push(msg);
     const row = buildMessage(msg);
     dom.messages.appendChild(row);
@@ -288,9 +308,14 @@
     if (isError) n.setAttribute('role', 'alert');
     (parent || dom.messages).appendChild(n); syncEmpty(); scrollToEnd(); return n;
   }
+  function addBackendAnswer(data) {
+    if (data && typeof data.answer === 'string' && data.answer.trim()) {
+      addMessage({ id: data.turn_id || uuid(), role: 'assistant', text: data.answer.trim(), at: Date.now(), attachments: [] });
+    }
+  }
   function clearMessagesView() {
     state.messages.forEach((m) => (m.attachments || []).forEach((a) => a.previewUrl && URL.revokeObjectURL(a.previewUrl)));
-    state.messages = []; dom.messages.replaceChildren(); syncEmpty(); syncMenuState();
+    state.messages = []; state.rendered.clear(); dom.messages.replaceChildren(); syncEmpty(); syncMenuState();
   }
 
   /* ===================== MENU STATE / EXPORT / COPY ===================== */
@@ -327,30 +352,48 @@
     if (!db) return null;
     try { const { data, error } = await db.auth.getSession(); return error ? null : (data && data.session) || null; } catch { return null; }
   }
-  async function postAssistant(body) {
+  /* Throws SESSION_EXPIRED / NETWORK / TIMEOUT. Resolves {res,data} for any HTTP response. */
+  async function postAssistant(body, timeoutMs) {
     const session = await getSession();
     if (!session) throw appError('SESSION_EXPIRED');
-    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), CONFIG.requestTimeoutMs);
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), timeoutMs || CONFIG.requestTimeoutMs);
     let res;
     try {
       res = await fetch(FUNCTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify(body), signal: ctl.signal });
-    } catch { throw appError('NETWORK'); } finally { clearTimeout(timer); }
-    const data = await res.json().catch(() => null);
+    } catch (e) {
+      clearTimeout(timer);
+      throw appError(e && e.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK');
+    }
+    let data = null;
+    try { data = await res.json(); } catch { data = null; }
+    clearTimeout(timer);
     return { res, data };
   }
   async function conversationOp(op, payload) {
-    if (!BACKEND_OPS[op]) throw appError('BACKEND_CONTRACT_MISSING');
     const { res, data } = await postAssistant(Object.assign({ op: OP_NAMES[op] }, payload));
     if (res.status === 401) throw appError('SESSION_EXPIRED');
-    if (!res.ok || !data) throw appError('BACKEND');
+    if (!res.ok || !data || data.error) throw appError('BACKEND');
     return data;
+  }
+  /* Canonical approval/rejection endpoint — the ONLY path for assistant messaging proposals. */
+  function postDecision(actionRequestId, decision, timeoutMs) {
+    const body = { approval: { action_request_id: actionRequestId, decision } };
+    if (state.conversationId) body.conversation_id = state.conversationId;
+    return postAssistant(body, timeoutMs || CONFIG.requestTimeoutMs);
+  }
+  async function fetchStatus(id) {
+    if (!db) throw appError('SESSION_EXPIRED');
+    const { data, error } = await db.rpc('get_client_action_execution_status', { p_action_request_id: id });
+    if (error || !data || data.ok === false) throw appError('STATUS');
+    const raw = (data.execution_job && data.execution_job.status) || (data.action_request && data.action_request.status) || '';
+    return { raw: String(raw).toLowerCase(), data };
   }
 
   /* ===================== CONVERSATIONS ===================== */
   function upsertConversation(id, title, at) {
     if (!id) return;
     const found = state.conversations.find((c) => c.id === id);
-    if (found) { if (title) found.title = title; found.at = at || Date.now(); }
+    if (found) { if (title && !found.title) found.title = title; found.at = at || Date.now(); }
     else state.conversations.unshift({ id, title: title || 'New conversation', at: at || Date.now() });
     renderConversationList();
   }
@@ -366,7 +409,6 @@
       del.setAttribute('aria-label', 'Delete conversation: ' + c.title); del.appendChild(icon('trash'));
       row.append(open, del); dom.list.appendChild(row);
     });
-    if (!BACKEND_OPS.list) dom.list.appendChild(el('div', 'list-note', 'Earlier conversations will appear here once conversation history is enabled.'));
   }
   function setConversationId(id) {
     state.conversationId = id && UUID_RE.test(id) ? id : null;
@@ -379,23 +421,30 @@
     dom.input.value = ''; autosize(); renderConversationList();
     if (window.matchMedia('(pointer:fine)').matches) dom.input.focus();
   }
+  async function loadConversationData(id) {
+    try { return await conversationOp('load', { conversation_id: id }); }
+    catch (e) {
+      if (e && e.code === 'BACKEND') return await conversationOp('open', { conversation_id: id });
+      throw e;
+    }
+  }
   async function openConversation(id) {
-    if (id === state.conversationId) { closeOverlay(); return; }
-    if (!BACKEND_OPS.load) { toast('Opening past conversations needs backend support.'); return; }
+    if (id === state.conversationId && state.messages.length) { closeOverlay(); return; }
     try {
-      const data = await conversationOp('load', { conversation_id: id });
-      const conv = data.conversation; if (!conv) throw appError('BACKEND');
+      const data = await loadConversationData(id);
+      const conv = data.conversation || data;
+      const turns = conv.turns || data.turns;
+      if (!Array.isArray(turns)) throw appError('BACKEND');
       closeOverlay(true); clearMessagesView(); setConversationId(conv.id || id);
-      (conv.turns || [])
+      turns
         .filter((t) => !String(t.content || '').startsWith('[client '))
-        .forEach((t) => addMessage({ id: uuid(), role: t.role === 'user' ? 'user' : 'assistant', text: String(t.content || ''), at: t.created_at ? Date.parse(t.created_at) : Date.now(), attachments: (t.meta && t.meta.attachments) || [] }));
+        .forEach((t) => {
+          const role = t.role === 'user' ? 'user' : 'assistant';
+          const row = addMessage({ id: t.id || t.turn_id || uuid(), role, text: String(t.content || ''), at: t.created_at ? Date.parse(t.created_at) : Date.now(), attachments: (t.meta && t.meta.attachments) || [] });
+          if (role === 'assistant' && t.proposal && typeof t.proposal === 'object') appendProposal(row, t.proposal, { restored: true });
+        });
       renderConversationList();
     } catch (e) {
-      if (e && e.code === 'BACKEND') {
-        /* The conversation may have been deleted elsewhere: drop it from the list. */
-        state.conversations = state.conversations.filter((c) => c.id !== id);
-        renderConversationList();
-      }
       toast(userMessageFor(e));
     }
   }
@@ -423,7 +472,7 @@
   }
   function clearCurrentChat() {
     closeOverlay(true);
-    clearMessagesView(); clearAttachments(); toast('Chat view cleared');
+    clearMessagesView(); clearAttachments(); toast('Chat view cleared. The conversation is kept.');
   }
 
   /* ===================== ATTACHMENTS ===================== */
@@ -452,28 +501,28 @@
     return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.' + ext, { type: blob.type });
   }
 
-  async function prepareAttachment(file, kind) {
-    const ext = extOf(file.name), type = file.type || '';
-    if (type.startsWith('video/') || type.startsWith('audio/')) throw Object.assign(new Error('unsupported'), { userMessage: 'Videos and audio files are not supported.' });
-    const isImage = type.startsWith('image/') && type !== 'image/svg+xml';
+  /* Only types the live backend accepts: PNG, JPEG, WebP, GIF images and PDF, up to 4.5 MB each. */
+  async function prepareAttachment(file) {
+    const type = (file.type || '').toLowerCase();
+    const isImage = AI_IMAGE_MIME.includes(type);
+    const isPdf = type === AI_PDF_MIME || (!type && extOf(file.name) === 'pdf');
+    if (!isImage && !isPdf) throw userErr('Only PNG, JPEG, WebP and GIF images and PDF files are supported.');
     if (isImage) {
-      if (file.size > CONFIG.image.maxInputBytes) throw Object.assign(new Error('large'), { userMessage: 'That image is too large (max ' + formatBytes(CONFIG.image.maxInputBytes) + ').' });
+      if (file.size > CONFIG.image.maxInputBytes) throw userErr('That image is too large (max ' + formatBytes(CONFIG.image.maxInputBytes) + ').');
       const optimized = await optimizeImage(file);
       const out = optimized || file;
+      if (out.size > AI_MAX_BYTES) throw userErr(file.name + ' is larger than ' + formatBytes(AI_MAX_BYTES) + ' even after optimization.');
       return { id: uuid(), kind: 'image', name: out.name, type: out.type, originalSize: file.size, size: out.size, optimized: !!optimized, file: out, previewUrl: URL.createObjectURL(out) };
     }
-    if (kind !== 'photos' && kind !== 'camera' && CONFIG.doc.ext.includes(ext)) {
-      if (file.size > CONFIG.doc.maxBytes) throw Object.assign(new Error('large'), { userMessage: file.name + ' is too large (max ' + formatBytes(CONFIG.doc.maxBytes) + ').' });
-      /* Documents are kept byte-for-byte; no fake compression. */
-      return { id: uuid(), kind: 'doc', name: file.name, type: type || ext, originalSize: file.size, size: file.size, optimized: false, file, previewUrl: null };
-    }
-    throw Object.assign(new Error('unsupported'), { userMessage: 'This file type is not supported.' });
+    if (file.size > AI_MAX_BYTES) throw userErr('PDF files can be up to ' + formatBytes(AI_MAX_BYTES) + '.');
+    const pdf = type === AI_PDF_MIME ? file : new File([file], file.name, { type: AI_PDF_MIME });
+    return { id: uuid(), kind: 'doc', name: pdf.name, type: AI_PDF_MIME, originalSize: file.size, size: file.size, optimized: false, file: pdf, previewUrl: null };
   }
 
-  async function addFiles(fileList, kind) {
+  async function addFiles(fileList) {
     for (const f of Array.from(fileList || [])) {
       if (state.attachments.length >= CONFIG.maxAttachments) { toast('You can attach up to ' + CONFIG.maxAttachments + ' files.'); break; }
-      try { state.attachments.push(await prepareAttachment(f, kind)); }
+      try { state.attachments.push(await prepareAttachment(f)); }
       catch (e) { toast(e.userMessage || 'This file could not be attached.'); }
     }
     renderTray();
@@ -532,42 +581,50 @@
     const sentAtt = pending.map((a) => ({ id: a.id, kind: a.kind, name: a.name, type: a.type, size: a.size, originalSize: a.originalSize, optimized: a.optimized, previewUrl: a.previewUrl }));
     renderTray();
     const history = buildHistory();
-    const userMsg = { id: uuid(), role: 'user', text, at: Date.now(), attachments: sentAtt };
+    addMessage({ id: uuid(), role: 'user', text, at: Date.now(), attachments: sentAtt });
     dom.input.value = ''; autosize();
-    addMessage(userMsg);
-    setSending(true);
-    let row = null;
+    setSending(true); // lock immediately
+    let aiFiles;
     try {
-      /* Only images and PDFs up to ~4.5 MB can be read by the assistant; other files are skipped (not sent). */
-      const readable = pending.filter((a) => AI_MIME.includes(a.type) && a.size <= AI_MAX_BYTES && a.file).slice(0, 4);
-      const skipped = pending.length - readable.length;
-      const aiFiles = await Promise.all(readable.map(async (a) => ({ name: a.name, mime_type: a.type, data_base64: await toB64(a.file) })));
+      aiFiles = await Promise.all(pending.slice(0, CONFIG.maxAttachments).map(async (a) => ({ name: a.name, mime_type: a.type, data_base64: await toB64(a.file) })));
+    } catch {
+      setSending(false);
+      addNotice('An attachment could not be read. Please remove it and try again.', true);
+      return;
+    }
+    /* One logical user action = one request_id. Retrying the SAME request reuses it. */
+    const payload = { message: text, history, request_id: uuid(), thinking: thinkingAtSend, attachments: aiFiles };
+    if (state.conversationId) payload.conversation_id = state.conversationId;
+    await dispatchChat({ payload, thinking: thinkingAtSend });
+  }
 
-      const { res, data } = await postAssistant({
-        message: text, history, conversation_id: state.conversationId || undefined, request_id: uuid(),
-        mode: thinkingAtSend ? 'glime_thinking' : 'standard',
-        thinking: thinkingAtSend,
-        attachments: aiFiles
-      });
+  async function dispatchChat(job) {
+    setSending(true);
+    try {
+      const { res, data } = await postAssistant(job.payload);
       if (res.status === 401) throw appError('SESSION_EXPIRED');
       if (isCreditsExhausted(res.status, data)) { dom.messages.appendChild(tpl('creditsTemplate')); scrollToEnd(); return; }
       if (res.status === 403) throw appError('NOT_ENABLED');
       if (!res.ok || !data || data.error) throw appError('BACKEND');
       if (data.conversation_id && UUID_RE.test(data.conversation_id)) {
         setConversationId(data.conversation_id);
-        upsertConversation(data.conversation_id, data.title || text.slice(0, 48), Date.now());
+        upsertConversation(data.conversation_id, data.title || String(job.payload.message).slice(0, 48), Date.now());
       }
       const answer = typeof data.answer === 'string' && data.answer.trim() ? data.answer.trim() : 'GLIME did not return an answer.';
-      row = addMessage({ id: data.turn_id || uuid(), role: 'assistant', text: answer, at: Date.now(), attachments: [] });
+      const row = addMessage({ id: data.turn_id || uuid(), role: 'assistant', text: answer, at: Date.now(), attachments: [] });
       if (data.report) renderReport(data.report, row);
       if (Array.isArray(data.ui_actions) && data.ui_actions.length) renderUiActions(data.ui_actions, row);
-      if (data.proposal && typeof data.proposal === 'object') row.appendChild(renderProposal(data.proposal));
-      if (thinkingAtSend && !(data.thinking && data.thinking.applied)) addNotice('Enhanced reasoning was not applied for this answer.', false, row);
-      if (skipped) addNotice(skipped + ' file(s) could not be read (only images and PDF up to 4.5 MB are supported).', false, row);
+      if (data.proposal && typeof data.proposal === 'object') appendProposal(row, data.proposal, { restored: false });
+      if (job.thinking && !(data.thinking && data.thinking.applied)) addNotice('Enhanced reasoning was not applied for this answer.', false, row);
       scrollToEnd();
     } catch (e) {
-      addNotice(userMessageFor(e), true);
-      if (e.code === 'SESSION_EXPIRED') setTimeout(() => navigate('login'), 2200);
+      const notice = addNotice(userMessageFor(e), true);
+      if (e && (e.code === 'NETWORK' || e.code === 'TIMEOUT')) {
+        const retry = el('button', 'btn btn-secondary', 'Retry'); retry.type = 'button'; retry.style.marginLeft = '10px';
+        retry.addEventListener('click', () => { if (state.sending) return; notice.remove(); dispatchChat(job); });
+        notice.appendChild(retry);
+      }
+      if (e && e.code === 'SESSION_EXPIRED') setTimeout(() => navigate('login'), 2200);
     } finally {
       setSending(false);
       if (window.matchMedia('(pointer:fine)').matches) dom.input.focus();
@@ -603,7 +660,339 @@
     if (wrap.childElementCount) row.appendChild(wrap);
   }
 
-  /* ===================== PROPOSAL / APPROVAL / EXECUTION ===================== */
+  /* ===================== PROPOSALS — single controller ===================== */
+  function isMessageProposal(p) {
+    return !!p && (p.proposal_type === 'message' || p.contract_version === 'assistant_message.v1' || (p.contract && p.contract.version === 'assistant_message.v1'));
+  }
+  function proposalId(p) {
+    const id = String((p && (p.action_request_id || p.id)) || '');
+    return UUID_RE.test(id) ? id : '';
+  }
+  function appendProposal(row, p, opts) {
+    const id = proposalId(p);
+    if (id && state.rendered.has(id)) { addNotice('This proposal is already shown above.', false, row); return; }
+    if (id) state.rendered.add(id);
+    row.appendChild(renderProposal(p, opts || {}));
+  }
+  function renderProposal(p, opts) {
+    return isMessageProposal(p) ? renderMessageProposal(p, opts) : renderMutationProposal(p, opts);
+  }
+
+  /* Shared reject path (canonical endpoint) for every proposal kind. */
+  async function rejectProposal(ui) {
+    if (ui.busy) return;
+    ui.busy = true;
+    ui.approve.disabled = true; ui.reject.disabled = true;
+    ui.status.hidden = false; ui.status.textContent = 'Rejecting\u2026';
+    try {
+      const { res, data } = await postDecision(ui.id, 'reject', CONFIG.requestTimeoutMs);
+      if (res.status === 401) throw appError('SESSION_EXPIRED');
+      if (!res.ok || !data || data.error) throw appError('BACKEND');
+      ui.stopped = true; ui.actions.hidden = true; ui.status.hidden = true;
+      ui.note.hidden = false;
+      ui.note.textContent = ui.kind === 'message' ? 'Rejected. Nothing was sent.' : 'Rejected. Nothing was changed.';
+      addBackendAnswer(data);
+    } catch (e) {
+      ui.busy = false;
+      ui.approve.disabled = !ui.canApprove; ui.reject.disabled = false;
+      ui.status.textContent = userMessageFor(e);
+    }
+  }
+
+  /* ---------- Outcome parsing (tolerant; backend remains authoritative) ---------- */
+  function classify(raw, code) {
+    const r = String(raw || '').toLowerCase(), c = String(code || '').toUpperCase();
+    if (c === 'DELIVERY_STATE_UNKNOWN' || /unknown|uncertain/.test(r)) return 'unknown';
+    if (['all_sent', 'sent', 'completed', 'succeeded', 'success', 'done', 'delivered'].includes(r)) return 'completed';
+    if (['partial', 'partially_sent', 'partial_failure', 'partially_completed'].includes(r)) return 'partial';
+    if (['blocked', 'denied', 'policy_blocked'].includes(r)) return 'blocked';
+    if (['failed', 'error', 'cancelled', 'canceled', 'quarantined'].includes(r)) return 'failed';
+    if (['processing', 'executing', 'running', 'claimed', 'started', 'in_progress'].includes(r)) return 'processing';
+    if (['queued', 'approved', 'pending', 'accepted'].includes(r)) return 'queued';
+    if (['proposed', 'awaiting_approval'].includes(r)) return 'proposed';
+    if (r === 'rejected') return 'rejected';
+    return '';
+  }
+  function pickNum(o, keys) {
+    for (const k of keys) { const v = o[k]; if (v !== undefined && v !== null && v !== '' && Number.isFinite(Number(v))) return Number(v); }
+    return null;
+  }
+  function extractOutcome(d) {
+    const srcs = [d && d.execution, d && d.execution_result, d && d.execution_job, d && d.result, d && d.outcome, d && d.approval, d && d.action_request, d]
+      .filter((x) => x && typeof x === 'object' && !Array.isArray(x));
+    const out = { raw: '', code: '', results: null, sent: null, total: null, reason: '' };
+    srcs.forEach((s) => {
+      if (!out.raw) out.raw = String(s.status || s.state || s.outcome || s.execution_status || '');
+      if (!out.code) out.code = String(s.code || s.error_code || s.reason_code || '');
+      if (!out.reason) out.reason = String(s.blocked_reason || s.reason || s.message || (typeof s.error === 'string' ? s.error : '') || '');
+      if (!out.results) {
+        const arr = ['results', 'recipient_results', 'deliveries', 'per_recipient'].map((k) => s[k]).find((x) => Array.isArray(x));
+        if (arr) out.results = arr;
+      }
+      if (out.sent == null) out.sent = pickNum(s, ['sent', 'sent_count', 'delivered_count']);
+      if (out.total == null) out.total = pickNum(s, ['total', 'total_count', 'recipient_count', 'attempted']);
+    });
+    if (out.results && out.sent == null) {
+      out.sent = out.results.filter((r) => r && classify(r.status || r.state || r.outcome, r.code || r.error_code) === 'completed').length;
+      if (out.total == null) out.total = out.results.length;
+    }
+    if (out.reason.length > 240) out.reason = out.reason.slice(0, 240) + '\u2026';
+    return out;
+  }
+  function nameOf(r, i) {
+    if (typeof r === 'string' && r) return r;
+    if (r && typeof r === 'object') {
+      const n = r.name || r.display_name || r.full_name || r.customer_name || r.recipient_name || r.username || r.label;
+      if (n) return String(n);
+    }
+    return 'Recipient ' + (i + 1);
+  }
+  function hasName(r) {
+    return typeof r === 'string' ? !!r : !!(r && typeof r === 'object' && (r.name || r.display_name || r.full_name || r.customer_name || r.recipient_name || r.username || r.label));
+  }
+
+  /* ---------- Messaging proposal (assistant_message.v1) ---------- */
+  function audienceRows(a) {
+    const rows = [];
+    const take = (label, keys) => { for (const k of keys) { const s = prim(a[k]); if (s) { rows.push([label, s]); return; } } };
+    take('Audience', ['type', 'audience_type', 'mode', 'kind', 'label', 'description']);
+    take('Ranking', ['criterion', 'ranking_criterion', 'ranking', 'rank_by', 'metric', 'sort_by']);
+    take('Selected', ['limit', 'count', 'top_n', 'size']);
+    take('Period', ['period', 'time_range', 'range']);
+    return rows;
+  }
+
+  function renderMessageProposal(p, opts) {
+    const id = proposalId(p);
+    const limits = Object.assign({}, DEFAULT_LIMITS, p.limits && typeof p.limits === 'object' ? p.limits : {});
+    const msg = String(p.message == null ? '' : p.message);
+    const chars = Array.from(msg).length;
+    const lines = msg ? msg.split(/\r?\n/).length : 0;
+    const recips = Array.isArray(p.recipients) ? p.recipients : [];
+    const count = Number.isFinite(Number(p.recipient_count)) ? Number(p.recipient_count) : recips.length;
+    const chKey = String(p.channel || '').toLowerCase();
+    const chLabel = CHANNEL_LABEL[chKey] || fieldLabel(chKey) || 'Unknown channel';
+
+    const problems = [];
+    if (!CHANNEL_LABEL[chKey]) problems.push('This channel is not supported for assistant messages.');
+    if (count < 1) problems.push('A message needs at least one recipient.');
+    if (count > limits.max_recipients) problems.push('This proposal has ' + count + ' recipients; the limit is ' + limits.max_recipients + '. It will not be split or batched.');
+    if (!msg.trim()) problems.push('The message is empty.');
+    if (chars > limits.max_message_characters) problems.push('The message is ' + chars + ' characters; the limit is ' + limits.max_message_characters + '. It will not be shortened.');
+    if (lines > limits.max_message_lines) problems.push('The message has ' + lines + ' lines; the limit is ' + limits.max_message_lines + '. It will not be split.');
+
+    const root = el('section', 'card proposal msg-proposal'); root.style.alignSelf = 'stretch';
+    root.setAttribute('aria-label', chLabel + ' message proposal');
+
+    const head = el('div', 'card-head');
+    head.append(el('div', 'eyebrow', 'MESSAGE PROPOSAL'), el('span', 'badge', p.risk ? fieldLabel(p.risk) + ' risk' : 'Review required'));
+    root.appendChild(head);
+
+    const kv = el('div', 'mp-kv');
+    const addKv = (k, v) => { kv.append(el('span', 'label', k), el('strong', null, v)); };
+    addKv('Channel', chLabel);
+    addKv('Mode', TARGET_MODE_LABEL[p.target_mode] || fieldLabel(p.target_mode || 'single'));
+    addKv('Recipients', String(count));
+    if (p.audience && typeof p.audience === 'object') audienceRows(p.audience).forEach(([k, v]) => addKv(k, v));
+    root.appendChild(kv);
+
+    if (recips.length) {
+      const list = el('ul', 'mp-recipients'); list.setAttribute('aria-label', 'Recipients');
+      recips.forEach((r, i) => list.appendChild(el('li', null, nameOf(r, i))));
+      root.appendChild(list);
+    }
+
+    const mWrap = el('div', 'mp-row');
+    mWrap.appendChild(el('span', 'label', 'Exact message'));
+    mWrap.appendChild(el('div', 'mp-message', msg));
+    mWrap.appendChild(el('div', 'mp-meta', chars + ' / ' + limits.max_message_characters + ' characters \u00b7 ' + lines + ' / ' + limits.max_message_lines + ' lines'));
+    root.appendChild(mWrap);
+
+    if (p.reason) { const r = el('div', 'mp-row'); r.append(el('span', 'label', 'Reason'), el('div', null, String(p.reason))); root.appendChild(r); }
+
+    root.appendChild(el('div', 'mp-meta', 'Limits: up to ' + limits.max_recipients + ' recipients \u00b7 ' + limits.max_message_characters + ' characters \u00b7 ' + limits.max_message_lines + ' lines. No automatic batching.'));
+    if (p.already_exists) root.appendChild(el('div', 'mp-meta', 'This proposal already existed; its current status is shown from the backend.'));
+
+    const note = el('p', 'proposal-note', 'Nothing has been sent yet. The message will be sent only after you explicitly approve.');
+    root.appendChild(note);
+
+    let warn = null;
+    if (problems.length) {
+      warn = el('div', 'mp-warn'); warn.setAttribute('role', 'alert');
+      problems.forEach((t) => warn.appendChild(el('div', null, t)));
+      root.appendChild(warn);
+    }
+
+    const actions = el('div', 'card-actions');
+    const reject = el('button', 'btn btn-secondary', 'Reject'); reject.type = 'button';
+    const approve = el('button', 'btn btn-primary', 'Approve & Send'); approve.type = 'button';
+    actions.append(reject, approve);
+    root.appendChild(actions);
+
+    const status = el('div', 'card-status'); status.hidden = true; status.setAttribute('aria-live', 'polite');
+    const host = el('div'); host.hidden = true;
+    root.append(status, host);
+
+    const ui = { kind: 'message', id, root, approve, reject, actions, status, note, host, busy: false, stopped: false, polling: false, lastKind: null, channel: chLabel, recips, canApprove: !!id && problems.length === 0 };
+    if (!ui.canApprove) approve.disabled = true;
+    if (!id) { actions.hidden = true; note.textContent = 'This proposal cannot be approved from here.'; return root; }
+
+    approve.addEventListener('click', () => approveMessage(ui));
+    reject.addEventListener('click', () => rejectProposal(ui));
+
+    const initial = classify(p.status, '');
+    if (initial && initial !== 'proposed') {
+      applyMsgOutcome(ui, initial, {});
+      if (initial === 'queued' || initial === 'processing') { ui.polling = true; pollMessage(ui, 0); }
+    } else if ((opts && opts.restored) || p.already_exists) {
+      restoreFromBackend(ui);
+    }
+    return root;
+  }
+
+  function applyMsgOutcome(ui, kind, out) {
+    out = out || {};
+    ui.lastKind = kind;
+    ui.actions.hidden = true; ui.status.hidden = true; ui.note.hidden = true;
+    ui.host.hidden = false; ui.host.replaceChildren();
+    const box = el('div', 'msg-outcome'); box.dataset.kind = kind;
+    const head = el('div', 'card-head');
+    const bad = kind === 'failed' || kind === 'blocked' || kind === 'unknown';
+    head.append(el('div', 'eyebrow', 'DELIVERY STATUS'), el('span', 'badge' + (bad ? ' is-bad' : ''), MSG_BADGE[kind] || fieldLabel(kind)));
+    box.appendChild(head);
+
+    let text = '';
+    const counts = out.sent != null && out.total != null ? 'Sent to ' + out.sent + ' of ' + out.total + ' recipients.' : '';
+    if (kind === 'queued') text = 'Approved. Waiting to be sent.';
+    else if (kind === 'processing') text = 'Sending\u2026';
+    else if (kind === 'completed') text = counts;
+    else if (kind === 'partial') text = counts || 'Only some recipients received the message.';
+    else if (kind === 'blocked') text = out.reason || 'This message was blocked and was not sent.';
+    else if (kind === 'failed') text = out.reason || 'The message could not be sent.';
+    else if (kind === 'unknown') text = 'Delivery state is unknown. The message may or may not have been delivered. Do not retry automatically \u2014 check your ' + ui.channel + ' conversation first.';
+    else if (kind === 'rejected') text = 'Rejected. Nothing was sent.';
+    if (out.extra) text = (text ? text + ' ' : '') + out.extra;
+    if (text) box.appendChild(el('p', 'mp-meta', text));
+
+    if (Array.isArray(out.results) && out.results.length) {
+      const list = el('ul', 'msg-results'); list.setAttribute('aria-label', 'Per-recipient results');
+      out.results.forEach((r, i) => {
+        const nm = hasName(r) ? nameOf(r, i) : nameOf(ui.recips[i], i);
+        const k = (r && typeof r === 'object') ? classify(r.status || r.state || r.outcome, r.code || r.error_code) : '';
+        const li = el('li'); li.append(el('span', null, nm), el('b', k === 'failed' || k === 'blocked' || k === 'unknown' || !k ? 'is-bad' : '', RES_LABEL[k] || 'Unknown'));
+        list.appendChild(li);
+      });
+      box.appendChild(list);
+    }
+
+    if (kind === 'unknown') {
+      const b = el('button', 'btn btn-secondary', 'Check status'); b.type = 'button'; b.style.marginTop = '10px';
+      b.addEventListener('click', () => checkMsgStatus(ui, b));
+      box.appendChild(b);
+    }
+    ui.host.appendChild(box);
+    scrollToEnd();
+  }
+
+  async function approveMessage(ui) {
+    if (ui.busy || !ui.canApprove) return; // double-click guard
+    ui.busy = true;
+    ui.approve.disabled = true; ui.reject.disabled = true; ui.approve.textContent = 'Approving\u2026';
+    ui.status.hidden = false; ui.status.textContent = 'Approving\u2026';
+    let r;
+    try {
+      r = await postDecision(ui.id, 'approve', CONFIG.approvalTimeoutMs);
+    } catch (e) {
+      if (e && e.code === 'SESSION_EXPIRED') {
+        ui.busy = false; ui.approve.disabled = false; ui.reject.disabled = false; ui.approve.textContent = 'Approve & Send';
+        ui.status.textContent = userMessageFor(e);
+        return;
+      }
+      /* Network/timeout: the request may have reached the backend. Never claim success. */
+      applyMsgOutcome(ui, 'unknown', { extra: 'We could not confirm the result of your approval.' });
+      return;
+    }
+    const { res, data } = r;
+    if (res.status === 401) {
+      ui.busy = false; ui.approve.disabled = false; ui.reject.disabled = false; ui.approve.textContent = 'Approve & Send';
+      ui.status.textContent = userMessageFor(appError('SESSION_EXPIRED'));
+      return;
+    }
+    const out = extractOutcome(data || {});
+    let kind = classify(out.raw, out.code);
+    if (res.status >= 500 && !['completed', 'partial', 'blocked', 'failed'].includes(kind)) kind = 'unknown';
+    if (!kind && !res.ok) {
+      /* Definitive HTTP error without a recognised state: ask the backend what actually happened. */
+      try { const s = await fetchStatus(ui.id); const k = classify(s.raw, ''); if (k && k !== 'proposed') { applyMsgOutcome(ui, k, extractOutcome(s.data)); addBackendAnswer(data); if (k === 'queued' || k === 'processing') { ui.polling = true; pollMessage(ui, 0); } return; } } catch { /* fall through */ }
+      kind = 'failed';
+      if (!out.reason && data && typeof data.error === 'string') out.reason = data.error.slice(0, 240);
+    }
+    if (!kind) kind = 'processing'; // accepted but not yet classified: confirm via status polling
+    applyMsgOutcome(ui, kind, out);
+    addBackendAnswer(data);
+    if (kind === 'queued' || kind === 'processing') { ui.polling = true; pollMessage(ui, 0); }
+  }
+
+  async function pollMessage(ui, attempt) {
+    if (ui.stopped) { ui.polling = false; return; }
+    try {
+      const s = await fetchStatus(ui.id);
+      const kind = classify(s.raw, '');
+      if (kind && kind !== 'proposed') {
+        applyMsgOutcome(ui, kind, extractOutcome(s.data));
+        if (kind !== 'queued' && kind !== 'processing') { ui.polling = false; return; }
+      }
+    } catch { /* keep the last confirmed state */ }
+    if (attempt >= CONFIG.poll.maxAttempts) {
+      ui.polling = false;
+      applyMsgOutcome(ui, ui.lastKind || 'processing', { extra: 'Still in progress. Check back shortly.' });
+      return;
+    }
+    setTimeout(() => pollMessage(ui, attempt + 1), CONFIG.poll.intervalMs);
+  }
+
+  async function checkMsgStatus(ui, btn) {
+    btn.disabled = true;
+    try {
+      const s = await fetchStatus(ui.id);
+      const kind = classify(s.raw, '');
+      if (kind === 'proposed') {
+        /* Backend confirms the approval never registered, so it is safe to act again. */
+        ui.host.hidden = true; ui.actions.hidden = false; ui.note.hidden = false;
+        ui.busy = false; ui.approve.disabled = !ui.canApprove; ui.reject.disabled = false; ui.approve.textContent = 'Approve & Send';
+        toast('This proposal has not been approved yet.');
+        return;
+      }
+      if (kind && kind !== 'unknown') {
+        applyMsgOutcome(ui, kind, extractOutcome(s.data));
+        if (kind === 'queued' || kind === 'processing') { ui.polling = true; pollMessage(ui, 0); }
+        return;
+      }
+      toast('The outcome is still not confirmed.');
+    } catch { toast('Status could not be checked right now.'); }
+    btn.disabled = false;
+  }
+
+  async function restoreFromBackend(ui) {
+    try {
+      const s = await fetchStatus(ui.id);
+      if (ui.kind === 'message') {
+        const k = classify(s.raw, '');
+        if (k && k !== 'proposed') {
+          applyMsgOutcome(ui, k, extractOutcome(s.data));
+          if (k === 'queued' || k === 'processing') { ui.polling = true; pollMessage(ui, 0); }
+        }
+      } else {
+        const st = normalizeStatus(s.raw);
+        if (st && st !== 'proposed') applyMutState(ui, st);
+      }
+    } catch {
+      ui.status.hidden = false;
+      ui.status.textContent = 'Current status could not be verified. The backend will confirm when you act.';
+    }
+  }
+
+  /* ---------- Data-mutation proposal (existing contract preserved) ---------- */
   function normalizeStatus(s) {
     const v = String(s || '').toLowerCase();
     if (['proposed', 'awaiting_approval'].includes(v)) return 'proposed';
@@ -611,7 +1000,9 @@
     if (v === 'queued') return 'queued';
     if (['executing', 'processing', 'running', 'claimed', 'started'].includes(v)) return 'processing';
     if (['completed', 'succeeded', 'success', 'done'].includes(v)) return 'completed';
-    if (['failed', 'blocked', 'cancelled', 'canceled', 'quarantined', 'rejected', 'error'].includes(v)) return 'failed';
+    if (v === 'rejected') return 'rejected';
+    if (/unknown|uncertain/.test(v)) return 'unknown';
+    if (['failed', 'blocked', 'cancelled', 'canceled', 'quarantined', 'error'].includes(v)) return 'failed';
     return null;
   }
   function setExecution(ui, status, message) {
@@ -620,40 +1011,78 @@
       ui.exec = { root, badge: root.querySelector('[data-role=badge]'), msg: root.querySelector('[data-role=message]'), steps: Array.from(root.querySelectorAll('.steps li')) };
       ui.host.hidden = false; ui.host.appendChild(root);
     }
-    const failed = status === 'failed';
+    const bad = status === 'failed' || status === 'unknown';
     const idx = STATUS_ORDER.indexOf(status);
     ui.exec.badge.textContent = STATUS_LABEL[status] || 'Proposed';
-    ui.exec.badge.classList.toggle('is-bad', failed);
-    if (!failed) ui.exec.steps.forEach((li, i) => { li.classList.toggle('is-done', i < idx || status === 'completed'); li.classList.toggle('is-active', i === idx && status !== 'completed'); });
+    ui.exec.badge.classList.toggle('is-bad', bad);
+    if (idx >= 0) ui.exec.steps.forEach((li, i) => { li.classList.toggle('is-done', i < idx || status === 'completed'); li.classList.toggle('is-active', i === idx && status !== 'completed'); });
     ui.exec.msg.textContent = message || '';
   }
   function statusMessage(status) {
-    if (status === 'completed') return 'The change was applied successfully.';
     if (status === 'failed') return 'The change could not be completed. Nothing further will be applied.';
     if (status === 'processing') return 'Applying the approved change\u2026';
     if (status === 'queued') return 'Approved and queued for execution.';
+    if (status === 'rejected') return 'Rejected. Nothing was changed.';
     return '';
   }
-  async function pollExecution(ui, requestId, attempt) {
+  function showMutUnknown(ui) {
+    ui.actions.hidden = true; ui.status.hidden = true;
+    setExecution(ui, 'unknown', 'We could not confirm the outcome. The change may or may not have been applied. Check status before trying again.');
+    if (!ui.exec.checkBtn) {
+      const b = el('button', 'btn btn-secondary', 'Check status'); b.type = 'button'; b.style.marginTop = '10px';
+      b.addEventListener('click', () => checkMutStatus(ui, b));
+      ui.exec.root.appendChild(b); ui.exec.checkBtn = b;
+    }
+  }
+  async function checkMutStatus(ui, btn) {
+    btn.disabled = true;
+    try {
+      const s = await fetchStatus(ui.id);
+      const st = normalizeStatus(s.raw);
+      if (st === 'proposed') {
+        ui.host.hidden = true; ui.exec = null; ui.host.replaceChildren();
+        ui.actions.hidden = false; ui.busy = false; ui.approve.disabled = false; ui.cancel.disabled = false;
+        ui.approve.textContent = 'Approve change';
+        toast('This proposal has not been approved yet.');
+        return;
+      }
+      if (st && st !== 'unknown') { applyMutState(ui, st); return; }
+      toast('The outcome is still not confirmed.');
+    } catch { toast('Status could not be checked right now.'); }
+    btn.disabled = false;
+  }
+  function applyMutState(ui, st) {
+    ui.actions.hidden = true; ui.status.hidden = true; ui.note.hidden = true;
+    if (st === 'unknown') { showMutUnknown(ui); return; }
+    ui.lastStatus = st;
+    setExecution(ui, st, statusMessage(st));
+    if (st === 'rejected') { ui.stopped = true; return; }
+    if (st !== 'completed' && st !== 'failed') pollExecution(ui, 0);
+  }
+  async function pollExecution(ui, attempt) {
     if (ui.stopped) return;
     try {
-      const { data, error } = await db.rpc('get_client_action_execution_status', { p_action_request_id: requestId });
-      if (error || !data || data.ok === false) throw new Error('status');
-      const st = normalizeStatus((data.execution_job && data.execution_job.status) || (data.action_request && data.action_request.status)) || 'queued';
+      const s = await fetchStatus(ui.id);
+      const st = normalizeStatus(s.raw) || 'queued';
       ui.lastStatus = st;
       setExecution(ui, st, statusMessage(st));
-      if (st === 'completed' || st === 'failed') return;
+      if (st === 'completed' || st === 'failed' || st === 'rejected' || st === 'unknown') return;
     } catch { setExecution(ui, ui.lastStatus || 'queued', 'Checking status\u2026'); }
     if (attempt >= CONFIG.poll.maxAttempts) { setExecution(ui, ui.lastStatus || 'queued', 'Still processing. Check back shortly.'); return; }
-    setTimeout(() => pollExecution(ui, requestId, attempt + 1), CONFIG.poll.intervalMs);
+    setTimeout(() => pollExecution(ui, attempt + 1), CONFIG.poll.intervalMs);
   }
-  async function approveProposal(ui, requestId) {
-    ui.approve.disabled = true; ui.cancel.disabled = true;
+  async function approveMutation(ui) {
+    if (ui.busy) return; // double-click guard
+    ui.busy = true;
+    ui.approve.disabled = true; ui.cancel.disabled = true; ui.approve.textContent = 'Approving\u2026';
     ui.status.hidden = false; ui.status.textContent = 'Sending approval\u2026';
     try {
       if (!db) throw appError('SESSION_EXPIRED');
-      const { data, error } = await db.rpc('approve_client_business_action', { p_action_request_id: requestId });
-      if (error) throw (String(error.message || '').includes('AUTH_REQUIRED') ? appError('SESSION_EXPIRED') : appError('BACKEND'));
+      const { data, error } = await db.rpc('approve_client_business_action', { p_action_request_id: ui.id });
+      if (error) {
+        if (String(error.message || '').includes('AUTH_REQUIRED')) throw appError('SESSION_EXPIRED');
+        throw appError('AMBIGUOUS');
+      }
       if (!data || data.ok === false) {
         ui.actions.hidden = true; ui.status.hidden = true;
         setExecution(ui, 'failed', (data && data.message) ? String(data.message).slice(0, 200) : 'This change can no longer be applied.');
@@ -662,35 +1091,31 @@
       ui.actions.hidden = true; ui.status.hidden = true; ui.note.hidden = true;
       const st = normalizeStatus(data.status) || 'queued';
       ui.lastStatus = st; setExecution(ui, st, statusMessage(st));
-      pollExecution(ui, requestId, 0);
+      if (st !== 'completed' && st !== 'failed') pollExecution(ui, 0);
     } catch (e) {
-      ui.approve.disabled = false; ui.cancel.disabled = false;
-      ui.status.textContent = userMessageFor(e);
+      if (e && e.code === 'SESSION_EXPIRED') {
+        ui.busy = false; ui.approve.disabled = false; ui.cancel.disabled = false; ui.approve.textContent = 'Approve change';
+        ui.status.textContent = userMessageFor(e);
+        return;
+      }
+      /* The approval may have been applied: ask the backend before allowing another attempt. */
+      try {
+        const s = await fetchStatus(ui.id);
+        const st = normalizeStatus(s.raw);
+        if (st === 'proposed') {
+          ui.busy = false; ui.approve.disabled = false; ui.cancel.disabled = false; ui.approve.textContent = 'Approve change';
+          ui.status.textContent = userMessageFor(e);
+        } else if (st) applyMutState(ui, st);
+        else showMutUnknown(ui);
+      } catch { showMutUnknown(ui); }
     }
   }
-  async function rejectProposal(ui, requestId) {
-    ui.approve.disabled = true; ui.cancel.disabled = true;
-    ui.status.hidden = false; ui.status.textContent = 'Rejecting\u2026';
-    try {
-      const { res, data } = await postAssistant({
-        conversation_id: state.conversationId || undefined, request_id: uuid(),
-        approval: { action_request_id: requestId, decision: 'reject' }
-      });
-      if (res.status === 401) throw appError('SESSION_EXPIRED');
-      if (!res.ok || !data || data.error) throw appError('BACKEND');
-      ui.stopped = true; ui.actions.hidden = true; ui.status.hidden = true;
-      ui.note.hidden = false; ui.note.textContent = 'Rejected. Nothing was changed.';
-    } catch (e) {
-      ui.approve.disabled = false; ui.cancel.disabled = false;
-      ui.status.textContent = userMessageFor(e);
-    }
-  }
-  function renderProposal(p) {
+  function renderMutationProposal(p, opts) {
     const root = tpl('proposalTemplate').firstElementChild;
     root.style.alignSelf = 'stretch';
     const q = (r) => root.querySelector('[data-role=' + r + ']');
-    const ui = { root, approve: q('approve'), cancel: q('cancel'), actions: q('actions'), status: q('status'), note: q('note'), host: q('execution'), exec: null, stopped: false, lastStatus: null };
-    const id = String(p.action_request_id || p.id || '');
+    const id = proposalId(p);
+    const ui = { kind: 'mutation', id, root, approve: q('approve'), cancel: q('cancel'), reject: q('cancel'), actions: q('actions'), status: q('status'), note: q('note'), host: q('execution'), exec: null, stopped: false, busy: false, lastStatus: null, canApprove: !!id };
     const target = p.target || {};
     q('target').textContent = String(target.label || target.type || 'Requested change').slice(0, 160);
     q('risk').textContent = p.risk ? fieldLabel(p.risk) + ' risk' : 'Review required';
@@ -702,14 +1127,12 @@
       const a = el('div', 'change-box is-after'); a.append(el('span', 'label', 'After'), document.createTextNode(formatValue(c.field, c.after, c.currency)));
       row.append(b, a); list.appendChild(row);
     });
-    if (!UUID_RE.test(id)) { ui.actions.hidden = true; q('note').textContent = 'This proposal cannot be approved from here.'; return root; }
-    ui.approve.addEventListener('click', () => approveProposal(ui, id));
-    ui.cancel.addEventListener('click', () => rejectProposal(ui, id));
+    if (!id) { ui.actions.hidden = true; ui.note.textContent = 'This proposal cannot be approved from here.'; return root; }
+    ui.approve.addEventListener('click', () => approveMutation(ui));
+    ui.cancel.addEventListener('click', () => rejectProposal(ui));
     const initial = normalizeStatus(p.status);
-    if (initial && initial !== 'proposed') {
-      ui.actions.hidden = true; ui.note.hidden = true; ui.lastStatus = initial;
-      setExecution(ui, initial, statusMessage(initial)); pollExecution(ui, id, 0);
-    }
+    if (initial && initial !== 'proposed') applyMutState(ui, initial);
+    else if (opts && opts.restored) restoreFromBackend(ui);
     return root;
   }
 
@@ -741,7 +1164,7 @@
     on('cameraBtn', 'click', () => { closeOverlay(true); dom.inputs.camera.click(); });
     on('photosBtn', 'click', () => { closeOverlay(true); dom.inputs.photos.click(); });
     on('filesBtn', 'click', () => { closeOverlay(true); dom.inputs.files.click(); });
-    Object.entries(dom.inputs).forEach(([kind, input]) => input.addEventListener('change', async () => { const files = Array.from(input.files || []); input.value = ''; await addFiles(files, kind); }));
+    Object.values(dom.inputs).forEach((input) => input.addEventListener('change', async () => { const files = Array.from(input.files || []); input.value = ''; await addFiles(files); }));
     dom.thinkingBtn.addEventListener('click', () => { setThinkingMode(!state.thinking); closeOverlay(); });
     dom.dlg.cancel.addEventListener('click', () => finishDialog(false));
     dom.dlg.confirm.addEventListener('click', () => finishDialog(true));
@@ -777,15 +1200,17 @@
     db.auth.onAuthStateChange((evt) => { if (evt === 'SIGNED_OUT') navigate('login'); });
     let saved = null;
     try { saved = sessionStorage.getItem(CONFIG.storageKey); } catch { /* ignore */ }
-    if (saved && UUID_RE.test(saved)) state.conversationId = saved;
     try {
-      if (BACKEND_OPS.list) {
-        const data = await conversationOp('list', {});
-        state.conversations = (data.conversations || []).map((c) => ({ id: c.id, title: c.title || 'Conversation', at: Date.parse(c.updated_at) || Date.now() }));
-        renderConversationList();
-      }
-      if (BACKEND_OPS.load && state.conversationId) { const id = state.conversationId; state.conversationId = null; await openConversation(id); }
-    } catch { /* recovery is best-effort */ }
+      const data = await conversationOp('list', {});
+      const items = data.conversations || data.items || [];
+      state.conversations = items.map((c) => ({ id: c.id, title: c.title || 'Conversation', at: Date.parse(c.updated_at) || Date.now() }));
+      renderConversationList();
+    } catch { /* the list is best-effort; chat still works */ }
+    /* Restore the active conversation from backend truth (the stored id is only a pointer). */
+    if (saved && UUID_RE.test(saved)) {
+      await openConversation(saved);
+      if (state.conversationId !== saved) setConversationId(null);
+    }
     syncMenuState();
   }
 
