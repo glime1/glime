@@ -77,9 +77,10 @@ function showError(text){
 
     UI.render(hub,{...base,status:"loading"});
 
-    const res=await UI.data.loadAiStatus(sb);
+    const res=await UI.data.loadAll(sb,{supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
 
-    if(!res.entitled){
+    /* Existing ai-connections module entitlement still gates this page. */
+    if(!res.aiFailed&&!res.entitled){
       document.getElementById("page").innerHTML=`
         <a class="back" href="dashboard.html">← Dashboard</a>
         <div class="unavail">
@@ -89,12 +90,19 @@ function showError(text){
       return;
     }
 
-    UI.render(hub,{...base,status:"ready",states:res.states});
-    UI.renderPermissions(perms,res.permissions);
+    UI.render(hub,{
+      ...base,
+      status:res.failed?"error":"ready",
+      errorMessage:res.failed?"Some connector statuses could not be loaded.":undefined,
+      states:res.states,
+      details:res.details,
+      calendarApi:res.calendarApi
+    });
+    if(res.entitled)UI.renderPermissions(perms,res.permissions);
   }catch(error){
     console.error("Connector load error:",error);
     if(UI){
-      UI.render(hub,{...base,status:"error",states:{chatgpt:"error",claude:"error"}});
+      UI.render(hub,{...base,status:"error",states:{chatgpt:"error",claude:"error","google-calendar":"error"}});
     }else{
       showError("Connector status could not be loaded.");
     }
