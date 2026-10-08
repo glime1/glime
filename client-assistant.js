@@ -1,9 +1,11 @@
-/* GLIME Client Assistant — central frontend runtime (v3).
- * ONE authoritative flow: proposal -> render -> approve/reject -> backend result -> final state.
- * Backend is authoritative. This file never sends client_id, never calls a provider directly,
- * and never claims success that the backend has not confirmed.
- * Messaging proposals (assistant_message.v1) are approved/rejected ONLY through the canonical
- * client-assistant endpoint. Data-mutation proposals keep their existing approve RPC. */
+/* GLIME Client Assistant — central frontend runtime (v3.1).
+ * ONE runtime, ONE proposal renderer, ONE approval path:
+ *   proposal -> render -> approve/reject -> backend result -> final state.
+ * Approval and rejection (messaging AND data mutations) go ONLY through the
+ * client-assistant endpoint with { approval: { action_request_id, decision }, conversation_id }.
+ * The browser never calls a provider, an executor or an approval RPC directly, never sends
+ * client_id, installs no fetch interceptor, and never claims success the backend has not confirmed.
+ * Status refresh uses a read-only status RPC; it cannot approve or execute anything. */
 (() => {
   'use strict';
   if (window.__glimeClientAssistantStarted) return; // idempotent init
@@ -145,7 +147,7 @@
   /* ===================== EXTENSION API ===================== */
   const extensions = { uiActions: new Map(), onMessage: [] };
   window.GlimeAssistant = Object.freeze({
-    version: '3.0.0',
+    version: '3.1.0',
     extend(spec) {
       if (!spec || typeof spec !== 'object') return false;
       if (spec.uiActions && typeof spec.uiActions === 'object') {
@@ -375,12 +377,13 @@
     if (!res.ok || !data || data.error) throw appError('BACKEND');
     return data;
   }
-  /* Canonical approval/rejection endpoint — the ONLY path for assistant messaging proposals. */
+  /* The ONLY approval/rejection path, for messaging and data-mutation proposals alike. */
   function postDecision(actionRequestId, decision, timeoutMs) {
     const body = { approval: { action_request_id: actionRequestId, decision } };
     if (state.conversationId) body.conversation_id = state.conversationId;
     return postAssistant(body, timeoutMs || CONFIG.requestTimeoutMs);
   }
+  /* Read-only status lookup (cannot approve or execute anything). */
   async function fetchStatus(id) {
     if (!db) throw appError('SESSION_EXPIRED');
     const { data, error } = await db.rpc('get_client_action_execution_status', { p_action_request_id: id });
@@ -547,7 +550,7 @@
     });
   }
 
-  /* ===================== THINKING ===================== */
+  /* ===================== THINKING (UI state only) ===================== */
   function setThinkingMode(on) {
     state.thinking = on;
     dom.thinkingBtn.setAttribute('aria-pressed', String(on));
@@ -664,8 +667,9 @@
   function isMessageProposal(p) {
     return !!p && (p.proposal_type === 'message' || p.contract_version === 'assistant_message.v1' || (p.contract && p.contract.version === 'assistant_message.v1'));
   }
+  /* The proposal identity is action_request_id, exactly. */
   function proposalId(p) {
-    const id = String((p && (p.action_request_id || p.id)) || '');
+    const id = String((p && p.action_request_id) || '');
     return UUID_RE.test(id) ? id : '';
   }
   function appendProposal(row, p, opts) {
@@ -720,7 +724,7 @@
   function extractOutcome(d) {
     const srcs = [d && d.execution, d && d.execution_result, d && d.execution_job, d && d.result, d && d.outcome, d && d.approval, d && d.action_request, d]
       .filter((x) => x && typeof x === 'object' && !Array.isArray(x));
-    const out = { raw: '', code: '', results: null, sent: null, total: null, reason: '' };
+    const out = { raw: '', code: '', results: null, sent: null, failed: null, total: null, reason: '' };
     srcs.forEach((s) => {
       if (!out.raw) out.raw = String(s.status || s.state || s.outcome || s.execution_status || '');
       if (!out.code) out.code = String(s.code || s.error_code || s.reason_code || '');
@@ -730,6 +734,7 @@
         if (arr) out.results = arr;
       }
       if (out.sent == null) out.sent = pickNum(s, ['sent', 'sent_count', 'delivered_count']);
+      if (out.failed == null) out.failed = pickNum(s, ['failed', 'failed_count']);
       if (out.total == null) out.total = pickNum(s, ['total', 'total_count', 'recipient_count', 'attempted']);
     });
     if (out.results && out.sent == null) {
@@ -813,19 +818,18 @@
     root.appendChild(el('div', 'mp-meta', 'Limits: up to ' + limits.max_recipients + ' recipients \u00b7 ' + limits.max_message_characters + ' characters \u00b7 ' + limits.max_message_lines + ' lines. No automatic batching.'));
     if (p.already_exists) root.appendChild(el('div', 'mp-meta', 'This proposal already existed; its current status is shown from the backend.'));
 
-    const note = el('p', 'proposal-note', 'Nothing has been sent yet. The message will be sent only after you explicitly approve.');
+    const note = el('p', 'proposal-note', 'Not sent yet. Nothing will be sent until you explicitly approve.');
     root.appendChild(note);
 
-    let warn = null;
     if (problems.length) {
-      warn = el('div', 'mp-warn'); warn.setAttribute('role', 'alert');
+      const warn = el('div', 'mp-warn'); warn.setAttribute('role', 'alert');
       problems.forEach((t) => warn.appendChild(el('div', null, t)));
       root.appendChild(warn);
     }
 
     const actions = el('div', 'card-actions');
     const reject = el('button', 'btn btn-secondary', 'Reject'); reject.type = 'button';
-    const approve = el('button', 'btn btn-primary', 'Approve & Send'); approve.type = 'button';
+    const approve = el('button', 'btn btn-primary', 'Approve'); approve.type = 'button';
     actions.append(reject, approve);
     root.appendChild(actions);
 
@@ -862,7 +866,8 @@
     box.appendChild(head);
 
     let text = '';
-    const counts = out.sent != null && out.total != null ? 'Sent to ' + out.sent + ' of ' + out.total + ' recipients.' : '';
+    const hasCounts = out.sent != null && out.total != null;
+    const counts = hasCounts ? 'Sent ' + out.sent + ' \u00b7 Failed ' + (out.failed != null ? out.failed : Math.max(0, out.total - out.sent)) + ' \u00b7 Total ' + out.total + '.' : '';
     if (kind === 'queued') text = 'Approved. Waiting to be sent.';
     else if (kind === 'processing') text = 'Sending\u2026';
     else if (kind === 'completed') text = counts;
@@ -904,7 +909,7 @@
       r = await postDecision(ui.id, 'approve', CONFIG.approvalTimeoutMs);
     } catch (e) {
       if (e && e.code === 'SESSION_EXPIRED') {
-        ui.busy = false; ui.approve.disabled = false; ui.reject.disabled = false; ui.approve.textContent = 'Approve & Send';
+        ui.busy = false; ui.approve.disabled = false; ui.reject.disabled = false; ui.approve.textContent = 'Approve';
         ui.status.textContent = userMessageFor(e);
         return;
       }
@@ -914,7 +919,7 @@
     }
     const { res, data } = r;
     if (res.status === 401) {
-      ui.busy = false; ui.approve.disabled = false; ui.reject.disabled = false; ui.approve.textContent = 'Approve & Send';
+      ui.busy = false; ui.approve.disabled = false; ui.reject.disabled = false; ui.approve.textContent = 'Approve';
       ui.status.textContent = userMessageFor(appError('SESSION_EXPIRED'));
       return;
     }
@@ -959,7 +964,7 @@
       if (kind === 'proposed') {
         /* Backend confirms the approval never registered, so it is safe to act again. */
         ui.host.hidden = true; ui.actions.hidden = false; ui.note.hidden = false;
-        ui.busy = false; ui.approve.disabled = !ui.canApprove; ui.reject.disabled = false; ui.approve.textContent = 'Approve & Send';
+        ui.busy = false; ui.approve.disabled = !ui.canApprove; ui.reject.disabled = false; ui.approve.textContent = 'Approve';
         toast('This proposal has not been approved yet.');
         return;
       }
@@ -992,7 +997,7 @@
     }
   }
 
-  /* ---------- Data-mutation proposal (existing contract preserved) ---------- */
+  /* ---------- Data-mutation proposal (Before -> After card) ---------- */
   function normalizeStatus(s) {
     const v = String(s || '').toLowerCase();
     if (['proposed', 'awaiting_approval'].includes(v)) return 'proposed';
@@ -1025,6 +1030,9 @@
     if (status === 'rejected') return 'Rejected. Nothing was changed.';
     return '';
   }
+  function unlockMut(ui) {
+    ui.busy = false; ui.approve.disabled = false; ui.cancel.disabled = false; ui.approve.textContent = 'Approve change';
+  }
   function showMutUnknown(ui) {
     ui.actions.hidden = true; ui.status.hidden = true;
     setExecution(ui, 'unknown', 'We could not confirm the outcome. The change may or may not have been applied. Check status before trying again.');
@@ -1041,8 +1049,7 @@
       const st = normalizeStatus(s.raw);
       if (st === 'proposed') {
         ui.host.hidden = true; ui.exec = null; ui.host.replaceChildren();
-        ui.actions.hidden = false; ui.busy = false; ui.approve.disabled = false; ui.cancel.disabled = false;
-        ui.approve.textContent = 'Approve change';
+        ui.actions.hidden = false; unlockMut(ui);
         toast('This proposal has not been approved yet.');
         return;
       }
@@ -1071,44 +1078,46 @@
     if (attempt >= CONFIG.poll.maxAttempts) { setExecution(ui, ui.lastStatus || 'queued', 'Still processing. Check back shortly.'); return; }
     setTimeout(() => pollExecution(ui, attempt + 1), CONFIG.poll.intervalMs);
   }
+  /* The approval may have been applied even though the request failed: ask the backend first. */
+  async function recoverMutation(ui, err) {
+    try {
+      const s = await fetchStatus(ui.id);
+      const st = normalizeStatus(s.raw);
+      if (st === 'proposed') { unlockMut(ui); ui.status.textContent = userMessageFor(err); }
+      else if (st) applyMutState(ui, st);
+      else showMutUnknown(ui);
+    } catch { showMutUnknown(ui); }
+  }
   async function approveMutation(ui) {
     if (ui.busy) return; // double-click guard
     ui.busy = true;
     ui.approve.disabled = true; ui.cancel.disabled = true; ui.approve.textContent = 'Approving\u2026';
     ui.status.hidden = false; ui.status.textContent = 'Sending approval\u2026';
+    let r;
     try {
-      if (!db) throw appError('SESSION_EXPIRED');
-      const { data, error } = await db.rpc('approve_client_business_action', { p_action_request_id: ui.id });
-      if (error) {
-        if (String(error.message || '').includes('AUTH_REQUIRED')) throw appError('SESSION_EXPIRED');
-        throw appError('AMBIGUOUS');
-      }
-      if (!data || data.ok === false) {
-        ui.actions.hidden = true; ui.status.hidden = true;
-        setExecution(ui, 'failed', (data && data.message) ? String(data.message).slice(0, 200) : 'This change can no longer be applied.');
-        return;
-      }
-      ui.actions.hidden = true; ui.status.hidden = true; ui.note.hidden = true;
-      const st = normalizeStatus(data.status) || 'queued';
-      ui.lastStatus = st; setExecution(ui, st, statusMessage(st));
-      if (st !== 'completed' && st !== 'failed') pollExecution(ui, 0);
+      r = await postDecision(ui.id, 'approve', CONFIG.approvalTimeoutMs);
     } catch (e) {
-      if (e && e.code === 'SESSION_EXPIRED') {
-        ui.busy = false; ui.approve.disabled = false; ui.cancel.disabled = false; ui.approve.textContent = 'Approve change';
-        ui.status.textContent = userMessageFor(e);
-        return;
-      }
-      /* The approval may have been applied: ask the backend before allowing another attempt. */
-      try {
-        const s = await fetchStatus(ui.id);
-        const st = normalizeStatus(s.raw);
-        if (st === 'proposed') {
-          ui.busy = false; ui.approve.disabled = false; ui.cancel.disabled = false; ui.approve.textContent = 'Approve change';
-          ui.status.textContent = userMessageFor(e);
-        } else if (st) applyMutState(ui, st);
-        else showMutUnknown(ui);
-      } catch { showMutUnknown(ui); }
+      if (e && e.code === 'SESSION_EXPIRED') { unlockMut(ui); ui.status.textContent = userMessageFor(e); return; }
+      await recoverMutation(ui, e);
+      return;
     }
+    const { res, data } = r;
+    if (res.status === 401) { unlockMut(ui); ui.status.textContent = userMessageFor(appError('SESSION_EXPIRED')); return; }
+    const out = extractOutcome(data || {});
+    let st = normalizeStatus(out.raw);
+    if (String(out.code).toUpperCase() === 'DELIVERY_STATE_UNKNOWN') st = 'unknown';
+    if (res.status >= 500 && st !== 'completed' && st !== 'failed') { await recoverMutation(ui, appError('NETWORK')); return; }
+    if (!st && !res.ok) {
+      try { const s = await fetchStatus(ui.id); const k = normalizeStatus(s.raw); if (k && k !== 'proposed') { applyMutState(ui, k); addBackendAnswer(data); return; } } catch { /* fall through */ }
+      ui.actions.hidden = true; ui.status.hidden = true;
+      setExecution(ui, 'failed', out.reason || 'This change can no longer be applied.');
+      addBackendAnswer(data);
+      return;
+    }
+    if (st === 'proposed') { unlockMut(ui); ui.status.textContent = 'The approval was not registered. Please try again.'; return; }
+    st = st || 'queued'; // accepted but not classified: confirm through status polling
+    applyMutState(ui, st);
+    addBackendAnswer(data);
   }
   function renderMutationProposal(p, opts) {
     const root = tpl('proposalTemplate').firstElementChild;
