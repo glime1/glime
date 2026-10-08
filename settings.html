@@ -172,6 +172,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   Deep links:  settings.html#ai            opens the AI module
                settings.html#ai-knowledge  opens AI > Knowledge
                settings.html#connector     opens the Connector module
+               settings.html#<module-id>   opens any registered module
 */
 
 const sb = supabase.createClient(
@@ -610,7 +611,7 @@ async function loadSettingsAddon(src){
 }
 
 (async()=>{
-  /* Each addon loads independently so one failure never blocks the others. */
+  /* Addons load in order; one failing addon never blocks the others. */
   for(const src of ['settings-ai-addon.js','connector-ui.js','settings-connector-addon.js']){
     try{
       await loadSettingsAddon(src);
@@ -619,8 +620,8 @@ async function loadSettingsAddon(src){
     }
   }
 
-  /* Deep links, e.g. settings.html#ai-knowledge (used by the Services page),
-     settings.html#connector */
+  /* Deep links, e.g. settings.html#ai-knowledge (used by the Services page)
+     and settings.html#connector */
   const hash = (location.hash || '').replace('#','').toLowerCase();
   if(hash === 'ai' || hash.startsWith('ai-')){
     state.activeModule = 'ai';
