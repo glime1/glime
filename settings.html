@@ -166,8 +166,12 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   Do not create another settings.html for a new settings area.
   Add a module/addon instead and reuse the shared API/helpers.
 
+  Addons loaded (in order): settings-ai-addon.js, connector-ui.js,
+  settings-connector-addon.js
+
   Deep links:  settings.html#ai            opens the AI module
                settings.html#ai-knowledge  opens AI > Knowledge
+               settings.html#connector     opens the Connector module
 */
 
 const sb = supabase.createClient(
@@ -606,16 +610,22 @@ async function loadSettingsAddon(src){
 }
 
 (async()=>{
-  try{
-    await loadSettingsAddon('settings-ai-addon.js');
-  }catch(error){
-    console.error('Settings addon load error:',error);
+  /* Each addon loads independently so one failure never blocks the others. */
+  for(const src of ['settings-ai-addon.js','connector-ui.js','settings-connector-addon.js']){
+    try{
+      await loadSettingsAddon(src);
+    }catch(error){
+      console.error('Settings addon load error:',error);
+    }
   }
 
-  /* Deep links, e.g. settings.html#ai-knowledge (used by the Services page) */
+  /* Deep links, e.g. settings.html#ai-knowledge (used by the Services page),
+     settings.html#connector */
   const hash = (location.hash || '').replace('#','').toLowerCase();
   if(hash === 'ai' || hash.startsWith('ai-')){
     state.activeModule = 'ai';
+  }else if(modules.has(hash)){
+    state.activeModule = hash;
   }
 
   await init();
