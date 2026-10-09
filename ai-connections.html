@@ -97,13 +97,14 @@ function showError(text){
       states:res.states,
       details:res.details,
       calendarApi:res.calendarApi,
-      shopifyApi:res.shopifyApi
+      shopifyApi:res.shopifyApi,
+      sheetsApi:res.sheetsApi
     });
     if(res.entitled)UI.renderPermissions(perms,res.permissions);
   }catch(error){
     console.error("Connector load error:",error);
     if(UI){
-      UI.render(hub,{...base,status:"error",states:{chatgpt:"error",claude:"error","google-calendar":"error",shopify:"error"}});
+      UI.render(hub,{...base,status:"error",states:{chatgpt:"error",claude:"error","google-calendar":"error",shopify:"error","google-sheets":"error"}});
     }else{
       showError("Connector status could not be loaded.");
     }

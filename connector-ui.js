@@ -38,7 +38,7 @@ const registry=[
   {id:'claude',name:'Claude',category:'AI Assistants',description:'Secure GLIME MCP connection for approved business data.',icon:'spark',backend:'existing',state:'dynamic',capabilities:['Leads','Follow-ups','Services'],sort:20},
   {id:'gmail',name:'Gmail',category:'Google Workspace',description:'Connect business email workflows.',icon:'mail',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:30},
   {id:'google-drive',name:'Google Drive',category:'Google Workspace',description:'Connect business files, Docs and storage.',icon:'drive',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:40},
-  {id:'google-sheets',name:'Google Sheets',category:'Google Workspace',description:'Connect business spreadsheets.',icon:'sheet',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:50},
+  {id:'google-sheets',name:'Google Sheets',category:'Google Workspace',description:'Connect business spreadsheets.',icon:'sheet',backend:'existing',kind:'sheets',state:'dynamic',capabilities:[],sort:50},
   {id:'google-calendar',name:'Google Calendar',category:'Google Workspace',description:'Connect business calendars and appointments.',icon:'calendar',backend:'existing',kind:'calendar',state:'dynamic',capabilities:[],sort:55},
   {id:'shopify',name:'Shopify',category:'Commerce',description:'Connect products and inventory so GLIME AI can answer from your store.',icon:'bag',backend:'existing',kind:'shopify',state:'dynamic',capabilities:['Products','Inventory'],sort:60},
   {id:'slack',name:'Slack',category:'Team Communication',description:'Connect team communication and workflows.',icon:'hash',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:70}
@@ -306,6 +306,51 @@ function shopPanelHtml(p,state,info){
       <button type="button" class="gcx-btn primary" data-shop-act="connect">Connect Shopify</button>
       <p class="gcx-small">Read-only: products and inventory.</p>
     </div>`;
+}
+
+/* ======================================================
+   GOOGLE SHEETS — API client (backend already exists)
+   OAuth start : POST /functions/v1/glime-google-oauth
+   Status      : GET  /functions/v1/glime-connector-gateway?action=status
+   ====================================================== */
+function createSheetsApi(sb,cfg){
+  cfg=cfg||{};
+  const base=String(cfg.baseUrl||sb.supabaseUrl||'').replace(/\/$/,'');
+  const apiKey=cfg.apiKey||sb.supabaseKey||'';
+
+  async function call(fn,o){
+    o=o||{};
+    const r=await sb.auth.getSession();
+    const s=r&&r.data&&r.data.session;
+    if(!s)throw mkErr('Your session has expired. Please sign in again.','SESSION_EXPIRED');
+    const headers={Authorization:'Bearer '+s.access_token};
+    if(apiKey)headers.apikey=apiKey;
+    const init={method:o.method||'POST',headers};
+    if(init.method!=='GET'){headers['Content-Type']='application/json';init.body=JSON.stringify(o.body||{});}
+    let res;
+    try{res=await fetch(base+'/functions/v1/'+fn+(o.query||''),init);}
+    catch(e){throw mkErr('Unable to reach GLIME right now. Please try again.','NETWORK');}
+    const data=await res.json().catch(()=>null);
+    if(!res.ok){
+      const em=data&&data.error;
+      throw mkErr((typeof em==='string'?em:(em&&em.message))||'Google Sheets request failed.',res.status);
+    }
+    return data;
+  }
+
+  return {
+    async status(){
+      const info=await call('glime-connector-gateway',{method:'GET',query:'?action=status'});
+      const st=info&&info.providers&&info.providers['google-sheets'];
+      return {state:st==='connected'?'connected':'not_connected',info:(info&&info.google_account)||null};
+    },
+    async startOAuth(){
+      const out=await call('glime-google-oauth',{method:'POST',body:{}});
+      const url=out&&out.authorization_url;
+      if(typeof url!=='string'||url.indexOf('https://accounts.google.com/')!==0)throw mkErr('Google authorization could not be started.','OAUTH');
+      window.location.assign(url);
+    }
+  };
 }
 
 /* ---------- Calendar manager helpers ---------- */
@@ -624,14 +669,20 @@ function cardHtml(p,state,opts,open){
   const badge=STATE_BADGE[state];
   const cal=p.kind==='calendar';
   const shop=p.kind==='shopify';
+  const sheets=p.kind==='sheets';
   const stable=state==='connected'||state==='not_connected';
-  const interactiveAi=!cal&&!shop&&p.backend==='existing'&&stable;
+  const interactiveAi=!cal&&!shop&&!sheets&&p.backend==='existing'&&stable;
   const interactiveShop=shop&&stable;
+  const interactiveSheets=sheets&&stable;
   const interactiveCal=cal&&stable;
   let action;
   if(interactiveShop){
     const label=open?'Hide':(state==='connected'?'Manage':'Connect');
     action=`<button type="button" class="gcx-btn ${state==='not_connected'?'primary':''}" data-gcx-toggle="${esc(p.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gcx-panel-${esc(p.id)}" aria-label="${esc(label+' '+p.name)}">${esc(label)}</button>`;
+  }else if(interactiveSheets&&state==='not_connected'){
+    action=`<button type="button" class="gcx-btn primary" data-gcx-connect-sheets="${esc(p.id)}" aria-label="${esc('Connect '+p.name)}">Connect</button>`;
+  }else if(interactiveSheets){
+    action=`<button type="button" class="gcx-btn" disabled aria-disabled="true" aria-label="${esc(p.name+': Connected')}">Connected</button>`;
   }else if(interactiveAi){
     const label=open?'Hide setup':(state==='connected'?'View connection':'Open setup');
     action=`<button type="button" class="gcx-btn ${state==='not_connected'?'primary':''}" data-gcx-toggle="${esc(p.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gcx-panel-${esc(p.id)}" aria-label="${esc(label+' for '+p.name)}">${esc(label)}</button>`;
@@ -650,9 +701,12 @@ function cardHtml(p,state,opts,open){
   const smeta=sinfo?`
     <p class="gcx-meta">Store: ${esc(sinfo.shop_name||sinfo.shop_domain||'Shopify store')}${sinfo.last_verified_at?' · Verified '+esc(fmtDate(sinfo.last_verified_at)):''}</p>
     ${sinfo.last_error?'<p class="gcx-meta warn">Shopify access needs attention. Reconnect to continue.</p>':''}`:'';
+  const gsinfo=(sheets&&state==='connected'&&opts.details)?opts.details[p.id]:null;
+  const gmeta=gsinfo?`
+    <p class="gcx-meta">Account: ${esc(gsinfo.email||gsinfo.display_name||'Google account')}</p>`:'';
   const meta=info?`
     <p class="gcx-meta">Account: ${esc(info.email||info.display_name||'Google account')}${info.last_verified_at?' · Verified '+esc(fmtDate(info.last_verified_at)):''}</p>
-    ${info.last_error?'<p class="gcx-meta warn">A recent request failed. Open Manage to retry, or reconnect.</p>':''}`:smeta;
+    ${info.last_error?'<p class="gcx-meta warn">A recent request failed. Open Manage to retry, or reconnect.</p>':''}`:(smeta||gmeta);
 
   let panel='';
   if(open&&interactiveShop)panel=shopPanelHtml(p,state,sinfo);
@@ -725,6 +779,21 @@ function bind(container){
         await opts.calendarApi.startOAuth();
       }catch(e){
         console.error('GLIME calendar connect error:',e);
+        container._gcxBanner={type:'err',text:cleanMsg(e)};
+        render(container,opts);
+      }
+      return;
+    }
+
+    const gs=ev.target.closest('[data-gcx-connect-sheets]');
+    if(gs){
+      if(!opts.sheetsApi)return;
+      gs.disabled=true;
+      gs.textContent='Redirecting…';
+      try{
+        await opts.sheetsApi.startOAuth();
+      }catch(e){
+        console.error('GLIME Google Sheets connect error:',e);
         container._gcxBanner={type:'err',text:cleanMsg(e)};
         render(container,opts);
       }
@@ -910,7 +979,8 @@ async function loadAll(sb,opts){
   opts=opts||{};
   const cal=createCalendarApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
   const shopApi=createShopifyApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
-  const [ai,cs,ss]=await Promise.allSettled([loadAiStatus(sb,opts),cal.status(),shopApi.status()]);
+  const sheetsApi=createSheetsApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
+  const [ai,cs,ss,gs]=await Promise.allSettled([loadAiStatus(sb,opts),cal.status(),shopApi.status(),sheetsApi.status()]);
 
   const states={},details={};
   let entitled=false,permissions=[],aiFailed=false,failed=false;
@@ -943,7 +1013,16 @@ async function loadAll(sb,opts){
     failed=true;
   }
 
-  return {states,details,entitled,permissions,aiFailed,failed,calendarApi:cal,shopifyApi:shopApi};
+  if(gs.status==='fulfilled'){
+    states['google-sheets']=gs.value.state;
+    details['google-sheets']=gs.value.info||null;
+  }else{
+    console.error('GLIME Google Sheets status error:',gs.reason);
+    states['google-sheets']='error';
+    failed=true;
+  }
+
+  return {states,details,entitled,permissions,aiFailed,failed,calendarApi:cal,shopifyApi:shopApi,sheetsApi:sheetsApi};
 }
 
 window.GLIME_CONNECTOR_UI={
@@ -954,6 +1033,7 @@ window.GLIME_CONNECTOR_UI={
   injectStyles,
   calendar:{create:createCalendarApi},
   shopify:{create:createShopifyApi},
+  sheets:{create:createSheetsApi},
   data:{loadAiStatus,loadAll}
 };
 })();

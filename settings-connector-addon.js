@@ -22,11 +22,21 @@ function oauthBanner(){
   let params;
   try{params=new URLSearchParams(location.search);}catch(e){return null;}
   const which=params.get('connector');
-  if(which!=='google-calendar'&&which!=='shopify')return null;
+  if(which!=='google-calendar'&&which!=='shopify'&&which!=='google-sheets')return null;
 
   const status=params.get('status');
   const reason=params.get('reason');
   try{history.replaceState(null,'',location.pathname+'#connector');}catch(e){}
+
+  if(which==='google-sheets'){
+    if(status==='connected')return {type:'ok',text:'Google Sheets connected successfully.',provider:'google-sheets'};
+    const m={
+      cancelled:'Google authorization was cancelled.',
+      invalid_state:'The authorization link expired. Please try connecting again.',
+      server_config:'Google connection is not configured yet. Please contact GLIME support.'
+    };
+    return {type:'err',text:m[reason]||'Google Sheets could not be connected. Please try again.',provider:'google-sheets'};
+  }
 
   if(which==='shopify'){
     if(status==='connected')return {type:'ok',text:'Shopify connected successfully.',provider:'shopify'};
@@ -88,9 +98,10 @@ S.register({
       /* Never show a success message the real status does not confirm. */
       let b=banner;
       if(b&&b.type==='ok'){
-        const key=b.provider==='shopify'?'shopify':'google-calendar';
+        const key=b.provider==='shopify'?'shopify':(b.provider==='google-sheets'?'google-sheets':'google-calendar');
+        const names={shopify:'Shopify','google-sheets':'Google Sheets','google-calendar':'Google Calendar'};
         if(res.states[key]!=='connected'){
-          b={type:'err',text:(key==='shopify'?'Shopify':'Google Calendar')+' connection could not be verified. Please try again.'};
+          b={type:'err',text:names[key]+' connection could not be verified. Please try again.'};
         }
       }
 
@@ -102,13 +113,14 @@ S.register({
         details:res.details,
         calendarApi:res.calendarApi,
         shopifyApi:res.shopifyApi,
+        sheetsApi:res.sheetsApi,
         banner:b
       });
       if(res.entitled)UI.renderPermissions(perms,res.permissions);
     }catch(error){
       console.error('GLIME Connector load error:',error);
       if(!hub.isConnected)return;
-      UI.render(hub,{...base,status:'error',states:{chatgpt:'error',claude:'error','google-calendar':'error',shopify:'error'},banner:banner});
+      UI.render(hub,{...base,status:'error',states:{chatgpt:'error',claude:'error','google-calendar':'error',shopify:'error','google-sheets':'error'},banner:banner});
     }
   }
 });
