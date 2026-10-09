@@ -1690,6 +1690,276 @@ body{
 }
 </style>
 
+<style id="glime-hero-orbit">
+/* =========================================================
+   HERO — Premium orbit visual + integrations carousel
+   (all classes prefixed gx- to avoid touching other sections)
+========================================================= */
+.hero.gx-hero{
+  min-height:0;
+  padding:70px 0 54px;
+  position:relative;
+  overflow:hidden;
+}
+.hero.gx-hero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(620px 440px at 78% 38%, rgba(82,232,255,.10), transparent 70%),
+    radial-gradient(520px 380px at 12% 80%, rgba(80,245,168,.06), transparent 70%);
+}
+.gx-hero .hero-grid{position:relative;z-index:1;gap:40px;}
+.gx-eyebrow{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:7px 13px;
+  background:rgba(82,232,255,.06);
+  border:1px solid rgba(82,232,255,.2);
+  border-radius:999px;
+}
+.gx-eyebrow::before{
+  content:"";width:7px;height:7px;border-radius:50%;
+  background:var(--green);box-shadow:0 0 10px var(--green);
+}
+.hero h1.gx-title{
+  margin-top:20px;
+  font-size:clamp(2.4rem,5.4vw,4.5rem);
+  line-height:1.03;
+  letter-spacing:-.05em;
+}
+.hero h1.gx-title span{
+  display:block;
+  color:var(--cyan);
+}
+.gx-tagline{
+  margin-top:20px;
+  font-size:clamp(1.15rem,2.4vw,1.55rem);
+  font-weight:800;
+  letter-spacing:-.03em;
+  background:linear-gradient(100deg,var(--green),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+}
+
+/* ---------- visual ---------- */
+.gx-visual{
+  container-type:inline-size;
+  width:100%;
+  max-width:540px;
+  margin-inline:auto;
+}
+.gx-stage{
+  --px:0;--py:0;
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+}
+.gx-stage::before{
+  content:"";position:absolute;inset:8%;border-radius:50%;
+  background:radial-gradient(circle,rgba(82,232,255,.16),rgba(80,245,168,.05) 45%,transparent 70%);
+  filter:blur(8px);
+  pointer-events:none;
+}
+.gx-ring{
+  position:absolute;left:50%;top:50%;
+  border-radius:50%;
+  transform:translate(calc(-50% + var(--px)*6px),calc(-50% + var(--py)*6px));
+  pointer-events:none;
+}
+.gx-ring-1{width:76%;height:76%;border:1px solid rgba(82,232,255,.28);box-shadow:0 0 30px rgba(82,232,255,.10),inset 0 0 30px rgba(82,232,255,.06);}
+.gx-ring-2{width:94%;height:94%;border:1px dashed rgba(80,245,168,.18);}
+.gx-ring-3{width:56%;height:56%;border:1px solid rgba(82,232,255,.14);}
+.gx-ring-1::after{
+  content:"";position:absolute;top:-4px;left:50%;width:8px;height:8px;margin-left:-4px;
+  border-radius:50%;background:var(--cyan);box-shadow:0 0 14px 3px rgba(82,232,255,.6);
+}
+
+/* center */
+.gx-core{
+  position:absolute;left:50%;top:50%;
+  width:34%;aspect-ratio:1/1;
+  transform:translate(calc(-50% + var(--px)*-12px),calc(-50% + var(--py)*-12px));
+  z-index:3;
+}
+.gx-core-inner{
+  position:relative;width:100%;height:100%;
+  display:grid;place-items:center;
+  background:
+    linear-gradient(145deg,rgba(82,232,255,.20),rgba(10,24,34,.78) 55%,rgba(80,245,168,.12));
+  border:1px solid rgba(82,232,255,.42);
+  border-radius:22%;
+  box-shadow:
+    0 0 60px rgba(82,232,255,.28),
+    0 24px 50px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 0 30px rgba(82,232,255,.10);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  animation:gx-bob 6s ease-in-out infinite;
+}
+.gx-core-inner img{
+  width:68%;height:68%;object-fit:contain;
+  filter:drop-shadow(0 0 14px rgba(82,232,255,.55));
+}
+.gx-pad{
+  position:absolute;left:50%;bottom:-13%;
+  width:128%;height:20%;
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(82,232,255,.45),rgba(82,232,255,.08) 55%,transparent 72%);
+  filter:blur(3px);
+  z-index:-1;
+}
+
+/* orbit */
+.gx-orbit{
+  position:absolute;inset:0;z-index:4;
+  animation:gx-spin 70s linear infinite;
+  will-change:transform;
+}
+.gx-node{
+  position:absolute;left:50%;top:50%;
+  width:0;height:0;
+  transform:rotate(var(--a));
+}
+.gx-card{
+  --r:38cqw;
+  position:absolute;left:0;top:calc(var(--r) * -1);
+  width:26cqw;
+  transform:translate(-50%,-50%) rotate(calc(var(--a) * -1));
+  animation:gx-unspin 70s linear infinite;
+  will-change:transform;
+}
+.gx-float{
+  display:flex;flex-direction:column;align-items:center;gap:1.4cqw;
+  padding:2cqw 1.4cqw;
+  background:linear-gradient(150deg,rgba(24,46,60,.82),rgba(9,19,27,.88));
+  border:1px solid rgba(82,232,255,.26);
+  border-radius:3.4cqw;
+  box-shadow:0 14px 30px rgba(0,0,0,.45),0 0 22px rgba(82,232,255,.10),inset 0 1px 0 rgba(255,255,255,.12);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  text-align:center;
+  animation:gx-bob 5s ease-in-out infinite;
+  animation-delay:var(--d,0s);
+}
+.gx-badge{
+  width:8.4cqw;height:8.4cqw;
+  display:grid;place-items:center;
+  color:#04141a;
+  background:linear-gradient(135deg,var(--green),var(--cyan));
+  border-radius:2.4cqw;
+  font-family:"DM Mono",monospace;
+  font-size:clamp(.5rem,2.8cqw,.8rem);
+  font-weight:700;
+  letter-spacing:0;
+}
+.gx-name{
+  color:var(--text);
+  font-size:clamp(.54rem,2.5cqw,.76rem);
+  font-weight:800;
+  line-height:1.2;
+}
+
+@keyframes gx-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes gx-unspin{
+  from{transform:translate(-50%,-50%) rotate(calc(var(--a) * -1))}
+  to{transform:translate(-50%,-50%) rotate(calc(var(--a) * -1 - 360deg))}
+}
+@keyframes gx-bob{0%,100%{translate:0 0}50%{translate:0 -6px}}
+
+/* ---------- integrations carousel ---------- */
+.gx-integrations{
+  position:relative;
+  padding:8px 0 56px;
+}
+.gx-int-head{
+  display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;
+  margin-bottom:22px;
+}
+.gx-int-title{
+  margin-top:8px;
+  font-size:clamp(1.5rem,3.4vw,2.3rem);
+  line-height:1.1;
+  letter-spacing:-.045em;
+}
+.gx-int-copy{margin-top:8px;color:var(--muted);font-size:.9rem;}
+.gx-int-note{margin-top:4px;color:var(--dim);font-size:.7rem;}
+.gx-int-controls{display:flex;gap:10px;}
+.gx-arrow{
+  width:44px;height:44px;
+  display:grid;place-items:center;
+  color:var(--text);
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(82,232,255,.28);
+  border-radius:50%;
+  font-size:1.05rem;
+  transition:border-color .2s ease,background .2s ease,transform .2s ease;
+}
+.gx-arrow:hover{border-color:var(--cyan);background:rgba(82,232,255,.1);}
+.gx-arrow:focus-visible,.gx-scroller:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;}
+.gx-rail{
+  position:relative;
+  padding:12px;
+  background:linear-gradient(145deg,rgba(18,34,47,.7),rgba(7,16,22,.7));
+  border:1px solid rgba(82,232,255,.16);
+  border-radius:26px;
+  box-shadow:0 0 40px rgba(82,232,255,.06);
+  overflow:hidden;
+}
+.gx-scroller{
+  overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:none;-ms-overflow-style:none;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+}
+.gx-scroller::-webkit-scrollbar{display:none;}
+.gx-track{display:flex;gap:12px;width:max-content;max-width:none;}
+.gx-chip{
+  flex:0 0 auto;
+  width:220px;max-width:none;
+  display:flex;align-items:center;gap:12px;
+  padding:13px 16px;
+  background:linear-gradient(150deg,rgba(24,46,60,.8),rgba(10,20,28,.85));
+  border:1px solid var(--border);
+  border-radius:16px;
+  transition:border-color .2s ease,transform .2s ease;
+}
+.gx-chip:hover{border-color:rgba(82,232,255,.4);transform:translateY(-2px);}
+.gx-chip .gx-chip-badge{
+  flex:0 0 42px;width:42px;height:42px;
+  display:grid;place-items:center;
+  color:#04141a;
+  background:linear-gradient(135deg,var(--green),var(--cyan));
+  border-radius:12px;
+  font-family:"DM Mono",monospace;font-size:.78rem;font-weight:700;
+}
+.gx-chip strong{display:block;font-size:.84rem;line-height:1.25;}
+.gx-chip small{display:block;margin-top:2px;color:var(--dim);font-size:.68rem;font-weight:600;}
+
+@media (max-width:799px){
+  .hero.gx-hero{padding:48px 0 34px !important;}
+  .gx-hero .hero-grid{display:block !important;}
+  .gx-visual{margin-top:34px;max-width:420px;}
+  .hero h1.gx-title{font-size:clamp(2.1rem,9.6vw,3.2rem) !important;}
+  .gx-int-controls{display:none;}
+  .gx-chip{width:196px;}
+  .gx-integrations{padding-bottom:36px;}
+  .gx-ring-2{display:none;}
+}
+@media (min-width:800px) and (max-width:1099px){
+  .hero h1.gx-title{font-size:clamp(2.2rem,5.2vw,3.2rem);}
+}
+@media (min-width:1100px){
+  .hero h1.gx-title{font-size:4.5rem;}
+}
+@media (prefers-reduced-motion:reduce){
+  .gx-orbit,.gx-card,.gx-float,.gx-core-inner{animation:none !important;}
+  .gx-chip,.gx-arrow{transition:none !important;}
+}
+</style>
+
 </head>
 
 <body>
@@ -1741,24 +2011,29 @@ body{
          HERO
     ========================== -->
 
-    <section class="hero">
+    <section class="hero gx-hero">
       <div class="container hero-grid">
 
         <div>
 
-          <p class="eyebrow">
-            AI BUSINESS PROBLEM SOLVER
+          <p class="eyebrow gx-eyebrow">
+            AI BUSINESS OPERATING PLATFORM
           </p>
 
-          <h1>
+          <h1 class="gx-title">
             What's slowing your business down?
-            <span>Let AI solve it.</span>
+            <span>Let GLIME solve it.</span>
           </h1>
 
+          <p class="gx-tagline">
+            Your Business. All Connected.
+          </p>
+
           <p class="hero-sub">
-            Tell Glime your business problem. We analyze the
-            bottleneck and help design the right AI-powered
-            system for your business.
+            Connect your business channels and tools in one place.
+            Let GLIME help you manage conversations, automate
+            workflows, and coordinate your business operations
+            with AI.
           </p>
 
           <div class="buttons">
@@ -1787,53 +2062,115 @@ body{
 
 
         <div
-          class="ai-preview"
-          aria-label="Glime AI workflow preview"
+          class="gx-visual"
+          role="img"
+          aria-label="GLIME at the center, connected with WhatsApp Business, Instagram, Shopify, Razorpay, Shiprocket and Google Calendar"
         >
+          <div class="gx-stage" id="gx-stage">
 
-          <p class="preview-label">
-            GLIME SYSTEM APPROACH
-          </p>
+            <span class="gx-ring gx-ring-2"></span>
+            <span class="gx-ring gx-ring-1"></span>
+            <span class="gx-ring gx-ring-3"></span>
 
-          <div class="workflow">
-
-            <div class="workflow-item">
-              <div class="workflow-number">01</div>
-              <div class="workflow-text">
-                Your Business Problem
+            <div class="gx-core">
+              <div class="gx-core-inner">
+                <img src="glime_logo_clean.svg" alt="GLIME" width="120" height="120">
               </div>
+              <span class="gx-pad"></span>
             </div>
 
-            <div class="workflow-item">
-              <div class="workflow-number">02</div>
-              <div class="workflow-text">
-                Glime Analysis
-              </div>
-            </div>
+            <div class="gx-orbit" aria-hidden="true">
 
-            <div class="workflow-item">
-              <div class="workflow-number">03</div>
-              <div class="workflow-text">
-                Opportunities
+              <div class="gx-node" style="--a:0deg">
+                <div class="gx-card"><div class="gx-float" style="--d:0s">
+                  <span class="gx-badge">WA</span><span class="gx-name">WhatsApp Business</span>
+                </div></div>
               </div>
-            </div>
 
-            <div class="workflow-item">
-              <div class="workflow-number">04</div>
-              <div class="workflow-text">
-                Recommended AI System
+              <div class="gx-node" style="--a:60deg">
+                <div class="gx-card"><div class="gx-float" style="--d:-.8s">
+                  <span class="gx-badge">IG</span><span class="gx-name">Instagram</span>
+                </div></div>
               </div>
-            </div>
 
-            <div class="workflow-item">
-              <div class="workflow-number">05</div>
-              <div class="workflow-text">
-                Business Outcome
+              <div class="gx-node" style="--a:120deg">
+                <div class="gx-card"><div class="gx-float" style="--d:-1.6s">
+                  <span class="gx-badge">SH</span><span class="gx-name">Shopify</span>
+                </div></div>
               </div>
+
+              <div class="gx-node" style="--a:180deg">
+                <div class="gx-card"><div class="gx-float" style="--d:-2.4s">
+                  <span class="gx-badge">RP</span><span class="gx-name">Razorpay</span>
+                </div></div>
+              </div>
+
+              <div class="gx-node" style="--a:240deg">
+                <div class="gx-card"><div class="gx-float" style="--d:-3.2s">
+                  <span class="gx-badge">SR</span><span class="gx-name">Shiprocket</span>
+                </div></div>
+              </div>
+
+              <div class="gx-node" style="--a:300deg">
+                <div class="gx-card"><div class="gx-float" style="--d:-4s">
+                  <span class="gx-badge">GC</span><span class="gx-name">Google Calendar</span>
+                </div></div>
+              </div>
+
             </div>
 
           </div>
+        </div>
 
+      </div>
+    </section>
+
+
+    <!-- =========================
+         INTEGRATIONS CAROUSEL
+    ========================== -->
+
+    <section class="gx-integrations" aria-labelledby="gx-int-title">
+      <div class="container">
+
+        <div class="gx-int-head">
+          <div>
+            <h2 class="gx-int-title" id="gx-int-title">
+              Integrations That Power GLIME
+            </h2>
+            <p class="gx-int-copy">
+              Your business tools. One connected workspace.
+            </p>
+            <p class="gx-int-note">
+              Integration availability may vary by plan and setup.
+            </p>
+          </div>
+
+          <div class="gx-int-controls">
+            <button class="gx-arrow" id="gx-prev" type="button" aria-label="Previous integrations">←</button>
+            <button class="gx-arrow" id="gx-next" type="button" aria-label="Next integrations">→</button>
+          </div>
+        </div>
+
+        <div class="gx-rail">
+          <div
+            class="gx-scroller"
+            id="gx-scroller"
+            tabindex="0"
+            role="region"
+            aria-label="Integrations carousel"
+          >
+            <div class="gx-track" id="gx-track">
+
+              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">WA</span><span><strong>WhatsApp Business</strong><small>Business messaging</small></span></div>
+              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">IG</span><span><strong>Instagram</strong><small>DMs &amp; comments</small></span></div>
+              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">SH</span><span><strong>Shopify</strong><small>Store &amp; orders</small></span></div>
+              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">RP</span><span><strong>Razorpay</strong><small>Payments</small></span></div>
+              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">SR</span><span><strong>Shiprocket</strong><small>Shipping &amp; fulfilment</small></span></div>
+              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">GC</span><span><strong>Google Calendar</strong><small>Appointments</small></span></div>
+
+            </div>
+          </div>
         </div>
 
       </div>
@@ -2980,5 +3317,150 @@ body{
   <script src="glime-global-nav.js?v=2" defer></script>
   <script src="glime-3d.js"></script>
   <script src="website-analytics.js"></script>
+
+  <script>
+  /* =========================================================
+     HERO — parallax + integrations carousel (no libraries)
+  ========================================================= */
+  (function () {
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---- subtle parallax on the orbit stage (fine pointers only) ---- */
+    var stage = document.getElementById('gx-stage');
+    if (stage && !reduced && window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+      var visual = stage.parentElement;
+      visual.addEventListener('pointermove', function (e) {
+        var r = visual.getBoundingClientRect();
+        stage.style.setProperty('--px', (((e.clientX - r.left) / r.width) - 0.5).toFixed(3));
+        stage.style.setProperty('--py', (((e.clientY - r.top) / r.height) - 0.5).toFixed(3));
+      });
+      visual.addEventListener('pointerleave', function () {
+        stage.style.setProperty('--px', 0);
+        stage.style.setProperty('--py', 0);
+      });
+    }
+
+    /* ---- pause orbit when hero is off-screen (saves battery) ---- */
+    var orbit = document.querySelector('.gx-orbit');
+    if (orbit && 'IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) {
+        var on = entries[0].isIntersecting;
+        var state = on ? 'running' : 'paused';
+        orbit.style.animationPlayState = state;
+        document.querySelectorAll('.gx-card, .gx-float, .gx-core-inner').forEach(function (el) {
+          el.style.animationPlayState = state;
+        });
+      }, { threshold: 0.01 }).observe(stage);
+    }
+
+    /* ---- integrations carousel ---- */
+    var sc = document.getElementById('gx-scroller');
+    var track = document.getElementById('gx-track');
+    if (!sc || !track) return;
+
+    var originals = Array.prototype.slice.call(track.children);
+
+    /* clone the set so the loop is seamless (clones hidden from screen readers) */
+    function fill() {
+      while (track.children.length > originals.length) { track.removeChild(track.lastChild); }
+      var setWidth = track.scrollWidth;
+      var copies = Math.max(2, Math.ceil((sc.clientWidth * 2) / Math.max(setWidth, 1)) + 1);
+      for (var c = 0; c < copies; c++) {
+        originals.forEach(function (n) {
+          var cl = n.cloneNode(true);
+          cl.setAttribute('aria-hidden', 'true');
+          track.appendChild(cl);
+        });
+      }
+    }
+
+    var half = 0;       /* width of one original set (incl. gap) */
+    var pos = 0;
+    var lastSet = 0;
+    var hovering = false, touching = false, visible = true;
+    var resumeAt = 0;
+    var speed = 38;     /* px per second */
+
+    function measure() {
+      var first = originals[0];
+      var firstClone = track.children[originals.length];
+      half = firstClone.offsetLeft - first.offsetLeft;
+    }
+
+    function init() {
+      fill();
+      measure();
+      pos = half;
+      sc.scrollLeft = pos;
+      lastSet = sc.scrollLeft;
+    }
+
+    function wrap() {
+      if (pos >= half * 2) { pos -= half; sc.scrollLeft = pos; lastSet = sc.scrollLeft; }
+      else if (pos < 1) { pos += half; sc.scrollLeft = pos; lastSet = sc.scrollLeft; }
+    }
+
+    sc.addEventListener('scroll', function () {
+      if (Math.abs(sc.scrollLeft - lastSet) < 1.5) return;   /* our own auto-scroll */
+      pos = sc.scrollLeft;
+      lastSet = pos;
+      wrap();
+    }, { passive: true });
+
+    sc.addEventListener('mouseenter', function () { hovering = true; });
+    sc.addEventListener('mouseleave', function () { hovering = false; });
+    sc.addEventListener('focusin', function () { hovering = true; });
+    sc.addEventListener('focusout', function () { hovering = false; });
+    sc.addEventListener('touchstart', function () { touching = true; }, { passive: true });
+    sc.addEventListener('touchend', function () { touching = false; resumeAt = Date.now() + 1800; }, { passive: true });
+    sc.addEventListener('touchcancel', function () { touching = false; resumeAt = Date.now() + 1800; }, { passive: true });
+
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (en) { visible = en[0].isIntersecting; }, { threshold: 0 }).observe(sc);
+    }
+
+    var last = performance.now();
+    function tick(now) {
+      var dt = Math.min((now - last) / 1000, 0.1);
+      last = now;
+      if (!reduced && visible && !hovering && !touching && Date.now() > resumeAt && !document.hidden) {
+        pos += speed * dt;
+        wrap();
+        sc.scrollLeft = pos;
+        lastSet = sc.scrollLeft;
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function step(dir) {
+      var chip = originals[0].getBoundingClientRect().width + 12;
+      resumeAt = Date.now() + 2500;
+      sc.scrollBy({ left: dir * chip * 2, behavior: reduced ? 'auto' : 'smooth' });
+    }
+    var prev = document.getElementById('gx-prev');
+    var next = document.getElementById('gx-next');
+    if (prev) prev.addEventListener('click', function () { step(-1); });
+    if (next) next.addEventListener('click', function () { step(1); });
+
+    sc.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    });
+
+    var rt;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { init(); }, 200);
+    });
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(init);
+    } else {
+      window.addEventListener('load', init);
+    }
+    init();
+    requestAnimationFrame(tick);
+  })();
+  </script>
 </body>
 </html>
