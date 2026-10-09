@@ -40,7 +40,7 @@ const registry=[
   {id:'google-drive',name:'Google Drive',category:'Google Workspace',description:'Connect business files, Docs and storage.',icon:'drive',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:40},
   {id:'google-sheets',name:'Google Sheets',category:'Google Workspace',description:'Connect business spreadsheets.',icon:'sheet',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:50},
   {id:'google-calendar',name:'Google Calendar',category:'Google Workspace',description:'Connect business calendars and appointments.',icon:'calendar',backend:'existing',kind:'calendar',state:'dynamic',capabilities:[],sort:55},
-  {id:'shopify',name:'Shopify',category:'Commerce',description:'Connect products, orders and customer data.',icon:'bag',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:60},
+  {id:'shopify',name:'Shopify',category:'Commerce',description:'Connect products and inventory so GLIME AI can answer from your store.',icon:'bag',backend:'existing',kind:'shopify',state:'dynamic',capabilities:['Products','Inventory'],sort:60},
   {id:'slack',name:'Slack',category:'Team Communication',description:'Connect team communication and workflows.',icon:'hash',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:70}
 ];
 
@@ -137,7 +137,7 @@ function esc(v){
 function cleanMsg(e){
   if(e&&e.code==='SESSION_EXPIRED')return 'Your session has expired. Please sign in again.';
   const m=String((e&&e.message)||'').trim();
-  return (m&&m.length<=160)?m:'Calendar request failed. Please try again.';
+  return (m&&m.length<=160)?m:'Request failed. Please try again.';
 }
 
 function injectStyles(){
@@ -232,6 +232,80 @@ function createCalendarApi(sb,cfg){
     deleteEvent:(calendar_id,event_id)=>gw('event.delete',{calendar_id,event_id}),
     disconnect:()=>gw('disconnect',{})
   };
+}
+
+let shopMsg=null;
+
+function createShopifyApi(sb,cfg){
+  cfg=cfg||{};
+  const base=String(cfg.baseUrl||sb.supabaseUrl||'').replace(/\/$/,'');
+  const apiKey=cfg.apiKey||sb.supabaseKey||'';
+
+  async function call(fn,o){
+    o=o||{};
+    const r=await sb.auth.getSession();
+    const s=r&&r.data&&r.data.session;
+    if(!s)throw mkErr('Your session has expired. Please sign in again.','SESSION_EXPIRED');
+    const headers={Authorization:'Bearer '+s.access_token};
+    if(apiKey)headers.apikey=apiKey;
+    const init={method:o.method||'POST',headers};
+    if(init.method!=='GET'){headers['Content-Type']='application/json';init.body=JSON.stringify(o.body||{});}
+    let res;
+    try{res=await fetch(base+'/functions/v1/'+fn+(o.query||''),init);}
+    catch(e){throw mkErr('Unable to reach GLIME right now. Please try again.','NETWORK');}
+    const data=await res.json().catch(()=>null);
+    if(!res.ok){
+      const em=data&&data.error;
+      throw mkErr((em&&em.message)||(typeof em==='string'?em:'')||'Shopify request failed.',(em&&em.code)||res.status);
+    }
+    return data;
+  }
+
+  const gw=(action,method)=>call('glime-shopify-gateway',{method:method||'POST',query:'?action='+encodeURIComponent(action),body:{}});
+
+  return {
+    async status(){
+      const info=await gw('status','GET');
+      return {state:(info&&info.connected)?'connected':'not_connected',info:info||null};
+    },
+    async startOAuth(shop){
+      const out=await call('glime-shopify-oauth',{method:'POST',body:{shop}});
+      const url=out&&out.authorization_url;
+      if(typeof url!=='string'||!/^https:\/\/[a-z0-9][a-z0-9-]*\.myshopify\.com\/admin\/oauth\/authorize\?/i.test(url))throw mkErr('Shopify authorization could not be started.','OAUTH');
+      window.location.assign(url);
+    },
+    disconnect:()=>gw('disconnect','POST')
+  };
+}
+
+function shopPanelHtml(p,state,info){
+  const msg=shopMsg?`<div class="gcx-status ${shopMsg.type==='ok'?'ok':'err'}" role="${shopMsg.type==='ok'?'status':'alert'}">${esc(shopMsg.text)}</div>`:'';
+  if(state==='connected'){
+    return `
+    <div class="gcx-panel" id="gcx-panel-${esc(p.id)}">
+      <p class="gcx-panel-title">Connected store</p>
+      <p class="gcx-small" style="margin-top:0"><b>${esc((info&&(info.shop_name||info.shop_domain))||'Shopify store')}</b>${info&&info.shop_domain?' · '+esc(info.shop_domain):''}</p>
+      <p class="gcx-small">GLIME AI has read-only access to products and inventory. No orders, customers or write access.</p>
+      ${msg}
+      <div class="gcx-danger-zone">
+        <button type="button" class="gcx-btn danger" data-shop-act="disconnect" aria-label="Disconnect Shopify">Disconnect Shopify</button>
+        <p class="gcx-small">Disconnecting removes GLIME's saved access. To fully revoke, also uninstall the app from your Shopify admin.</p>
+      </div>
+    </div>`;
+  }
+  return `
+    <div class="gcx-panel" id="gcx-panel-${esc(p.id)}">
+      <p class="gcx-panel-title">Connect your Shopify store</p>
+      <ol class="gcx-steps">
+        <li>Enter your store's .myshopify.com address.</li>
+        <li>Approve read-only access on Shopify.</li>
+        <li>You return here and see Connected.</li>
+      </ol>
+      ${msg}
+      <label class="gcx-field"><span class="gcx-label">Shop domain</span><input class="gcx-input" data-shop-input type="text" inputmode="url" autocomplete="off" placeholder="your-store.myshopify.com" maxlength="120"></label>
+      <button type="button" class="gcx-btn primary" data-shop-act="connect">Connect Shopify</button>
+      <p class="gcx-small">Read-only: products and inventory.</p>
+    </div>`;
 }
 
 /* ---------- Calendar manager helpers ---------- */
@@ -549,11 +623,16 @@ function panelHtml(p,state,opts){
 function cardHtml(p,state,opts,open){
   const badge=STATE_BADGE[state];
   const cal=p.kind==='calendar';
+  const shop=p.kind==='shopify';
   const stable=state==='connected'||state==='not_connected';
-  const interactiveAi=!cal&&p.backend==='existing'&&stable;
+  const interactiveAi=!cal&&!shop&&p.backend==='existing'&&stable;
+  const interactiveShop=shop&&stable;
   const interactiveCal=cal&&stable;
   let action;
-  if(interactiveAi){
+  if(interactiveShop){
+    const label=open?'Hide':(state==='connected'?'Manage':'Connect');
+    action=`<button type="button" class="gcx-btn ${state==='not_connected'?'primary':''}" data-gcx-toggle="${esc(p.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gcx-panel-${esc(p.id)}" aria-label="${esc(label+' '+p.name)}">${esc(label)}</button>`;
+  }else if(interactiveAi){
     const label=open?'Hide setup':(state==='connected'?'View connection':'Open setup');
     action=`<button type="button" class="gcx-btn ${state==='not_connected'?'primary':''}" data-gcx-toggle="${esc(p.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gcx-panel-${esc(p.id)}" aria-label="${esc(label+' for '+p.name)}">${esc(label)}</button>`;
   }else if(interactiveCal&&state==='not_connected'){
@@ -567,12 +646,17 @@ function cardHtml(p,state,opts,open){
   }
 
   const info=(cal&&state==='connected'&&opts.details)?opts.details[p.id]:null;
+  const sinfo=(shop&&opts.details)?opts.details[p.id]:null;
+  const smeta=sinfo?`
+    <p class="gcx-meta">Store: ${esc(sinfo.shop_name||sinfo.shop_domain||'Shopify store')}${sinfo.last_verified_at?' · Verified '+esc(fmtDate(sinfo.last_verified_at)):''}</p>
+    ${sinfo.last_error?'<p class="gcx-meta warn">Shopify access needs attention. Reconnect to continue.</p>':''}`:'';
   const meta=info?`
     <p class="gcx-meta">Account: ${esc(info.email||info.display_name||'Google account')}${info.last_verified_at?' · Verified '+esc(fmtDate(info.last_verified_at)):''}</p>
-    ${info.last_error?'<p class="gcx-meta warn">A recent request failed. Open Manage to retry, or reconnect.</p>':''}`:'';
+    ${info.last_error?'<p class="gcx-meta warn">A recent request failed. Open Manage to retry, or reconnect.</p>':''}`:smeta;
 
   let panel='';
-  if(open&&interactiveAi)panel=panelHtml(p,state,opts);
+  if(open&&interactiveShop)panel=shopPanelHtml(p,state,sinfo);
+  else if(open&&interactiveAi)panel=panelHtml(p,state,opts);
   else if(open&&interactiveCal&&state==='connected')panel=`<div class="gcx-panel gcx-cal" id="gcx-panel-${esc(p.id)}" data-gcx-cal></div>`;
 
   const wide=(cal&&open&&state==='connected')?' wide':'';
@@ -642,6 +726,43 @@ function bind(container){
       }catch(e){
         console.error('GLIME calendar connect error:',e);
         container._gcxBanner={type:'err',text:cleanMsg(e)};
+        render(container,opts);
+      }
+      return;
+    }
+
+    const sh=ev.target.closest('[data-shop-act]');
+    if(sh){
+      if(!opts.shopifyApi)return;
+      const act=sh.dataset.shopAct;
+      try{
+        if(act==='connect'){
+          const inp=container.querySelector('[data-shop-input]');
+          const val=String((inp&&inp.value)||'').trim();
+          if(!val){
+            shopMsg={type:'err',text:'Enter your store address, like your-store.myshopify.com.'};
+            render(container,opts);
+            return;
+          }
+          sh.disabled=true;
+          sh.textContent='Redirecting…';
+          await opts.shopifyApi.startOAuth(val);
+          return;
+        }
+        if(act==='disconnect'){
+          if(!window.confirm('Disconnect Shopify? GLIME will stop reading your products and inventory.'))return;
+          sh.disabled=true;
+          await opts.shopifyApi.disconnect();
+          opts.states=Object.assign({},opts.states,{shopify:'not_connected'});
+          opts.details=Object.assign({},opts.details,{shopify:null});
+          container._gcxOpen.delete('shopify');
+          container._gcxBanner={type:'ok',text:'Shopify disconnected.'};
+          shopMsg=null;
+          render(container,opts);
+        }
+      }catch(e){
+        console.error('GLIME Shopify action error:',e);
+        shopMsg={type:'err',text:cleanMsg(e)};
         render(container,opts);
       }
       return;
@@ -788,7 +909,8 @@ async function loadAiStatus(sb,opts){
 async function loadAll(sb,opts){
   opts=opts||{};
   const cal=createCalendarApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
-  const [ai,cs]=await Promise.allSettled([loadAiStatus(sb,opts),cal.status()]);
+  const shopApi=createShopifyApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
+  const [ai,cs,ss]=await Promise.allSettled([loadAiStatus(sb,opts),cal.status(),shopApi.status()]);
 
   const states={},details={};
   let entitled=false,permissions=[],aiFailed=false,failed=false;
@@ -812,7 +934,16 @@ async function loadAll(sb,opts){
     failed=true;
   }
 
-  return {states,details,entitled,permissions,aiFailed,failed,calendarApi:cal};
+  if(ss.status==='fulfilled'){
+    states.shopify=ss.value.state;
+    details.shopify=ss.value.info||null;
+  }else{
+    console.error('GLIME Shopify status error:',ss.reason);
+    states.shopify='error';
+    failed=true;
+  }
+
+  return {states,details,entitled,permissions,aiFailed,failed,calendarApi:cal,shopifyApi:shopApi};
 }
 
 window.GLIME_CONNECTOR_UI={
@@ -822,6 +953,7 @@ window.GLIME_CONNECTOR_UI={
   getProviders:()=>registry.slice(),
   injectStyles,
   calendar:{create:createCalendarApi},
+  shopify:{create:createShopifyApi},
   data:{loadAiStatus,loadAll}
 };
 })();
