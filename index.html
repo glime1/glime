@@ -1692,7 +1692,7 @@ body{
 
 <style id="glime-hero-orbit">
 /* =========================================================
-   HERO — Premium orbit visual + integrations carousel
+   HERO — Premium 3D orbit visual + integrations carousel
    (all classes prefixed gx- to avoid touching other sections)
 ========================================================= */
 .hero.gx-hero{
@@ -1707,8 +1707,8 @@ body{
   inset:0;
   pointer-events:none;
   background:
-    radial-gradient(620px 440px at 78% 38%, rgba(82,232,255,.10), transparent 70%),
-    radial-gradient(520px 380px at 12% 80%, rgba(80,245,168,.06), transparent 70%);
+    radial-gradient(620px 440px at 78% 38%, rgba(82,232,255,.12), transparent 70%),
+    radial-gradient(520px 380px at 12% 80%, rgba(80,245,168,.07), transparent 70%);
 }
 .gx-hero .hero-grid{position:relative;z-index:1;gap:40px;}
 .gx-eyebrow{
@@ -1742,6 +1742,32 @@ body{
   -webkit-text-fill-color:transparent;color:transparent;
 }
 
+/* ---------- brand icon tile (shared by orbit + carousel) ---------- */
+.gx-tile{
+  --ts:44px;
+  --g:rgba(82,232,255,.35);
+  width:var(--ts);height:var(--ts);max-width:none;
+  flex:0 0 auto;
+  display:grid;place-items:center;
+  background:
+    radial-gradient(circle at 30% 20%,rgba(255,255,255,.14),transparent 55%),
+    linear-gradient(150deg,#16293a,#0a141d);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:28%;
+  box-shadow:0 0 calc(var(--ts)*.5) var(--g),0 6px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.2);
+  color:var(--cyan);
+  font-family:"DM Mono",monospace;
+  font-size:calc(var(--ts)*.34);
+  font-weight:700;
+}
+.gx-tile .gx-ic{width:58%;height:58%;max-width:none;display:block;}
+.gx-t-wa{--g:rgba(37,211,102,.45);}
+.gx-t-ig{--g:rgba(225,48,108,.42);}
+.gx-t-sh{--g:rgba(149,191,71,.42);}
+.gx-t-rp{--g:rgba(51,149,255,.5);}
+.gx-t-gc{--g:rgba(66,133,244,.5);}
+.gx-t-sr{--g:rgba(166,140,255,.45);color:var(--purple);}
+
 /* ---------- visual ---------- */
 .gx-visual{
   container-type:inline-size;
@@ -1756,29 +1782,31 @@ body{
   aspect-ratio:1/1;
 }
 .gx-stage::before{
-  content:"";position:absolute;inset:8%;border-radius:50%;
-  background:radial-gradient(circle,rgba(82,232,255,.16),rgba(80,245,168,.05) 45%,transparent 70%);
+  content:"";position:absolute;inset:6%;border-radius:50%;
+  background:radial-gradient(circle,rgba(82,232,255,.20),rgba(80,245,168,.06) 45%,transparent 70%);
   filter:blur(8px);
   pointer-events:none;
 }
 .gx-ring{
   position:absolute;left:50%;top:50%;
+  max-width:none;
   border-radius:50%;
   transform:translate(calc(-50% + var(--px)*6px),calc(-50% + var(--py)*6px));
   pointer-events:none;
 }
-.gx-ring-1{width:76%;height:76%;border:1px solid rgba(82,232,255,.28);box-shadow:0 0 30px rgba(82,232,255,.10),inset 0 0 30px rgba(82,232,255,.06);}
-.gx-ring-2{width:94%;height:94%;border:1px dashed rgba(80,245,168,.18);}
-.gx-ring-3{width:56%;height:56%;border:1px solid rgba(82,232,255,.14);}
+.gx-ring-1{width:72%;height:72%;border:1px solid rgba(82,232,255,.32);box-shadow:0 0 34px rgba(82,232,255,.12),inset 0 0 34px rgba(82,232,255,.07);}
+.gx-ring-2{width:92%;height:92%;border:1px dashed rgba(80,245,168,.2);}
+.gx-ring-3{width:52%;height:52%;border:1px solid rgba(82,232,255,.16);}
 .gx-ring-1::after{
   content:"";position:absolute;top:-4px;left:50%;width:8px;height:8px;margin-left:-4px;
   border-radius:50%;background:var(--cyan);box-shadow:0 0 14px 3px rgba(82,232,255,.6);
 }
 
-/* center */
+/* center: glass cube on a glowing pedestal */
 .gx-core{
   position:absolute;left:50%;top:50%;
-  width:34%;aspect-ratio:1/1;
+  width:32%;aspect-ratio:1/1;
+  max-width:none;
   transform:translate(calc(-50% + var(--px)*-12px),calc(-50% + var(--py)*-12px));
   z-index:3;
 }
@@ -1786,28 +1814,33 @@ body{
   position:relative;width:100%;height:100%;
   display:grid;place-items:center;
   background:
-    linear-gradient(145deg,rgba(82,232,255,.20),rgba(10,24,34,.78) 55%,rgba(80,245,168,.12));
-  border:1px solid rgba(82,232,255,.42);
+    radial-gradient(circle at 28% 18%,rgba(255,255,255,.22),transparent 45%),
+    linear-gradient(145deg,rgba(82,232,255,.26),rgba(10,24,34,.82) 55%,rgba(80,245,168,.16));
+  border:1px solid rgba(82,232,255,.5);
   border-radius:22%;
   box-shadow:
-    0 0 60px rgba(82,232,255,.28),
-    0 24px 50px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.22),
-    inset 0 0 30px rgba(82,232,255,.10);
+    0 0 70px rgba(82,232,255,.34),
+    0 28px 50px rgba(0,0,0,.5),
+    inset 0 1px 0 rgba(255,255,255,.3),
+    inset 0 -14px 30px rgba(0,0,0,.35),
+    inset 0 0 30px rgba(82,232,255,.12);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   animation:gx-bob 6s ease-in-out infinite;
 }
 .gx-core-inner img{
-  width:68%;height:68%;object-fit:contain;
-  filter:drop-shadow(0 0 14px rgba(82,232,255,.55));
+  width:70%;height:70%;object-fit:contain;max-width:none;
+  filter:drop-shadow(0 0 14px rgba(82,232,255,.6));
 }
 .gx-pad{
-  position:absolute;left:50%;bottom:-13%;
-  width:128%;height:20%;
+  position:absolute;left:50%;bottom:-20%;
+  width:150%;height:26%;
+  max-width:none;
   transform:translateX(-50%);
   border-radius:50%;
-  background:radial-gradient(ellipse,rgba(82,232,255,.45),rgba(82,232,255,.08) 55%,transparent 72%);
-  filter:blur(3px);
+  background:
+    radial-gradient(ellipse,rgba(82,232,255,.55),rgba(82,232,255,.10) 55%,transparent 72%);
+  border:1px solid rgba(82,232,255,.35);
+  box-shadow:0 0 30px rgba(82,232,255,.35);
   z-index:-1;
 }
 
@@ -1823,39 +1856,31 @@ body{
   transform:rotate(var(--a));
 }
 .gx-card{
-  --r:38cqw;
+  --r:36cqw;
   position:absolute;left:0;top:calc(var(--r) * -1);
-  width:26cqw;
+  width:24cqw;
+  max-width:none;                 /* parent node is 0px wide — must not clamp */
   transform:translate(-50%,-50%) rotate(calc(var(--a) * -1));
   animation:gx-unspin 70s linear infinite;
   will-change:transform;
 }
 .gx-float{
+  --ts:10.5cqw;
+  width:100%;max-width:none;
   display:flex;flex-direction:column;align-items:center;gap:1.4cqw;
-  padding:2cqw 1.4cqw;
-  background:linear-gradient(150deg,rgba(24,46,60,.82),rgba(9,19,27,.88));
-  border:1px solid rgba(82,232,255,.26);
+  padding:1.8cqw 1cqw 1.6cqw;
+  background:linear-gradient(150deg,rgba(24,46,60,.86),rgba(9,19,27,.92));
+  border:1px solid rgba(82,232,255,.28);
   border-radius:3.4cqw;
-  box-shadow:0 14px 30px rgba(0,0,0,.45),0 0 22px rgba(82,232,255,.10),inset 0 1px 0 rgba(255,255,255,.12);
+  box-shadow:0 16px 32px rgba(0,0,0,.5),0 0 24px rgba(82,232,255,.12),inset 0 1px 0 rgba(255,255,255,.14);
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
   text-align:center;
   animation:gx-bob 5s ease-in-out infinite;
   animation-delay:var(--d,0s);
 }
-.gx-badge{
-  width:8.4cqw;height:8.4cqw;
-  display:grid;place-items:center;
-  color:#04141a;
-  background:linear-gradient(135deg,var(--green),var(--cyan));
-  border-radius:2.4cqw;
-  font-family:"DM Mono",monospace;
-  font-size:clamp(.5rem,2.8cqw,.8rem);
-  font-weight:700;
-  letter-spacing:0;
-}
 .gx-name{
   color:var(--text);
-  font-size:clamp(.54rem,2.5cqw,.76rem);
+  font-size:clamp(.58rem,2.7cqw,.78rem);
   font-weight:800;
   line-height:1.2;
 }
@@ -1870,7 +1895,7 @@ body{
 /* ---------- integrations carousel ---------- */
 .gx-integrations{
   position:relative;
-  padding:8px 0 56px;
+  padding:8px 0 40px;
 }
 .gx-int-head{
   display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;
@@ -1901,9 +1926,9 @@ body{
   position:relative;
   padding:12px;
   background:linear-gradient(145deg,rgba(18,34,47,.7),rgba(7,16,22,.7));
-  border:1px solid rgba(82,232,255,.16);
-  border-radius:26px;
-  box-shadow:0 0 40px rgba(82,232,255,.06);
+  border:1px solid rgba(82,232,255,.18);
+  border-radius:999px;
+  box-shadow:0 0 44px rgba(82,232,255,.10),inset 0 0 24px rgba(82,232,255,.04);
   overflow:hidden;
 }
 .gx-scroller{
@@ -1918,51 +1943,105 @@ body{
 .gx-track{display:flex;gap:12px;width:max-content;max-width:none;}
 .gx-chip{
   flex:0 0 auto;
-  width:220px;max-width:none;
+  width:232px;max-width:none;
   display:flex;align-items:center;gap:12px;
-  padding:13px 16px;
+  padding:10px 18px 10px 10px;
   background:linear-gradient(150deg,rgba(24,46,60,.8),rgba(10,20,28,.85));
   border:1px solid var(--border);
-  border-radius:16px;
+  border-radius:999px;
   transition:border-color .2s ease,transform .2s ease;
 }
 .gx-chip:hover{border-color:rgba(82,232,255,.4);transform:translateY(-2px);}
-.gx-chip .gx-chip-badge{
-  flex:0 0 42px;width:42px;height:42px;
-  display:grid;place-items:center;
-  color:#04141a;
-  background:linear-gradient(135deg,var(--green),var(--cyan));
-  border-radius:12px;
-  font-family:"DM Mono",monospace;font-size:.78rem;font-weight:700;
-}
 .gx-chip strong{display:block;font-size:.84rem;line-height:1.25;}
 .gx-chip small{display:block;margin-top:2px;color:var(--dim);font-size:.68rem;font-weight:600;}
 
+/* ---------- specialist agents ---------- */
+.gx-agents{margin-top:46px;}
+.gx-agents-title{
+  margin-top:8px;
+  font-size:clamp(1.3rem,3vw,1.9rem);
+  line-height:1.12;
+  letter-spacing:-.04em;
+}
+.gx-agents-copy{margin-top:8px;color:var(--muted);font-size:.88rem;max-width:620px;}
+.gx-agent-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:20px;
+}
+.gx-agent{
+  position:relative;
+  padding:18px;
+  background:linear-gradient(150deg,rgba(24,46,60,.62),rgba(9,19,27,.78));
+  border:1px solid var(--border);
+  border-radius:18px;
+  overflow:hidden;
+  transition:border-color .2s ease,transform .2s ease;
+}
+.gx-agent::before{
+  content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;
+  background:radial-gradient(circle,rgba(82,232,255,.16),transparent 70%);
+  pointer-events:none;
+}
+.gx-agent:hover{border-color:rgba(82,232,255,.36);transform:translateY(-3px);}
+.gx-agent-top{display:flex;align-items:center;gap:10px;}
+.gx-agent .gx-tile{--ts:36px;}
+.gx-agent h3{font-size:.86rem;line-height:1.25;}
+.gx-agent p{margin-top:10px;color:var(--muted);font-size:.74rem;line-height:1.55;}
+
 @media (max-width:799px){
-  .hero.gx-hero{padding:48px 0 34px !important;}
+  .hero.gx-hero{padding:48px 0 30px !important;}
   .gx-hero .hero-grid{display:block !important;}
-  .gx-visual{margin-top:34px;max-width:420px;}
+  .gx-visual{margin-top:34px;max-width:430px;}
   .hero h1.gx-title{font-size:clamp(2.1rem,9.6vw,3.2rem) !important;}
   .gx-int-controls{display:none;}
-  .gx-chip{width:196px;}
-  .gx-integrations{padding-bottom:36px;}
+  .gx-chip{width:206px;}
+  .gx-integrations{padding-bottom:30px;}
   .gx-ring-2{display:none;}
+  .gx-rail{border-radius:28px;}
 }
 @media (min-width:800px) and (max-width:1099px){
   .hero h1.gx-title{font-size:clamp(2.2rem,5.2vw,3.2rem);}
+}
+@media (min-width:800px){
+  .gx-agent-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
 }
 @media (min-width:1100px){
   .hero h1.gx-title{font-size:4.5rem;}
 }
 @media (prefers-reduced-motion:reduce){
   .gx-orbit,.gx-card,.gx-float,.gx-core-inner{animation:none !important;}
-  .gx-chip,.gx-arrow{transition:none !important;}
+  .gx-chip,.gx-arrow,.gx-agent{transition:none !important;}
 }
 </style>
 
 </head>
 
 <body>
+
+  <!-- shared brand icon sprite (icons: Simple Icons, CC0) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="gx-ig" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" stop-color="#FEDA75"/>
+        <stop offset=".35" stop-color="#FA7E1E"/>
+        <stop offset=".6" stop-color="#D62976"/>
+        <stop offset=".85" stop-color="#962FBF"/>
+        <stop offset="1" stop-color="#4F5BD5"/>
+      </linearGradient>
+
+      <symbol id="gx-i-wa" viewBox="0 0 24 24"><path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></symbol>
+
+      <symbol id="gx-i-ig" viewBox="0 0 24 24"><path fill="url(#gx-ig)" d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></symbol>
+
+      <symbol id="gx-i-sh" viewBox="0 0 24 24"><path fill="#95BF47" d="M15.337 23.979l7.216-1.561s-2.604-17.613-2.625-17.73c-.018-.116-.114-.192-.211-.192s-1.929-.136-1.929-.136-1.275-1.274-1.439-1.411c-.045-.037-.075-.057-.121-.074l-.914 21.104h.023zM11.71 11.305s-.81-.424-1.774-.424c-1.447 0-1.504.906-1.504 1.141 0 1.232 3.24 1.715 3.24 4.629 0 2.295-1.44 3.76-3.406 3.76-2.354 0-3.54-1.465-3.54-1.465l.646-2.086s1.245 1.066 2.28 1.066c.675 0 .975-.545.975-.932 0-1.619-2.654-1.694-2.654-4.359-.034-2.237 1.571-4.416 4.827-4.416 1.257 0 1.875.361 1.875.361l-.945 2.715-.02.01zM11.17.83c.136 0 .271.038.405.135-.984.465-2.064 1.639-2.508 3.992-.656.213-1.293.405-1.889.578C7.697 3.75 8.951.84 11.17.84V.83zm1.235 2.949v.135c-.754.232-1.583.484-2.394.736.466-1.777 1.333-2.645 2.085-2.971.193.501.309 1.176.309 2.1zm.539-2.234c.694.074 1.141.867 1.429 1.755-.349.114-.735.231-1.158.366v-.252c0-.752-.096-1.371-.271-1.871v.002zm2.992 1.289c-.02 0-.06.021-.078.021s-.289.075-.714.21c-.423-1.233-1.176-2.37-2.508-2.37h-.115C12.135.209 11.669 0 11.265 0 8.159 0 6.675 3.877 6.21 5.846c-1.194.365-2.063.636-2.16.674-.675.213-.694.232-.772.87-.075.462-1.83 14.063-1.83 14.063L15.009 24l.927-21.166z"/></symbol>
+
+      <symbol id="gx-i-rp" viewBox="0 0 24 24"><path fill="#3395FF" d="M22.436 0l-11.91 7.773-1.174 4.276 6.625-4.297L11.65 24h4.391l6.395-24zM14.26 10.098L3.389 17.166 1.564 24h9.008l3.688-13.902Z"/></symbol>
+
+      <symbol id="gx-i-gc" viewBox="0 0 24 24"><path fill="#4285F4" d="M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM18.316 5.684V0H1.895A1.894 1.894 0 0 0 0 1.895v16.421h5.684V5.684h12.632zm-7.207 6.25v-.065c.272-.144.5-.349.687-.617s.279-.595.279-.982c0-.379-.099-.72-.3-1.025a2.05 2.05 0 0 0-.832-.714 2.703 2.703 0 0 0-1.197-.257c-.6 0-1.094.156-1.481.467-.386.311-.65.671-.793 1.078l1.085.452c.086-.249.224-.461.413-.633.189-.172.445-.257.767-.257.33 0 .602.088.816.264a.86.86 0 0 1 .322.703c0 .33-.12.589-.36.778-.24.19-.535.284-.886.284h-.567v1.085h.633c.407 0 .748.109 1.02.327.272.218.407.499.407.843 0 .336-.129.614-.387.832s-.565.327-.924.327c-.351 0-.651-.103-.897-.311-.248-.208-.422-.502-.521-.881l-1.096.452c.178.616.505 1.082.977 1.401.472.319.984.478 1.538.477a2.84 2.84 0 0 0 1.293-.291c.382-.193.684-.458.902-.794.218-.336.327-.72.327-1.149 0-.429-.115-.797-.344-1.105a2.067 2.067 0 0 0-.881-.689zm2.093-1.931l.602.913L15 10.045v5.744h1.187V8.446h-.827l-2.158 1.557zM22.105 0h-3.289v5.184H24V1.895A1.894 1.894 0 0 0 22.105 0zm-3.289 23.5l4.684-4.684h-4.684V23.5zM0 22.105C0 23.152.848 24 1.895 24h3.289v-5.184H0v3.289z"/></symbol>
+    </defs>
+  </svg>
 
   <!-- =========================
        NAVBAR
@@ -2083,37 +2162,43 @@ body{
 
               <div class="gx-node" style="--a:0deg">
                 <div class="gx-card"><div class="gx-float" style="--d:0s">
-                  <span class="gx-badge">WA</span><span class="gx-name">WhatsApp Business</span>
+                  <span class="gx-tile gx-t-wa"><svg class="gx-ic"><use href="#gx-i-wa"/></svg></span>
+                  <span class="gx-name">WhatsApp Business</span>
                 </div></div>
               </div>
 
               <div class="gx-node" style="--a:60deg">
                 <div class="gx-card"><div class="gx-float" style="--d:-.8s">
-                  <span class="gx-badge">IG</span><span class="gx-name">Instagram</span>
+                  <span class="gx-tile gx-t-ig"><svg class="gx-ic"><use href="#gx-i-ig"/></svg></span>
+                  <span class="gx-name">Instagram</span>
                 </div></div>
               </div>
 
               <div class="gx-node" style="--a:120deg">
                 <div class="gx-card"><div class="gx-float" style="--d:-1.6s">
-                  <span class="gx-badge">SH</span><span class="gx-name">Shopify</span>
+                  <span class="gx-tile gx-t-sh"><svg class="gx-ic"><use href="#gx-i-sh"/></svg></span>
+                  <span class="gx-name">Shopify</span>
                 </div></div>
               </div>
 
               <div class="gx-node" style="--a:180deg">
                 <div class="gx-card"><div class="gx-float" style="--d:-2.4s">
-                  <span class="gx-badge">RP</span><span class="gx-name">Razorpay</span>
+                  <span class="gx-tile gx-t-rp"><svg class="gx-ic"><use href="#gx-i-rp"/></svg></span>
+                  <span class="gx-name">Razorpay</span>
                 </div></div>
               </div>
 
               <div class="gx-node" style="--a:240deg">
                 <div class="gx-card"><div class="gx-float" style="--d:-3.2s">
-                  <span class="gx-badge">SR</span><span class="gx-name">Shiprocket</span>
+                  <span class="gx-tile gx-t-sr">SR</span>
+                  <span class="gx-name">Shiprocket</span>
                 </div></div>
               </div>
 
               <div class="gx-node" style="--a:300deg">
                 <div class="gx-card"><div class="gx-float" style="--d:-4s">
-                  <span class="gx-badge">GC</span><span class="gx-name">Google Calendar</span>
+                  <span class="gx-tile gx-t-gc"><svg class="gx-ic"><use href="#gx-i-gc"/></svg></span>
+                  <span class="gx-name">Google Calendar</span>
                 </div></div>
               </div>
 
@@ -2127,7 +2212,7 @@ body{
 
 
     <!-- =========================
-         INTEGRATIONS CAROUSEL
+         INTEGRATIONS CAROUSEL + SPECIALIST AGENTS
     ========================== -->
 
     <section class="gx-integrations" aria-labelledby="gx-int-title">
@@ -2162,14 +2247,59 @@ body{
           >
             <div class="gx-track" id="gx-track">
 
-              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">WA</span><span><strong>WhatsApp Business</strong><small>Business messaging</small></span></div>
-              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">IG</span><span><strong>Instagram</strong><small>DMs &amp; comments</small></span></div>
-              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">SH</span><span><strong>Shopify</strong><small>Store &amp; orders</small></span></div>
-              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">RP</span><span><strong>Razorpay</strong><small>Payments</small></span></div>
-              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">SR</span><span><strong>Shiprocket</strong><small>Shipping &amp; fulfilment</small></span></div>
-              <div class="gx-chip"><span class="gx-chip-badge" aria-hidden="true">GC</span><span><strong>Google Calendar</strong><small>Appointments</small></span></div>
+              <div class="gx-chip"><span class="gx-tile gx-t-wa" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-wa"/></svg></span><span><strong>WhatsApp Business</strong><small>Business messaging</small></span></div>
+              <div class="gx-chip"><span class="gx-tile gx-t-ig" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-ig"/></svg></span><span><strong>Instagram</strong><small>DMs &amp; comments</small></span></div>
+              <div class="gx-chip"><span class="gx-tile gx-t-sh" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-sh"/></svg></span><span><strong>Shopify</strong><small>Store &amp; orders</small></span></div>
+              <div class="gx-chip"><span class="gx-tile gx-t-rp" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-rp"/></svg></span><span><strong>Razorpay</strong><small>Payments</small></span></div>
+              <div class="gx-chip"><span class="gx-tile gx-t-sr" aria-hidden="true">SR</span><span><strong>Shiprocket</strong><small>Shipping &amp; fulfilment</small></span></div>
+              <div class="gx-chip"><span class="gx-tile gx-t-gc" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-gc"/></svg></span><span><strong>Google Calendar</strong><small>Appointments</small></span></div>
 
             </div>
+          </div>
+        </div>
+
+
+        <div class="gx-agents">
+          <p class="eyebrow">GLIME SPECIALIST AGENTS</p>
+          <h2 class="gx-agents-title">Connect GLIME agents to your channels.</h2>
+          <p class="gx-agents-copy">
+            Specialist AI agents that work across the channels and tools you connect to GLIME.
+          </p>
+
+          <div class="gx-agent-grid">
+
+            <article class="gx-agent">
+              <div class="gx-agent-top">
+                <span class="gx-tile gx-t-wa" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-wa"/></svg></span>
+                <h3>WhatsApp Sales Specialist</h3>
+              </div>
+              <p>Handles WhatsApp conversations and sales follow-ups.</p>
+            </article>
+
+            <article class="gx-agent">
+              <div class="gx-agent-top">
+                <span class="gx-tile gx-t-ig" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-ig"/></svg></span>
+                <h3>Instagram Sales Specialist</h3>
+              </div>
+              <p>Works with Instagram DMs and comments to move leads forward.</p>
+            </article>
+
+            <article class="gx-agent">
+              <div class="gx-agent-top">
+                <span class="gx-tile" aria-hidden="true">AI</span>
+                <h3>Voice Agent</h3>
+              </div>
+              <p>Takes business conversations beyond text, onto voice.</p>
+            </article>
+
+            <article class="gx-agent">
+              <div class="gx-agent-top">
+                <span class="gx-tile gx-t-sr" aria-hidden="true">CA</span>
+                <h3>Client Assistant</h3>
+              </div>
+              <p>Helps you ask questions about your business data and act on it.</p>
+            </article>
+
           </div>
         </div>
 
@@ -3342,10 +3472,9 @@ body{
 
     /* ---- pause orbit when hero is off-screen (saves battery) ---- */
     var orbit = document.querySelector('.gx-orbit');
-    if (orbit && 'IntersectionObserver' in window) {
+    if (stage && orbit && 'IntersectionObserver' in window) {
       new IntersectionObserver(function (entries) {
-        var on = entries[0].isIntersecting;
-        var state = on ? 'running' : 'paused';
+        var state = entries[0].isIntersecting ? 'running' : 'paused';
         orbit.style.animationPlayState = state;
         document.querySelectorAll('.gx-card, .gx-float, .gx-core-inner').forEach(function (el) {
           el.style.animationPlayState = state;
