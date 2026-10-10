@@ -134,7 +134,7 @@ body.gas-body{
   font-size:.86rem;
   font-weight:600;
   border-radius:10px;
-  white-space:nowrap;
+  line-height:1.25;
   transition:color .15s ease,background .15s ease;
 }
 .gas-link svg{flex:0 0 auto}
