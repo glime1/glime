@@ -1,0 +1,317 @@
+/* =========================================================
+   GLIME APP SHELL — styles for glime-app-shell.js
+   Desktop: persistent, collapsible sidebar.
+   Mobile (<=900px): slide-in drawer with backdrop.
+   Uses the existing GLIME dark + green identity.
+========================================================= */
+:root{
+  --gas-bg:#070b10;
+  --gas-surface:#0c1218;
+  --gas-line:rgba(255,255,255,.07);
+  --gas-text:#e8eef5;
+  --gas-muted:#8b97a7;
+  --gas-accent:#00ff88;
+  --gas-accent-soft:rgba(0,255,136,.10);
+  --gas-w:248px;
+  --gas-w-collapsed:72px;
+}
+
+body.gas-body{
+  display:flex;
+  align-items:flex-start;
+  min-height:100vh;
+}
+.gas-col{
+  flex:1 1 auto;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+.gas-col > [data-gas-content]{
+  width:100%;
+  min-width:0;
+  max-width:1500px;
+}
+
+/* ---------- Sidebar ---------- */
+.gas-sidebar{
+  position:sticky;
+  top:0;
+  align-self:flex-start;
+  flex:0 0 var(--gas-w);
+  width:var(--gas-w);
+  height:100vh;
+  height:100dvh;
+  display:flex;
+  flex-direction:column;
+  padding:14px 12px;
+  background:var(--gas-surface);
+  border-right:1px solid var(--gas-line);
+  z-index:40;
+  overflow:hidden;
+  transition:width .2s ease,flex-basis .2s ease;
+}
+.gas-sb-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:2px 4px 14px;
+  border-bottom:1px solid var(--gas-line);
+}
+.gas-brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  color:var(--gas-text);
+  text-decoration:none;
+}
+.gas-brand img{
+  width:46px;
+  height:36px;
+  object-fit:contain;
+  flex:0 0 auto;
+}
+.gas-brand small{
+  font-size:.58rem;
+  line-height:1.3;
+  letter-spacing:.14em;
+  color:var(--gas-muted);
+  font-weight:600;
+}
+.gas-icon-btn,
+.gas-burger{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:34px;
+  padding:0;
+  color:var(--gas-muted);
+  background:transparent;
+  border:1px solid var(--gas-line);
+  border-radius:9px;
+  cursor:pointer;
+  transition:color .15s ease,background .15s ease;
+}
+.gas-icon-btn:hover,
+.gas-burger:hover{color:var(--gas-text);background:rgba(255,255,255,.05)}
+.gas-close{display:none}
+.gas-collapse-btn svg{transition:transform .2s ease}
+
+/* ---------- Nav ---------- */
+.gas-nav{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:10px 0;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.12) transparent;
+}
+.gas-group + .gas-group{margin-top:14px}
+.gas-group-title{
+  padding:4px 12px 6px;
+  font-size:.66rem;
+  font-weight:700;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--gas-muted);
+  opacity:.8;
+  white-space:nowrap;
+}
+.gas-link{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:42px;
+  padding:9px 12px;
+  margin-bottom:2px;
+  color:var(--gas-muted);
+  text-decoration:none;
+  font-size:.86rem;
+  font-weight:600;
+  border-radius:10px;
+  white-space:nowrap;
+  transition:color .15s ease,background .15s ease;
+}
+.gas-link svg{flex:0 0 auto}
+.gas-link:hover{color:var(--gas-text);background:rgba(255,255,255,.05)}
+.gas-link[aria-current="page"]{
+  color:var(--gas-accent);
+  background:var(--gas-accent-soft);
+  box-shadow:inset 0 0 0 1px rgba(0,255,136,.16);
+}
+.gas-link[aria-current="page"]::before{
+  content:"";
+  position:absolute;
+  left:-12px;
+  top:9px;
+  bottom:9px;
+  width:3px;
+  border-radius:0 3px 3px 0;
+  background:var(--gas-accent);
+}
+
+/* ---------- Footer ---------- */
+.gas-sb-foot{
+  padding-top:12px;
+  border-top:1px solid var(--gas-line);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.gas-account{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px;
+  border:1px solid var(--gas-line);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+  min-width:0;
+}
+.gas-account[hidden]{display:none}
+.gas-avatar{
+  flex:0 0 auto;
+  width:34px;
+  height:34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:800;
+  font-size:.9rem;
+  color:#04110a;
+  background:var(--gas-accent);
+  border-radius:50%;
+}
+.gas-acc-text{display:flex;flex-direction:column;min-width:0}
+.gas-acc-name,.gas-acc-id{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.gas-acc-name{font-size:.8rem;font-weight:700;color:var(--gas-text)}
+.gas-acc-id{font-size:.68rem;color:var(--gas-muted)}
+.gas-logout{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  min-height:42px;
+  padding:9px 12px;
+  color:#ff6b78;
+  background:rgba(255,71,87,.07);
+  border:1px solid rgba(255,71,87,.25);
+  border-radius:10px;
+  font:inherit;
+  font-size:.84rem;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.gas-logout:hover{background:rgba(255,71,87,.14)}
+
+/* ---------- Focus ---------- */
+.gas-link:focus-visible,
+.gas-brand:focus-visible,
+.gas-icon-btn:focus-visible,
+.gas-burger:focus-visible,
+.gas-logout:focus-visible{
+  outline:2px solid var(--gas-accent);
+  outline-offset:2px;
+}
+
+/* ---------- Topbar (mobile only) ---------- */
+.gas-topbar{display:none}
+.gas-backdrop{display:none}
+
+/* ---------- Desktop collapsed ---------- */
+body.gas-collapsed .gas-sidebar{
+  flex-basis:var(--gas-w-collapsed);
+  width:var(--gas-w-collapsed);
+}
+body.gas-collapsed .gas-label,
+body.gas-collapsed .gas-group-title,
+body.gas-collapsed .gas-acc-text{display:none}
+body.gas-collapsed .gas-sb-head{flex-direction:column;gap:10px;padding-bottom:12px}
+body.gas-collapsed .gas-brand img{width:40px}
+body.gas-collapsed .gas-collapse-btn svg{transform:rotate(180deg)}
+body.gas-collapsed .gas-link,
+body.gas-collapsed .gas-logout{justify-content:center;padding-inline:0}
+body.gas-collapsed .gas-link[aria-current="page"]::before{left:-12px}
+body.gas-collapsed .gas-account{justify-content:center;padding:6px}
+body.gas-collapsed .gas-group + .gas-group{
+  margin-top:8px;
+  padding-top:8px;
+  border-top:1px solid var(--gas-line);
+}
+
+/* ---------- Mobile drawer ---------- */
+@media (max-width:900px){
+  body.gas-body{display:block}
+  .gas-collapse-btn{display:none}
+  .gas-close{display:inline-flex}
+
+  .gas-sidebar{
+    position:fixed;
+    top:0;
+    left:0;
+    bottom:0;
+    width:min(300px,86vw);
+    height:auto;
+    transform:translateX(-102%);
+    visibility:hidden;
+    transition:transform .24s ease,visibility 0s linear .24s;
+    z-index:1001;
+    box-shadow:none;
+  }
+  body.gas-open .gas-sidebar{
+    transform:translateX(0);
+    visibility:visible;
+    transition:transform .24s ease,visibility 0s;
+    box-shadow:12px 0 40px rgba(0,0,0,.5);
+  }
+  .gas-backdrop{
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:1000;
+    background:rgba(0,0,0,.6);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  body.gas-open .gas-backdrop{opacity:1;pointer-events:auto}
+  body.gas-open{overflow:hidden}
+
+  .gas-topbar{
+    position:sticky;
+    top:0;
+    z-index:30;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 14px;
+    background:rgba(7,11,16,.92);
+    border-bottom:1px solid var(--gas-line);
+    -webkit-backdrop-filter:blur(12px);
+    backdrop-filter:blur(12px);
+  }
+  .gas-burger{width:42px;height:42px}
+  .gas-title{
+    margin:0;
+    font-size:1rem;
+    font-weight:700;
+    color:var(--gas-text);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .gas-sidebar,.gas-backdrop,.gas-link,.gas-collapse-btn svg{transition:none}
+}
