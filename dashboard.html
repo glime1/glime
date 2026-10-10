@@ -105,9 +105,11 @@
 .wallet-stat-card{position:relative}.wallet-stat-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.wallet-add-btn{padding:8px 11px;font-size:.72rem;background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.2);color:var(--cyan)}.wallet-add-btn:hover{background:rgba(0,240,255,.14)}.modules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.module-card{padding:18px;display:flex;align-items:center;justify-content:space-between;gap:14px}.module-link{color:inherit;text-decoration:none;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease}.module-link:hover{transform:translateY(-2px);border-color:rgba(0,240,255,.28);background:#151f31}.module-link:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}.module-card .module-name{font-weight:700}.module-card small{display:block;color:var(--muted);margin-top:5px}.module-status{font-size:.72rem;font-weight:800;padding:6px 9px;border-radius:999px;background:rgba(0,255,136,.08);color:var(--green);white-space:nowrap}.trial-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.trial-card{padding:20px}.trial-card strong{display:block;font-size:1.35rem}.trial-card span{display:block;color:var(--muted);font-size:.78rem;margin-top:6px}.trial-note{color:var(--muted);font-size:.8rem;line-height:1.5;margin-top:12px}
 @media(max-width:900px){.modules-grid,.trial-grid{grid-template-columns:1fr}}
 </style>
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
 </head>
 
-<body>
+<body data-gas-title="Overview" data-gas-support>
   <div id="dashboardLoading">
     <div class="loading-spinner"></div>
     <div class="loading-text">
@@ -115,21 +117,7 @@
     </div>
   </div>
 
-  <aside class="sidebar">
-    <div class="logo">
-      <img src="glime_logo_clean.svg" alt="GLIME" class="official-logo">
-      <span>SaaS Client Portal</span>
-    </div>
-    <a href="#overview" class="nav-item active">📊 Overview</a>
-    <a href="#usage" class="nav-item">⚡ Usage</a>
-    <a href="whatsapp-sales-specialist.html" class="nav-item">📱 WhatsApp Sales</a>
-    <a href="billing.html" class="nav-item">💳 Billing & Plans</a>
-    <a href="settings.html" class="nav-item">⚙️ Settings</a>
-    <a href="#support" class="nav-item">💬 Support</a>
-    <button onclick="handleLogout()" class="logout-btn">Secure Logout</button>
-  </aside>
-
-  <main class="main-content">
+  <main class="main-content" data-gas-content>
     <header class="header" id="overview">
       <div>
         <div class="eyebrow">GLIME SaaS</div>
@@ -561,6 +549,7 @@ function renderAccount(billing,client){
   document.getElementById('dynamicClientId').textContent=client?.client_id||billing.customer?.client_id||'—';
   document.getElementById('clientName').textContent=client?.full_name||billing.customer?.name||nameFromEmail(client?.email);
   document.getElementById('clientEmailDisplay').textContent=client?.email||billing.customer?.email||'';
+  if(window.GlimeAppShell) window.GlimeAppShell.setIdentity({name:client?.business_name||client?.full_name||billing.customer?.name||'',clientId:client?.client_id||billing.customer?.client_id||''});
   document.getElementById('detailRenew').textContent=paid?(sub.auto_renew?'On':'Off'):'—';
 
   const plan=paid?(product.name||product.product_code||'GLIME Plan'):'Free Trial';
@@ -966,6 +955,18 @@ async function initializeDashboard() {
                     id
                 );
 
+        const navSupport =
+            document.getElementById(
+                'gasSupportLink'
+            );
+
+        if (navSupport) {
+            navSupport.href =
+                document.getElementById(
+                    'whatsappSupportBtn'
+                ).href;
+        }
+
         loadingScreen.style.display =
             'none';
 
@@ -1048,6 +1049,5 @@ supabaseClient.auth.onAuthStateChange(
 
 initializeDashboard();
 </script>
-<script src="glime-intelligence-center.js"></script>
 </body>
 </html>
