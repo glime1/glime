@@ -1,1050 +1,259 @@
+/* GLIME Action Impact (Phase E — impact analysis)
+ * READ-ONLY. Shows measured results of approved GLIME actions.
+ * Never approves, executes or edits anything. Mounts only in
+ * #glime-action-impact-slot and reuses window.supabaseClient.
+ */
 (() => {
   'use strict';
 
-  const SUPABASE_URL =
-    'https://ufoulgbiqgjriwapuopc.supabase.co';
+  const SLOT_ID = 'glime-action-impact-slot';
+  const CARD_ID = 'glime-phase-e-impact-analysis';
+  const LIMIT = 6;
+  const BASE_COLUMNS =
+    'id, execution_job_id, impact_status, baseline_metrics, after_metrics, metric_deltas, summary, measured_at, created_at';
+  const EXTRA_COLUMNS = ', observation_until, selected_metrics';
+  const TZ = 'Asia/Kolkata';
 
-  const SUPABASE_KEY =
-    'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+  const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 
-  const supabaseClient =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+  // ---------- helpers ----------
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  const CARD_ID =
-    'glime-phase-e-impact-analysis';
+  const isNum = (v) => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v));
+  const fmtNum = (v) => isNum(v) ? new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(v)) : '—';
+  const fmtSigned = (v) => isNum(v) ? (Number(v) > 0 ? '+' : '') + fmtNum(v) : '—';
+  const fmtPct = (v) => isNum(v) ? (Number(v) > 0 ? '+' : '') + Number(v).toFixed(1) + '%' : '—';
 
-
-  // =====================================================
-  // HELPERS
-  // =====================================================
-
-  function esc(value) {
-    return String(value ?? '')
-      .replace(/[&<>"']/g, function (char) {
-        return {
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#039;'
-        }[char];
-      });
+  function fmtDate(v) {
+    if (!v) return '—';
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('en-IN', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
-
-  function formatNumber(value) {
-    return new Intl.NumberFormat('en-IN')
-      .format(Number(value || 0));
+  function humanize(key) {
+    return String(key || '').replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/^./, (c) => c.toUpperCase());
   }
 
-
-  function formatPercent(value) {
-    if (
-      value === null ||
-      value === undefined ||
-      !Number.isFinite(Number(value))
-    ) {
-      return '—';
+  function getClient() {
+    if (window.supabaseClient) return window.supabaseClient;
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      return window.supabaseClient;
     }
-
-    const number = Number(value);
-
-    return (
-      (number > 0 ? '+' : '') +
-      number.toFixed(1) +
-      '%'
-    );
+    return null;
   }
 
-
-  function formatDate(value) {
-    if (!value) return '—';
-
-    try {
-      return new Date(value)
-        .toLocaleString('en-IN');
-    } catch {
-      return String(value);
-    }
+  // ---------- data ----------
+  function sortRows(rows) {
+    const t = (v) => { const n = v ? new Date(v).getTime() : NaN; return Number.isNaN(n) ? null : n; };
+    return rows.slice().sort((a, b) => {
+      const am = t(a.measured_at), bm = t(b.measured_at);
+      if (am !== null && bm === null) return -1;
+      if (am === null && bm !== null) return 1;
+      if (am !== null && bm !== null && am !== bm) return bm - am;
+      return (t(b.created_at) || 0) - (t(a.created_at) || 0);
+    });
   }
-
-
-  // =====================================================
-  // CLIENT
-  // =====================================================
-
-  async function getClientId() {
-
-    const {
-      data: { user },
-      error: authError
-    } =
-      await supabaseClient.auth.getUser();
-
-    if (authError || !user) {
-      return null;
-    }
-
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from('client_data')
-        .select('client_id')
-        .eq(
-          'auth_user_id',
-          user.id
-        )
-        .maybeSingle();
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    return data?.client_id || null;
-  }
-
-
-  // =====================================================
-  // LOAD IMPACT DATA
-  // =====================================================
 
   async function loadImpact() {
+    const sb = getClient();
+    if (!sb) throw new Error('Supabase client unavailable.');
 
-    const clientId =
-      await getClientId();
+    const { data: auth, error: authError } = await sb.auth.getUser();
+    if (authError || !auth?.user) return { rows: [], signedOut: true };
 
+    const { data: client, error: clientError } = await sb
+      .from('client_data').select('client_id').eq('auth_user_id', auth.user.id).maybeSingle();
+    if (clientError) throw clientError;
+    if (!client?.client_id) return { rows: [] };
 
-    if (!clientId) {
-      return [];
+    const run = (cols) => sb.from('client_action_impact_analysis').select(cols)
+      .eq('client_id', client.client_id)
+      .order('measured_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(LIMIT);
+
+    let res = await run(BASE_COLUMNS + EXTRA_COLUMNS);
+    // Optional columns may not exist in every environment: retry with the base set.
+    if (res.error && (res.error.code === '42703' || /column/i.test(res.error.message || ''))) {
+      res = await run(BASE_COLUMNS);
     }
-
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from(
-          'client_action_impact_analysis'
-        )
-        .select(`
-          id,
-          execution_job_id,
-          impact_status,
-          baseline_metrics,
-          after_metrics,
-          metric_deltas,
-          summary,
-          measured_at,
-          created_at
-        `)
-        .eq(
-          'client_id',
-          clientId
-        )
-        .order(
-          'measured_at',
-          {
-            ascending: false
-          }
-        )
-        .limit(5);
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    return data || [];
+    if (res.error) throw res.error;
+    return { rows: sortRows(res.data || []) };
   }
 
-
-  // =====================================================
-  // METRIC DELTA
-  // =====================================================
-
-  function getDelta(
-    row,
-    metricName
-  ) {
-
-    const delta =
-      row.metric_deltas?.[
-        metricName
-      ] || {};
-
-
-    return {
-
-      delta:
-        Number(
-          delta.delta || 0
-        ),
-
-      percent:
-        delta.percent_change
-
-    };
+  // ---------- render ----------
+  function statusMeta(raw) {
+    const s = String(raw || 'pending').toLowerCase();
+    if (s === 'measured') return { cls: 'ok', label: 'Measured' };
+    if (s === 'pending') return { cls: 'wait', label: 'Pending' };
+    if (s === 'insufficient_data') return { cls: 'warn', label: 'Insufficient data' };
+    return { cls: 'other', label: humanize(s) };
   }
 
+  function metricKeys(row) {
+    const keys = [];
+    const add = (k) => { if (k && !keys.includes(k)) keys.push(k); };
+    if (Array.isArray(row.selected_metrics)) row.selected_metrics.forEach(add);
+    Object.keys(row.metric_deltas || {}).forEach(add);
+    Object.keys(row.after_metrics || {}).forEach(add);
+    Object.keys(row.baseline_metrics || {}).forEach(add);
+    return keys.filter((k) => {
+      const b = row.baseline_metrics?.[k], a = row.after_metrics?.[k];
+      return (typeof b !== 'object' || b === null) && (typeof a !== 'object' || a === null);
+    }).slice(0, 8);
+  }
 
-  // =====================================================
-  // METRIC CARD
-  // =====================================================
+  function metricRow(row, key) {
+    const before = row.baseline_metrics?.[key];
+    const after = row.after_metrics?.[key];
+    const d = row.metric_deltas?.[key];
+    // Missing delta stays missing: never coerce to 0.
+    const delta = d && isNum(d.delta) ? d.delta : (isNum(before) && isNum(after) ? Number(after) - Number(before) : null);
+    const pct = d && isNum(d.percent_change) ? d.percent_change : null;
+    const cls = delta === null ? '' : delta > 0 ? 'up' : delta < 0 ? 'down' : '';
+    return `
+      <div class="gei-m">
+        <div class="gei-m-name">${esc(humanize(key))}</div>
+        <div class="gei-m-flow"><span>${esc(fmtNum(before))}</span><i aria-hidden="true">→</i><b>${esc(fmtNum(after))}</b></div>
+        <div class="gei-m-delta ${cls}">${esc(fmtSigned(delta))} <small>${esc(fmtPct(pct))}</small></div>
+      </div>`;
+  }
 
-  function metricCard(
-    label,
-    metricName,
-    row
-  ) {
+  function renderRow(row) {
+    const meta = statusMeta(row.impact_status);
+    const measured = String(row.impact_status || '').toLowerCase() === 'measured';
+    const keys = metricKeys(row);
+    let body = '';
 
-    const result =
-      getDelta(
-        row,
-        metricName
-      );
-
+    if (measured) {
+      body = keys.length
+        ? `<div class="gei-metrics">${keys.map((k) => metricRow(row, k)).join('')}</div>`
+        : '<div class="gei-note">Measured, but no comparable metrics were stored.</div>';
+      body += `<div class="gei-foot"><span>Measured ${esc(fmtDate(row.measured_at))}</span>
+        <span class="gei-caveat">Observed change after the action — not proof that the action caused it.</span></div>`;
+    } else if (meta.cls === 'warn') {
+      body = `<div class="gei-note">There was not enough data to measure this action fairly.${
+        row.observation_until ? ` Observation window ended ${esc(fmtDate(row.observation_until))}.` : ''}</div>`;
+    } else if (meta.cls === 'wait') {
+      body = `<div class="gei-note">Result not measured yet. ${
+        row.observation_until ? `Expected after ${esc(fmtDate(row.observation_until))}.` : 'GLIME will measure it after the observation period.'}</div>`;
+    } else {
+      body = `<div class="gei-note">Status: ${esc(humanize(row.impact_status))}.</div>`;
+    }
 
     return `
-      <div class="gei-metric">
-
-        <div class="gei-label">
-          ${esc(label)}
-        </div>
-
-        <div class="gei-value">
-          ${
-            result.delta > 0
-              ? '+'
-              : ''
-          }${formatNumber(
-            result.delta
-          )}
-        </div>
-
-        <div class="gei-pct">
-          ${esc(
-            formatPercent(
-              result.percent
-            )
-          )}
-        </div>
-
-      </div>
-    `;
+      <article class="gei-item ${meta.cls}">
+        <header>
+          <div class="gei-name">${esc(row.summary || 'Approved business action')}</div>
+          <span class="gei-badge ${meta.cls}">${esc(meta.label)}</span>
+        </header>
+        ${body}
+      </article>`;
   }
 
-
-  // =====================================================
-  // STYLES
-  // =====================================================
-
-  function injectStyles() {
-
-    if (
-      document.getElementById(
-        'gei-style'
-      )
-    ) {
+  function render(card, rows) {
+    const list = card.querySelector('.gei-list');
+    if (!rows.length) {
+      list.innerHTML = '<div class="gei-empty">No action results yet. After an approved action runs, GLIME shows the observed change here.</div>';
       return;
     }
-
-
-    const style =
-      document.createElement(
-        'style'
-      );
-
-
-    style.id =
-      'gei-style';
-
-
-    style.textContent = `
-
-      #${CARD_ID} {
-
-        margin-bottom: 30px;
-
-        background:
-          var(--card-bg, #111827);
-
-        border:
-          1px solid
-          rgba(0,255,136,.14);
-
-        border-radius: 15px;
-
-        padding: 26px;
-
-        box-shadow:
-          0 10px 30px
-          rgba(0,0,0,.35);
-
-      }
-
-
-      #${CARD_ID} .gei-head {
-
-        display: flex;
-
-        justify-content:
-          space-between;
-
-        align-items:
-          flex-start;
-
-        gap: 16px;
-
-        margin-bottom: 18px;
-
-      }
-
-
-      #${CARD_ID} .gei-title {
-
-        color:
-          var(--neon-green,#00ff88);
-
-        font-size:
-          1.18rem;
-
-        font-weight:
-          700;
-
-      }
-
-
-      #${CARD_ID} .gei-sub {
-
-        color:
-          var(--text-muted,#9ca3af);
-
-        font-size:
-          .82rem;
-
-        margin-top:
-          5px;
-
-        line-height:
-          1.55;
-
-      }
-
-
-      #${CARD_ID} .gei-refresh {
-
-        border:
-          1px solid
-          rgba(0,240,255,.25);
-
-        background:
-          rgba(0,240,255,.06);
-
-        color:
-          var(--cyan-blue,#00f0ff);
-
-        border-radius:
-          9px;
-
-        padding:
-          9px 12px;
-
-        font-weight:
-          700;
-
-        cursor:
-          pointer;
-
-      }
-
-
-      #${CARD_ID}
-      .gei-refresh:disabled {
-
-        opacity:
-          .55;
-
-        cursor:
-          wait;
-
-      }
-
-
-      #${CARD_ID} .gei-list {
-
-        display:
-          grid;
-
-        gap:
-          12px;
-
-      }
-
-
-      #${CARD_ID} .gei-card {
-
-        border:
-          1px solid
-          rgba(255,255,255,.07);
-
-        background:
-          rgba(255,255,255,.025);
-
-        border-radius:
-          12px;
-
-        padding:
-          16px;
-
-      }
-
-
-      #${CARD_ID} .gei-top {
-
-        display:
-          flex;
-
-        justify-content:
-          space-between;
-
-        gap:
-          12px;
-
-        margin-bottom:
-          12px;
-
-      }
-
-
-      #${CARD_ID} .gei-name {
-
-        color:
-          #fff;
-
-        font-weight:
-          700;
-
-      }
-
-
-      #${CARD_ID} .gei-date {
-
-        color:
-          #9ca3af;
-
-        font-size:
-          .72rem;
-
-        margin-top:
-          4px;
-
-      }
-
-
-      #${CARD_ID} .gei-badge {
-
-        border-radius:
-          999px;
-
-        padding:
-          5px 9px;
-
-        font-size:
-          .66rem;
-
-        font-weight:
-          800;
-
-        background:
-          rgba(0,255,136,.07);
-
-        color:
-          #00ff88;
-
-      }
-
-
-      #${CARD_ID} .gei-metrics {
-
-        display:
-          grid;
-
-        grid-template-columns:
-          repeat(
-            auto-fit,
-            minmax(110px,1fr)
-          );
-
-        gap:
-          9px;
-
-      }
-
-
-      #${CARD_ID} .gei-metric {
-
-        background:
-          rgba(255,255,255,.035);
-
-        border-radius:
-          10px;
-
-        padding:
-          11px;
-
-      }
-
-
-      #${CARD_ID} .gei-label {
-
-        color:
-          #9ca3af;
-
-        font-size:
-          .68rem;
-
-      }
-
-
-      #${CARD_ID} .gei-value {
-
-        color:
-          #fff;
-
-        font-size:
-          1.05rem;
-
-        font-weight:
-          700;
-
-        margin-top:
-          4px;
-
-      }
-
-
-      #${CARD_ID} .gei-pct {
-
-        color:
-          #9ca3af;
-
-        font-size:
-          .68rem;
-
-        margin-top:
-          2px;
-
-      }
-
-
-      #${CARD_ID} .gei-summary {
-
-        margin-top:
-          12px;
-
-        color:
-          #cbd5e1;
-
-        font-size:
-          .78rem;
-
-        line-height:
-          1.6;
-
-      }
-
-
-      #${CARD_ID} .gei-note {
-
-        margin-top:
-          8px;
-
-        color:
-          #6b7280;
-
-        font-size:
-          .68rem;
-
-        line-height:
-          1.5;
-
-      }
-
-
-      #${CARD_ID} .gei-empty {
-
-        color:
-          #9ca3af;
-
-        padding:
-          12px 0;
-
-        line-height:
-          1.6;
-
-      }
-
-
-      @media(max-width:700px) {
-
-        #${CARD_ID} {
-
-          padding:
-            20px;
-
-        }
-
-
-        #${CARD_ID} .gei-head {
-
-          flex-direction:
-            column;
-
-        }
-
-
-        #${CARD_ID} .gei-refresh {
-
-          width:
-            100%;
-
-        }
-
-
-        #${CARD_ID} .gei-top {
-
-          flex-direction:
-            column;
-
-        }
-
-      }
-
-    `;
-
-
-    document.head.appendChild(
-      style
-    );
+    list.innerHTML = rows.map(renderRow).join('');
   }
 
-
-  // =====================================================
-  // CREATE DASHBOARD CARD
-  // =====================================================
+  // ---------- styles + mount ----------
+  function injectStyles() {
+    if (document.getElementById('glime-impact-style')) return;
+    const s = document.createElement('style');
+    s.id = 'glime-impact-style';
+    s.textContent = `
+      #${CARD_ID}{color:#e8eef5}
+      #${CARD_ID} .gei-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+      #${CARD_ID} .gei-title{font-size:1.15rem;font-weight:700}
+      #${CARD_ID} .gei-sub{color:#8b97a7;font-size:.82rem;margin-top:3px}
+      #${CARD_ID} .gei-refresh{min-height:40px;padding:8px 14px;border-radius:10px;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.08);color:#00ff88;font:inherit;font-weight:700;font-size:.8rem;cursor:pointer}
+      #${CARD_ID} .gei-refresh:hover{background:rgba(0,255,136,.16)}
+      #${CARD_ID} .gei-refresh:focus-visible{outline:2px solid #00ff88;outline-offset:2px}
+      #${CARD_ID} .gei-refresh:disabled{opacity:.6;cursor:progress}
+      #${CARD_ID} .gei-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
+      #${CARD_ID} .gei-item{padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.01));transition:transform .18s ease,border-color .18s ease}
+      #${CARD_ID} .gei-item:hover{transform:translateY(-3px);border-color:rgba(0,240,255,.28)}
+      #${CARD_ID} .gei-item.ok{box-shadow:inset 0 1px 0 rgba(0,255,136,.25)}
+      #${CARD_ID} .gei-item header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
+      #${CARD_ID} .gei-name{font-weight:700;font-size:.92rem;line-height:1.4;overflow-wrap:anywhere}
+      #${CARD_ID} .gei-badge{flex:0 0 auto;padding:4px 10px;border-radius:999px;font-size:.68rem;font-weight:800;border:1px solid transparent;white-space:nowrap}
+      #${CARD_ID} .gei-badge.ok{color:#00ff88;background:rgba(0,255,136,.1);border-color:rgba(0,255,136,.3)}
+      #${CARD_ID} .gei-badge.wait{color:#ffb454;background:rgba(255,180,84,.1);border-color:rgba(255,180,84,.3)}
+      #${CARD_ID} .gei-badge.warn{color:#ff8291;background:rgba(255,130,145,.1);border-color:rgba(255,130,145,.3)}
+      #${CARD_ID} .gei-badge.other{color:#9cabb9;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}
+      #${CARD_ID} .gei-metrics{display:grid;gap:8px}
+      #${CARD_ID} .gei-m{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 11px;border-radius:10px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.05)}
+      #${CARD_ID} .gei-m-name{grid-column:1 / -1;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:#8b97a7}
+      #${CARD_ID} .gei-m-flow{font-size:.88rem;color:#9cabb9}
+      #${CARD_ID} .gei-m-flow b{color:#fff}
+      #${CARD_ID} .gei-m-flow i{margin:0 6px;font-style:normal;color:#586577}
+      #${CARD_ID} .gei-m-delta{font-weight:800;font-size:.9rem;text-align:right}
+      #${CARD_ID} .gei-m-delta small{font-weight:600;color:#8b97a7;margin-left:3px}
+      #${CARD_ID} .gei-m-delta.up{color:#00ff88}
+      #${CARD_ID} .gei-m-delta.down{color:#ff8291}
+      #${CARD_ID} .gei-foot{display:flex;flex-direction:column;gap:3px;margin-top:11px;font-size:.72rem;color:#8b97a7}
+      #${CARD_ID} .gei-caveat{color:#6f7d90}
+      #${CARD_ID} .gei-note,#${CARD_ID} .gei-empty,#${CARD_ID} .gei-error{padding:14px;border-radius:12px;font-size:.84rem;line-height:1.55;color:#9cabb9;background:rgba(0,0,0,.2);border:1px dashed rgba(255,255,255,.12)}
+      #${CARD_ID} .gei-error{color:#ff8291;border-color:rgba(255,130,145,.35)}
+      #${CARD_ID} .gei-empty{grid-column:1 / -1}
+      @media (prefers-reduced-motion:reduce){#${CARD_ID} .gei-item{transition:none}#${CARD_ID} .gei-item:hover{transform:none}}`;
+    document.head.appendChild(s);
+  }
 
   function createCard() {
-
-    const old =
-      document.getElementById(
-        CARD_ID
-      );
-
-
-    if (old) {
-      old.remove();
-    }
-
-
-    const card =
-      document.createElement(
-        'section'
-      );
-
-
-    card.id =
-      CARD_ID;
-
-
+    const slot = document.getElementById(SLOT_ID);
+    if (!slot) { console.error('GLIME Action Impact: slot #' + SLOT_ID + ' not found.'); return null; }
+    let card = document.getElementById(CARD_ID);
+    if (card) return card;
+    card = document.createElement('section');
+    card.id = CARD_ID;
+    card.setAttribute('aria-label', 'GLIME Action Impact');
     card.innerHTML = `
-
       <div class="gei-head">
-
         <div>
-
-          <div class="gei-title">
-            📈 GLIME Action Impact
-          </div>
-
-          <div class="gei-sub">
-            Observed business changes
-            after approved actions.
-          </div>
-
+          <div class="gei-title">🎯 GLIME Action Impact</div>
+          <div class="gei-sub">Real results from approved GLIME actions</div>
         </div>
-
-
-        <button
-          class="gei-refresh"
-          type="button"
-        >
-          ↻ Refresh
-        </button>
-
+        <button type="button" class="gei-refresh">↻ Refresh</button>
       </div>
-
-
-      <div class="gei-list">
-
-        <div class="gei-empty">
-          Loading impact data…
-        </div>
-
-      </div>
-
-    `;
-
-
-    const progress =
-      document.querySelector(
-        '.progress-card'
-      );
-
-
-    const main =
-      document.querySelector(
-        '.main-content'
-      );
-
-
-    if (
-      progress?.parentNode
-    ) {
-
-      progress.parentNode
-        .insertBefore(
-          card,
-          progress
-        );
-
-    }
-
-    else if (main) {
-
-      main.insertBefore(
-        card,
-        main.firstChild
-      );
-
-    }
-
-    else {
-
-      return null;
-
-    }
-
-
+      <div class="gei-list" aria-live="polite"><div class="gei-empty">Loading impact data…</div></div>`;
+    slot.appendChild(card);
     return card;
   }
 
-
-  // =====================================================
-  // RENDER
-  // =====================================================
-
-  function render(
-    card,
-    rows
-  ) {
-
-    const list =
-      card.querySelector(
-        '.gei-list'
-      );
-
-
-    if (!rows.length) {
-
-      list.innerHTML = `
-
-        <div class="gei-empty">
-
-          अभी कोई measured action
-          impact उपलब्ध नहीं है।
-
-          Approved action complete होने
-          के बाद GLIME यहाँ observed
-          changes दिखाएगा।
-
-        </div>
-
-      `;
-
-      return;
-    }
-
-
-    list.innerHTML =
-      rows.map(
-        function (row) {
-
-          return `
-
-            <article
-              class="gei-card"
-            >
-
-              <div class="gei-top">
-
-                <div>
-
-                  <div class="gei-name">
-                    Business Action Impact
-                  </div>
-
-                  <div class="gei-date">
-
-                    Measured:
-
-                    ${esc(
-                      formatDate(
-                        row.measured_at
-                      )
-                    )}
-
-                  </div>
-
-                </div>
-
-
-                <span
-                  class="gei-badge"
-                >
-
-                  ${esc(
-                    row.impact_status ||
-                    'pending'
-                  )}
-
-                </span>
-
-              </div>
-
-
-              <div
-                class="gei-metrics"
-              >
-
-                ${metricCard(
-                  'Customers',
-                  'customers',
-                  row
-                )}
-
-                ${metricCard(
-                  'Orders',
-                  'orders',
-                  row
-                )}
-
-                ${metricCard(
-                  'Paid Orders',
-                  'paidOrders',
-                  row
-                )}
-
-                ${metricCard(
-                  'Revenue',
-                  'revenue',
-                  row
-                )}
-
-                ${metricCard(
-                  'Enquiries',
-                  'enquiries',
-                  row
-                )}
-
-                ${metricCard(
-                  'Leads',
-                  'leads',
-                  row
-                )}
-
-                ${metricCard(
-                  'New Customers 30D',
-                  'newCustomers30d',
-                  row
-                )}
-
-              </div>
-
-
-              <div
-                class="gei-summary"
-              >
-
-                <strong>
-                  GLIME observation:
-                </strong>
-
-                ${esc(
-                  row.summary ||
-                  'Impact is being evaluated.'
-                )}
-
-              </div>
-
-
-              <div
-                class="gei-note"
-              >
-
-                Observed changes do not
-                by themselves prove that
-                the action caused the change.
-
-              </div>
-
-
-            </article>
-
-          `;
-
-        }
-      ).join('');
-  }
-
-
-  // =====================================================
-  // INIT
-  // =====================================================
-
-  async function init() {
-
+  async function load(card) {
+    const btn = card.querySelector('.gei-refresh');
+    const list = card.querySelector('.gei-list');
+    btn.disabled = true;
     try {
-
-      injectStyles();
-
-
-      const card =
-        createCard();
-
-
-      if (!card) {
-        return;
-      }
-
-
-      const button =
-        card.querySelector(
-          '.gei-refresh'
-        );
-
-
-      async function refresh() {
-
-        button.disabled =
-          true;
-
-        button.textContent =
-          'Checking…';
-
-
-        try {
-
-          const rows =
-            await loadImpact();
-
-
-          render(
-            card,
-            rows
-          );
-
-        }
-
-        catch (error) {
-
-          console.error(
-            'GLIME Action Impact:',
-            error
-          );
-
-
-          card.querySelector(
-            '.gei-list'
-          ).innerHTML = `
-
-            <div class="gei-empty">
-
-              Impact data अभी load
-              नहीं हो पाया।
-
-              कृपया Refresh करें।
-
-            </div>
-
-          `;
-
-        }
-
-        finally {
-
-          button.disabled =
-            false;
-
-          button.textContent =
-            '↻ Refresh';
-
-        }
-
-      }
-
-
-      button.addEventListener(
-        'click',
-        refresh
-      );
-
-
-      await refresh();
-
+      const { rows, signedOut } = await loadImpact();
+      if (signedOut) { list.innerHTML = '<div class="gei-empty">Please sign in to see action impact.</div>'; return; }
+      render(card, rows);
+    } catch (e) {
+      console.error('GLIME Action Impact:', e);
+      list.innerHTML = '<div class="gei-error" role="alert">Action impact could not be loaded right now. Please try Refresh.</div>';
+    } finally {
+      btn.disabled = false;
     }
-
-    catch (error) {
-
-      console.error(
-        'GLIME Phase E impact add-on:',
-        error
-      );
-
-    }
-
   }
 
-
-  // =====================================================
-  // START
-  // =====================================================
-
-  if (
-    document.readyState ===
-    'loading'
-  ) {
-
-    document.addEventListener(
-      'DOMContentLoaded',
-      init
-    );
-
+  function init() {
+    injectStyles();
+    const card = createCard();
+    if (!card) return;
+    card.querySelector('.gei-refresh').addEventListener('click', () => load(card));
+    load(card);
   }
 
-  else {
-
-    init();
-
-  }
-
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
 })();
