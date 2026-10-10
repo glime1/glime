@@ -68,7 +68,7 @@
       title: 'AI &amp; Intelligence',
       items: [
         { label: 'AI Assistant', href: 'client-assistant.html', icon: 'assistant' },
-        { label: 'Business Intelligence', href: 'glime-intelligence-center.html', icon: 'chart' },
+        { label: 'Business Growth Intelligence', href: 'glime-intelligence-center.html', icon: 'chart' },
         { label: 'Instagram Sales', href: 'instagram-sales-specialist.html', icon: 'instagram' },
         { label: 'WhatsApp Sales', href: 'whatsapp-sales-specialist.html', icon: 'whatsapp' },
         { label: 'Follow-up', href: 'follow-up.html', icon: 'followup' },
