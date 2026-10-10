@@ -23,6 +23,9 @@
   const RPC_NAME =
     "get_client_evidence_confidence_center";
 
+  const SLOT_ID =
+    "glime-evidence-confidence-slot";
+
   const CARD_ID =
     "glime-evidence-confidence-card";
 
@@ -84,7 +87,8 @@
   // FORMAT
   // ==================================================
 
-  function formatPercent(value) {
+  // Confidence values are stored on a 0–1 scale (0.90 → 90%).
+  function formatConfidence(value) {
 
     if (
       value === null ||
@@ -102,6 +106,27 @@
     }
 
     return `${Math.round(number * 100)}%`;
+  }
+
+  // Already-a-percentage values (repeatRate 35 → 35%). Never multiplied.
+  function formatPercentValue(value) {
+
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      return "—";
+    }
+
+    const number =
+      Number(value);
+
+    if (Number.isNaN(number)) {
+      return "—";
+    }
+
+    return `${Math.round(number)}%`;
   }
 
   function formatNumber(value) {
@@ -657,65 +682,27 @@
     `;
 
     /*
-     * Place after Proactive Insights
-     * and before Action Impact when possible.
+     * Mount ONLY in the dedicated page slot.
+     * No generic fallbacks (.progress-card / main / body).
      */
 
-    const impactCard =
+    const slot =
       document.getElementById(
-        "glime-action-impact-card"
+        SLOT_ID
       );
 
-    const decisionCard =
-      document.getElementById(
-        "glime-decision-action-center-card"
+    if (!slot) {
+
+      console.error(
+        "GLIME Evidence & Confidence: slot #" +
+        SLOT_ID +
+        " not found."
       );
 
-    const progressCard =
-      document.querySelector(
-        ".progress-card"
-      );
-
-    const main =
-      document.querySelector(
-        ".main-content"
-      );
-
-    if (
-      impactCard?.parentNode
-    ) {
-
-      impactCard.parentNode.insertBefore(
-        card,
-        impactCard
-      );
-
-    } else if (
-      decisionCard?.parentNode
-    ) {
-
-      decisionCard.parentNode.insertBefore(
-        card,
-        decisionCard
-      );
-
-    } else if (
-      progressCard?.parentNode
-    ) {
-
-      progressCard.parentNode.insertBefore(
-        card,
-        progressCard
-      );
-
-    } else if (main) {
-
-      main.appendChild(card);
-
-    } else {
-
-      document.body.appendChild(card);
+      return null;
     }
+
+    slot.appendChild(card);
 
     return card;
   }
@@ -733,13 +720,16 @@
       return "";
     }
 
+    /*
+     * "leads" is intentionally NOT listed: legacy monitoring
+     * snapshots hardcode leads = 0, so it is unverified data.
+     */
     const allowedMetrics = [
       "customers",
       "orders",
       "paidOrders",
       "revenue",
       "enquiries",
-      "leads",
       "newCustomers30d",
       "repeatRate"
     ];
@@ -750,7 +740,6 @@
       paidOrders: "Paid orders",
       revenue: "Revenue",
       enquiries: "Enquiries",
-      leads: "Leads",
       newCustomers30d:
         "New customers (30d)",
       repeatRate:
@@ -774,7 +763,7 @@
           ) {
 
             value =
-              formatPercent(value);
+              formatPercentValue(value);
           } else if (
             key === "revenue"
           ) {
@@ -891,7 +880,7 @@
               ${
                 Number.isNaN(confidence)
                   ? "Unknown"
-                  : `${formatPercent(confidence)} · ${escapeHtml(
+                  : `${formatConfidence(confidence)} · ${escapeHtml(
                       confidenceLabel(confidence)
                     )}`
               }
