@@ -2387,19 +2387,16 @@
       ?.remove();
 
 
-    const anchor =
-      document.querySelector(
-        ".progress-card"
-      ) ||
-      document.querySelector(
-        "main"
-      ) ||
-      document.body;
+    // Mount only in the dedicated page slot (no generic fallbacks).
+    const slot =
+      document.getElementById(
+        "glime-decision-action-slot"
+      );
 
-
-    if (
-      !anchor?.parentNode
-    ) {
+    if (!slot) {
+      console.error(
+        "GLIME Decisions & Next Actions: slot #glime-decision-action-slot not found."
+      );
       return;
     }
 
@@ -2426,7 +2423,7 @@
           <div
             class="gG2-title"
           >
-            🧠 GLIME Decision / Action Center
+            ⚡ Decisions &amp; Next Actions
           </div>
 
           <div
@@ -2457,10 +2454,7 @@
     `;
 
 
-    anchor.parentNode.insertBefore(
-      card,
-      anchor
-    );
+    slot.appendChild(card);
 
 
     card
