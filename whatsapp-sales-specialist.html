@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#05080c">
 <title>WhatsApp Sales Specialist | GLIME</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="whatsapp-sales-specialist.css?v=20261004-1">
+<link rel="stylesheet" href="whatsapp-sales-specialist.css?v=20261011-1">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -31,6 +31,20 @@
 <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></symbol>
 <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18"/></symbol>
 <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+<symbol id="i-attach" viewBox="0 0 24 24"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7" style="fill:currentColor"/><circle cx="12" cy="12" r="1.7" style="fill:currentColor"/><circle cx="12" cy="19" r="1.7" style="fill:currentColor"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 9"/></symbol>
+<symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10l5-3v10l-5-3z"/></symbol>
+<symbol id="i-audio" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+<symbol id="i-sticker" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0"/><circle cx="9" cy="10" r=".9" style="fill:currentColor"/><circle cx="15" cy="10" r=".9" style="fill:currentColor"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-tick" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-tick2" viewBox="0 0 24 24"><path d="M2 12.5L6.5 17 16 7.5M9.5 15.5l1.5 1.5L21 7.5"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-eraser" viewBox="0 0 24 24"><path d="M4 16l9-10 7 6-6 8H8z"/><path d="M8 20h12"/></symbol>
 </defs></svg>
 
 <div id="boot" class="boot"><img src="glime_logo_clean.svg" alt="GLIME"><div class="boot-spinner"></div><span>Securing your GLIME workspace…</span></div>
@@ -67,7 +81,7 @@
     <p>Conversations, AI sales, orders and customer context in one workspace.</p>
   </div>
   <div class="top-actions">
-    <span id="connection" class="connection-badge offline">● Checking…</span>
+    <span id="connection" class="connection-badge offline" role="status">● Checking…</span>
     <button id="connectBtn" class="primary-btn" type="button">Connect</button>
   </div>
 </header>
@@ -79,11 +93,11 @@
     <div><div class="kicker">WHATSAPP INBOX</div><h2>Chats</h2></div>
     <button id="refresh" class="icon-btn" type="button" aria-label="Refresh"><svg class="ni"><use href="#i-refresh"/></svg></button>
   </div>
-  <label class="search-box"><svg class="ni"><use href="#i-search"/></svg><input id="search" type="search" placeholder="Search name or number" autocomplete="off"></label>
-  <div class="filters">
-    <button type="button" class="active" data-filter="all">All</button>
-    <button type="button" data-filter="open">Open</button>
-    <button type="button" data-filter="closed">Closed</button>
+  <label class="search-box"><svg class="ni"><use href="#i-search"/></svg><span class="sr-only">Search chats</span><input id="search" type="search" placeholder="Search name, number or message" autocomplete="off"></label>
+  <div class="filters" role="group" aria-label="Filter chats">
+    <button type="button" class="active" data-filter="all" aria-pressed="true">All</button>
+    <button type="button" data-filter="open" aria-pressed="false">Open</button>
+    <button type="button" data-filter="closed" aria-pressed="false">Closed</button>
   </div>
   <div id="list" class="conversation-list"><div class="loading-state">Loading conversations…</div></div>
   <a class="order-link" href="orders.html"><span>Orders</span><small>WhatsApp, Instagram &amp; website →</small></a>
@@ -98,41 +112,60 @@
 
   <div id="chatView" class="chat-view hidden">
     <header class="chat-header">
-      <button id="backBtn" class="back-btn" type="button" aria-label="Back"><svg class="ni"><use href="#i-back"/></svg></button>
+      <button id="backBtn" class="back-btn" type="button" aria-label="Back to chats"><svg class="ni"><use href="#i-back"/></svg></button>
       <div id="avatar" class="avatar">W</div>
       <div class="chat-title"><b id="name">Customer</b><small id="phone">—</small></div>
       <div class="chat-actions">
+        <button id="callBtn" class="icon-btn is-unavailable" type="button" aria-disabled="true" title="Voice calls aren’t available in GLIME yet" aria-label="Voice call — not available"><svg class="ni"><use href="#i-phone"/></svg></button>
         <button id="toggleStatus" class="icon-btn" type="button" title="Close conversation" aria-label="Close conversation"><svg class="ni"><use href="#i-check"/></svg></button>
         <button id="infoBtn" class="icon-btn info-btn" type="button" title="Customer details" aria-label="Customer details"><svg class="ni"><use href="#i-info"/></svg></button>
+        <button id="moreBtn" class="icon-btn" type="button" title="Chat options" aria-label="Chat options" aria-haspopup="menu" aria-expanded="false"><svg class="ni"><use href="#i-more"/></svg></button>
       </div>
     </header>
 
-    <div id="messages" class="messages"></div>
+    <div class="messages-wrap">
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <button id="toBottom" class="to-bottom hidden" type="button" aria-label="Jump to latest message"><svg class="ni"><use href="#i-down"/></svg></button>
+    </div>
 
-    <div class="composer">
+    <div class="composer" id="composer">
+      <div id="composerNotice" class="composer-notice hidden" role="status"></div>
       <div id="approvalBox" class="wa-card approval hidden">
-        <div><span class="wa-label">✦ PENDING APPROVAL</span><p id="approvalText"></p></div>
+        <div class="wa-card-body"><span class="wa-label">✦ AWAITING YOUR APPROVAL</span><p id="approvalText"></p><div id="approvalMedia" class="ap-media hidden"></div></div>
         <div class="card-actions">
           <button id="approveBtn" class="wa-btn" type="button">Approve</button>
-          <button id="rejectBtn" class="wa-btn ghost" type="button" aria-label="Reject"><svg class="ni"><use href="#i-x"/></svg></button>
+          <button id="rejectBtn" class="wa-btn ghost" type="button" aria-label="Reject reply"><svg class="ni"><use href="#i-x"/></svg></button>
         </div>
       </div>
       <div id="aiSuggestion" class="wa-card hidden">
-        <div><span class="wa-label">✦ AI SUGGESTION</span><p id="suggestionText"></p></div>
+        <div class="wa-card-body"><span class="wa-label">✦ AI SUGGESTION</span><p id="suggestionText"></p></div>
         <div class="card-actions">
           <button id="useSuggestion" class="wa-btn" type="button">Use</button>
           <button id="refreshSuggestion" class="wa-btn ghost" type="button" aria-label="New suggestion"><svg class="ni"><use href="#i-refresh"/></svg></button>
         </div>
       </div>
+
+      <div id="attachPreview" class="attach-preview hidden">
+        <div id="apThumb" class="ap-thumb"></div>
+        <div class="ap-meta">
+          <b id="apName"></b><small id="apInfo"></small>
+          <label id="voiceRow" class="voice-row hidden"><input type="checkbox" id="voiceToggle"><span>Send as voice note <em>(must be an OGG/Opus recording — GLIME can’t verify the codec)</em></span></label>
+          <div id="apProgress" class="progress hidden"><div class="bar"><i></i></div><small id="apProgressLabel"></small></div>
+        </div>
+        <button id="apRemove" class="icon-btn" type="button" aria-label="Remove attachment"><svg class="ni"><use href="#i-x"/></svg></button>
+      </div>
+
       <div class="quick">
         <button id="suggest" class="chip" type="button">✦ Suggest reply</button>
-        <button id="modeChip" class="chip soft" type="button">AUTO</button>
+        <button id="modeChip" class="chip soft" type="button" aria-label="Change AI sales mode">AUTO</button>
         <span id="winChip" class="chip warn hidden">24h window closed</span>
       </div>
       <div class="input-row">
-        <textarea id="input" rows="1" placeholder="Message" enterkeyhint="send"></textarea>
+        <button id="attachBtn" class="icon-btn attach-btn" type="button" aria-label="Attach a file" aria-haspopup="menu" aria-expanded="false"><svg class="ni"><use href="#i-attach"/></svg></button>
+        <textarea id="input" rows="1" placeholder="Message" enterkeyhint="send" aria-label="Message"></textarea>
         <button id="send" class="send-btn" type="button" aria-label="Send"><svg class="ni"><use href="#i-send"/></svg></button>
       </div>
+      <input type="file" id="fileInput" hidden>
     </div>
   </div>
 </section>
@@ -165,10 +198,25 @@
   <div class="context-card">
     <div class="card-label">AI SALES MODE</div>
     <div class="mode-grid">
-      <button type="button" class="mode" data-mode="auto">AUTO<span>AI can send</span></button>
-      <button type="button" class="mode" data-mode="approval">AI + APPROVAL<span>Review first</span></button>
-      <button type="button" class="mode" data-mode="manual">MANUAL<span>You send</span></button>
+      <button type="button" class="mode" data-mode="auto" aria-pressed="false">AUTO<span>AI can send</span></button>
+      <button type="button" class="mode" data-mode="approval" aria-pressed="false">AI + APPROVAL<span>Review first</span></button>
+      <button type="button" class="mode" data-mode="manual" aria-pressed="false">MANUAL<span>You send</span></button>
     </div>
+  </div>
+
+  <div class="context-card" id="retentionCard">
+    <div class="card-label">MESSAGE RETENTION</div>
+    <div class="ctx-row"><span>Currently saved</span><strong id="retSaved">Off (keep messages)</strong></div>
+    <label class="ret-select"><span class="sr-only">Retention period</span>
+      <select id="retSelect">
+        <option value="off">Off (keep messages)</option>
+        <option value="24h">24 hours</option>
+        <option value="7d">7 days</option>
+        <option value="90d">90 days</option>
+      </select>
+    </label>
+    <p class="ctx-note">Applies to <b>future messages only</b>. Messages sent or received after you save will expire after this period and be removed, with their media, by GLIME’s scheduled cleanup. Existing messages are not deleted by this setting.</p>
+    <button id="retSave" class="secondary-btn full" type="button" disabled>Save retention</button>
   </div>
 
   <div id="ctxDynamic"></div>
@@ -192,6 +240,30 @@
 </main>
 </div>
 
+<div id="chatMenu" class="menu hidden" role="menu" aria-label="Chat options">
+  <button type="button" role="menuitem" data-act="details" class="only-narrow"><svg class="ni"><use href="#i-info"/></svg>Customer details</button>
+  <button type="button" role="menuitem" data-act="retention"><svg class="ni"><use href="#i-clock"/></svg>Message retention</button>
+  <button type="button" role="menuitem" data-act="clear" class="danger"><svg class="ni"><use href="#i-eraser"/></svg>Clear chat…</button>
+  <button type="button" role="menuitem" data-act="delete" class="danger"><svg class="ni"><use href="#i-trash"/></svg>Delete chat…</button>
+</div>
+<div id="msgMenu" class="menu hidden" role="menu" aria-label="Message options">
+  <button type="button" role="menuitem" data-act="delete-msg" class="danger"><svg class="ni"><use href="#i-trash"/></svg>Delete from GLIME</button>
+</div>
+<div id="attachMenu" class="menu attach-menu hidden" role="menu" aria-label="Attach">
+  <button type="button" role="menuitem" data-pick="media"><span class="mi mi-img"><svg class="ni"><use href="#i-image"/></svg></span>Photo or video</button>
+  <button type="button" role="menuitem" data-pick="document"><span class="mi mi-doc"><svg class="ni"><use href="#i-file"/></svg></span>Document</button>
+  <button type="button" role="menuitem" data-pick="audio"><span class="mi mi-aud"><svg class="ni"><use href="#i-audio"/></svg></span>Audio</button>
+  <button type="button" role="menuitem" data-pick="sticker"><span class="mi mi-stk"><svg class="ni"><use href="#i-sticker"/></svg></span>Sticker (WebP)</button>
+</div>
+
+<div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfBody"><div class="modal-card">
+  <h2 id="cfTitle"></h2>
+  <p id="cfBody"></p>
+  <label id="cfTypeRow" class="cf-type hidden"><span>Type <b id="cfTypeWord"></b> to confirm</span><input id="cfType" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+  <p id="cfError" class="cf-error hidden" role="alert"></p>
+  <div class="cf-actions"><button id="cfCancel" class="secondary-btn" type="button">Cancel</button><button id="cfOk" class="primary-btn danger-btn" type="button">Confirm</button></div>
+</div></div>
+
 <div id="connectModal" class="modal hidden"><div class="modal-card">
   <button class="modal-close" id="closeConnect" type="button" aria-label="Close">×</button>
   <div class="kicker">WHATSAPP CONNECTION</div>
@@ -206,6 +278,6 @@
   <p id="connectStatus" class="modal-status"></p>
 </div></div>
 
-<script src="whatsapp-sales-specialist.js?v=20261004-1"></script>
+<script src="whatsapp-sales-specialist.js?v=20261011-1"></script>
 </body>
 </html>
