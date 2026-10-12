@@ -1,109 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="GLIME Follow-up Specialist for AI-powered follow-up, conversation analysis and controlled lead updates.">
-  <meta name="theme-color" content="#071016">
-  <title>GLIME — Follow-up Specialist</title>
-  <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="follow-up.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="GLIME Follow-up Specialist: AI-powered follow-up pipeline, smart tasks, automations and analytics.">
+<meta name="theme-color" content="#05090d">
+<title>Follow-up Specialist | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="follow-up.css?v=20261012-1">
 </head>
 <body>
-  <main class="followup-app">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-leads" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"/><path d="M18 8v6M15 11h6"/></symbol>
+<symbol id="i-customers" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4.2-6 8-6s7 2 8 6"/></symbol>
+<symbol id="i-orders" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2.5l2.2 11h10.6l2-8H6.2"/></symbol>
+<symbol id="i-services" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+<symbol id="i-ai" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-6M3 20h18"/></symbol>
+<symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" style="fill:currentColor"/></symbol>
+<symbol id="i-wa" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/><path d="M9.5 9.5c.4 2.2 2.3 4.1 4.6 4.6"/></symbol>
+<symbol id="i-followup" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.5-5.8L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.5 5.8L4 15.5M4 20v-4.5h4.5"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18M7 15h4"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5M15 8l4 4-4 4M19 12H9"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21a2 2 0 0 0 4 0"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-bubble" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L3 10.5l7 3 3 7z"/><path d="M10 13.5L21 3"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/></symbol>
+<symbol id="i-rupee" viewBox="0 0 24 24"><path d="M7 5h10M7 10h10M7 5c5 0 7 1.5 7 4.5S11.5 14 7 14l7 6"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" style="fill:currentColor"/><circle cx="12" cy="12" r="1.6" style="fill:currentColor"/><circle cx="19" cy="12" r="1.6" style="fill:currentColor"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
+<symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 .3 1.6 1.2 2.2 2 2.4C11 8.5 11 5.5 12 3z"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></symbol>
+<symbol id="i-mailsolid" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></symbol>
+<symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 8V4M9 13v1.5M15 13v1.5M2 13v3M22 13v3"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+<symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></symbol>
+</defs></svg>
+
+<div id="boot" class="boot"><img src="glime_logo_clean.svg" alt="GLIME"><div class="boot-spin"></div><span>Opening Follow-up Specialist…</span></div>
+
+<div class="shell" id="shell">
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="sb-head">
+      <a class="brand" href="dashboard.html" aria-label="GLIME overview"><img src="glime_logo_clean.svg" alt="GLIME"><small>AI Business Workspace</small></a>
+      <button class="icon-btn sb-close" id="sbClose" type="button" aria-label="Close menu"><svg class="ni"><use href="#i-x"/></svg></button>
+    </div>
+    <nav class="sb-nav">
+      <a href="dashboard.html"><svg class="ni"><use href="#i-home"/></svg><span>Overview</span></a>
+      <a href="leads.html"><svg class="ni"><use href="#i-leads"/></svg><span>Leads</span></a>
+      <a href="customer.html"><svg class="ni"><use href="#i-customers"/></svg><span>Customers</span></a>
+      <a href="orders.html"><svg class="ni"><use href="#i-orders"/></svg><span>Orders</span></a>
+      <a href="services.html"><svg class="ni"><use href="#i-services"/></svg><span>Services</span></a>
+      <div class="sb-title">AI &amp; Automation</div>
+      <a href="client-assistant.html"><svg class="ni"><use href="#i-ai"/></svg><span>AI Assistant</span></a>
+      <a href="glime-intelligence-center.html"><svg class="ni"><use href="#i-chart"/></svg><span>Business Intelligence</span></a>
+      <a href="instagram-sales-specialist.html"><svg class="ni"><use href="#i-ig"/></svg><span>Instagram Sales</span></a>
+      <a href="whatsapp-sales-specialist.html"><svg class="ni"><use href="#i-wa"/></svg><span>WhatsApp Sales</span></a>
+      <a href="follow-up.html" class="active" aria-current="page"><svg class="ni"><use href="#i-users"/></svg><span>Follow-up Specialist</span></a>
+      <a href="voice-ai.html"><svg class="ni"><use href="#i-mic"/></svg><span>Voice AI</span></a>
+      <div class="sb-title">Manage</div>
+      <a href="ai-connections.html"><svg class="ni"><use href="#i-link"/></svg><span>Connectors</span></a>
+      <a href="billing.html"><svg class="ni"><use href="#i-card"/></svg><span>Billing</span></a>
+      <a href="settings.html"><svg class="ni"><use href="#i-gear"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="sb-foot">
+      <div class="acct"><span class="acct-av" id="acctAv">G</span><span class="acct-tx"><b id="acctName">GLIME workspace</b><small id="acctId"></small></span></div>
+      <button class="logout" id="logoutBtn" type="button"><svg class="ni"><use href="#i-logout"/></svg><span>Logout</span></button>
+    </div>
+  </aside>
+
+  <div class="main">
     <header class="topbar">
-      <a href="index.html" class="brand" aria-label="GLIME Home"><img src="glime_logo_clean.svg" alt="GLIME"></a>
-      <div class="topbar-content">
-        <div class="eyebrow">GLIME SPECIALIST</div>
-        <h1>Follow-up Specialist</h1>
-        <p class="subtitle">Initial follow-up, conversation analysis and controlled lead changes.</p>
+      <button class="icon-btn burger" id="burger" type="button" aria-label="Open menu"><svg class="ni"><use href="#i-menu"/></svg></button>
+      <label class="gsearch"><svg class="ni"><use href="#i-search"/></svg><span class="sr">Search leads</span><input id="gSearch" type="search" placeholder="Search leads, customers, orders…" autocomplete="off"><kbd>Ctrl + K</kbd></label>
+      <div class="range-wrap">
+        <svg class="ni"><use href="#i-cal"/></svg>
+        <select id="rangeSel" aria-label="Date range">
+          <option value="7">Last 7 Days</option>
+          <option value="14">Last 14 Days</option>
+          <option value="30">Last 30 Days</option>
+        </select>
+        <svg class="ni caret"><use href="#i-down"/></svg>
       </div>
-      <div class="top-actions">
-        <span id="authStatus" class="status-pill">Checking access…</span>
-        <button id="refreshBtn" class="btn ghost" type="button">Refresh</button>
-      </div>
+      <button class="icon-btn bell" id="bellBtn" type="button" aria-label="Notifications"><svg class="ni"><use href="#i-bell"/></svg><i id="bellDot" class="dot hidden"></i></button>
+      <button class="avatar-btn" id="meBtn" type="button" aria-label="Account"><span id="meAv">G</span></button>
     </header>
 
-    <div id="pageMessage" class="page-message" hidden></div>
+    <div class="page">
+      <div class="content" id="content">
 
-    <section class="hero-grid">
-      <article class="card control-card">
-        <div class="card-head">
-          <div><span class="label">FOLLOW-UP</span><h2>Specialist Control</h2></div>
-          <label class="switch"><input id="followupEnabled" type="checkbox"><span class="slider"></span></label>
-        </div>
-        <p class="muted">Follow-up starts only from an approved trigger: Lead AI recommendation, client request, or conversation need.</p>
-        <div class="mode-box">
-          <span class="label">SENDING MODE</span>
-          <div class="segmented">
-            <label><input type="radio" name="sendingMode" value="manual_approval"><span>Manual Approval</span></label>
-            <label><input type="radio" name="sendingMode" value="automatic_sending"><span>Automatic Sending</span></label>
+        <section class="hero">
+          <div class="hero-l">
+            <div class="hero-ic"><svg class="ni"><use href="#i-bubble"/></svg></div>
+            <div>
+              <h1>Follow-up Specialist <span class="badge-ai">AI Powered</span></h1>
+              <p>Never miss a follow-up. Turn more leads into happy customers with AI-driven follow-ups.</p>
+            </div>
           </div>
-          <small>Automatic Sending never creates its own trigger; it only changes approval behavior after a valid trigger.</small>
-        </div>
-        <button id="saveSettingsBtn" class="btn primary" type="button">Save Settings</button>
-      </article>
+          <div class="engine" id="engine">
+            <div class="engine-bot"><svg class="ni"><use href="#i-bot"/></svg></div>
+            <div class="engine-tx">
+              <div class="engine-top"><b>AI Follow-up Engine</b><span class="state" id="engState">Checking…</span></div>
+              <small>Automatically prepares personalized follow-ups for your leads based on your business goals.</small>
+            </div>
+            <label class="switch" title="Turn the AI follow-up engine on or off"><input id="engToggle" type="checkbox" aria-label="AI Follow-up Engine"><span class="slider"></span></label>
+          </div>
+        </section>
 
-      <article class="card stats-card">
-        <div class="stat"><strong id="activeCount">0</strong><span>Active follow-ups</span></div>
-        <div class="stat"><strong id="approvalCount">0</strong><span>Awaiting approval</span></div>
-        <div class="stat"><strong id="analysisCount">0</strong><span>To analyze</span></div>
-        <div class="stat"><strong id="changesCount">0</strong><span>Proposed changes</span></div>
-      </article>
-    </section>
+        <div id="pageMsg" class="page-msg" hidden></div>
 
-    <section class="card">
-      <div class="card-head">
-        <div><span class="label">CHANNEL CONNECTION CENTER</span><h2>Connect your communication channels</h2></div>
-        <span class="muted">One channel per action</span>
+        <section class="kpis" id="kpis" aria-label="Key numbers">
+          <article class="kpi"><div class="kpi-ic g"><svg class="ni"><use href="#i-users"/></svg></div><div><small>Total Leads</small><b id="kTotal">0</b><span class="trend" id="kTotalT">—</span></div></article>
+          <article class="kpi"><div class="kpi-ic o"><svg class="ni"><use href="#i-clock"/></svg></div><div><small>Pending Follow-ups</small><b id="kPending">0</b><span class="trend warn" id="kPendingT">need attention</span></div></article>
+          <article class="kpi"><div class="kpi-ic c"><svg class="ni"><use href="#i-send"/></svg></div><div><small>AI Follow-ups Sent</small><b id="kSent">0</b><span class="trend" id="kSentT">—</span></div></article>
+          <article class="kpi"><div class="kpi-ic p"><svg class="ni"><use href="#i-users"/></svg></div><div><small>Converted to Customers</small><b id="kConv">0</b><span class="trend" id="kConvT">—</span></div></article>
+          <article class="kpi"><div class="kpi-ic g"><svg class="ni"><use href="#i-rupee"/></svg></div><div><small>Revenue from Follow-ups</small><b id="kRev">₹0</b><span class="trend" id="kRevT">—</span></div></article>
+        </section>
+
+        <nav class="tabs" id="tabs" role="tablist" aria-label="Follow-up sections">
+          <button class="tab active" role="tab" data-tab="pipeline" aria-selected="true"><svg class="ni"><use href="#i-followup"/></svg><span>Follow-up Pipeline</span></button>
+          <button class="tab" role="tab" data-tab="tasks" aria-selected="false"><svg class="ni"><use href="#i-check"/></svg><span>Smart Tasks</span><em id="tabTaskN" class="count hidden">0</em></button>
+          <button class="tab" role="tab" data-tab="automations" aria-selected="false"><svg class="ni"><use href="#i-bolt"/></svg><span>Automations</span></button>
+          <button class="tab" role="tab" data-tab="templates" aria-selected="false"><svg class="ni"><use href="#i-mail"/></svg><span>Templates</span></button>
+          <button class="tab" role="tab" data-tab="analytics" aria-selected="false"><svg class="ni"><use href="#i-chart"/></svg><span>Analytics</span></button>
+        </nav>
+
+        <!-- PIPELINE -->
+        <section class="pane" id="pane-pipeline" role="tabpanel">
+          <div class="toolbar">
+            <label class="tsearch"><svg class="ni"><use href="#i-search"/></svg><span class="sr">Search</span><input id="fSearch" type="search" placeholder="Search leads, name, phone…" autocomplete="off"></label>
+            <label class="sel"><select id="fStatus" aria-label="Status"><option value="">All Status</option></select><svg class="ni caret"><use href="#i-down"/></svg></label>
+            <label class="sel"><select id="fSource" aria-label="Source"><option value="">All Sources</option></select><svg class="ni caret"><use href="#i-down"/></svg></label>
+            <label class="sel"><select id="fChannel" aria-label="Channel"><option value="">All Channels</option></select><svg class="ni caret"><use href="#i-down"/></svg></label>
+            <label class="sel"><select id="fPriority" aria-label="Priority"><option value="">Priority</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><svg class="ni caret"><use href="#i-down"/></svg></label>
+            <button class="icon-sq" id="fReset" type="button" aria-label="Clear filters" title="Clear filters"><svg class="ni"><use href="#i-filter"/></svg></button>
+          </div>
+          <div class="board" id="board"></div>
+        </section>
+
+        <!-- TASKS -->
+        <section class="pane hidden" id="pane-tasks" role="tabpanel">
+          <div class="two">
+            <article class="card"><header class="card-h"><div><span class="kick">APPROVALS</span><h2>Follow-up drafts</h2></div></header><div id="approvalsList" class="stack"></div></article>
+            <article class="card"><header class="card-h"><div><span class="kick">DUE &amp; OVERDUE</span><h2>Leads to follow up</h2></div></header><div id="dueList" class="stack"></div></article>
+          </div>
+        </section>
+
+        <!-- AUTOMATIONS -->
+        <section class="pane hidden" id="pane-automations" role="tabpanel">
+          <div class="two">
+            <article class="card">
+              <header class="card-h"><div><span class="kick">CONTROL</span><h2>Sending mode</h2></div></header>
+              <p class="muted">Follow-up starts only from an approved trigger: a Lead AI recommendation, a client request or a conversation need.</p>
+              <div class="seg" id="modeSeg">
+                <label><input type="radio" name="sendingMode" value="manual_approval"><span><b>Manual approval</b><small>You review every draft before it is sent</small></span></label>
+                <label><input type="radio" name="sendingMode" value="automatic_sending"><span><b>Automatic sending</b><small>Drafts go out after a valid trigger</small></span></label>
+              </div>
+              <button class="btn primary" id="saveSettings" type="button">Save settings</button>
+            </article>
+            <article class="card">
+              <header class="card-h"><div><span class="kick">LEAD-WISE CONTROL</span><h2>Follow-up on / off per lead</h2></div></header>
+              <div id="leadToggles" class="stack tog-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <!-- TEMPLATES -->
+        <section class="pane hidden" id="pane-templates" role="tabpanel">
+          <div class="tpl-grid" id="tplGrid"></div>
+        </section>
+
+        <!-- ANALYTICS -->
+        <section class="pane hidden" id="pane-analytics" role="tabpanel">
+          <div class="two">
+            <article class="card"><header class="card-h"><div><span class="kick">CONVERSATION ANALYSIS</span><h2>Cases to analyze</h2></div></header><div id="casesList" class="stack"></div></article>
+            <article class="card"><header class="card-h"><div><span class="kick">PROPOSED LEAD CHANGES</span><h2>Review before Lead update</h2></div></header><div id="changesList" class="stack"></div></article>
+          </div>
+          <article class="card" style="margin-top:14px"><header class="card-h"><div><span class="kick">REPORTS</span><h2>Recent conclusions</h2></div></header><div id="conclusionsList" class="stack"></div></article>
+        </section>
+
+        <!-- BOTTOM WIDGETS -->
+        <section class="bottom" id="bottom">
+          <article class="card w-sug">
+            <header class="card-h"><div class="h-ic"><svg class="ni"><use href="#i-ai"/></svg></div><div><h2>AI Suggestions</h2><small>Smart recommendations to improve your follow-ups</small></div></header>
+            <div id="sugList" class="sug-list"></div>
+          </article>
+          <article class="card w-auto">
+            <header class="card-h"><div class="h-ic"><svg class="ni"><use href="#i-bolt"/></svg></div><div><h2>Follow-up Automation</h2><small>Activity by channel</small></div><button class="btn mini" id="manageBtn" type="button">Manage</button></header>
+            <div id="autoList" class="auto-list"></div>
+          </article>
+          <article class="card w-perf">
+            <header class="card-h"><div class="h-ic"><svg class="ni"><use href="#i-chart"/></svg></div><div><h2>Follow-up Performance</h2></div><span class="range-chip" id="perfRange">Last 7 Days</span></header>
+            <div class="chart-legend"><span><i class="lg bar"></i>Follow-ups Sent</span><span><i class="lg line"></i>Conversions</span></div>
+            <div id="perfChart" class="chart"></div>
+            <div class="perf-nums" id="perfNums"></div>
+          </article>
+        </section>
       </div>
-      <div id="channels" class="channel-grid"></div>
-    </section>
 
-    <section class="card">
-      <div class="card-head"><div><span class="label">FOLLOW-UP LEADS</span><h2>Lead-wise control</h2></div></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Lead</th><th>Follow-up</th><th>Channel</th><th>Status</th><th>Last activity</th><th>Action</th></tr></thead>
-          <tbody id="leadsBody"><tr><td colspan="6" class="empty">Loading leads…</td></tr></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="two-col">
-      <article class="card">
-        <div class="card-head"><div><span class="label">APPROVALS</span><h2>Follow-up drafts</h2></div></div>
-        <div id="approvalsList" class="stack"><div class="empty">Loading…</div></div>
-      </article>
-      <article class="card">
-        <div class="card-head"><div><span class="label">PROPOSED LEAD CHANGES</span><h2>Review before Lead update</h2></div></div>
-        <div id="changesList" class="stack"><div class="empty">Loading…</div></div>
-      </article>
-    </section>
-
-    <section class="card">
-      <div class="card-head"><div><span class="label">REPORTS</span><h2>Recent conclusions</h2></div></div>
-      <div id="conclusionsList" class="stack"><div class="empty">Loading…</div></div>
-    </section>
-  </main>
-
-  <div id="modal" class="modal" hidden>
-    <div class="modal-panel">
-      <div class="modal-head">
-        <h2 id="modalTitle">Follow-up</h2>
-        <button id="modalClose" class="icon-btn" type="button" aria-label="Close">×</button>
-      </div>
-      <div id="modalBody"></div>
+      <!-- LEAD PANEL -->
+      <aside class="lead-panel" id="leadPanel" aria-label="Lead conversation">
+        <header class="lp-head"><h2>Lead Conversation</h2><div class="lp-btns"><button class="icon-btn sm" id="lpClose" type="button" aria-label="Close lead panel"><svg class="ni"><use href="#i-x"/></svg></button></div></header>
+        <div id="lpBody" class="lp-body"></div>
+      </aside>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="follow-up.js"></script>
-  <script src="follow-up-analysis-addon.js"></script>
-  <script src="whatsapp-connection-addon.js"></script>
-  
+    <nav class="bottom-nav" aria-label="Quick navigation">
+      <a href="dashboard.html"><svg class="ni"><use href="#i-home"/></svg><span>Home</span></a>
+      <a href="follow-up.html" class="active"><svg class="ni"><use href="#i-followup"/></svg><span>Follow-up</span></a>
+      <a href="leads.html"><svg class="ni"><use href="#i-leads"/></svg><span>Leads</span></a>
+      <a href="customer.html"><svg class="ni"><use href="#i-customers"/></svg><span>Customers</span></a>
+    </nav>
+  </div>
+</div>
+
+<div id="lpScrim" class="lp-scrim"></div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-card"><header><h2 id="modalTitle">Follow-up</h2><button class="icon-btn sm" id="modalClose" type="button" aria-label="Close"><svg class="ni"><use href="#i-x"/></svg></button></header><div id="modalBody"></div></div>
+</div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="follow-up.js?v=20261012-1"></script>
 </body>
 </html>
