@@ -1,8 +1,90 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Customers | GLIME</title><link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg"><link rel="stylesheet" href="customer.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<aside class="sidebar"><div class="brand"><img src="glime_logo_clean.svg" alt="GLIME" class="logo"><span>AI BUSINESS WORKSPACE</span></div><nav><a href="dashboard.html">Dashboard</a><a href="services.html">Services</a><a href="instagram-sales-specialist.html">Instagram Sales</a><a href="whatsapp-sales-specialist.html">WhatsApp Sales</a><a href="follow-up.html">Follow-up</a><a href="leads.html">Leads AI</a><a href="orders.html">Orders</a><a class="active" href="customer.html">Customers</a><a href="billing.html">Billing</a><a href="settings.html">⚙ Settings</a></nav><div class="workspace"><b id="businessName">Business Client</b><small>Active Workspace <i></i></small></div></aside>
-<main class="main"><header><div><label>CUSTOMER MANAGEMENT</label><h1 id="pageTitle">Customers</h1><p id="pageSubtitle">Search, view and manage your customers</p></div><a class="btn" href="whatsapp-sales-specialist.html">WhatsApp Sales</a></header>
-<section id="directoryView"><div class="toolbar"><div class="search"><span>⌕</span><input id="customerSearch" type="search" placeholder="Search customer name, mobile or WhatsApp..."></div><select id="sortCustomers"><option value="newest">Sort: Newest</option><option value="oldest">Sort: Oldest</option><option value="spent">Sort: Total Purchased</option><option value="orders">Sort: Orders</option><option value="name">Sort: Name A–Z</option></select></div>
-<div class="stats"><button id="totalCustomersCard" class="stat clickable"><strong id="totalCustomers">—</strong><span>Total Customers</span><small>View all customers →</small></button><button id="thisMonthCard" class="stat clickable"><strong id="monthCustomers">—</strong><span>This Month</span><small>View this month →</small></button><div class="stat"><strong id="totalOrders">—</strong><span>Total Orders</span><small>Existing orders</small></div><div class="stat"><strong id="totalPurchased">—</strong><span>Total Purchased</span><small>Existing order totals</small></div></div>
-<div class="filters"><div id="quickFilters"><button class="filter active" data-filter="all">All Customers</button><button class="filter" data-filter="top10">Top 10 Customers</button><button class="filter" data-filter="month">This Month</button><button class="filter" data-filter="recent">Recent Buyers</button></div><span id="resultCount">Loading…</span></div>
-<div class="card tableWrap"><table><thead><tr><th>#</th><th>Customer</th><th>Mobile / WhatsApp</th><th>Location</th><th>Orders</th><th>Total Purchased</th><th>Last Purchase</th><th></th></tr></thead><tbody id="customerRows"><tr><td colspan="8" class="loading">Loading customers…</td></tr></tbody></table></div></section>
-<section id="profileView" class="hidden"><button id="backToCustomers" class="back">← Back to Customers</button><div class="profileHead"><div><label>CUSTOMER PROFILE</label><h2 id="profileName">Customer</h2><p>Customer details, activity and purchase history</p></div><a id="whatsappLink" class="primary" target="_blank" rel="noopener">◉ Open WhatsApp</a></div><div class="profileGrid"><section class="card info"><label>CUSTOMER INFORMATION</label><div id="profileAvatar" class="avatar">C</div><h3 id="infoName">—</h3><p id="infoMobile">—</p><div class="details"><div><span>Address</span><b id="infoAddress">—</b></div><div><span>Locality</span><b id="infoLocality">—</b></div><div><span>District</span><b id="infoDistrict">—</b></div><div><span>State</span><b id="infoState">—</b></div><div><span>Pincode</span><b id="infoPincode">—</b></div><div><span>Landmark</span><b id="infoLandmark">—</b></div><div><span>Customer Since</span><b id="infoSince">—</b></div></div></section><div class="right"><section class="card overview"><label>CUSTOMER OVERVIEW</label><div class="overviewGrid"><div><small>Total Orders</small><strong id="profileOrders">0</strong></div><div><small>Total Purchased</small><strong id="profilePurchased">₹0</strong></div><div><small>Last Purchase</small><strong id="profileLastPurchase">—</strong></div><div><small>Customer Since</small><strong id="profileSince">—</strong></div></div></section><section class="card tableWrap"><div class="sectionTop"><label>PURCHASE HISTORY</label><span id="purchaseCount"></span></div><table><thead><tr><th>#</th><th>Product / Service</th><th>Amount</th><th>Order Status</th><th>Payment Status</th><th>Date</th></tr></thead><tbody id="purchaseRows"><tr><td colspan="6" class="loading">Loading purchases…</td></tr></tbody></table></section></div></div></section><div id="toast"></div></main><script src="customer.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#060b11">
+<title>Customers | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="customer.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="scrim" id="scrim"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><img src="glime_logo_clean.svg" alt="GLIME"><div><b>GLIME</b><small>AI Business Workspace</small></div></div>
+  <nav id="nav"></nav>
+  <div class="side-foot">
+    <div class="me"><span class="me-av" id="meAv">G</span><div><b id="businessName">Business</b><small id="clientCode">—</small></div></div>
+    <button class="logout" id="logoutBtn" type="button"></button>
+  </div>
+</aside>
+
+<div class="shell">
+  <header class="topbar">
+    <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="Menu"></button>
+    <label class="gsearch"><span id="gsIcon"></span><input id="globalSearch" type="search" placeholder="Search customers, phone, city, source…" autocomplete="off"><kbd>Ctrl + K</kbd></label>
+    <div class="range"><span id="rangeIcon"></span><select id="rangeSel"><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select></div>
+    <a class="icon-btn bell" id="bell" href="follow-up.html" aria-label="Follow-ups"><i id="bellDot" hidden></i></a>
+    <span class="top-av" id="topAv">G</span>
+  </header>
+
+  <main class="page">
+    <section class="head">
+      <div class="head-l"><span class="head-ic" id="headIc"></span><div><h1>Customers</h1><p>Manage your customers, track their journey and grow long-term relationships.</p></div></div>
+      <button class="insight-card" id="insightCard" type="button"></button>
+      <button class="btn-primary" id="addBtn" type="button"></button>
+    </section>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="work">
+      <div class="work-main" id="workMain">
+        <div class="filters">
+          <label class="fsearch"><span id="fsIcon"></span><input id="listSearch" type="search" placeholder="Search customers by name, phone, email…" autocomplete="off"></label>
+          <select id="segSel"><option value="all">All Customers</option><option value="top10">Top 10 by spend</option><option value="recent">Recent buyers</option><option value="month">New this month</option></select>
+          <select id="tagSel"></select>
+          <select id="statusSel"><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+          <div class="pop-wrap"><button class="btn-ghost" id="filterBtn" type="button"></button>
+            <div class="pop" id="filterPop" hidden>
+              <label>Minimum orders<input type="number" id="minOrders" min="0" placeholder="0"></label>
+              <label>Minimum spent (₹)<input type="number" id="minSpent" min="0" placeholder="0"></label>
+              <button class="btn-ghost sm" id="resetFilters" type="button">Reset all filters</button>
+            </div>
+          </div>
+        </div>
+        <div class="split" id="split">
+          <section class="list-panel">
+            <div class="list-head"><h2>Customers <small id="listCount">(0)</small></h2><select id="sortSel"><option value="recent">Recent</option><option value="spent">Top spend</option><option value="orders">Most orders</option><option value="newest">Newest</option><option value="name">Name A–Z</option></select></div>
+            <div class="list" id="custList"><div class="empty">Loading customers…</div></div>
+          </section>
+          <section class="detail" id="detail"><div class="empty">Loading…</div></section>
+        </div>
+      </div>
+      <aside class="side" id="sidePanel"></aside>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <form class="modal-box" id="addForm">
+    <div class="modal-top"><h3>Add Customer</h3><button type="button" class="icon-btn" id="modalClose"></button></div>
+    <div class="fgrid">
+      <label>Name *<input name="name" required></label>
+      <label>Mobile / WhatsApp *<input name="mobile" required inputmode="tel"></label>
+      <label>House / Address<input name="house_no"></label>
+      <label>Locality / Village<input name="village_locality"></label>
+      <label>District / City<input name="district"></label>
+      <label>State<input name="state"></label>
+      <label>Pincode<input name="pincode" inputmode="numeric"></label>
+      <label>Landmark<input name="landmark"></label>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn-ghost" id="modalCancel">Cancel</button><button type="submit" class="btn-primary" id="saveCust">Save Customer</button></div>
+  </form>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<script src="customer.js"></script>
+</body>
+</html>
