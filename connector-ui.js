@@ -10,6 +10,8 @@
    - OAuth is owned by the backend (glime-google-calendar-oauth);
      the frontend only receives the authorization URL and redirects.
    - Calendar data goes through glime-calendar-gateway only.
+   - Razorpay (the client's OWN Razorpay account) uses glime-razorpay-oauth;
+     GLIME's own subscription billing is separate and not touched here.
    - Never marks a provider "Connected" unless real data says so.
    - data.loadAiStatus() only READS existing tables:
      modules, client_modules, ai_connections, ai_connection_permissions.
@@ -18,7 +20,10 @@
 'use strict';
 if(window.GLIME_CONNECTOR_UI)return;
 
-const CATEGORY_ORDER=['AI Assistants','Google Workspace','Commerce','Team Communication'];
+/* Razorpay OAuth mode sent to the backend: 'live' for real clients, 'test' for sandbox. */
+const RAZORPAY_MODE='live';
+
+const CATEGORY_ORDER=['AI Assistants','Google Workspace','Commerce','Payments','Team Communication'];
 
 const ICONS={
   chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
@@ -28,6 +33,7 @@ const ICONS={
   sheet:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/>',
   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   bag:'<path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/>',
+  card:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',
   hash:'<path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/>',
   plug:'<path d="M9 3v5M15 3v5M7 8h10v4a5 5 0 0 1-10 0zM12 17v4"/>'
 };
@@ -41,6 +47,7 @@ const LOGOS={
   'google-sheets':{c:'#34A853',p:'M11.318 12.545H7.91v-1.909h3.41v1.91zM14.728 0v6h6l-6-6zm1.363 10.636h-3.41v1.91h3.41v-1.91zm0 3.273h-3.41v1.91h3.41v-1.91zM20.727 6.5v15.864c0 .904-.732 1.636-1.636 1.636H4.909a1.636 1.636 0 0 1-1.636-1.636V1.636C3.273.732 4.005 0 4.909 0h9.318v6.5h6.5zm-3.273 2.773H6.545v7.909h10.91v-7.91zm-6.136 4.636H7.91v1.91h3.41v-1.91z'},
   'google-calendar':{c:'#4285F4',p:'M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM18.316 5.684V0H1.895A1.894 1.894 0 0 0 0 1.895v16.421h5.684V5.684h12.632zm-7.207 6.25v-.065c.272-.144.5-.349.687-.617s.279-.595.279-.982c0-.379-.099-.72-.3-1.025a2.05 2.05 0 0 0-.832-.714 2.703 2.703 0 0 0-1.197-.257c-.6 0-1.094.156-1.481.467-.386.311-.65.671-.793 1.078l1.085.452c.086-.249.224-.461.413-.633.189-.172.445-.257.767-.257.33 0 .602.088.816.264a.86.86 0 0 1 .322.703c0 .33-.12.589-.36.778-.24.19-.535.284-.886.284h-.567v1.085h.633c.407 0 .748.109 1.02.327.272.218.407.499.407.843 0 .336-.129.614-.387.832s-.565.327-.924.327c-.351 0-.651-.103-.897-.311-.248-.208-.422-.502-.521-.881l-1.096.452c.178.616.505 1.082.977 1.401.472.319.984.478 1.538.477a2.84 2.84 0 0 0 1.293-.291c.382-.193.684-.458.902-.794.218-.336.327-.72.327-1.149 0-.429-.115-.797-.344-1.105a2.067 2.067 0 0 0-.881-.689zm2.093-1.931l.602.913L15 10.045v5.744h1.187V8.446h-.827l-2.158 1.557zM22.105 0h-3.289v5.184H24V1.895A1.894 1.894 0 0 0 22.105 0zm-3.289 23.5l4.684-4.684h-4.684V23.5zM0 22.105C0 23.152.848 24 1.895 24h3.289v-5.184H0v3.289z'},
   'shopify':{c:'#7AB55C',p:'M15.337 23.979l7.216-1.561s-2.604-17.613-2.625-17.73c-.018-.116-.114-.192-.211-.192s-1.929-.136-1.929-.136-1.275-1.274-1.439-1.411c-.045-.037-.075-.057-.121-.074l-.914 21.104h.023zM11.71 11.305s-.81-.424-1.774-.424c-1.447 0-1.504.906-1.504 1.141 0 1.232 3.24 1.715 3.24 4.629 0 2.295-1.44 3.76-3.406 3.76-2.354 0-3.54-1.465-3.54-1.465l.646-2.086s1.245 1.066 2.28 1.066c.675 0 .975-.545.975-.932 0-1.619-2.654-1.694-2.654-4.359-.034-2.237 1.571-4.416 4.827-4.416 1.257 0 1.875.361 1.875.361l-.945 2.715-.02.01zM11.17.83c.136 0 .271.038.405.135-.984.465-2.064 1.639-2.508 3.992-.656.213-1.293.405-1.889.578C7.697 3.75 8.951.84 11.17.84V.83zm1.235 2.949v.135c-.754.232-1.583.484-2.394.736.466-1.777 1.333-2.645 2.085-2.971.193.501.309 1.176.309 2.1zm.539-2.234c.694.074 1.141.867 1.429 1.755-.349.114-.735.231-1.158.366v-.252c0-.752-.096-1.371-.271-1.871v.002zm2.992 1.289c-.02 0-.06.021-.078.021s-.289.075-.714.21c-.423-1.233-1.176-2.37-2.508-2.37h-.115C12.135.209 11.669 0 11.265 0 8.159 0 6.675 3.877 6.21 5.846c-1.194.365-2.063.636-2.16.674-.675.213-.694.232-.772.87-.075.462-1.83 14.063-1.83 14.063L15.009 24l.927-21.166z'},
+  'razorpay':{c:'#3395FF',p:'M22.436 0l-11.91 7.773-1.174 4.276 6.625-4.297L11.65 24h4.391L22.436 0zM14.26 10.098L3.389 17.166 1.564 24h9.008l3.688-13.902z'},
   'slack':{c:'#4A154B',p:'M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z'}
 };
 
@@ -53,6 +60,7 @@ const registry=[
   {id:'google-sheets',name:'Google Sheets',category:'Google Workspace',description:'Connect business spreadsheets.',icon:'sheet',backend:'existing',kind:'sheets',state:'dynamic',capabilities:[],sort:50},
   {id:'google-calendar',name:'Google Calendar',category:'Google Workspace',description:'Connect business calendars and appointments.',icon:'calendar',backend:'existing',kind:'calendar',state:'dynamic',capabilities:[],sort:55},
   {id:'shopify',name:'Shopify',category:'Commerce',description:'Connect products and inventory so GLIME AI can answer from your store.',icon:'bag',backend:'existing',kind:'shopify',state:'dynamic',capabilities:['Products','Inventory'],sort:60},
+  {id:'razorpay',name:'Razorpay',category:'Payments',description:'Connect your own Razorpay account so GLIME can read and create payments for your business.',icon:'card',backend:'existing',kind:'razorpay',state:'dynamic',capabilities:['Payments'],sort:65},
   {id:'slack',name:'Slack',category:'Team Communication',description:'Connect team communication and workflows.',icon:'hash',backend:'not_implemented',state:'coming_soon',capabilities:[],sort:70}
 ];
 
@@ -172,6 +180,8 @@ function registerProvider(p){
 function getProviders(opts){
   let list=registry.slice();
   if(Array.isArray(opts.only))list=list.filter(p=>opts.only.includes(p.id));
+  /* Razorpay is shown only on pages that supply its API (Settings > Connector). */
+  list=list.filter(p=>p.kind!=='razorpay'||!!opts.razorpayApi);
   return list.sort((a,b)=>(a.sort||0)-(b.sort||0));
 }
 
@@ -362,6 +372,52 @@ function createSheetsApi(sb,cfg){
       const out=await call('glime-google-oauth',{method:'POST',body:{}});
       const url=out&&out.authorization_url;
       if(typeof url!=='string'||url.indexOf('https://accounts.google.com/')!==0)throw mkErr('Google authorization could not be started.','OAUTH');
+      window.location.assign(url);
+    }
+  };
+}
+
+/* ======================================================
+   RAZORPAY — API client (client's own Razorpay account)
+   OAuth start : POST /functions/v1/glime-razorpay-oauth  body {mode}
+   Status      : GET  /functions/v1/glime-razorpay-oauth?mode=status
+   OAuth callback is handled by the backend and returns to
+   settings.html?connector=razorpay&status=...#connector
+   ====================================================== */
+function createRazorpayApi(sb,cfg){
+  cfg=cfg||{};
+  const base=String(cfg.baseUrl||sb.supabaseUrl||'').replace(/\/$/,'');
+  const apiKey=cfg.apiKey||sb.supabaseKey||'';
+
+  async function call(o){
+    o=o||{};
+    const r=await sb.auth.getSession();
+    const s=r&&r.data&&r.data.session;
+    if(!s)throw mkErr('Your session has expired. Please sign in again.','SESSION_EXPIRED');
+    const headers={Authorization:'Bearer '+s.access_token};
+    if(apiKey)headers.apikey=apiKey;
+    const init={method:o.method||'POST',headers};
+    if(init.method!=='GET'){headers['Content-Type']='application/json';init.body=JSON.stringify(o.body||{});}
+    let res;
+    try{res=await fetch(base+'/functions/v1/glime-razorpay-oauth'+(o.query||''),init);}
+    catch(e){throw mkErr('Unable to reach GLIME right now. Please try again.','NETWORK');}
+    const data=await res.json().catch(()=>null);
+    if(!res.ok){
+      const em=data&&data.error;
+      throw mkErr((em&&em.message)||(typeof em==='string'?em:'')||'Razorpay request failed.',(em&&em.code)||res.status);
+    }
+    return data;
+  }
+
+  return {
+    async status(){
+      const info=await call({method:'GET',query:'?mode=status'});
+      return {state:(info&&info.connected)?'connected':'not_connected',info:(info&&info.account)||null};
+    },
+    async startOAuth(){
+      const out=await call({method:'POST',body:{mode:cfg.mode||RAZORPAY_MODE}});
+      const url=out&&out.authorization_url;
+      if(typeof url!=='string'||url.indexOf('https://auth.razorpay.com/')!==0)throw mkErr('Razorpay authorization could not be started.','OAUTH');
       window.location.assign(url);
     }
   };
@@ -690,10 +746,12 @@ function cardHtml(p,state,opts,open){
   const cal=p.kind==='calendar';
   const shop=p.kind==='shopify';
   const sheets=p.kind==='sheets';
+  const rzp=p.kind==='razorpay';
   const stable=state==='connected'||state==='not_connected';
-  const interactiveAi=!cal&&!shop&&!sheets&&p.backend==='existing'&&stable;
+  const interactiveAi=!cal&&!shop&&!sheets&&!rzp&&p.backend==='existing'&&stable;
   const interactiveShop=shop&&stable;
   const interactiveSheets=sheets&&stable;
+  const interactiveRzp=rzp&&stable;
   const interactiveCal=cal&&stable;
   let action;
   if(interactiveShop){
@@ -702,6 +760,10 @@ function cardHtml(p,state,opts,open){
   }else if(interactiveSheets&&state==='not_connected'){
     action=`<button type="button" class="gcx-btn primary" data-gcx-connect-sheets="${esc(p.id)}" aria-label="${esc('Connect '+p.name)}">Connect</button>`;
   }else if(interactiveSheets){
+    action=`<button type="button" class="gcx-btn" disabled aria-disabled="true" aria-label="${esc(p.name+': Connected')}">Connected</button>`;
+  }else if(interactiveRzp&&state==='not_connected'){
+    action=`<button type="button" class="gcx-btn primary" data-gcx-connect-razorpay="${esc(p.id)}" aria-label="${esc('Connect '+p.name)}">Connect</button>`;
+  }else if(interactiveRzp){
     action=`<button type="button" class="gcx-btn" disabled aria-disabled="true" aria-label="${esc(p.name+': Connected')}">Connected</button>`;
   }else if(interactiveAi){
     const label=open?'Hide setup':(state==='connected'?'View connection':'Open setup');
@@ -724,9 +786,13 @@ function cardHtml(p,state,opts,open){
   const gsinfo=(sheets&&state==='connected'&&opts.details)?opts.details[p.id]:null;
   const gmeta=gsinfo?`
     <p class="gcx-meta">Account: ${esc(gsinfo.email||gsinfo.display_name||'Google account')}</p>`:'';
+  const rinfo=(rzp&&opts.details)?opts.details[p.id]:null;
+  const rmeta=(rinfo&&state==='connected')?`
+    <p class="gcx-meta">Account: ${esc(rinfo.external_account_id||rinfo.display_name||'Razorpay account')}${rinfo.mode?' · '+esc(String(rinfo.mode)==='live'?'Live':'Test')+' mode':''}${rinfo.last_verified_at?' · Verified '+esc(fmtDate(rinfo.last_verified_at)):''}</p>
+    ${rinfo.last_error?'<p class="gcx-meta warn">Razorpay access needs attention. Reconnect to continue.</p>':''}`:((rinfo&&rinfo.last_error)?'<p class="gcx-meta warn">Razorpay access needs attention. Reconnect to continue.</p>':'');
   const meta=info?`
     <p class="gcx-meta">Account: ${esc(info.email||info.display_name||'Google account')}${info.last_verified_at?' · Verified '+esc(fmtDate(info.last_verified_at)):''}</p>
-    ${info.last_error?'<p class="gcx-meta warn">A recent request failed. Open Manage to retry, or reconnect.</p>':''}`:(smeta||gmeta);
+    ${info.last_error?'<p class="gcx-meta warn">A recent request failed. Open Manage to retry, or reconnect.</p>':''}`:(smeta||gmeta||rmeta);
 
   let panel='';
   if(open&&interactiveShop)panel=shopPanelHtml(p,state,sinfo);
@@ -820,6 +886,21 @@ function bind(container){
       return;
     }
 
+    const rz=ev.target.closest('[data-gcx-connect-razorpay]');
+    if(rz){
+      if(!opts.razorpayApi)return;
+      rz.disabled=true;
+      rz.textContent='Redirecting…';
+      try{
+        await opts.razorpayApi.startOAuth();
+      }catch(e){
+        console.error('GLIME Razorpay connect error:',e);
+        container._gcxBanner={type:'err',text:cleanMsg(e)};
+        render(container,opts);
+      }
+      return;
+    }
+
     const sh=ev.target.closest('[data-shop-act]');
     if(sh){
       if(!opts.shopifyApi)return;
@@ -873,7 +954,7 @@ function bind(container){
     status:   'loading' | 'ready' | 'error'
     states:   { providerId: 'connected'|'not_connected'|'unavailable'|'error'|'loading'|'coming_soon' }
     details:  { 'google-calendar': {email, display_name, last_verified_at, last_error} }
-    calendarApi, mcpEndpoint, errorMessage, banner:{type:'ok'|'err',text},
+    calendarApi, razorpayApi, mcpEndpoint, errorMessage, banner:{type:'ok'|'err',text},
     only:[ids], note:{text,linkText,href}, onAction(id, action)
   }
 */
@@ -1000,7 +1081,8 @@ async function loadAll(sb,opts){
   const cal=createCalendarApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
   const shopApi=createShopifyApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
   const sheetsApi=createSheetsApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
-  const [ai,cs,ss,gs]=await Promise.allSettled([loadAiStatus(sb,opts),cal.status(),shopApi.status(),sheetsApi.status()]);
+  const rzpApi=createRazorpayApi(sb,{baseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
+  const [ai,cs,ss,gs,rs]=await Promise.allSettled([loadAiStatus(sb,opts),cal.status(),shopApi.status(),sheetsApi.status(),rzpApi.status()]);
 
   const states={},details={};
   let entitled=false,permissions=[],aiFailed=false,failed=false;
@@ -1042,7 +1124,16 @@ async function loadAll(sb,opts){
     failed=true;
   }
 
-  return {states,details,entitled,permissions,aiFailed,failed,calendarApi:cal,shopifyApi:shopApi,sheetsApi:sheetsApi};
+  if(rs.status==='fulfilled'){
+    states.razorpay=rs.value.state;
+    details.razorpay=rs.value.info||null;
+  }else{
+    console.error('GLIME Razorpay status error:',rs.reason);
+    states.razorpay='error';
+    failed=true;
+  }
+
+  return {states,details,entitled,permissions,aiFailed,failed,calendarApi:cal,shopifyApi:shopApi,sheetsApi:sheetsApi,razorpayApi:rzpApi};
 }
 
 window.GLIME_CONNECTOR_UI={
@@ -1054,6 +1145,7 @@ window.GLIME_CONNECTOR_UI={
   calendar:{create:createCalendarApi},
   shopify:{create:createShopifyApi},
   sheets:{create:createSheetsApi},
+  razorpay:{create:createRazorpayApi},
   data:{loadAiStatus,loadAll}
 };
 })();
