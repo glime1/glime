@@ -789,6 +789,80 @@
     .after li::before { content: "✓"; color: var(--green); font-weight: 900; }
 
     /* =========================
+       TRUSTED PLATFORMS
+    ========================= */
+
+    .partner-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 36px;
+    }
+
+    .partner-card {
+      padding: 24px;
+
+      background: linear-gradient(150deg, rgba(24,46,60,.62), rgba(9,19,27,.78));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+
+      transition: border-color .2s ease, transform .2s ease;
+    }
+
+    .partner-card:hover {
+      border-color: rgba(82,232,255,.36);
+      transform: translateY(-3px);
+    }
+
+    .partner-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .partner-top .gx-tile { --ts: 42px; }
+
+    .partner-top h3 {
+      margin-left: 4px;
+
+      font-size: 1.12rem;
+      letter-spacing: -0.03em;
+    }
+
+    .partner-tag {
+      display: inline-block;
+
+      margin-top: 16px;
+      padding: 6px 9px;
+
+      color: var(--green);
+
+      background: rgba(80,245,168,.08);
+      border: 1px solid rgba(80,245,168,.2);
+      border-radius: 7px;
+
+      font-family: "DM Mono", monospace;
+      font-size: .58rem;
+      letter-spacing: .06em;
+    }
+
+    .partner-card p {
+      margin-top: 12px;
+
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.65;
+    }
+
+    .partner-note {
+      max-width: 720px;
+      margin-top: 22px;
+
+      color: var(--dim);
+      font-size: .72rem;
+      line-height: 1.7;
+    }
+
+    /* =========================
        PACKAGES
     ========================= */
 
@@ -1059,6 +1133,8 @@
       .gx-agent-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
       .comparison { grid-template-columns: 1fr 1fr; }
+
+      .partner-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 
       .pkg-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
       .pkg-card { padding: 32px; }
@@ -1543,6 +1619,77 @@ body{
           </div>
 
         </div>
+
+      </div>
+    </section>
+
+
+    <!-- =========================
+         TRUSTED PLATFORMS
+    ========================== -->
+
+    <section class="section" id="partners">
+      <div class="container">
+
+        <p class="eyebrow">TRUSTED PLATFORMS</p>
+
+        <h2 class="section-title">
+          Built on platforms businesses already trust.
+        </h2>
+
+        <p class="section-copy">
+          GLIME is an early-stage partner of the platforms below and
+          connects to your accounts through their standard,
+          permission-based integrations.
+        </p>
+
+        <div class="partner-grid">
+
+          <article class="partner-card">
+            <div class="partner-top">
+              <span class="gx-tile gx-t-sh" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-sh"/></svg></span>
+              <h3>Shopify</h3>
+            </div>
+            <span class="partner-tag">OAUTH INTEGRATION</span>
+            <p>
+              Connect your Shopify store using Shopify's OAuth, so you
+              stay in control of what GLIME can access.
+            </p>
+          </article>
+
+          <article class="partner-card">
+            <div class="partner-top">
+              <span class="gx-tile gx-t-wa" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-wa"/></svg></span>
+              <span class="gx-tile gx-t-ig" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-ig"/></svg></span>
+              <h3>Meta</h3>
+            </div>
+            <span class="partner-tag">WHATSAPP &amp; INSTAGRAM</span>
+            <p>
+              Connect WhatsApp Business and Instagram through Meta's
+              platform, so GLIME can reply to your customers.
+            </p>
+          </article>
+
+          <article class="partner-card">
+            <div class="partner-top">
+              <span class="gx-tile gx-t-rp" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-rp"/></svg></span>
+              <h3>Razorpay</h3>
+            </div>
+            <span class="partner-tag">PLATFORM PARTNER</span>
+            <p>
+              GLIME is part of Razorpay's partner programme as a
+              Platform Partner, for collecting payments from your
+              customers.
+            </p>
+          </article>
+
+        </div>
+
+        <p class="partner-note">
+          Names and logos belong to their respective owners. Listing
+          them here shows which platforms GLIME works with and does not
+          imply endorsement.
+        </p>
 
       </div>
     </section>
