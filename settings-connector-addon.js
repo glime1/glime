@@ -6,7 +6,9 @@
    - ChatGPT / Claude: existing MCP status (read-only)
    - Google Calendar: existing backend (glime-google-calendar-oauth +
      glime-calendar-gateway). No client ID / secret in the frontend.
+   - Razorpay: client's own account via glime-razorpay-oauth.
    - Google OAuth returns here: settings.html?connector=google-calendar&status=...#connector
+   - Razorpay OAuth returns here: settings.html?connector=razorpay&status=...&reason=...#connector
    WhatsApp / Instagram stay under Channels.
    ========================================================= */
 (function(){
@@ -22,11 +24,26 @@ function oauthBanner(){
   let params;
   try{params=new URLSearchParams(location.search);}catch(e){return null;}
   const which=params.get('connector');
-  if(which!=='google-calendar'&&which!=='shopify'&&which!=='google-sheets')return null;
+  if(which!=='google-calendar'&&which!=='shopify'&&which!=='google-sheets'&&which!=='razorpay')return null;
 
   const status=params.get('status');
   const reason=params.get('reason');
   try{history.replaceState(null,'',location.pathname+'#connector');}catch(e){}
+
+  if(which==='razorpay'){
+    if(status==='connected')return {type:'ok',text:'Razorpay connected successfully.',provider:'razorpay'};
+    const m={
+      authorization_denied:'Razorpay authorization was cancelled.',
+      missing_code_or_state:'The authorization could not be completed. Please try connecting again.',
+      invalid_or_expired_state:'The authorization link expired. Please try connecting again.',
+      invalid_or_replayed_state:'The authorization link expired. Please try connecting again.',
+      oauth_not_configured:'Razorpay connection is not configured yet. Please contact GLIME support.',
+      token_exchange_failed:'Razorpay did not complete the authorization. Please try again.',
+      account_already_connected:'This Razorpay account is already connected to another GLIME account.',
+      client_inactive:'Your GLIME account is not active. Please contact GLIME support.'
+    };
+    return {type:'err',text:m[reason]||'Razorpay could not be connected. Please try again.',provider:'razorpay'};
+  }
 
   if(which==='google-sheets'){
     if(status==='connected')return {type:'ok',text:'Google Sheets connected successfully.',provider:'google-sheets'};
@@ -98,8 +115,8 @@ S.register({
       /* Never show a success message the real status does not confirm. */
       let b=banner;
       if(b&&b.type==='ok'){
-        const key=b.provider==='shopify'?'shopify':(b.provider==='google-sheets'?'google-sheets':'google-calendar');
-        const names={shopify:'Shopify','google-sheets':'Google Sheets','google-calendar':'Google Calendar'};
+        const key=b.provider==='razorpay'?'razorpay':(b.provider==='shopify'?'shopify':(b.provider==='google-sheets'?'google-sheets':'google-calendar'));
+        const names={razorpay:'Razorpay',shopify:'Shopify','google-sheets':'Google Sheets','google-calendar':'Google Calendar'};
         if(res.states[key]!=='connected'){
           b={type:'err',text:names[key]+' connection could not be verified. Please try again.'};
         }
@@ -114,13 +131,14 @@ S.register({
         calendarApi:res.calendarApi,
         shopifyApi:res.shopifyApi,
         sheetsApi:res.sheetsApi,
+        razorpayApi:res.razorpayApi,
         banner:b
       });
       if(res.entitled)UI.renderPermissions(perms,res.permissions);
     }catch(error){
       console.error('GLIME Connector load error:',error);
       if(!hub.isConnected)return;
-      UI.render(hub,{...base,status:'error',states:{chatgpt:'error',claude:'error','google-calendar':'error',shopify:'error','google-sheets':'error'},banner:banner});
+      UI.render(hub,{...base,status:'error',states:{chatgpt:'error',claude:'error','google-calendar':'error',shopify:'error','google-sheets':'error',razorpay:'error'},banner:banner});
     }
   }
 });
