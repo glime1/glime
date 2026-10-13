@@ -376,7 +376,8 @@
 
   function page() {
     var seg = (location.pathname.split('/').pop() || '').toLowerCase();
-    return seg || 'index.html';
+    if (!seg) return 'index.html';
+    return /\.[a-z0-9]+$/.test(seg) ? seg : seg + '.html';
   }
   rules = BASE_RULES.concat(PRESETS[page()] || []);
 
