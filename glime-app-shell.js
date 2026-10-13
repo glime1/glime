@@ -12,6 +12,8 @@
 
    Navigation only. No authentication, data or RPC logic lives
    here; each page keeps its own session handling.
+   The owner photo in the account card comes from the shared photo
+   system (glime-avatar.js), which this shell loads once per page.
    Public marketing pages keep glime-global-nav.* untouched.
 ========================================================= */
 (function () {
@@ -139,6 +141,15 @@
       identity.clientId ? 'ID: ' + identity.clientId : '';
     document.getElementById('gasAvatar').textContent =
       name.trim().charAt(0).toUpperCase() || 'G';
+  }
+
+  /* Owner photo / all profile photos: one shared system for every page. */
+  function loadPhotoSystem() {
+    if (window.GlimePhoto || document.querySelector('script[src*="glime-avatar.js"]')) return;
+    var s = document.createElement('script');
+    s.src = 'glime-avatar.js?v=20261013';
+    s.defer = true;
+    document.head.appendChild(s);
   }
 
   function logout() {
@@ -317,6 +328,7 @@
     applyCollapsed();
     syncInert();
     applyIdentity();
+    loadPhotoSystem();
   }
 
   window.GlimeAppShell = {

@@ -6,6 +6,7 @@
 <title>Settings | GLIME</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="glime-avatar.js?v=20261013" defer></script>
 <style>
 :root{
   --bg:#071016;--surf:#101b29;--surf2:#0b1520;--bd:rgba(184,222,234,.13);
@@ -166,12 +167,13 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   Do not create another settings.html for a new settings area.
   Add a module/addon instead and reuse the shared API/helpers.
 
-  Addons loaded (in order): settings-ai-addon.js, connector-ui.js,
-  settings-connector-addon.js
+  Addons loaded (in order): settings-profile-addon.js, settings-ai-addon.js,
+  connector-ui.js, settings-connector-addon.js
 
   Deep links:  settings.html#ai            opens the AI module
                settings.html#ai-knowledge  opens AI > Knowledge
                settings.html#connector     opens the Connector module
+               settings.html#profile       opens Profile (owner photo + business logo)
                settings.html#<module-id>   opens any registered module
 */
 
@@ -612,7 +614,7 @@ async function loadSettingsAddon(src){
 
 (async()=>{
   /* Addons load in order; one failing addon never blocks the others. */
-  for(const src of ['settings-ai-addon.js','connector-ui.js','settings-connector-addon.js']){
+  for(const src of ['settings-profile-addon.js','settings-ai-addon.js','connector-ui.js','settings-connector-addon.js']){
     try{
       await loadSettingsAddon(src);
     }catch(error){
