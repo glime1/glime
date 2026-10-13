@@ -7,6 +7,8 @@
    - Google Calendar: existing backend (glime-google-calendar-oauth +
      glime-calendar-gateway). No client ID / secret in the frontend.
    - Razorpay: client's own account via glime-razorpay-oauth.
+   - Shiprocket Cargo: connector-shiprocket-addon.js (loaded on demand)
+     via glime-shiprocket-cargo-gateway.
    - Google OAuth returns here: settings.html?connector=google-calendar&status=...#connector
    - Razorpay OAuth returns here: settings.html?connector=razorpay&status=...&reason=...#connector
    WhatsApp / Instagram stay under Channels.
@@ -18,6 +20,18 @@ const S=window.GLIME_SETTINGS;
 if(!S||typeof S.register!=='function'){
   console.warn('GLIME Connector: Settings shell not found');
   return;
+}
+
+/* Shiprocket Cargo card lives in its own file so a problem there never breaks this page. */
+function loadCargo(){
+  return new Promise(function(resolve){
+    if(window.GLIME_CARGO)return resolve(true);
+    const s=document.createElement('script');
+    s.src='connector-shiprocket-addon.js';
+    s.onload=function(){resolve(!!window.GLIME_CARGO);};
+    s.onerror=function(){resolve(false);};
+    document.head.appendChild(s);
+  });
 }
 
 function oauthBanner(){
@@ -84,9 +98,11 @@ S.register({
         <p>Connect GLIME with the tools your business already uses.</p>
       </div>
       <div id="gcxSettingsHub"></div>
+      <div id="gcxSettingsCargo" style="margin-top:6px"></div>
       <div id="gcxSettingsPerms" style="margin-top:22px"></div>`;
 
     const hub=container.querySelector('#gcxSettingsHub');
+    const cargoHost=container.querySelector('#gcxSettingsCargo');
     const perms=container.querySelector('#gcxSettingsPerms');
     const UI=window.GLIME_CONNECTOR_UI;
 
@@ -103,6 +119,16 @@ S.register({
     };
 
     UI.render(hub,{...base,status:'loading',banner:banner});
+
+    /* Shiprocket Cargo loads and reports its own status independently of the cards above. */
+    loadCargo().then(function(ok){
+      if(!ok||!cargoHost.isConnected||!api.supabase)return;
+      window.GLIME_CARGO.mount(cargoHost,{
+        sb:api.supabase,
+        supabaseUrl:supabaseUrl,
+        apiKey:api.supabase.supabaseKey
+      });
+    });
 
     try{
       const res=await UI.data.loadAll(api.supabase,{
