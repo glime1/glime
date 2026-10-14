@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Try GLIME live. See the problem first: a customer messages and nobody replies. Then connect Instagram and WhatsApp and watch GLIME reply, take the order, collect payment, ship it, and send the money to your account."
+  />
+  <title>Live Demo | GLIME - From First Message to Money in Your Account</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="glime-global-nav.css?v=2">
+  <link rel="stylesheet" href="demo.css?v=2">
+</head>
+
+<body>
+
+  <header class="glime-global-header">
+    <div class="glime-nav-inner">
+      <a href="index.html" class="glime-brand" aria-label="GLIME Home">
+        <img src="glime_logo_clean.svg" alt="GLIME">
+      </a>
+
+      <nav class="glime-desktop-nav" aria-label="Main navigation">
+        <a href="index.html" data-nav="home">Home</a>
+        <a href="demo.html" data-nav="demo" class="active">Live Demo</a>
+        <a href="how-it-works.html" data-nav="how">How It Works</a>
+        <a href="index.html#packages" data-nav="packages">Packages</a>
+        <a href="contact.html" data-nav="contact">Contact</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html" class="glime-nav-trial">7-Day Free Trial</a>
+      </nav>
+
+      <button class="glime-menu-button" id="glime-menu-button" type="button"
+        aria-label="Open navigation menu" aria-expanded="false" aria-controls="glime-mobile-nav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <nav class="glime-mobile-nav" id="glime-mobile-nav" aria-label="Mobile navigation">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="demo.html" data-nav="demo" class="active">Live Demo</a>
+      <a href="how-it-works.html" data-nav="how">How It Works</a>
+      <a href="index.html#packages" data-nav="packages">Packages</a>
+      <a href="contact.html" data-nav="contact">Contact</a>
+      <a href="login.html">Login</a>
+      <a href="signup.html" class="glime-mobile-cta">Start 7-Day Free Trial <span aria-hidden="true">→</span></a>
+    </nav>
+  </header>
+
+  <main class="demo">
+    <div class="container">
+
+      <section class="demo-head" aria-labelledby="demo-title">
+        <p class="eyebrow">LIVE DEMO · TAP THROUGH IT · ABOUT 90 SECONDS</p>
+        <h1 class="demo-title" id="demo-title">
+          From the first message
+          <span>to money in your account.</span>
+        </h1>
+        <p class="demo-lead">
+          First see what happens to a business without GLIME. Then connect
+          your channels and watch one customer go from enquiry to order,
+          payment, shipment and delivery, while the payout lands in your bank.
+          Everything below is clickable.
+        </p>
+      </section>
+
+      <ol class="steps" id="steps" aria-label="Demo steps"></ol>
+
+      <section class="capbar" aria-live="polite">
+        <div class="cap-text">
+          <p class="step-kicker" id="step-kicker"></p>
+          <h2 class="step-heading" id="step-heading"></h2>
+          <p class="step-text" id="step-text"></p>
+        </div>
+        <div class="controls">
+          <button type="button" class="btn btn-ghost" id="btn-back" aria-label="Previous step">← Back</button>
+          <button type="button" class="btn btn-primary" id="btn-next">Next step →</button>
+          <button type="button" class="btn btn-ghost" id="btn-auto" aria-pressed="false">▶ Auto-play</button>
+          <button type="button" class="btn btn-ghost" id="btn-restart">↺ Restart</button>
+        </div>
+      </section>
+
+      <div class="tabs" role="tablist" aria-label="Choose a screen">
+        <button type="button" role="tab" class="tab on" data-dev="phone" aria-selected="true">📱 Customer's phone</button>
+        <button type="button" role="tab" class="tab" data-dev="dash" aria-selected="false">🖥 Your GLIME dashboard</button>
+      </div>
+
+      <div class="stage" id="stage" data-dev="phone">
+
+        <!-- ===== Customer's phone ===== -->
+        <section class="dev dev-phone" aria-label="Customer's phone">
+          <div class="dev-label"><span class="dot-live"></span> Customer's phone</div>
+
+          <div class="channel" role="group" aria-label="Channel">
+            <button type="button" class="chan on" id="chan-wa" data-chan="wa" aria-pressed="true">WhatsApp</button>
+            <button type="button" class="chan" id="chan-ig" data-chan="ig" aria-pressed="false">Instagram</button>
+          </div>
+
+          <div class="phone" id="phone" data-chan="wa">
+            <div class="phone-notch" aria-hidden="true"></div>
+
+            <div class="chat-head">
+              <span class="avatar" id="chat-avatar">A</span>
+              <div>
+                <b id="chat-name">Aarav Fashion Store</b>
+                <small id="chat-status">business account</small>
+              </div>
+              <span class="chan-badge" id="chan-badge">WhatsApp</span>
+            </div>
+
+            <div class="chat-body" id="chat-body"></div>
+
+            <div class="chat-foot">
+              <div class="chips" id="chat-chips"></div>
+              <div class="composer">
+                <span class="c-ico" aria-hidden="true">☺</span>
+                <input id="composer-input" type="text" readonly aria-label="Customer message" placeholder="Message">
+                <button type="button" class="send" id="hs-send" data-task="send" aria-label="Send">➤</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== GLIME dashboard ===== -->
+        <section class="dev dev-dash" aria-label="GLIME dashboard">
+          <div class="dev-label"><span class="dot-live"></span> Your GLIME dashboard</div>
+
+          <div class="dash" id="dash">
+            <div class="dash-bar">
+              <span class="tl"><i></i><i></i><i></i></span>
+              <span class="url">glime.online/dashboard</span>
+              <span class="who">Aarav Fashion Store</span>
+            </div>
+
+            <div class="dash-body">
+              <nav class="dash-nav" id="dash-nav" aria-label="Dashboard sections"></nav>
+              <div class="dash-main" id="dash-main"></div>
+            </div>
+
+            <div class="dash-toast" id="dash-toast" role="status"></div>
+          </div>
+        </section>
+      </div>
+
+      <p class="stage-note">
+        Sample business and customer, simulated in your browser. Nothing is sent to anyone.
+        Real payout amounts and timing depend on your payment gateway and courier.
+      </p>
+
+      <section class="finale" id="finale">
+        <p class="eyebrow">YOU JUST SAW IT WORK</p>
+        <h2>That was one customer.<span> GLIME does it for every chat, all day and all night.</span></h2>
+        <p class="lead">Connect your own Instagram and WhatsApp and have this running for your business.</p>
+        <div class="finale-actions">
+          <a href="signup.html" class="btn btn-primary btn-lg">Start 7-Day Free Trial →</a>
+          <a href="how-it-works.html" class="btn btn-ghost btn-lg">See How It Works</a>
+        </div>
+        <p class="hero-note"><b>7 days free.</b> No card required to start.</p>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="glime-global-nav.js?v=2" defer></script>
+  <script src="website-analytics.js"></script>
+  <script src="demo.js?v=2" defer></script>
+</body>
+</html>
