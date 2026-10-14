@@ -32,44 +32,74 @@
 <main class="main-content">
   <header class="header">
     <div>
-      <h1>Leads</h1>
-      <p>One place to capture, track and understand every lead.</p>
+      <h1>Lead Pipeline</h1>
+      <p>Capture, track and understand every lead in one place.</p>
     </div>
     <div id="clientBadge" class="client-badge">Client</div>
   </header>
 
-  <section class="stats-grid">
-    <div class="stat-card"><span>Total</span><strong id="statTotal">0</strong></div>
-    <div class="stat-card"><span>New</span><strong id="statNew">0</strong></div>
-    <div class="stat-card"><span>Follow-up</span><strong id="statFollowup">0</strong></div>
-    <div class="stat-card"><span>Won</span><strong id="statWon">0</strong></div>
+  <section class="kpis">
+    <div class="kpi"><span>Total leads</span><strong id="kpiTotal">0</strong><small>All sources</small></div>
+    <div class="kpi cy"><span>New</span><strong id="kpiNew">0</strong><small>Status: New</small></div>
+    <div class="kpi"><span>Qualified</span><strong id="kpiQualified">0</strong><small>Qualified, proposal, negotiation</small></div>
+    <div class="kpi"><span>Converted</span><strong id="kpiWon">0</strong><small id="kpiWonSub">Won leads</small></div>
+    <div class="kpi warn"><span>Overdue follow-ups</span><strong id="kpiOverdue">0</strong><small>Follow-up date has passed</small></div>
   </section>
 
-  <section class="toolbar card">
+  <details id="aiBox" class="ai-box card" open>
+    <summary>
+      <div class="ai-title"><b>AI Lead Intelligence</b><span class="ai-chip">Based on recorded data</span></div>
+      <span class="ai-caret">▾</span>
+    </summary>
+    <div class="ai-body" id="aiBody"></div>
+  </details>
+
+  <nav class="tabs">
+    <button class="tab active" data-view="pipeline">Pipeline</button>
+    <button class="tab" data-view="list">List</button>
+    <button class="tab" data-view="analytics">Analytics</button>
+  </nav>
+
+  <section id="toolbar" class="toolbar card">
     <div class="toolbar-row">
       <input id="searchInput" class="input" type="search" placeholder="Search name, mobile, interest…">
-      <select id="statusFilter" class="input">
-        <option value="">All status</option>
-        <option value="new">New</option>
-        <option value="contacted">Contacted</option>
-        <option value="qualified">Qualified</option>
-        <option value="proposal">Proposal</option>
-        <option value="negotiation">Negotiation</option>
-        <option value="won">Won</option>
-        <option value="lost">Lost</option>
-        <option value="paused">Paused</option>
-      </select>
       <select id="sourceFilter" class="input">
         <option value="">All sources</option>
-        <option value="offline">Offline</option>
-        <option value="website">Website</option>
-        <option value="lookbook">Lookbook</option>
-        <option value="voice">Voice AI</option>
         <option value="instagram">Instagram</option>
+        <option value="whatsapp">WhatsApp</option>
+        <option value="website">Website</option>
+        <option value="offline">Offline</option>
+        <option value="voice">Voice AI</option>
+        <option value="lookbook">Lookbook</option>
+        <option value="other">Other</option>
+        <option value="unknown">Unknown</option>
       </select>
+      <select id="priorityFilter" class="input">
+        <option value="">All priorities</option>
+        <option value="urgent">Urgent</option>
+        <option value="high">High</option>
+        <option value="normal">Normal</option>
+        <option value="low">Low</option>
+      </select>
+      <button id="refreshBtn" class="ghost-btn">↻ Refresh</button>
       <button id="addLeadBtn" class="primary-btn">+ Add Lead</button>
     </div>
   </section>
+
+  <div id="viewPipeline"><div id="board" class="board"><div class="col-empty">Loading…</div></div></div>
+
+  <section id="viewList" class="card table-card hidden">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Lead</th><th>Interest</th><th>Source</th><th>Status</th><th>Priority</th><th>Next follow-up</th><th></th></tr>
+        </thead>
+        <tbody id="leadsBody"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="viewAnalytics" class="hidden"></div>
 
   <section class="card custom-fields-card">
     <div class="section-head">
@@ -80,26 +110,6 @@
       <button id="manageFieldsBtn" class="ghost-btn">Manage fields</button>
     </div>
     <div id="customFieldsSummary" class="custom-fields-summary">Loading custom fields…</div>
-  </section>
-
-  <section class="card table-card">
-    <div class="section-head">
-      <h2>Lead Pipeline</h2>
-      <button id="refreshBtn" class="ghost-btn">↻ Refresh</button>
-    </div>
-    <div id="message" class="message hidden"></div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Lead</th><th>Interest</th><th>Source</th><th>Status</th><th>Priority</th><th>Next follow-up</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="leadsBody">
-          <tr><td colspan="7" class="empty">Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
   </section>
 </main>
 
@@ -119,7 +129,7 @@
       <label>Priority<select name="priority" class="input"><option>normal</option><option>low</option><option>high</option><option>urgent</option></select></label>
       <label>Next follow-up<input name="next_follow_up_at" class="input" type="datetime-local"></label>
       <label class="full">Notes<textarea name="notes" class="input" rows="4" maxlength="5000"></textarea></label>
-      <div id="dynamicLeadFields" class="dynamic-fields full"></div>
+      <div id="dynamicLeadFields" class="full"></div>
       <div class="form-actions full"><button type="button" class="ghost-btn" data-close="leadModal">Cancel</button><button class="primary-btn" type="submit">Save Lead</button></div>
     </form>
   </div>
@@ -130,7 +140,6 @@
     <button class="modal-close" data-close="fieldsModal">×</button>
     <h2>Manage Custom Fields</h2>
     <p class="modal-subtitle">Create fields for this business. Changes apply only to your client account.</p>
-
     <form id="fieldForm" class="form-grid">
       <label>Field label<input name="field_label" class="input" required maxlength="120" placeholder="e.g. Property Type"></label>
       <label>Field key<input name="field_key" class="input" required maxlength="80" placeholder="e.g. property_type"></label>
@@ -143,7 +152,6 @@
       <label class="checkbox-label full"><input name="is_required" type="checkbox"> Required field</label>
       <div class="form-actions full"><button type="button" class="ghost-btn" data-close="fieldsModal">Close</button><button class="primary-btn" type="submit">Create field</button></div>
     </form>
-
     <div class="field-list-wrap">
       <h3>Existing fields</h3>
       <div id="fieldDefinitionsList" class="field-list">Loading…</div>
@@ -151,21 +159,22 @@
   </div>
 </div>
 
-<div id="detailModal" class="modal hidden">
-  <div class="modal-panel detail-panel">
-    <button class="modal-close" data-close="detailModal">×</button>
+<div id="detailModal" class="drawer hidden">
+  <div class="drawer-overlay" data-close="detailModal"></div>
+  <aside class="drawer-panel">
+    <button class="modal-close" data-close="detailModal" aria-label="Close">×</button>
     <div id="detailContent"></div>
-  </div>
+  </aside>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<div id="toast" class="toast hidden"></div>
 
+<script src="leads-data.js"></script>
 <script src="leads.js"></script>
 <script src="lead-ai-addon.js"></script>
 <script src="lead-timeline-addon.js"></script>
 <script src="lead-duplicate-addon.js"></script>
 <script src="lead-next-action-addon.js"></script>
 <script src="lead-phase8-handoff-addon.js"></script>
-
 </body>
 </html>
