@@ -45,6 +45,21 @@
            returns text            -- the removed storage_path (or null)
          - deletes the profile_media row for that entity
 
+   LINKED PHOTOS (frontend, no extra backend needed)
+     A photo added on a CUSTOMER is shown everywhere that customer appears:
+       lead                    -> its customer's photo
+       whatsapp / instagram    -> conversation's customer, else its lead's
+                                  own photo, else that lead's customer
+     Order of preference for any entity:
+       1. its own manual upload
+       2. the linked customer's photo (also replaces an automatic
+          provider_cache DP, because a hand-set photo is deliberate)
+       3. its own provider_cache DP
+       4. coloured initials
+     Links are read from leads / whatsapp_conversations /
+     instagram_conversations (id, customer_id, lead_id). Uploading or
+     removing a photo only ever touches that entity's OWN photo.
+
    PROVIDER PHOTOS (optional, backend side)
      A backend job may write rows with source_type = 'provider_cache'
      (provider 'whatsapp' / 'instagram') pointing to an object in the
@@ -90,7 +105,9 @@
   };
 
   var sb = null, clientId = null, readyP = null, loggedIn = false;
-  var photos = {};            /* "type:id" -> { path, url } */
+  var photos = {};            /* "type:id" -> { path, url, derived? }  what the page shows */
+  var own = {};               /* "type:id" -> { path, url, src }       rows that really exist */
+  var links = { lead: {}, whatsapp_conversation: {}, instagram_conversation: {} };
   var listeners = [];
   var rules = [];
 
@@ -153,18 +170,82 @@
   async function loadAll() {
     var rows = [], from = 0, size = 1000;
     for (;;) {
-      var r = await sb.from(TABLE).select('entity_type,entity_id,storage_path,updated_at')
-        .eq('client_id', clientId).range(from, from + size - 1);
+      var r = await sb.from(TABLE).select('entity_type,entity_id,storage_path,source_type,updated_at')
+        .eq('client_id', clientId).order('id').range(from, from + size - 1);
       if (r.error) { console.warn('[GlimePhoto] load', r.error); break; }
       rows = rows.concat(r.data || []);
       if (!r.data || r.data.length < size) break;
       from += size;
     }
     var next = {};
-    rows.forEach(function (row) { next[key(row.entity_type, row.entity_id)] = { path: row.storage_path, url: null }; });
+    rows.forEach(function (row) { next[key(row.entity_type, row.entity_id)] = { path: row.storage_path, url: null, src: row.source_type || 'upload' }; });
     var signed = await signPaths(Object.keys(next).map(function (k) { return next[k].path; }));
     Object.keys(next).forEach(function (k) { next[k].url = signed[next[k].path] || null; });
-    photos = next;
+    own = next;
+    await loadLinks();
+    derive();
+  }
+
+  /* ---------- linked photos (customer -> lead / conversations) ---------- */
+  async function loadRows(table, cols) {
+    var rows = [], from = 0, size = 1000;
+    for (;;) {
+      var r = await sb.from(table).select(cols).eq('client_id', clientId).order('id').range(from, from + size - 1);
+      if (r.error) { console.warn('[GlimePhoto] links', table, r.error.message); return null; }
+      rows = rows.concat(r.data || []);
+      if (!r.data || r.data.length < size) break;
+      from += size;
+    }
+    return rows;
+  }
+
+  async function loadLinks() {
+    var res = await Promise.all([
+      loadRows('leads', 'id,customer_id'),
+      loadRows('whatsapp_conversations', 'id,customer_id,lead_id'),
+      loadRows('instagram_conversations', 'id,customer_id,lead_id')
+    ]);
+    var names = ['lead', 'whatsapp_conversation', 'instagram_conversation'];
+    names.forEach(function (t, i) {
+      if (res[i] === null) return;               /* keep the previous links if this read failed */
+      var m = {};
+      res[i].forEach(function (row) { m[String(row.id)] = { customer_id: row.customer_id || null, lead_id: row.lead_id || null }; });
+      links[t] = m;
+    });
+  }
+
+  function derive() {
+    var out = {};
+    Object.keys(own).forEach(function (k) { out[k] = own[k]; });
+
+    function fromCustomer(cid) { return cid ? own[key('customer', cid)] || null : null; }
+    function fromLead(lid) {
+      if (!lid) return null;
+      var o = own[key('lead', lid)];
+      if (o) return o;
+      var l = links.lead[lid];
+      return l ? fromCustomer(l.customer_id) : null;
+    }
+    function take(k, src) {
+      if (!src || !src.url) return;
+      var cur = out[k];
+      /* an own manual photo always wins; an automatic provider_cache DP can be replaced by a hand-set one */
+      if (cur && cur.src !== 'provider_cache') return;
+      out[k] = { path: src.path, url: src.url, derived: true };
+    }
+
+    Object.keys(links.lead).forEach(function (id) {
+      take(key('lead', id), fromCustomer(links.lead[id].customer_id));
+    });
+    ['whatsapp_conversation', 'instagram_conversation'].forEach(function (t) {
+      Object.keys(links[t]).forEach(function (id) {
+        var c = links[t][id];
+        var viaLead = fromLead(c.lead_id);
+        /* a hand-set photo (customer or lead) beats a provider_cache DP; provider_cache stays if nothing else exists */
+        take(key(t, id), fromCustomer(c.customer_id) || (viaLead && viaLead.src !== 'provider_cache' ? viaLead : null));
+      });
+    });
+    photos = out;
   }
 
   function init() {
@@ -179,7 +260,13 @@
       clientId = r.data.client_id;
       loggedIn = true;
       await loadAll();
-      setInterval(function () { loadAll().then(function () { paintAll(); }); }, (SIGN_SECONDS - 600) * 1000);
+      var lastSync = Date.now();
+      setInterval(function () { lastSync = Date.now(); loadAll().then(function () { paintAll(); }); }, (SIGN_SECONDS - 600) * 1000);
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState !== 'visible' || Date.now() - lastSync < 60000) return;
+        lastSync = Date.now();
+        loadAll().then(function () { paintAll(); });
+      });
       return true;
     })().catch(function (e) { console.warn('[GlimePhoto]', e); return false; });
     return readyP;
@@ -233,7 +320,7 @@
     var img = await toJpeg(file);
     var safeId = String(id).replace(/[^A-Za-z0-9_-]/g, '_');
     var path = clientId + '/avatars/' + type + '/' + safeId + '-' + Date.now() + '.jpg';
-    var old = photos[key(type, id)];
+    var old = own[key(type, id)];
 
     var up = await sb.storage.from(BUCKET).upload(path, img.blob, { contentType: 'image/jpeg', upsert: true, cacheControl: '3600' });
     if (up.error) throw new Error(up.error.message || 'Upload failed.');
@@ -248,7 +335,8 @@
     }
 
     var signed = await signPaths([path]);
-    photos[key(type, id)] = { path: path, url: signed[path] || URL.createObjectURL(img.blob) };
+    own[key(type, id)] = { path: path, url: signed[path] || URL.createObjectURL(img.blob), src: 'upload' };
+    derive();
     if (old && old.path && old.path !== path) {
       sb.storage.from(BUCKET).remove([old.path]).catch(function () { /* ignore */ });
     }
@@ -257,12 +345,13 @@
 
   async function remove(type, id) {
     if (!(await init())) throw new Error('Please sign in again.');
-    var old = photos[key(type, id)];
+    var old = own[key(type, id)];
     var rpc = await sb.rpc(RPC_REMOVE, { p_entity_type: type, p_entity_id: String(id) });
     if (rpc.error) throw new Error(backendMessage(rpc.error, RPC_REMOVE));
     var p = (typeof rpc.data === 'string' && rpc.data) || (old && old.path);
     if (p) sb.storage.from(BUCKET).remove([p]).catch(function () { /* ignore */ });
-    delete photos[key(type, id)];
+    delete own[key(type, id)];
+    derive();
     emit(type, id);
   }
 
@@ -458,11 +547,12 @@
 
     function setMsg(t, cls) { msg.textContent = t || ''; msg.className = 'gp-msg' + (cls ? ' ' + cls : ''); }
     function refresh() {
-      var u = url(type, id);
+      var u = url(type, id), mine = !!own[key(type, id)];
       if (u) { prev.style.background = 'url("' + u + '") center/cover no-repeat'; prev.textContent = ''; }
       else { prev.style.background = 'linear-gradient(135deg,' + color(name || id) + ',#0b141d)'; prev.textContent = initials(name || label); }
-      up.textContent = u ? 'Change photo' : 'Upload photo';
-      rm.style.display = u ? '' : 'none';
+      up.textContent = mine ? 'Change photo' : 'Upload photo';
+      rm.style.display = mine ? '' : 'none';
+      if (u && !mine) setMsg('Showing the linked customer\u2019s photo. Upload here to use a different one.');
     }
     refresh();
 
@@ -511,7 +601,7 @@
   }
 
   window.GlimePhoto = {
-    version: 1,
+    version: 2,
     ready: init,
     url: url,
     has: has,
