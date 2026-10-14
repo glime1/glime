@@ -133,10 +133,23 @@
 
   /* ---------- leads ---------- */
 
-  async function fetchLeads() {
-    await ensureClient();
+  async function fetchLeadsRpc() {
     let all = [];
+    for (let from = 0; from < CFG.maxRows; from += CFG.pageSize) {
+      const { data, error } = await db.rpc("get_glime_leads", {
+        p_offset: from,
+        p_limit: CFG.pageSize
+      });
+      if (error) throw error;
+      const rows = Array.isArray(data) ? data : [];
+      all = all.concat(rows);
+      if (rows.length < CFG.pageSize) break;
+    }
+    return all;
+  }
 
+  async function fetchLeadsDirect() {
+    let all = [];
     for (let from = 0; from < CFG.maxRows; from += CFG.pageSize) {
       const { data, error } = await db
         .from("leads")
@@ -144,13 +157,23 @@
         .eq("client_id", clientId)
         .order("created_at", { ascending: false })
         .range(from, from + CFG.pageSize - 1);
-
       if (error) throw error;
       all = all.concat(data || []);
       if (!data || data.length < CFG.pageSize) break;
     }
+    return all;
+  }
 
-    return all.map(normalizeLead);
+  async function fetchLeads() {
+    await ensureClient();
+    let rows;
+    try {
+      rows = await fetchLeadsRpc(); // real score + last_activity_at
+    } catch (e) {
+      console.warn("[GLIME Leads] get_glime_leads failed, using direct select:", e);
+      rows = await fetchLeadsDirect();
+    }
+    return rows.map(normalizeLead);
   }
 
   async function updateLead(id, patch) {
@@ -369,8 +392,17 @@
     const rows = (r) =>
       r.status === "fulfilled" && !r.value?.error ? r.value.data || [] : null;
 
+    // Backend uses channel-prefixed event names (whatsapp_message_sent, ...);
+    // UI contract uses message_sent / message_received.
+    const normEvent = (e) => {
+      const t = String(e.event_type || "");
+      const m = t.match(/^(?:whatsapp|instagram)_message_(sent|received)$/);
+      return m ? Object.assign({}, e, { event_type: "message_" + m[1], channel_event: t }) : e;
+    };
+    const tlRows = rows(tl);
+
     return {
-      timeline: rows(tl),
+      timeline: tlRows ? tlRows.map(normEvent) : tlRows,
       actions: rows(act),
       values: rows(cv),
       customer:

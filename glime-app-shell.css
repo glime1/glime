@@ -255,13 +255,25 @@ body.gas-collapsed .gas-group + .gas-group{
   .gas-collapse-btn{display:none}
   .gas-close{display:inline-flex}
 
+  /* whole drawer scrolls as one: menu + account + logout always reachable */
+  .gas-nav{flex:0 0 auto;overflow:visible;min-height:auto}
+  .gas-sb-foot{flex:0 0 auto;margin-top:8px;padding-bottom:6px}
+
   .gas-sidebar{
     position:fixed;
     top:0;
     left:0;
-    bottom:0;
+    bottom:auto;
     width:min(300px,86vw);
-    height:auto;
+    height:100vh;
+    height:100dvh;
+    max-height:100dvh;
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    touch-action:pan-y;
+    padding-bottom:max(14px,env(safe-area-inset-bottom));
     transform:translateX(-102%);
     visibility:hidden;
     transition:transform .24s ease,visibility 0s linear .24s;
