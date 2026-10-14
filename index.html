@@ -1162,6 +1162,40 @@
 
       .gx-orbit, .gx-card, .gx-float, .gx-core-inner { animation: none !important; }
     }
+
+    /* Live demo entry points */
+    .demo-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 100%;
+      margin-bottom: 16px;
+      padding: 7px 14px;
+      color: var(--green);
+      background: rgba(80, 245, 168, 0.08);
+      border: 1px solid rgba(80, 245, 168, 0.28);
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      line-height: 1.35;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .demo-pill:hover { transform: translateY(-2px); border-color: rgba(80, 245, 168, 0.6); }
+    .demo-pill-dot {
+      flex: none;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(80, 245, 168, 0.7);
+      animation: demoPillPulse 1.8s infinite;
+    }
+    @keyframes demoPillPulse {
+      70% { box-shadow: 0 0 0 8px rgba(80, 245, 168, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(80, 245, 168, 0); }
+    }
+    .demo-btn { border-color: rgba(80, 245, 168, 0.4); color: var(--green); }
+    @media (prefers-reduced-motion: reduce) { .demo-pill-dot { animation: none; } }
   </style>
 
   <link rel="stylesheet" href="glime-global-nav.css?v=2">
@@ -1242,6 +1276,7 @@ body{
 
     <nav class="glime-desktop-nav" aria-label="Main navigation">
       <a href="index.html" data-nav="home" class="active">Home</a>
+      <a href="demo.html" data-nav="demo">Live Demo</a>
       <a href="how-it-works.html" data-nav="how">How It Works</a>
       <a href="index.html#packages" data-nav="packages">Packages</a>
       <a href="contact.html" data-nav="contact">Contact</a>
@@ -1257,6 +1292,7 @@ body{
 
   <nav class="glime-mobile-nav" id="glime-mobile-nav" aria-label="Mobile navigation">
     <a href="index.html" data-nav="home" class="active">Home</a>
+    <a href="demo.html" data-nav="demo">Live Demo</a>
     <a href="how-it-works.html" data-nav="how">How It Works</a>
     <a href="index.html#packages" data-nav="packages">Packages</a>
     <a href="contact.html" data-nav="contact">Contact</a>
@@ -1276,6 +1312,8 @@ body{
       <div class="container hero-grid">
 
         <div>
+
+          <a href="demo.html" class="demo-pill" aria-label="Try the live demo"><span class="demo-pill-dot"></span>NEW · Try the live demo: first message to money in your account <span aria-hidden="true">→</span></a>
 
           <p class="eyebrow gx-eyebrow">
             AI BUSINESS AUTOMATION PLATFORM
@@ -1301,6 +1339,10 @@ body{
 
             <a href="signup.html" class="button button-primary">
               Start 7-Day Free Trial →
+            </a>
+
+            <a href="demo.html" class="button button-secondary demo-btn">
+              ▶ Try the Live Demo
             </a>
 
             <a href="how-it-works.html" class="button button-secondary">
