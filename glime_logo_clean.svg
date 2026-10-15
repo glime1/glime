@@ -4,38 +4,84 @@
 <desc>Created with Fabric.js 6.5.3</desc>
 <defs>
 <style>
-/* GLIME logo - subtle growth animation.
-   1) the G draws itself in, 2) the three nodes pop in, 3) the wordmark fades up,
-   4) then the nodes pulse slowly from bottom to top (a quiet "growth" rhythm). */
-.gl-path { stroke-dasharray: 1; stroke-dashoffset: 0; animation: gl-draw 1s cubic-bezier(.65,0,.35,1) backwards; }
-.gl-p2 { animation-delay: .05s; }
-.gl-p1 { animation-delay: .55s; animation-duration: 1s; }
-.gl-p3 { animation-delay: 1.05s; animation-duration: .5s; }
+/* GLIME logo - subtle growth animation, one 5-second cycle that repeats forever.
+   0.0-1.6s  the G draws itself in
+   1.3-2.2s  the three nodes pop in, bottom to top (growth)
+   1.7-2.4s  the GLIME wordmark rises in
+   2.4-4.4s  everything rests
+   4.4-4.8s  gentle fade out, then the cycle starts again at 5s */
+.gl-path { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.gl-p2 { animation: gl-p2 5s linear infinite; }
+.gl-p1 { animation: gl-p1 5s linear infinite; }
+.gl-p3 { animation: gl-p3 5s linear infinite; }
 
 .gl-node { transform-box: fill-box; transform-origin: center; }
-.gl-n1 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.3s backwards, gl-pulse 7s ease-in-out 4.5s infinite; }
-.gl-n2 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.45s backwards, gl-pulse 7s ease-in-out 4.8s infinite; }
-.gl-n3 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.6s backwards, gl-pulse 7s ease-in-out 5.1s infinite; }
+.gl-n1 { animation: gl-n1 5s linear infinite; }
+.gl-n2 { animation: gl-n2 5s linear infinite; }
+.gl-n3 { animation: gl-n3 5s linear infinite; }
 
-.gl-word { animation: gl-rise .7s ease-out 1.7s backwards; }
+.gl-word { animation: gl-word 5s linear infinite; }
 
-@keyframes gl-draw {
-  0%   { stroke-dashoffset: 1; opacity: 0; }
-  2%   { opacity: 1; }
-  100% { stroke-dashoffset: 0; opacity: 1; }
+@keyframes gl-p2 {
+  0%        { stroke-dashoffset: 1; opacity: 0; }
+  0.9%  { stroke-dashoffset: 1; opacity: 0; }
+  1.0%      { stroke-dashoffset: 1; opacity: 1; animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  21.0%      { stroke-dashoffset: 0; opacity: 1; }
+  88% { stroke-dashoffset: 0; opacity: 1; }
+  96% { stroke-dashoffset: 0; opacity: 0; }
+  100%      { stroke-dashoffset: 0; opacity: 0; }
 }
-@keyframes gl-pop {
-  0%   { transform: scale(0); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes gl-p1 {
+  0%        { stroke-dashoffset: 1; opacity: 0; }
+  10.9%  { stroke-dashoffset: 1; opacity: 0; }
+  11.0%      { stroke-dashoffset: 1; opacity: 1; animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  31.0%      { stroke-dashoffset: 0; opacity: 1; }
+  88% { stroke-dashoffset: 0; opacity: 1; }
+  96% { stroke-dashoffset: 0; opacity: 0; }
+  100%      { stroke-dashoffset: 0; opacity: 0; }
 }
-@keyframes gl-pulse {
-  0%, 12%, 100% { transform: scale(1); }
-  6%            { transform: scale(1.22); }
+@keyframes gl-p3 {
+  0%        { stroke-dashoffset: 1; opacity: 0; }
+  20.9%  { stroke-dashoffset: 1; opacity: 0; }
+  21.0%      { stroke-dashoffset: 1; opacity: 1; animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  31.0%      { stroke-dashoffset: 0; opacity: 1; }
+  88% { stroke-dashoffset: 0; opacity: 1; }
+  96% { stroke-dashoffset: 0; opacity: 0; }
+  100%      { stroke-dashoffset: 0; opacity: 0; }
 }
-@keyframes gl-rise {
-  0%   { opacity: 0; transform: translateY(14px); }
-  100% { opacity: 1; transform: translateY(0); }
+@keyframes gl-n1 {
+  0%        { transform: scale(0); opacity: 0; }
+  26.0%      { transform: scale(0); opacity: 0; animation-timing-function: cubic-bezier(.34,1.56,.64,1); }
+  37.0%      { transform: scale(1); opacity: 1; }
+  88% { transform: scale(1); opacity: 1; }
+  96% { transform: scale(1); opacity: 0; }
+  100%      { transform: scale(1); opacity: 0; }
 }
+@keyframes gl-n2 {
+  0%        { transform: scale(0); opacity: 0; }
+  29.0%      { transform: scale(0); opacity: 0; animation-timing-function: cubic-bezier(.34,1.56,.64,1); }
+  40.0%      { transform: scale(1); opacity: 1; }
+  88% { transform: scale(1); opacity: 1; }
+  96% { transform: scale(1); opacity: 0; }
+  100%      { transform: scale(1); opacity: 0; }
+}
+@keyframes gl-n3 {
+  0%        { transform: scale(0); opacity: 0; }
+  32.0%      { transform: scale(0); opacity: 0; animation-timing-function: cubic-bezier(.34,1.56,.64,1); }
+  43.0%      { transform: scale(1); opacity: 1; }
+  88% { transform: scale(1); opacity: 1; }
+  96% { transform: scale(1); opacity: 0; }
+  100%      { transform: scale(1); opacity: 0; }
+}
+@keyframes gl-word {
+  0%        { transform: translateY(14px); opacity: 0; }
+  34.0%      { transform: translateY(14px); opacity: 0; animation-timing-function: ease-out; }
+  48.0%      { transform: translateY(0); opacity: 1; }
+  88% { transform: translateY(0); opacity: 1; }
+  96% { transform: translateY(0); opacity: 0; }
+  100%      { transform: translateY(0); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gl-path, .gl-node, .gl-word { animation: none !important; }
 }
