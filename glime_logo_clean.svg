@@ -3,29 +3,66 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="809" height="809" viewBox="0 0 1080 1080" xml:space="preserve">
 <desc>Created with Fabric.js 6.5.3</desc>
 <defs>
+<style>
+/* GLIME logo - subtle growth animation.
+   1) the G draws itself in, 2) the three nodes pop in, 3) the wordmark fades up,
+   4) then the nodes pulse slowly from bottom to top (a quiet "growth" rhythm). */
+.gl-path { stroke-dasharray: 1; stroke-dashoffset: 0; animation: gl-draw 1s cubic-bezier(.65,0,.35,1) backwards; }
+.gl-p2 { animation-delay: .05s; }
+.gl-p1 { animation-delay: .55s; animation-duration: 1s; }
+.gl-p3 { animation-delay: 1.05s; animation-duration: .5s; }
+
+.gl-node { transform-box: fill-box; transform-origin: center; }
+.gl-n1 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.3s backwards, gl-pulse 7s ease-in-out 4.5s infinite; }
+.gl-n2 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.45s backwards, gl-pulse 7s ease-in-out 4.8s infinite; }
+.gl-n3 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.6s backwards, gl-pulse 7s ease-in-out 5.1s infinite; }
+
+.gl-word { animation: gl-rise .7s ease-out 1.7s backwards; }
+
+@keyframes gl-draw {
+  0%   { stroke-dashoffset: 1; opacity: 0; }
+  2%   { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes gl-pop {
+  0%   { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes gl-pulse {
+  0%, 12%, 100% { transform: scale(1); }
+  6%            { transform: scale(1.22); }
+}
+@keyframes gl-rise {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gl-path, .gl-node, .gl-word { animation: none !important; }
+}
+</style>
 </defs>
 <g transform="matrix(1.3043 0 0 1.3394 492.6044 1690.0746)"  >
 <rect style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;"  x="-500" y="-450" rx="0" ry="0" width="1000" height="900" />
 </g>
 <g transform="matrix(1.3043 0 0 1.3394 598.3093 282.0332)"  >
-<path style="stroke: rgb(11,143,140); stroke-width: 52; stroke-dasharray: none; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-372.5, -160)" d="M 245 0 L 390 0 L 500 110 L 350 110 L 245 215 L 350 320 L 500 320 L 500 205" stroke-linecap="round" />
+<path class="gl-path gl-p1" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-372.5, -160)" d="M 245 0 L 390 0 L 500 110 L 350 110 L 245 215 L 350 320 L 500 320 L 500 205" stroke-linecap="round" />
 </g>
 <g transform="matrix(1.3043 0 0 1.3394 529.0886 326.8545)"  >
-<path style="stroke: rgb(11,143,140); stroke-width: 52; stroke-dasharray: none; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-322.5, -182.5)" d="M 255 0 L 145 110 L 145 255 L 255 365 L 400 365 L 500 265" stroke-linecap="round" />
+<path class="gl-path gl-p2" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-322.5, -182.5)" d="M 255 0 L 145 110 L 145 255 L 255 365 L 400 365 L 500 265" stroke-linecap="round" />
 </g>
 <g transform="matrix(1.3043 0 0 1.3394 604.8308 355.7059)"  >
-<path style="stroke: rgb(11,143,140); stroke-width: 52; stroke-dasharray: none; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-377.5, -215)" d="M 255 215 L 500 215" stroke-linecap="round" />
+<path class="gl-path gl-p3" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-377.5, -215)" d="M 255 215 L 500 215" stroke-linecap="round" />
 </g>
 <g transform="matrix(1.3043 0 0 1.3394 465.9229 102.5543)"  >
-<rect style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-node gl-n3" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
 </g>
 <g transform="matrix(1.3043 0 0 1.3394 791.9998 249.8912)"  >
-<rect style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-node gl-n2" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
 </g>
 <g transform="matrix(1.3043 0 0 1.3394 465.9229 524.4737)"  >
-<rect style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-node gl-n1" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
 </g>
 <g transform="matrix(1.3043 0 0 1.3394 523.3107 749.0241)" style=""  >
-		<text xml:space="preserve" font-family="Montserrat, Poppins, Arial, Helvetica, sans-serif" font-size="132" font-style="normal" font-weight="700" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1; white-space: pre;" ><tspan x="-252.9893" y="41.4665" >G</tspan><tspan x="-128.3154" y="41.4665" >L</tspan><tspan x="-25.6846" y="41.4665" >I</tspan><tspan x="32.9893" y="41.4665" >M</tspan><tspan x="164.9463" y="41.4665" >E</tspan></text>
+		<text class="gl-word" xml:space="preserve" font-family="Montserrat, Poppins, Arial, Helvetica, sans-serif" font-size="132" font-style="normal" font-weight="700" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1; white-space: pre;" ><tspan x="-252.9893" y="41.4665" >G</tspan><tspan x="-128.3154" y="41.4665" >L</tspan><tspan x="-25.6846" y="41.4665" >I</tspan><tspan x="32.9893" y="41.4665" >M</tspan><tspan x="164.9463" y="41.4665" >E</tspan></text>
 </g>
 </svg>
