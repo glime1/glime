@@ -132,7 +132,7 @@ h1, h2, h3, p, a, span, small, b { overflow-wrap: break-word; }
 
 @media (min-width: 1000px) {
   .tabs { display: none; }
-  .stage, .stage[data-dev] { grid-template-columns: 330px minmax(0, 1fr); gap: 30px; }
+  .stage, .stage[data-dev] { grid-template-columns: 296px minmax(0, 1fr); gap: 30px; }
   .stage[data-dev] .dev-phone, .stage[data-dev] .dev-dash { display: grid; }
   .dev-dash { justify-items: stretch; }
 }
@@ -161,8 +161,8 @@ h1, h2, h3, p, a, span, small, b { overflow-wrap: break-word; }
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(330px, 100%);
-  aspect-ratio: 9 / 18.4;
+  width: min(296px, 100%);
+  aspect-ratio: 9 / 18;
   container-type: inline-size;
   overflow: hidden;
   border: 9px solid #0c1a22;
@@ -264,7 +264,7 @@ h1, h2, h3, p, a, span, small, b { overflow-wrap: break-word; }
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), 0 0 80px rgba(82, 232, 255, 0.08);
   font-size: 13px;
 }
-@media (min-width: 1000px) { .dash { height: 632px; } }
+@media (min-width: 1000px) { .dash { height: 590px; } }
 
 .dash-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--d-line); background: rgba(255, 255, 255, 0.03); }
 .tl { display: flex; gap: 6px; }
@@ -430,3 +430,48 @@ h1, h2, h3, p, a, span, small, b { overflow-wrap: break-word; }
   .tl-ship div { font-size: 9px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- Make it yours (customise) ---------- */
+.custom {
+  display: grid; grid-template-columns: 1fr; gap: 10px; align-items: end;
+  margin: 26px 0 18px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 16px;
+  background: linear-gradient(135deg, rgba(82, 232, 255, 0.06), rgba(80, 245, 168, 0.04));
+}
+.custom-ttl b { display: block; font-size: 0.95rem; letter-spacing: -0.02em; }
+.custom-ttl span { display: block; margin-top: 2px; color: var(--muted); font-size: 0.8rem; }
+.custom label { display: grid; gap: 5px; color: var(--dim); font: 500 0.68rem/1 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+.custom input {
+  width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.28); color: var(--text); font: 600 0.92rem 'Manrope', sans-serif;
+}
+.custom input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(82, 232, 255, 0.14); }
+.custom-act { display: flex; gap: 8px; }
+.custom-msg { min-height: 1em; margin: 0; color: var(--green); font-size: 0.8rem; font-weight: 700; }
+@media (min-width: 900px) {
+  .custom { grid-template-columns: 1.3fr 1fr 110px auto; }
+  .custom-ttl { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 12px; }
+  .custom-ttl span { margin: 0; }
+  .custom-msg { grid-column: 1 / -1; margin-top: -4px; }
+}
+
+/* ---------- Extra visuals ---------- */
+.spark { display: flex; align-items: flex-end; gap: 8px; height: 92px; }
+.spark .sb { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 5px; }
+.spark .sb i { display: block; width: 100%; border-radius: 6px 6px 2px 2px; background: rgba(156, 171, 185, 0.28); transition: height 0.6s cubic-bezier(.2,.8,.2,1); }
+.spark .sb.today i { background: linear-gradient(180deg, var(--green), var(--cyan)); box-shadow: 0 0 18px rgba(80, 245, 168, 0.35); }
+.spark .sb span { font-size: 10px; color: var(--dim); }
+.lossbox { border-color: rgba(255, 107, 122, 0.4); background: rgba(255, 107, 122, 0.07); }
+.lossbox b { display: block; font-size: 1.7rem; letter-spacing: -0.04em; color: var(--red); }
+.lossbox span { color: var(--muted); font-size: 12px; }
+.finale-line { max-width: 640px; margin: 14px auto 0; color: var(--green); font-weight: 800; }
+.finale-line:empty { display: none; }
+.dash { position: relative; }
+.cf {
+  position: absolute; z-index: 30; top: 38%; width: 8px; height: 12px; border-radius: 2px; pointer-events: none;
+  animation: cf-fall 1.9s cubic-bezier(.2,.7,.3,1) forwards;
+}
+@keyframes cf-fall {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--dx), 340px) rotate(var(--rot)); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .cf { display: none; } }

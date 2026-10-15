@@ -22,7 +22,11 @@
   var autoTimer = null;
 
   var PRICE = 1299;
-  var Q1 = 'Hi! Is the blue cotton kurta available in size M? What is the price?';
+  var SHOP = 'Aarav Fashion Store';
+  var PRODUCT = 'Blue Cotton Kurta';
+  var DEFAULTS = { shop: SHOP, product: PRODUCT, price: PRICE };
+  function q1() { return 'Hi! Is the ' + PRODUCT.toLowerCase() + ' available? What is the price?'; }
+  function handle() { return (SHOP.toLowerCase().replace(/[^a-z0-9]+/g, '') || 'yourstore').slice(0, 22); }
   var ESSENTIAL = ['wa', 'ig', 'razorpay', 'shiprocket'];
   var CONNECTORS = [
     { id: 'wa', name: 'WhatsApp Business', desc: 'Receive and answer customer chats', color: '#25d366', ab: 'WA', tag: 'REQUIRED' },
@@ -90,7 +94,7 @@
     $('#chan-wa').setAttribute('aria-pressed', String(st.chan === 'wa'));
     $('#chan-ig').setAttribute('aria-pressed', String(st.chan === 'ig'));
     $('#chan-badge').textContent = st.chan === 'wa' ? 'WhatsApp' : 'Instagram';
-    $('#chat-name').textContent = st.chan === 'wa' ? 'Aarav Fashion Store' : 'aaravfashion';
+    $('#chat-name').textContent = st.chan === 'wa' ? SHOP : handle();
     setStatus('business account');
   }
   function setStatus(t) { $('#chat-status').textContent = st.clock + ' · ' + t; }
@@ -120,7 +124,7 @@
     return '<b>Track your order #1042</b><small>AWB SR204815 · via Shiprocket</small><div class="track-steps">' + rows + '</div>' + btn;
   }
   function payHTML() {
-    return '<div class="pimg">🧾</div><div class="pbody"><b>Order #1042 · Blue Cotton Kurta (M)</b>' +
+    return '<div class="pimg">🧾</div><div class="pbody"><b>Order #1042 · ' + esc(PRODUCT) + '</b>' +
       '<small>Deliver to Pune 411001</small>' +
       '<div class="line"><span>Item</span><span>' + fmt(PRICE) + '</span></div>' +
       '<div class="line"><span>Delivery</span><span>Free</span></div>' +
@@ -135,7 +139,7 @@
       return appendHTML('<div class="msg ' + (m.from === 'cust' ? 'out' : 'in') + '">' + esc(m.text) + t + '</div>');
     }
     if (m.kind === 'product') {
-      return appendHTML('<div class="pcard"><div class="pimg">👕</div><div class="pbody"><b>Blue Cotton Kurta</b><small>Size M · In stock</small><div class="price">' + fmt(PRICE) + '</div></div></div>');
+      return appendHTML('<div class="pcard"><div class="pimg">👕</div><div class="pbody"><b>' + esc(PRODUCT) + '</b><small>In stock</small><div class="price">' + fmt(PRICE) + '</div></div></div>');
     }
     if (m.kind === 'pay') { return appendHTML('<div class="pcard" id="paycard">' + payHTML() + '</div>'); }
     if (m.kind === 'track') { return appendHTML('<div class="pcard" id="trackcard">' + trackHTML() + '</div>'); }
@@ -208,8 +212,17 @@
         return '<li class="' + f.cls + '"><i></i><span>' + esc(f.text) + '</span><time>' + esc(f.t) + '</time></li>';
       }).join('') + '</ul>'
       : '<p style="color:var(--dim)">Nothing yet. Activity shows up here live.</p>';
+    var week = [2400, 3100, 1800, 2900, 3600, 2200, st.paid ? PRICE : 0];
+    var mx = Math.max.apply(null, week.concat([PRICE]));
+    var days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'];
+    var spark = on ? '<div class="card"><h4>Sales this week</h4><div class="spark">' + week.map(function (v, i) {
+      return '<div class="sb' + (i === 6 ? ' today' : '') + '"><i style="height:' + Math.max(4, Math.round(v / mx * 100)) + '%"></i><span>' + days[i] + '</span></div>';
+    }).join('') + '</div></div>' : '';
+    var loss = !on && st.missed
+      ? '<div class="card lossbox"><h4>What this is costing you</h4><b>' + fmt(PRICE * 30) + '</b><span> a month if just one enquiry a day goes unanswered. Illustration only.</span></div>'
+      : '';
     return '<div class="pg-head"><h3 class="pg-title">Overview</h3><span class="pill ' + (on ? 'g' : 'r') + '">' + (on ? '● GLIME is live' : '● Not connected') + '</span></div>' +
-      kpis + (on ? bank : '') + '<div class="card"><h4>Live activity</h4>' + feed + '</div>';
+      kpis + loss + (on ? bank : '') + spark + '<div class="card"><h4>Live activity</h4>' + feed + '</div>';
   }
 
   function threadBubbles() {
@@ -219,7 +232,7 @@
           ? '<div class="tb c">' + esc(m.text) + '</div>'
           : '<div class="tb b"><span class="ai">GLIME AI · REPLIED INSTANTLY</span>' + esc(m.text) + '</div>';
       }
-      if (m.kind === 'product') return '<div class="tb b card2"><span class="ai">PRODUCT CARD SENT</span>Blue Cotton Kurta · M · ' + fmt(PRICE) + '</div>';
+      if (m.kind === 'product') return '<div class="tb b card2"><span class="ai">PRODUCT CARD SENT</span>' + esc(PRODUCT) + ' · ' + fmt(PRICE) + '</div>';
       if (m.kind === 'pay') return '<div class="tb b card2"><span class="ai">PAYMENT LINK SENT · RAZORPAY</span>Order #1042 · ' + fmt(PRICE) + (st.paid ? ' · PAID ✓' : ' · awaiting payment') + '</div>';
       if (m.kind === 'track') return '<div class="tb b card2"><span class="ai">TRACKING SENT</span>AWB SR204815 · live status updates on</div>';
       if (m.kind === 'sys') return '<div class="tsys ' + (m.cls || '') + '">' + esc(m.text) + '</div>';
@@ -253,7 +266,7 @@
     if (!glimeOn()) return '<div class="pg-head"><h3 class="pg-title">Orders</h3></div>' + emptyState('No orders yet', 'Connect your channels to start receiving orders from chats.');
     var rows = '';
     if (st.order) {
-      rows += '<tr class="new"><td>#1042</td><td>Christine</td><td class="hide-s">Blue Cotton Kurta (M)</td><td class="strong">' + fmt(PRICE) + '</td>' +
+      rows += '<tr class="new"><td>#1042</td><td>Christine</td><td class="hide-s">' + esc(PRODUCT) + '</td><td class="strong">' + fmt(PRICE) + '</td>' +
         '<td>' + (st.paid ? '<span class="pill g">Paid</span>' : '<span class="pill a">Awaiting payment</span>') + '</td>' +
         '<td>' + (st.ship >= 0 ? '<span class="pill c">' + STAGES[st.ship] + '</span>' : '<span class="pill">Not shipped</span>') + '</td></tr>';
     }
@@ -361,6 +374,28 @@
   }
   function isNarrow() { return window.matchMedia('(max-width: 999px)').matches; }
 
+  function burst() {
+    if (fast) return;
+    var d = $('#dash');
+    var colors = ['#22d3ee', '#34d399', '#fbbf24', '#a78bfa', '#f472b6'];
+    for (var i = 0; i < 44; i++) {
+      var c = document.createElement('i');
+      c.className = 'cf';
+      c.style.left = (20 + Math.random() * 60) + '%';
+      c.style.background = colors[i % colors.length];
+      c.style.setProperty('--dx', (Math.random() * 280 - 140).toFixed(0) + 'px');
+      c.style.setProperty('--rot', (Math.random() * 720 - 360).toFixed(0) + 'deg');
+      c.style.animationDelay = (Math.random() * 0.25).toFixed(2) + 's';
+      d.appendChild(c);
+      (function (n) { setTimeout(function () { if (n.parentNode) n.parentNode.removeChild(n); }, 2200); })(c);
+    }
+  }
+  function scrollToStage() {
+    var target = isNarrow() ? $('.tabs') : stage;
+    var y = target.getBoundingClientRect().top + window.scrollY - (isNarrow() ? 70 : 84);
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  }
+
   /* ---------------- steps ---------------- */
   var STEPS = [
     {
@@ -373,13 +408,13 @@
         st.view = 'inbox';
         st.clock = '11:42 PM';
         chatClear('Customer view · Sample business');
-        setComposer(Q1);
+        setComposer(q1());
         applyChan();
       },
       tasks: [{
         key: 'send', where: 'phone',
         run: async function (w) {
-          var txt = Q1;
+          var txt = q1();
           setComposer('');
           addMsg({ kind: 'text', from: 'cust', text: txt, t: st.clock });
           feedPush('New enquiry from Christine', '');
@@ -436,14 +471,14 @@
         st.clock = '11:42 PM';
         st.log = [];
         chatClear('The same night, with GLIME connected');
-        setComposer(Q1);
+        setComposer(q1());
         applyChan();
       },
       tasks: [{
         key: 'send', where: 'phone',
         run: async function (w) {
           setComposer('');
-          addMsg({ kind: 'text', from: 'cust', text: Q1, t: st.clock });
+          addMsg({ kind: 'text', from: 'cust', text: q1(), t: st.clock });
           feedPush('New enquiry from Christine', '');
           render();
           await w(600);
@@ -451,10 +486,10 @@
           await w(1400);
           hideTyping();
           st.clock = '11:42 PM';
-          addMsg({ kind: 'text', from: 'biz', text: 'Hi Christine! 👋 Yes, the Blue Cotton Kurta is in stock in size M. It is ' + fmt(PRICE) + ' with free delivery. Shall I book it for you?', t: st.clock });
+          addMsg({ kind: 'text', from: 'biz', text: 'Hi Christine! 👋 Yes, the ' + PRODUCT + ' is in stock. It is ' + fmt(PRICE) + ' with free delivery. Shall I book it for you?', t: st.clock });
           addMsg({ kind: 'product' });
           st.aiReplies += 1;
-          st.lead = 'Blue Cotton Kurta (M)';
+          st.lead = PRODUCT;
           feedPush('GLIME replied to Christine in 3 sec · lead saved', 'good');
           render();
           notify('Replied in 3 sec · lead saved');
@@ -576,6 +611,7 @@
             if (el && !fast) {
               for (var i = 1; i <= 16; i++) { await w(35); el.textContent = fmt(Math.round(PRICE * i / 16)); }
             }
+            burst();
             notify(fmt(PRICE) + ' credited to your account ✓');
           }
         }
@@ -674,6 +710,10 @@
     next.classList.toggle('hot', false);
     $('#btn-back').disabled = stepIdx === 0 && !st.doneKeys['0:send'];
     finale.classList.toggle('lit', last && done);
+    var fl = $('#finale-line');
+    if (fl) fl.textContent = last && done
+      ? SHOP + ' just sold ' + PRODUCT + ' for ' + fmt(PRICE) + ' from one chat, and nobody typed a word.'
+      : '';
   }
 
   async function goTo(i) {
@@ -722,7 +762,8 @@
     var b = $('#btn-auto');
     b.setAttribute('aria-pressed', 'true');
     b.textContent = '❚❚ Pause';
-    autoStep();
+    scrollToStage();
+    autoTimer = setTimeout(autoStep, 700);
   }
   async function autoStep() {
     if (!autoOn) return;
@@ -737,9 +778,13 @@
     }
     if (stepIdx < STEPS.length - 1) {
       enterStep(stepIdx + 1);
+      scrollToStage();
       autoTimer = setTimeout(autoStep, 1400);
     } else {
       stopAuto();
+      setTimeout(function () {
+        if (e === epoch && isDone(STEPS.length - 1)) finale.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 1800);
     }
   }
 
@@ -751,8 +796,43 @@
     }).join('');
   }
 
+  function loadCustom() {
+    try {
+      var o = JSON.parse(localStorage.getItem('glime-demo-custom') || 'null');
+      if (o) applyCustom(o, true);
+    } catch (e) { /* storage unavailable */ }
+  }
+  function applyCustom(o, silent) {
+    var shop = String(o.shop || '').trim().slice(0, 28) || DEFAULTS.shop;
+    var prod = String(o.product || '').trim().slice(0, 28) || DEFAULTS.product;
+    var price = parseInt(o.price, 10);
+    if (!(price >= 1 && price <= 99999)) price = DEFAULTS.price;
+    SHOP = shop; PRODUCT = prod; PRICE = price;
+    $('#dash-who').textContent = SHOP;
+    $('#cu-shop').value = shop === DEFAULTS.shop ? '' : shop;
+    $('#cu-product').value = prod === DEFAULTS.product ? '' : prod;
+    $('#cu-price').value = price === DEFAULTS.price ? '' : String(price);
+    if (!silent) {
+      try { localStorage.setItem('glime-demo-custom', JSON.stringify({ shop: SHOP, product: PRODUCT, price: PRICE })); } catch (e) { /* ignore */ }
+    }
+  }
+
   function init() {
     buildRail();
+    loadCustom();
+    $('#custom-form').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      applyCustom({ shop: $('#cu-shop').value, product: $('#cu-product').value, price: $('#cu-price').value });
+      var m = $('#custom-msg');
+      m.textContent = '✓ Demo updated for ' + SHOP;
+      setTimeout(function () { m.textContent = ''; }, 2400);
+      goTo(stepIdx);
+    });
+    $('#custom-reset').addEventListener('click', function () {
+      applyCustom({});
+      try { localStorage.removeItem('glime-demo-custom'); } catch (e) { /* ignore */ }
+      goTo(stepIdx);
+    });
 
     document.addEventListener('click', function (ev) {
       var t = ev.target.closest('[data-task]');

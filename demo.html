@@ -16,7 +16,7 @@
     rel="stylesheet"
   >
   <link rel="stylesheet" href="glime-global-nav.css?v=2">
-  <link rel="stylesheet" href="demo.css?v=2">
+  <link rel="stylesheet" href="demo.css?v=3">
 </head>
 
 <body>
@@ -70,6 +70,18 @@
           Everything below is clickable.
         </p>
       </section>
+
+      <form class="custom" id="custom-form" autocomplete="off">
+        <div class="custom-ttl"><b>Make it yours</b><span>Use your own shop, product and price. The whole demo changes.</span></div>
+        <label>Shop name<input id="cu-shop" type="text" maxlength="28" placeholder="Aarav Fashion Store"></label>
+        <label>Product<input id="cu-product" type="text" maxlength="28" placeholder="Blue Cotton Kurta"></label>
+        <label class="sm">Price (₹)<input id="cu-price" type="number" min="1" max="99999" inputmode="numeric" placeholder="1299"></label>
+        <div class="custom-act">
+          <button type="submit" class="btn btn-primary">Apply</button>
+          <button type="button" class="btn btn-ghost" id="custom-reset">Reset</button>
+        </div>
+        <p class="custom-msg" id="custom-msg" role="status"></p>
+      </form>
 
       <ol class="steps" id="steps" aria-label="Demo steps"></ol>
 
@@ -136,7 +148,7 @@
             <div class="dash-bar">
               <span class="tl"><i></i><i></i><i></i></span>
               <span class="url">glime.online/dashboard</span>
-              <span class="who">Aarav Fashion Store</span>
+              <span class="who" id="dash-who">Aarav Fashion Store</span>
             </div>
 
             <div class="dash-body">
@@ -157,6 +169,7 @@
       <section class="finale" id="finale">
         <p class="eyebrow">YOU JUST SAW IT WORK</p>
         <h2>That was one customer.<span> GLIME does it for every chat, all day and all night.</span></h2>
+        <p class="finale-line" id="finale-line"></p>
         <p class="lead">Connect your own Instagram and WhatsApp and have this running for your business.</p>
         <div class="finale-actions">
           <a href="signup.html" class="btn btn-primary btn-lg">Start 7-Day Free Trial →</a>
@@ -170,6 +183,6 @@
 
   <script src="glime-global-nav.js?v=2" defer></script>
   <script src="website-analytics.js"></script>
-  <script src="demo.js?v=2" defer></script>
+  <script src="demo.js?v=3" defer></script>
 </body>
 </html>
