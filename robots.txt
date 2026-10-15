@@ -6,5 +6,21 @@ Disallow: /login.html
 Disallow: /admin.html
 Disallow: /dashboard.html
 
+# Logged-in client workspace pages (no value for search or AI crawlers)
+Disallow: /settings.html
+Disallow: /billing.html
+Disallow: /leads.html
+Disallow: /orders.html
+Disallow: /customer.html
+Disallow: /follow-up.html
+Disallow: /services.html
+Disallow: /client-assistant.html
+Disallow: /ai-connections.html
+Disallow: /instagram-sales-specialist.html
+Disallow: /whatsapp-sales-specialist.html
+Disallow: /voice-ai.html
+Disallow: /voice-control.html
+Disallow: /glime-intelligence-center.html
+
 # Sitemap
 Sitemap: https://glime.online/sitemap.xml
