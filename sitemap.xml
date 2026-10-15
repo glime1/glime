@@ -2,24 +2,13 @@
 
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
+  <!-- Core pages -->
   <url>
     <loc>https://glime.online/</loc>
   </url>
 
   <url>
-    <loc>https://glime.online/about.html</loc>
-  </url>
-
-  <url>
-    <loc>https://glime.online/glime-identity.html</loc>
-  </url>
-
-  <url>
-    <loc>https://glime.online/glime-ai.html</loc>
-  </url>
-
-  <url>
-    <loc>https://glime.online/ai-problem-solver.html</loc>
+    <loc>https://glime.online/demo.html</loc>
   </url>
 
   <url>
@@ -30,6 +19,29 @@
     <loc>https://glime.online/packages.html</loc>
   </url>
 
+  <url>
+    <loc>https://glime.online/signup.html</loc>
+  </url>
+
+  <!-- About GLIME and the founder -->
+  <url>
+    <loc>https://glime.online/about.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/glime-identity.html</loc>
+  </url>
+
+  <!-- AI tools -->
+  <url>
+    <loc>https://glime.online/glime-ai.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-problem-solver.html</loc>
+  </url>
+
+  <!-- Proof and contact -->
   <url>
     <loc>https://glime.online/case-studies.html</loc>
   </url>
@@ -42,16 +54,21 @@
     <loc>https://glime.online/contact.html</loc>
   </url>
 
-  <url>
-    <loc>https://glime.online/refund-cancellation.html</loc>
-  </url>
-
+  <!-- Policies -->
   <url>
     <loc>https://glime.online/privacy.html</loc>
   </url>
 
   <url>
     <loc>https://glime.online/terms.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/refund-cancellation.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/data-deletion.html</loc>
   </url>
 
 </urlset>
