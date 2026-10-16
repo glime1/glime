@@ -417,7 +417,7 @@
         live: function () { return 'GLIME is live. Chats, payments and shipping are connected.'; },
         reply: function () { return 'GLIME replied in three seconds, with price and stock. The lead is saved.'; },
         order: function () { return 'Order number 1042 is created, and the payment link is sent.'; },
-        paid: function () { return 'Payment of ' + money() + ' rupees received. The order is confirmed.'; },
+        paid: function () { return 'Payment received. ' + money() + ' rupees.'; },
         ship: function () { return 'Courier booked on Shiprocket. Tracking is sent to the customer.'; },
         delivered: function () { return 'The parcel is delivered to the customer.'; },
         payout: function () { return money() + ' rupees credited to your bank account.'; }
@@ -429,7 +429,7 @@
         live: function () { return 'GLIME चालू हो गया। चैट, पेमेंट और शिपिंग सब जुड़ गए।'; },
         reply: function () { return 'GLIME ने तीन सेकंड में जवाब दिया, कीमत और स्टॉक के साथ। लीड सेव हो गई।'; },
         order: function () { return 'ऑर्डर नंबर 1042 बन गया, और पेमेंट लिंक भेज दिया गया।'; },
-        paid: function () { return money() + ' रुपये का पेमेंट मिल गया। ऑर्डर कन्फर्म हो गया।'; },
+        paid: function () { return 'GLIME पर ' + money() + ' रुपये प्राप्त हुए।'; },
         ship: function () { return 'Shiprocket पर कूरियर बुक हो गया। ग्राहक को ट्रैकिंग भेज दी गई।'; },
         delivered: function () { return 'पार्सल ग्राहक तक पहुँच गया।'; },
         payout: function () { return 'आपके बैंक खाते में ' + money() + ' रुपये जमा हो गए।'; }
@@ -778,6 +778,8 @@
             st.paid = true;
             updatePay();
             addMsg({ kind: 'sys', text: 'Payment received · ' + fmt(PRICE), cls: 'pay' });
+            await w(650);
+            voice.say('paid');
             showTyping();
             await w(900);
             hideTyping();
@@ -786,7 +788,6 @@
             st.view = 'orders';
             render();
             notify('New paid order · ' + fmt(PRICE));
-            voice.say('paid');
           }
         }
       ]
