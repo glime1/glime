@@ -576,6 +576,8 @@
         if (kind === 'send') { tone(620 * ig, 0, 0.09, 0.07); tone(930 * ig, 0.07, 0.12, 0.06); }
         else if (kind === 'recv') { tone(1046 * ig, 0, 0.1, 0.06); tone(1396 * ig, 0.1, 0.16, 0.055); }
         else if (kind === 'pay') { tone(784, 0, 0.14, 0.07); tone(988, 0.12, 0.14, 0.07); tone(1319, 0.24, 0.3, 0.07); }
+        else if (kind === 'tick') { tone(1250, 0, 0.05, 0.14, 'triangle'); tone(1900, 0.03, 0.05, 0.09, 'triangle'); }
+        else if (kind === 'ok') { tone(988, 0, 0.12, 0.1); tone(1319, 0.1, 0.2, 0.1); }
         else if (kind === 'lost') { tone(330, 0, 0.22, 0.07, 'triangle'); tone(247, 0.2, 0.34, 0.07, 'triangle'); }
       } catch (e) { /* ignore */ }
     }
@@ -688,6 +690,7 @@
           key: 'c-' + id, where: 'dash',
           run: async function (w) {
             st.conn[id] = 'busy';
+            voice.sfx('tick');
             render();
             await w(850);
             st.conn[id] = true;
@@ -695,6 +698,7 @@
             feedPush(c.name + ' connected', 'good');
             render();
             notify(c.name + ' connected ✓');
+            voice.sfx('ok');
             if (glimeOn()) voice.say('live');
           }
         };
@@ -1113,7 +1117,7 @@
       var t = ev.target.closest('[data-task="c-shopify"],[data-task="c-gcal"]');
       if (!t || busy) return;
       var id = t.getAttribute('data-task').slice(2);
-      st.conn[id] = 'busy'; render();
+      st.conn[id] = 'busy'; voice.sfx('tick'); render();
       setTimeout(function () { st.conn[id] = true; feedPush(id === 'shopify' ? 'Shopify connected' : 'Google Calendar connected', 'good'); render(); }, 800);
     });
 
