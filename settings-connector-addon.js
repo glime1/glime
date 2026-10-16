@@ -11,6 +11,7 @@
      via glime-shiprocket-cargo-gateway.
    - Google OAuth returns here: settings.html?connector=google-calendar&status=...#connector
    - Razorpay OAuth returns here: settings.html?connector=razorpay&status=...&reason=...#connector
+   - connector-manage-addon.js (loaded on demand): permissions list + Disconnect inside connected cards.
    WhatsApp / Instagram stay under Channels.
    ========================================================= */
 (function(){
@@ -29,6 +30,18 @@ function loadCargo(){
     const s=document.createElement('script');
     s.src='connector-shiprocket-addon.js';
     s.onload=function(){resolve(!!window.GLIME_CARGO);};
+    s.onerror=function(){resolve(false);};
+    document.head.appendChild(s);
+  });
+}
+
+/* Permissions + Disconnect for connected connectors; also loaded on demand and isolated. */
+function loadManage(){
+  return new Promise(function(resolve){
+    if(window.GLIME_CONNECTOR_MANAGE)return resolve(true);
+    const s=document.createElement('script');
+    s.src='connector-manage-addon.js';
+    s.onload=function(){resolve(!!window.GLIME_CONNECTOR_MANAGE);};
     s.onerror=function(){resolve(false);};
     document.head.appendChild(s);
   });
@@ -124,6 +137,15 @@ S.register({
     loadCargo().then(function(ok){
       if(!ok||!cargoHost.isConnected||!api.supabase)return;
       window.GLIME_CARGO.mount(cargoHost,{
+        sb:api.supabase,
+        supabaseUrl:supabaseUrl,
+        apiKey:api.supabase.supabaseKey
+      });
+    });
+
+    loadManage().then(function(ok){
+      if(!ok||!hub.isConnected||!api.supabase)return;
+      window.GLIME_CONNECTOR_MANAGE.mount(hub,{
         sb:api.supabase,
         supabaseUrl:supabaseUrl,
         apiKey:api.supabase.supabaseKey
