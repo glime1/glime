@@ -16,7 +16,7 @@
     rel="stylesheet"
   >
   <link rel="stylesheet" href="glime-global-nav.css?v=2">
-  <link rel="stylesheet" href="demo.css?v=3">
+  <link rel="stylesheet" href="demo.css?v=4">
 </head>
 
 <body>
@@ -97,6 +97,23 @@
           <button type="button" class="btn btn-ghost" id="btn-auto" aria-pressed="false">▶ Auto-play</button>
           <button type="button" class="btn btn-ghost" id="btn-restart">↺ Restart</button>
         </div>
+      </section>
+
+      <section class="voice" id="voice" aria-label="Voice narration">
+        <div class="v-main">
+          <span class="v-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <b class="v-title">Voice narration</b>
+          <div class="v-ctl">
+            <button type="button" class="vbtn" id="v-play" aria-pressed="true">⏸ Pause</button>
+            <button type="button" class="vbtn" id="v-mute" aria-pressed="false">🔊 Mute</button>
+            <button type="button" class="vbtn" id="v-replay">↺ Replay</button>
+          </div>
+          <div class="v-lang" role="group" aria-label="Narration language">
+            <button type="button" class="vbtn on" id="v-en" aria-pressed="true">English</button>
+            <button type="button" class="vbtn" id="v-hi" aria-pressed="false">हिंदी</button>
+          </div>
+        </div>
+        <p class="v-line" id="v-line">Narration plays as the demo moves. Use the controls to pause, mute or replay.</p>
       </section>
 
       <div class="tabs" role="tablist" aria-label="Choose a screen">
@@ -183,6 +200,6 @@
 
   <script src="glime-global-nav.js?v=2" defer></script>
   <script src="website-analytics.js"></script>
-  <script src="demo.js?v=3" defer></script>
+  <script src="demo.js?v=4" defer></script>
 </body>
 </html>

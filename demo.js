@@ -20,6 +20,7 @@
   var stepIdx = 0;
   var autoOn = false;
   var autoTimer = null;
+  var autoWait = 0;
 
   var PRICE = 1299;
   var SHOP = 'Aarav Fashion Store';
@@ -152,7 +153,7 @@
   function updateTrack() { var n = $('#trackcard'); if (n) n.innerHTML = trackHTML(); }
   function updatePay() { var n = $('#paycard'); if (n) n.innerHTML = payHTML(); }
 
-  function addMsg(m) { st.log.push(m); renderPhoneMsg(m); }
+  function addMsg(m) { st.log.push(m); renderPhoneMsg(m); if (typeof sfxFor === 'function') sfxFor(m); }
 
   var typingNode = null;
   function showTyping() {
@@ -396,6 +397,240 @@
     window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
   }
 
+  /* ---------------- voice narration + message sounds ----------------
+     Browser speech synthesis and WebAudio only. No network, no API keys. */
+  var voice = (function () {
+    var synth = window.speechSynthesis || null;
+    var supported = !!(synth && 'SpeechSynthesisUtterance' in window);
+    var lang = 'en';
+    try { if (localStorage.getItem('glime-demo-lang') === 'hi') lang = 'hi'; } catch (e) { /* ignore */ }
+    var muted = false, paused = false, unlocked = false, speaking = false;
+    var queue = [], last = null, cur = null, watchdog = null, voices = [], ctx = null;
+
+    function chanName() { return st.chan === 'ig' ? 'Instagram' : 'WhatsApp'; }
+    function money() { return String(PRICE); }
+    var TEXT = {
+      en: {
+        inquiry: function () { return 'New ' + chanName() + ' message. A customer is asking about the ' + PRODUCT + '.'; },
+        silence: function () { return 'Three hours pass. Nobody replies.'; },
+        lost: function () { return 'The customer leaves. A ' + money() + ' rupee sale is lost.'; },
+        live: function () { return 'GLIME is live. Chats, payments and shipping are connected.'; },
+        reply: function () { return 'GLIME replied in three seconds, with price and stock. The lead is saved.'; },
+        order: function () { return 'Order number 1042 is created, and the payment link is sent.'; },
+        paid: function () { return 'Payment of ' + money() + ' rupees received. The order is confirmed.'; },
+        ship: function () { return 'Courier booked on Shiprocket. Tracking is sent to the customer.'; },
+        delivered: function () { return 'The parcel is delivered to the customer.'; },
+        payout: function () { return money() + ' rupees credited to your bank account.'; }
+      },
+      hi: {
+        inquiry: function () { return chanName() + ' पर नया मैसेज आया। ग्राहक ' + PRODUCT + ' के बारे में पूछ रहा है।'; },
+        silence: function () { return 'तीन घंटे बीत गए। किसी ने जवाब नहीं दिया।'; },
+        lost: function () { return 'ग्राहक चला गया। ' + money() + ' रुपये की बिक्री हाथ से निकल गई।'; },
+        live: function () { return 'GLIME चालू हो गया। चैट, पेमेंट और शिपिंग सब जुड़ गए।'; },
+        reply: function () { return 'GLIME ने तीन सेकंड में जवाब दिया, कीमत और स्टॉक के साथ। लीड सेव हो गई।'; },
+        order: function () { return 'ऑर्डर नंबर 1042 बन गया, और पेमेंट लिंक भेज दिया गया।'; },
+        paid: function () { return money() + ' रुपये का पेमेंट मिल गया। ऑर्डर कन्फर्म हो गया।'; },
+        ship: function () { return 'Shiprocket पर कूरियर बुक हो गया। ग्राहक को ट्रैकिंग भेज दी गई।'; },
+        delivered: function () { return 'पार्सल ग्राहक तक पहुँच गया।'; },
+        payout: function () { return 'आपके बैंक खाते में ' + money() + ' रुपये जमा हो गए।'; }
+      }
+    };
+
+    /* ----- voices ----- */
+    function loadVoices() { if (supported) voices = synth.getVoices() || []; }
+    function norm(l) { return String(l || '').toLowerCase().replace('_', '-'); }
+    function pick(l) {
+      var list = voices.filter(function (v) { return norm(v.lang).indexOf(l) === 0; });
+      if (!list.length) return null;
+      function score(v) {
+        var n = v.name.toLowerCase(), sc = 0;
+        if (/natural|neural|online|premium|enhanced|google|microsoft|siri/.test(n)) sc += 3;
+        if (/swara|neerja|heera|kalpana|lekha|veena|rishi|ravi|madhur|prabhat/.test(n)) sc += 2;
+        if (l === 'en' && norm(v.lang) === 'en-in') sc += 4;
+        if (l === 'en' && norm(v.lang) === 'en-us') sc += 1;
+        if (v['default']) sc += 0.5;
+        return sc;
+      }
+      list.sort(function (a, b) { return score(b) - score(a); });
+      return list[0];
+    }
+    function effLang() {
+      if (lang === 'hi' && voices.length && !pick('hi')) return 'en';
+      return lang;
+    }
+
+    /* ----- UI ----- */
+    var el = {};
+    function ui() {
+      if (!el.root) {
+        el.root = $('#voice'); el.play = $('#v-play'); el.mute = $('#v-mute'); el.replay = $('#v-replay');
+        el.en = $('#v-en'); el.hi = $('#v-hi'); el.line = $('#v-line');
+      }
+      return el.root;
+    }
+    function paint() {
+      if (!ui()) return;
+      el.play.textContent = paused ? '▶ Play' : '⏸ Pause';
+      el.play.setAttribute('aria-pressed', String(!paused));
+      el.mute.textContent = muted ? '🔇 Unmute' : '🔊 Mute';
+      el.mute.setAttribute('aria-pressed', String(muted));
+      el.en.classList.toggle('on', lang === 'en'); el.en.setAttribute('aria-pressed', String(lang === 'en'));
+      el.hi.classList.toggle('on', lang === 'hi'); el.hi.setAttribute('aria-pressed', String(lang === 'hi'));
+      el.root.classList.toggle('off', muted || paused);
+    }
+    function setSpeaking(on) { if (ui()) el.root.classList.toggle('speaking', !!on); }
+    function caption(text) { if (ui() && text) el.line.textContent = '🎙 ' + text; }
+    function hint(text) { if (ui()) el.line.textContent = text; }
+
+    /* ----- speech queue (one utterance at a time) ----- */
+    function finish(u) {
+      if (cur !== u) return;
+      clearTimeout(watchdog);
+      cur = null; speaking = false; setSpeaking(false);
+      next();
+    }
+    function next() {
+      if (!supported || speaking || muted || paused || !unlocked || !queue.length) return;
+      var key = queue.shift();
+      var eff = effLang();
+      var text = TEXT[eff][key]();
+      var u = new SpeechSynthesisUtterance(text);
+      var v = pick(eff);
+      u.lang = v ? v.lang : (eff === 'hi' ? 'hi-IN' : 'en-IN');
+      if (v) u.voice = v;
+      u.rate = 0.98; u.pitch = 1; u.volume = 1;
+      u.onend = function () { finish(u); };
+      u.onerror = function () { finish(u); };
+      cur = u; speaking = true; setSpeaking(true);
+      caption(text);
+      try { if (synth.speaking || synth.pending) synth.cancel(); synth.speak(u); } catch (e) { finish(u); return; }
+      watchdog = setTimeout(function () { finish(u); }, 2500 + text.length * 95);
+    }
+    function cancelAll() {
+      queue = []; clearTimeout(watchdog);
+      cur = null; speaking = false; setSpeaking(false);
+      if (supported) { try { synth.cancel(); } catch (e) { /* ignore */ } }
+    }
+
+    /* ----- public narration API ----- */
+    function say(key) {
+      if (fast || !supported) return;
+      last = key;
+      var eff = effLang();
+      caption(TEXT[eff][key]());
+      if (muted || paused) return;
+      queue.push(key);
+      if (queue.length > 3) queue.shift();
+      next();
+    }
+    function replay() {
+      if (!supported) return;
+      if (!last) { hint('Nothing to replay yet. Tap "Show me" to start the demo.'); return; }
+      muted = false; paused = false; paint();
+      cancelAll();
+      queue = [last];
+      next();
+    }
+    function togglePlay() {
+      paused = !paused;
+      if (paused) cancelAll();
+      paint();
+      if (!paused && last && !muted) { queue = [last]; next(); }
+    }
+    function toggleMute() {
+      muted = !muted;
+      if (muted) cancelAll();
+      paint();
+    }
+    function setLang(l) {
+      if (l === lang) return;
+      lang = l;
+      try { localStorage.setItem('glime-demo-lang', l); } catch (e) { /* ignore */ }
+      paint();
+      if (l === 'hi' && voices.length && !pick('hi')) hint('A Hindi voice is not installed on this device, so narration will use English.');
+      if (last && !muted && !paused) { cancelAll(); queue = [last]; next(); }
+      else if (last) caption(TEXT[effLang()][last]());
+    }
+    function reset() {
+      cancelAll(); last = null;
+      if (ui()) el.line.textContent = 'Narration plays as the demo moves. Use the controls to pause, mute or replay.';
+    }
+    function isBusy() { return supported && !muted && !paused && (speaking || queue.length > 0); }
+
+    /* ----- message sounds (synthesised, original tones) ----- */
+    function tone(f, t0, dur, vol, type) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || 'sine'; o.frequency.value = f;
+      var t = ctx.currentTime + t0;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + dur + 0.03);
+    }
+    function sfx(kind) {
+      if (fast || muted || !ctx || ctx.state === 'closed') return;
+      try {
+        if (ctx.state === 'suspended') ctx.resume();
+        var ig = st.chan === 'ig' ? 1.12 : 1;
+        if (kind === 'send') { tone(620 * ig, 0, 0.09, 0.07); tone(930 * ig, 0.07, 0.12, 0.06); }
+        else if (kind === 'recv') { tone(1046 * ig, 0, 0.1, 0.06); tone(1396 * ig, 0.1, 0.16, 0.055); }
+        else if (kind === 'pay') { tone(784, 0, 0.14, 0.07); tone(988, 0.12, 0.14, 0.07); tone(1319, 0.24, 0.3, 0.07); }
+        else if (kind === 'lost') { tone(330, 0, 0.22, 0.07, 'triangle'); tone(247, 0.2, 0.34, 0.07, 'triangle'); }
+      } catch (e) { /* ignore */ }
+    }
+
+    /* ----- init: respect autoplay rules, unlock on first user gesture ----- */
+    function unlock() {
+      if (unlocked) return;
+      unlocked = true;
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) { ctx = new AC(); if (ctx.state === 'suspended') ctx.resume(); }
+      } catch (e) { ctx = null; }
+      if (supported) {
+        try {
+          var p = new SpeechSynthesisUtterance(' ');
+          p.volume = 0;
+          synth.speak(p);
+        } catch (e) { /* ignore */ }
+      }
+      next();
+    }
+    function init() {
+      if (supported) {
+        loadVoices();
+        if (synth.addEventListener) synth.addEventListener('voiceschanged', loadVoices);
+        else synth.onvoiceschanged = loadVoices;
+      }
+      if (!ui()) return;
+      if (!supported) {
+        el.root.classList.add('unsupported');
+        el.line.textContent = 'Voice narration is not supported in this browser. Try Chrome, Edge or Safari.';
+        el.play.disabled = el.mute.disabled = el.replay.disabled = el.en.disabled = el.hi.disabled = true;
+        return;
+      }
+      el.play.addEventListener('click', togglePlay);
+      el.mute.addEventListener('click', toggleMute);
+      el.replay.addEventListener('click', replay);
+      el.en.addEventListener('click', function () { setLang('en'); });
+      el.hi.addEventListener('click', function () { setLang('hi'); });
+      ['pointerdown', 'keydown', 'touchstart'].forEach(function (evn) {
+        document.addEventListener(evn, unlock, { once: true, passive: true });
+      });
+      window.addEventListener('pagehide', cancelAll);
+      paint();
+    }
+    return { init: init, say: say, sfx: sfx, reset: reset, isBusy: isBusy };
+  })();
+
+  function sfxFor(m) {
+    if (fast) return;
+    if (m.kind === 'text') voice.sfx(m.from === 'cust' ? 'send' : 'recv');
+    else if (m.kind === 'sys' && m.cls === 'pay') voice.sfx('pay');
+    else if (m.kind === 'lost') voice.sfx('lost');
+  }
+
   /* ---------------- steps ---------------- */
   var STEPS = [
     {
@@ -418,6 +653,7 @@
           setComposer('');
           addMsg({ kind: 'text', from: 'cust', text: txt, t: st.clock });
           feedPush('New enquiry from Christine', '');
+          voice.say('inquiry');
           render();
           await w(1100);
           var times = ['12:30 AM', '1:15 AM', '2:40 AM'];
@@ -428,6 +664,7 @@
             render();
             await w(1000);
           }
+          voice.say('silence');
           addMsg({ kind: 'text', from: 'cust', text: 'Okay, never mind. I will order from another store.', t: st.clock });
           await w(700);
           addMsg({ kind: 'lost', t: st.clock });
@@ -435,6 +672,7 @@
           feedPush('Missed enquiry: Christine, no reply for 3 hours', 'bad');
           render();
           notify('Missed enquiry · ' + fmt(PRICE) + ' lost');
+          voice.say('lost');
         }
       }]
     },
@@ -457,6 +695,7 @@
             feedPush(c.name + ' connected', 'good');
             render();
             notify(c.name + ' connected ✓');
+            if (glimeOn()) voice.say('live');
           }
         };
       })
@@ -480,6 +719,7 @@
           setComposer('');
           addMsg({ kind: 'text', from: 'cust', text: q1(), t: st.clock });
           feedPush('New enquiry from Christine', '');
+          voice.say('inquiry');
           render();
           await w(600);
           showTyping();
@@ -493,6 +733,7 @@
           feedPush('GLIME replied to Christine in 3 sec · lead saved', 'good');
           render();
           notify('Replied in 3 sec · lead saved');
+          voice.say('reply');
         }
       }]
     },
@@ -520,6 +761,7 @@
             addMsg({ kind: 'pay' });
             st.order = { id: 1042 };
             feedPush('Order #1042 created · payment link sent', '');
+            voice.say('order');
             render();
           }
         },
@@ -540,6 +782,7 @@
             st.view = 'orders';
             render();
             notify('New paid order · ' + fmt(PRICE));
+            voice.say('paid');
           }
         }
       ]
@@ -564,6 +807,7 @@
           feedPush('Order #1042 picked up', '');
           render();
           notify('Courier booked · tracking sent to customer');
+          voice.say('ship');
         }
       }]
     },
@@ -588,6 +832,7 @@
               if (s === 5) {
                 addMsg({ kind: 'text', from: 'biz', text: 'Delivered ✅ Thank you for shopping with us! I will check in with you in 2 days for feedback.', t: st.clock });
                 feedPush('Order #1042 delivered', 'good');
+                voice.say('delivered');
               }
               render();
             }
@@ -612,6 +857,7 @@
               for (var i = 1; i <= 16; i++) { await w(35); el.textContent = fmt(Math.round(PRICE * i / 16)); }
             }
             burst();
+            voice.say('payout');
             notify(fmt(PRICE) + ' credited to your account ✓');
           }
         }
@@ -718,6 +964,7 @@
 
   async function goTo(i) {
     stopAuto();
+    voice.reset();
     epoch++;
     busy = false;
     var chan = st.chan;
@@ -744,7 +991,7 @@
   async function onNext() {
     if (busy) return;
     var s = STEPS[stepIdx];
-    if (pending(s).length) { await runPending(); return; }
+    if (pending(s).length) { scrollToStage(); await runPending(); return; }
     if (stepIdx < STEPS.length - 1) { enterStep(stepIdx + 1); window.scrollTo({ top: Math.max(0, capbar.getBoundingClientRect().top + window.scrollY - 100), behavior: 'smooth' }); }
   }
   function onBack() { if (busy) return; goTo(Math.max(0, stepIdx - 1)); }
@@ -769,6 +1016,8 @@
     if (!autoOn) return;
     var e = epoch;
     if (busy) { autoTimer = setTimeout(autoStep, 400); return; }
+    if (voice.isBusy() && autoWait < 20) { autoWait++; autoTimer = setTimeout(autoStep, 400); return; }
+    autoWait = 0;
     var s = STEPS[stepIdx];
     if (pending(s).length) {
       await runPending();
@@ -820,6 +1069,7 @@
   function init() {
     buildRail();
     loadCustom();
+    voice.init();
     $('#custom-form').addEventListener('submit', function (ev) {
       ev.preventDefault();
       applyCustom({ shop: $('#cu-shop').value, product: $('#cu-product').value, price: $('#cu-price').value });
