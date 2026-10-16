@@ -900,11 +900,14 @@
 
     .pkg-card h3 { margin-top: 8px; font-size: 1.35rem; letter-spacing: -0.03em; }
 
+    .pkg-sub { margin-top: 6px; color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
+
     .pkg-price { margin-top: 16px; font-size: 2.3rem; font-weight: 800; line-height: 1; letter-spacing: -0.05em; }
     .pkg-price small { margin-left: 4px; color: var(--muted); font-size: 0.82rem; font-weight: 700; letter-spacing: 0; }
 
     .pkg-price-alt { margin-top: 8px; color: var(--muted); font-size: 0.85rem; font-weight: 700; }
     .pkg-price-alt strong { color: var(--text); }
+    .pkg-price-alt em { color: var(--green); font-style: normal; font-size: 0.74rem; }
 
     .pkg-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-top: 20px; }
 
@@ -912,7 +915,9 @@
     .pkg-stat strong { display: block; font-size: 1.15rem; letter-spacing: -0.03em; }
     .pkg-stat span { display: block; margin-top: 2px; color: var(--dim); font-size: 0.66rem; font-weight: 700; }
 
-    .pkg-list { display: grid; gap: 10px; margin-top: 20px; list-style: none; color: var(--muted); font-size: 0.79rem; }
+    .pkg-list-title { margin-top: 22px; color: var(--text); font-size: 0.74rem; font-weight: 800; }
+
+    .pkg-list { display: grid; gap: 10px; margin-top: 12px; list-style: none; color: var(--muted); font-size: 0.79rem; }
     .pkg-list li { display: flex; gap: 9px; }
     .pkg-list li::before { content: "✓"; color: var(--green); font-weight: 900; }
 
@@ -935,6 +940,8 @@
 
     .pkg-more { margin-top: 22px; color: var(--dim); font-size: 0.74rem; text-align: center; }
     .pkg-more a { color: var(--cyan); font-weight: 800; }
+
+    .pkg-fine { margin-top: 14px; color: var(--dim); font-size: 0.68rem; line-height: 1.7; text-align: center; }
 
     /* =========================
        FOUNDER
@@ -1218,6 +1225,39 @@
     .pbadge .gx-tile { --ts: 38px; }
     .pbadge b { display: block; font-size: .8rem; line-height: 1.2; }
     .pbadge small { display: block; margin-top: 2px; color: var(--green); font-family: "DM Mono", monospace; font-size: .56rem; letter-spacing: .08em; text-transform: uppercase; }
+
+    /* Product Hunt + LaunchBuff badges */
+    .launch-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 22px; }
+    .ph-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      width: 256px;
+      height: 80px;
+      padding: 0 20px 0 14px;
+      color: #f4f4fb;
+      background: #1c191b;
+      border-radius: 16px;
+      font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      transition: transform 0.2s ease;
+    }
+    .ph-badge:hover { transform: translateY(-2px); }
+    .ph-badge-logo {
+      flex: none;
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      color: #1c191b;
+      background: #fff;
+      border-radius: 50%;
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .ph-badge-text { display: block; line-height: 1.1; }
+    .ph-badge-text small { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
+    .ph-badge-text b { display: block; margin-top: 2px; font-size: 23px; font-weight: 700; }
   </style>
 
   <link rel="stylesheet" href="glime-global-nav.css?v=2">
@@ -1839,7 +1879,7 @@ body{
 
 
     <!-- =========================
-         PRODUCT HUNT EMBED (DARK) + LAUNCHBUFF BADGE
+         PRODUCT HUNT EMBED (DARK) + BADGES
     ========================== -->
 
     <section class="section" id="product-hunt" style="padding: 48px 0;">
@@ -1851,10 +1891,17 @@ body{
           <div style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;, Arial, sans-serif; border: 1px solid rgba(184, 222, 234, 0.13); border-radius: 12px; padding: 20px; max-width: 500px; background: rgb(16, 27, 41); box-shadow: rgba(0, 0, 0, 0.35) 0px 2px 12px;"><div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;"><img alt="GLIME" src="https://ph-files.imgix.net/4887110a-031f-4b79-8c0e-03af272b26cf.jpeg?auto=compress,format&amp;codec=mozjpeg&amp;cs=strip&amp;fit=crop&amp;h=80&amp;w=80" style="width: 64px; height: 64px; border-radius: 8px; object-fit: cover; flex-shrink: 0;"><div style="flex: 1 1 0%; min-width: 0px;"><h3 style="margin: 0px; font-size: 18px; font-weight: 600; color: rgb(244, 251, 253); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">GLIME</h3><p style="margin: 4px 0px 0px; font-size: 14px; color: rgb(156, 171, 185); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">AI-powered customer conversations and sales automation</p></div></div><a href="https://www.producthunt.com/products/glime?embed=true&amp;utm_source=embed&amp;utm_medium=post_embed" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; padding: 8px 16px; background: rgb(255, 97, 84); color: rgb(255, 255, 255); text-decoration: none; border-radius: 9999px; font-size: 16px; font-weight: 600; line-height: 1.5;">Check it out on Product Hunt →</a></div>
         </div>
 
-        <div style="margin-top: 22px;">
+        <div class="launch-badges">
+
+          <a class="ph-badge" href="https://www.producthunt.com/products/glime?utm_source=badge&amp;utm_medium=badge" target="_blank" rel="noopener noreferrer" aria-label="Find GLIME on Product Hunt" title="Find us on Product Hunt">
+            <span class="ph-badge-logo" aria-hidden="true">P</span>
+            <span class="ph-badge-text"><small>FIND US ON</small><b>Product Hunt</b></span>
+          </a>
+
           <a href="https://launchbuff.com/products/glime-aqytsn" target="_blank" rel="noopener noreferrer" title="Featured on LaunchBuff">
             <img src="https://launchbuff.com/badge-featured-dark.svg" alt="Featured on LaunchBuff" width="256" height="80" />
           </a>
+
         </div>
 
       </div>
@@ -1878,7 +1925,8 @@ body{
         </h2>
 
         <p class="section-copy">
-          Try GLIME free for 7 days, then continue with the Growth plan.
+          Try GLIME free for 7 days, no card needed. If it works for
+          your business, continue with GLIME Growth for just ₹299 a month.
         </p>
 
         <div class="pkg-grid">
@@ -1886,9 +1934,11 @@ body{
           <!-- FREE TRIAL -->
           <article class="pkg-card pkg-featured">
 
-            <p class="pkg-tag">Free Trial</p>
+            <p class="pkg-tag">Step 1 · Try it</p>
 
-            <h3>7 Days Free Trial</h3>
+            <h3>7-Day Free Trial</h3>
+
+            <p class="pkg-sub">See GLIME work on your own Instagram and WhatsApp before you pay anything.</p>
 
             <p class="pkg-price">
               Free
@@ -1897,28 +1947,30 @@ body{
 
             <div class="pkg-stats">
               <div class="pkg-stat">
-                <strong>7 Days</strong>
-                <span>Free trial</span>
-              </div>
-              <div class="pkg-stat">
                 <strong>10,000</strong>
-                <span>AI Credits</span>
+                <span>AI credits</span>
               </div>
               <div class="pkg-stat">
                 <strong>100</strong>
-                <span>Instagram Messages</span>
+                <span>Instagram messages</span>
               </div>
               <div class="pkg-stat">
                 <strong>50</strong>
-                <span>WhatsApp Messages</span>
+                <span>WhatsApp messages</span>
+              </div>
+              <div class="pkg-stat">
+                <strong>No card</strong>
+                <span>needed to start</span>
               </div>
             </div>
 
+            <p class="pkg-list-title">What you get:</p>
+
             <ul class="pkg-list">
-              <li>GLIME business automation foundation</li>
+              <li>Connect your Instagram and WhatsApp to GLIME</li>
               <li>Lead management and business workflow tools</li>
-              <li>Core AI agent access included in your account</li>
-              <li>Eligible trial modules provisioned after signup verification</li>
+              <li>AI agents that reply to your customers</li>
+              <li>Some modules switch on after we verify your signup</li>
             </ul>
 
             <div class="pkg-cta">
@@ -1932,9 +1984,11 @@ body{
           <!-- GLIME GROWTH -->
           <article class="pkg-card">
 
-            <p class="pkg-tag">GLIME Growth</p>
+            <p class="pkg-tag">Step 2 · Keep going</p>
 
             <h3>GLIME Growth</h3>
+
+            <p class="pkg-sub">The plan to run your business on GLIME after the trial.</p>
 
             <p class="pkg-price">
               ₹299
@@ -1942,19 +1996,20 @@ body{
             </p>
 
             <p class="pkg-price-alt">
-              or <strong>₹2,999</strong> / year
+              or <strong>₹2,999</strong> / year <em>(save ₹589 vs paying monthly)</em>
             </p>
 
+            <p class="pkg-list-title">What you get:</p>
+
             <ul class="pkg-list">
-              <li>GLIME business automation foundation</li>
               <li>Lead management and business workflow tools</li>
-              <li>Core AI agent access included in your account</li>
-              <li>Access to supported GLIME modules based on entitlement</li>
-              <li>Ongoing product improvements</li>
+              <li>AI agents for your WhatsApp and Instagram conversations</li>
+              <li>GLIME modules available on your plan</li>
+              <li>New improvements as GLIME grows</li>
             </ul>
 
             <p class="pkg-note">
-              Voice Agent is excluded from GLIME Growth.
+              Not included: Voice Agent.
             </p>
 
             <div class="pkg-cta">
@@ -1970,6 +2025,11 @@ body{
         <p class="pkg-more">
           Need more? See all plans on
           <a href="packages.html">the Packages page →</a>
+        </p>
+
+        <p class="pkg-fine">
+          All prices are in Indian rupees. Third-party charges, such as
+          WhatsApp messaging fees, may be separate.
         </p>
 
       </div>
