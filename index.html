@@ -1196,6 +1196,28 @@
     }
     .demo-btn { border-color: rgba(80, 245, 168, 0.4); color: var(--green); }
     @media (prefers-reduced-motion: reduce) { .demo-pill-dot { animation: none; } }
+
+    /* Why GLIME teaser */
+    .wg-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 30px; }
+    .wg-stat { padding: 16px; background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: 14px; }
+    .wg-stat strong { display: block; color: var(--green); font-size: 1.45rem; letter-spacing: -0.04em; }
+    .wg-stat span { display: block; margin-top: 2px; font-size: 0.76rem; font-weight: 700; }
+    .wg-stat small { display: block; margin-top: 4px; color: var(--dim); font-size: 0.64rem; }
+    .wg-points { display: grid; gap: 14px; margin-top: 18px; }
+    .wg-point { padding: 22px; background: linear-gradient(150deg, rgba(24,46,60,.62), rgba(9,19,27,.78)); border: 1px solid var(--border); border-radius: var(--radius); }
+    .wg-point h3 { font-size: 1.02rem; letter-spacing: -0.03em; }
+    .wg-point p { margin-top: 8px; color: var(--muted); font-size: 0.8rem; line-height: 1.65; }
+    .wg-source { margin-top: 16px; color: var(--dim); font-size: 0.68rem; line-height: 1.7; }
+    .wg-source a { color: var(--cyan); }
+    @media (min-width: 650px) { .wg-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (min-width: 800px) { .wg-points { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+
+    /* Partner badges */
+    .badge-strip { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .pbadge { display: inline-flex; align-items: center; gap: 12px; padding: 10px 18px 10px 10px; background: linear-gradient(150deg, rgba(24,46,60,.8), rgba(10,20,28,.9)); border: 1px solid rgba(80,245,168,.28); border-radius: 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+    .pbadge .gx-tile { --ts: 38px; }
+    .pbadge b { display: block; font-size: .8rem; line-height: 1.2; }
+    .pbadge small { display: block; margin-top: 2px; color: var(--green); font-family: "DM Mono", monospace; font-size: .56rem; letter-spacing: .08em; text-transform: uppercase; }
   </style>
 
   <link rel="stylesheet" href="glime-global-nav.css?v=2">
@@ -1277,6 +1299,7 @@ body{
     <nav class="glime-desktop-nav" aria-label="Main navigation">
       <a href="index.html" data-nav="home" class="active">Home</a>
       <a href="demo.html" data-nav="demo">Live Demo</a>
+      <a href="why-glime.html" data-nav="why">Why GLIME</a>
       <a href="how-it-works.html" data-nav="how">How It Works</a>
       <a href="index.html#packages" data-nav="packages">Packages</a>
       <a href="contact.html" data-nav="contact">Contact</a>
@@ -1293,6 +1316,7 @@ body{
   <nav class="glime-mobile-nav" id="glime-mobile-nav" aria-label="Mobile navigation">
     <a href="index.html" data-nav="home" class="active">Home</a>
     <a href="demo.html" data-nav="demo">Live Demo</a>
+    <a href="why-glime.html" data-nav="why">Why GLIME</a>
     <a href="how-it-works.html" data-nav="how">How It Works</a>
     <a href="index.html#packages" data-nav="packages">Packages</a>
     <a href="contact.html" data-nav="contact">Contact</a>
@@ -1667,6 +1691,66 @@ body{
 
 
     <!-- =========================
+         WHY GLIME (teaser)
+    ========================== -->
+
+    <section class="section" id="why-glime">
+      <div class="container">
+
+        <p class="eyebrow good">WHY GLIME</p>
+
+        <h2 class="section-title">
+          Leads are everywhere.
+          <span class="gradient-text">Money shouldn't leak on the way.</span>
+        </h2>
+
+        <p class="section-copy">
+          Over 8.84 crore Indian businesses are registered on Udyam,
+          and many of them get enquiries on WhatsApp and Instagram. The
+          hard part is carrying each enquiry through reply, lead,
+          order, payment and follow-up. With GLIME, that journey runs
+          in one connected system, from first message to money in your
+          account, starting at ₹299/month.
+        </p>
+
+        <div class="wg-stats">
+          <div class="wg-stat"><strong>8.84 Cr+</strong><span>MSMEs on Udyam portals</span><small>as of 30 Jun 2026</small></div>
+          <div class="wg-stat"><strong>₹299</strong><span>GLIME Growth, per month</span><small>or ₹2,999 per year</small></div>
+          <div class="wg-stat"><strong>7 days</strong><span>free trial</span><small>no card required to start</small></div>
+          <div class="wg-stat"><strong>1</strong><span>connected journey</span><small>chat to cash</small></div>
+        </div>
+
+        <div class="wg-points">
+          <article class="wg-point">
+            <h3>Conversations to cash, connected</h3>
+            <p>Customer conversations and comments flow into leads, orders, payments and follow-ups, without juggling five separate tools.</p>
+          </article>
+          <article class="wg-point">
+            <h3>Not priced piece by piece</h3>
+            <p>On the platforms we checked, chatbots, AI agents, extra users and integrations are often priced separately or limited by plan. GLIME aims to bring them under one plan price.</p>
+          </article>
+          <article class="wg-point">
+            <h3>Verified, not exaggerated</h3>
+            <p>Our comparison with WATI, AiSensy and Interakt uses only facts from their official pricing pages, with sources shown.</p>
+          </article>
+        </div>
+
+        <div class="buttons">
+          <a href="why-glime.html" class="button button-primary">See The Full Comparison →</a>
+          <a href="signup.html" class="button button-secondary">Start 7-Day Free Trial →</a>
+        </div>
+
+        <p class="wg-source">
+          Udyam figure: Ministry of MSME reply in Rajya Sabha, 20 Jul 2026, as reported by
+          <a href="https://knnindia.co.in/news/newsdetails/msme/over-884-crore-msmes-registered-on-udyam-platforms-mos-karandlaje" target="_blank" rel="noopener">KNN India</a>.
+          Third-party charges such as WhatsApp messaging may be separate.
+        </p>
+
+      </div>
+    </section>
+
+
+    <!-- =========================
          TRUSTED PLATFORMS
     ========================== -->
 
@@ -1684,6 +1768,21 @@ body{
           connects to your accounts through their standard,
           permission-based integrations.
         </p>
+
+        <div class="badge-strip" role="list" aria-label="GLIME partner badges">
+          <div class="pbadge" role="listitem">
+            <span class="gx-tile gx-t-sh" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-sh"/></svg></span>
+            <span><b>Shopify</b><small>Partner</small></span>
+          </div>
+          <div class="pbadge" role="listitem">
+            <span class="gx-tile gx-t-wa" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-wa"/></svg></span>
+            <span><b>Meta</b><small>Tech Provider</small></span>
+          </div>
+          <div class="pbadge" role="listitem">
+            <span class="gx-tile gx-t-rp" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-rp"/></svg></span>
+            <span><b>Razorpay</b><small>Platform Partner</small></span>
+          </div>
+        </div>
 
         <div class="partner-grid">
 
@@ -2090,6 +2189,7 @@ body{
         <div class="footer-links">
 
           <a href="#solutions">What GLIME Does</a>
+          <a href="why-glime.html">Why GLIME</a>
           <a href="how-it-works.html">How It Works</a>
           <a href="index.html#packages">Packages</a>
           <a href="packages.html">All Plans</a>
