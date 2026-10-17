@@ -1,0 +1,73 @@
+/* =========================================================
+   GLIME PARTNER PROGRAM — shared base styles
+========================================================= */
+:root{
+  --bg:#050b10; --bg2:#0a141c; --card:#0d1822; --card2:#111f2b;
+  --line:rgba(184,222,234,.12); --line2:rgba(184,222,234,.2);
+  --text:#f4fbfd; --muted:#9cabb9; --dim:#6b7c8b;
+  --green:#50f5a8; --cyan:#52e8ff; --amber:#ffc857; --red:#ff7a8a;
+  --grad:linear-gradient(105deg,#50f5a8,#52e8ff);
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:Manrope,Arial,sans-serif;background:var(--bg);color:var(--text);
+  line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+img{max-width:100%;display:block}
+button{font-family:inherit}
+.container{width:min(1180px,calc(100% - 32px));margin:0 auto}
+.eyebrow{font:500 .72rem/1 "DM Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--green)}
+.mono{font-family:"DM Mono",monospace}
+h1,h2,h3{line-height:1.15;letter-spacing:-.01em}
+
+.page-glow{position:fixed;pointer-events:none;z-index:0;border-radius:50%;filter:blur(110px);opacity:.22}
+.glow-one{width:520px;height:520px;top:-160px;right:-140px;background:#50f5a8}
+.glow-two{width:460px;height:460px;bottom:-180px;left:-160px;background:#52e8ff}
+main,.site-footer{position:relative;z-index:1}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  min-height:48px;padding:12px 22px;border-radius:12px;border:1px solid transparent;
+  font:800 .92rem/1 Manrope,Arial,sans-serif;cursor:pointer;text-decoration:none;
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.btn:hover{text-decoration:none;transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-primary{color:#031014;background:var(--grad);box-shadow:0 8px 28px rgba(82,232,255,.16)}
+.btn-ghost{color:var(--text);background:rgba(255,255,255,.04);border-color:var(--line2)}
+.btn-ghost:hover{background:rgba(255,255,255,.08)}
+.btn-google{
+  width:100%;color:#1f2937;background:#fff;border-color:#dadce0;
+  font-weight:700;box-shadow:0 6px 22px rgba(0,0,0,.28);
+}
+.btn-google:hover{background:#f8fafc}
+.btn-sm{min-height:38px;padding:8px 14px;font-size:.8rem;border-radius:10px}
+
+/* Chips and badges */
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;
+  font:700 .7rem/1.4 Manrope,Arial,sans-serif;border:1px solid var(--line2);color:var(--muted);
+}
+.chip.ok{color:var(--green);border-color:rgba(80,245,168,.35);background:rgba(80,245,168,.07)}
+.chip.warn{color:var(--amber);border-color:rgba(255,200,87,.35);background:rgba(255,200,87,.07)}
+.chip.bad{color:var(--red);border-color:rgba(255,122,138,.35);background:rgba(255,122,138,.07)}
+.chip.info{color:var(--cyan);border-color:rgba(82,232,255,.35);background:rgba(82,232,255,.07)}
+
+/* Footer */
+.site-footer{border-top:1px solid var(--line);padding:34px 0 40px;margin-top:40px}
+.footer-inner{display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center}
+.footer-inner img{width:56px;height:56px;object-fit:contain}
+.footer-links{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center}
+.footer-links a{color:var(--muted);font-size:.82rem;font-weight:600}
+.footer-links a:hover{color:var(--text)}
+.footer-inner p{color:var(--dim);font-size:.76rem}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .btn{transition:none}
+}
