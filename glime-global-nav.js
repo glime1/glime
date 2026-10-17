@@ -64,6 +64,20 @@
   }
 
 
+  /* Partner Program link in the public navigation */
+  (function () {
+    function addPartnerLink(nav) {
+      if (!nav || nav.querySelector('a[href="partner.html"]')) return;
+      const a = document.createElement("a");
+      a.href = "partner.html";
+      a.textContent = "Partner Program";
+      nav.insertBefore(a, nav.querySelector('a[href="contact.html"]'));
+    }
+    addPartnerLink(document.querySelector(".glime-desktop-nav"));
+    addPartnerLink(document.getElementById("glime-mobile-nav"));
+  })();
+
+
   /* Existing GLIME mobile navigation */
   const button = document.getElementById("glime-menu-button");
   const menu = document.getElementById("glime-mobile-nav");
