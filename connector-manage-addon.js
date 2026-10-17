@@ -2,16 +2,18 @@
    GLIME — CONNECTOR MANAGE ADD-ON (Settings > Connector)
    ---------------------------------------------------------
    Frontend only. Adds, inside each connected connector card:
-   - Permissions list (same look as Shiprocket Cargo)
+   - Permissions list with ON/OFF toggles (same look as Shiprocket Cargo)
    - Disconnect button (where the card had none)
 
    Backend actions used (all already exist):
-     Google Sheets : glime-connector-gateway?action=disconnect (POST)
-     Razorpay      : glime-razorpay-oauth?mode=disconnect      (POST)
-     Calendar      : glime-calendar-gateway?action=permissions.update
-   Permissions for Sheets / Razorpay / Shopify are READ from
-   connector_permissions (RLS: client can view own rows). Toggling them
-   needs a backend action, so they are shown read-only for now.
+     Google Sheets : glime-connector-gateway?action=permissions.list / permissions.update
+                     glime-connector-gateway?action=disconnect (POST)
+     Razorpay      : glime-razorpay-oauth?mode=permissions.list / permissions.update
+                     glime-razorpay-oauth?mode=disconnect      (POST)
+     Shopify       : glime-shopify-gateway?action=permissions.list / permissions.update
+     Calendar      : glime-calendar-gateway?action=permissions.list / permissions.update
+   The backend decides what can be enabled (provider scope must be granted).
+   If a scope is missing the toggle stays OFF and asks the user to reconnect.
 
    Loaded on demand by settings-connector-addon.js. If this file fails
    to load, the Connector page is unaffected.
@@ -38,8 +40,13 @@ const ORDER={
   razorpay:['razorpay.payments.read','razorpay.payments.create','razorpay.refunds.create'],
   shopify:['shopify.products.read','shopify.inventory.read']
 };
-/* connector_accounts.provider value for each card */
-const DB_PROVIDER={'google-sheets':'google','google-calendar':'google-calendar',razorpay:'razorpay',shopify:'shopify'};
+/* Backend function + query for listing / updating permissions of each card */
+const API={
+  'google-calendar':{fn:'glime-calendar-gateway',list:'?action=permissions.list',upd:'?action=permissions.update'},
+  'google-sheets':{fn:'glime-connector-gateway',list:'?action=permissions.list',upd:'?action=permissions.update'},
+  razorpay:{fn:'glime-razorpay-oauth',list:'?mode=permissions.list',upd:'?mode=permissions.update'},
+  shopify:{fn:'glime-shopify-gateway',list:'?action=permissions.list',upd:'?action=permissions.update'}
+};
 
 function esc(v){
   return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -51,6 +58,26 @@ function cleanMsg(e){
 }
 function mkErr(message,code){const e=new Error(message);e.code=code;return e;}
 
+/* Calendar returns permissions as a {key:bool} map; the other gateways return
+   permission_map plus a permissions array with scope details. */
+function parsePerms(id,r){
+  const meta={};
+  let perms={};
+  if(id==='google-calendar'){
+    if(r&&r.permissions&&typeof r.permissions==='object'&&!Array.isArray(r.permissions))perms=r.permissions;
+  }else{
+    if(r&&r.permission_map&&typeof r.permission_map==='object')perms=Object.assign({},r.permission_map);
+    if(r&&Array.isArray(r.permissions)){
+      r.permissions.forEach(function(p){
+        if(!p||!p.permission_key)return;
+        meta[p.permission_key]=p;
+        if(!(p.permission_key in perms))perms[p.permission_key]=p.enabled===true;
+      });
+    }
+  }
+  return {perms:perms,meta:meta};
+}
+
 function mount(hub,opts){
   opts=opts||{};
   const sb=opts.sb;
@@ -58,9 +85,13 @@ function mount(hub,opts){
   hub._gcxManage=true;
   const base=String(opts.supabaseUrl||sb.supabaseUrl||'').replace(/\/$/,'');
   const apiKey=opts.apiKey||sb.supabaseKey||'';
-  const store={};   /* provider id -> {perms:{key:bool}|null, loading, err, busy:{}, msg} */
+  const store={};   /* provider id -> {perms:{key:bool}|null, meta:{}, loading, err, busy:{}, msg} */
   let busyDisconnect=null;
   let scheduled=false;
+
+  function getSt(id){
+    return store[id]||(store[id]={perms:null,meta:{},loading:false,err:'',busy:{},msg:null});
+  }
 
   async function call(fn,query,method,body){
     const r=await sb.auth.getSession();
@@ -82,24 +113,14 @@ function mount(hub,opts){
   }
 
   async function loadPerms(id){
-    const st=store[id]||(store[id]={perms:null,loading:false,err:'',busy:{},msg:null});
+    const st=getSt(id);
     if(st.loading||st.perms)return;
     st.loading=true;st.err='';
     try{
-      if(id==='google-calendar'){
-        const r=await call('glime-calendar-gateway','?action=permissions.list','POST',{});
-        st.perms=(r&&r.permissions)||{};
-      }else{
-        const a=await sb.from('connector_accounts').select('id').eq('provider',DB_PROVIDER[id]).eq('status','connected').maybeSingle();
-        if(a.error)throw a.error;
-        const perms={};
-        if(a.data){
-          const p=await sb.from('connector_permissions').select('permission_key,enabled').eq('account_id',a.data.id);
-          if(p.error)throw p.error;
-          (p.data||[]).forEach(x=>{perms[x.permission_key]=x.enabled===true;});
-        }
-        st.perms=perms;
-      }
+      const a=API[id];
+      const r=await call(a.fn,a.list,'POST',{});
+      const p=parsePerms(id,r);
+      st.perms=p.perms;st.meta=p.meta;
     }catch(e){
       console.error('GLIME connector permissions error:',e);
       st.err=cleanMsg(e);
@@ -112,22 +133,29 @@ function mount(hub,opts){
     const st=store[id];
     if(!st||st.loading||(!st.perms&&!st.err))return '<div class="gcx-status" role="status">Loading permissions…</div>';
     if(st.err&&!st.perms)return `<div class="gcx-status err" role="alert">${esc(st.err)} <button type="button" class="gcx-btn" data-gcm-act="perm-retry" style="min-height:36px;margin-left:8px">Retry</button></div>`;
-    const editable=id==='google-calendar';
-    const keys=editable?ORDER[id].slice():ORDER[id].filter(k=>k in st.perms);
-    Object.keys(st.perms||{}).forEach(k=>{if(keys.indexOf(k)<0)keys.push(k);});
+    const order=ORDER[id]||[];
+    const keys=Object.keys(st.perms||{});
+    if(id==='google-calendar')order.forEach(k=>{if(keys.indexOf(k)<0)keys.push(k);});
+    keys.sort((a,b)=>{
+      const ia=order.indexOf(a),ib=order.indexOf(b);
+      return (ia<0?99:ia)-(ib<0?99:ib);
+    });
     if(!keys.length)return '<p class="gcx-small" style="margin-top:0">No permissions are recorded for this connector yet.</p>';
     const err=st.err?`<div class="gcx-status err" role="alert">${esc(st.err)}</div>`:'';
     const rows=keys.map(k=>{
       const on=st.perms[k]===true;
-      const name=LABELS[k]||k;
+      const m=st.meta[k]||{};
+      const name=LABELS[k]||m.display_name||k;
       const busy=st.busy[k];
-      const flag=DESTRUCTIVE[k]?' <small style="color:var(--gcx-rd)">· changes data</small>':'';
-      const ctl=editable
-        ?`<label class="gcx-check" style="margin:0"><input type="checkbox" data-gcm-perm="${esc(k)}" ${on?'checked':''} ${busy?'disabled':''} aria-label="${esc((on?'Disable ':'Enable ')+name)}"><b class="${on?'allowed':'blocked'}">${on?'ON':'OFF'}</b></label>`
-        :`<b class="${on?'allowed':'blocked'}">${on?'ON':'OFF'}</b>`;
-      return `<div class="gcx-perm"><span>${esc(name)}${flag}</span>${ctl}</div>`;
+      const needsReconnect=m.can_enable===false&&!on;
+      const risky=DESTRUCTIVE[k]||m.destructive;
+      const flag=risky?' <small style="color:var(--gcx-rd)">· changes data</small>':'';
+      const hint=needsReconnect?' <small style="color:var(--gcx-rd)">· reconnect to enable</small>':'';
+      const dis=busy||needsReconnect;
+      const ctl=`<label class="gcx-check" style="margin:0"><input type="checkbox" data-gcm-perm="${esc(k)}" ${on?'checked':''} ${dis?'disabled':''} aria-label="${esc((on?'Disable ':'Enable ')+name)}"><b class="${on?'allowed':'blocked'}">${on?'ON':'OFF'}</b></label>`;
+      return `<div class="gcx-perm"><span>${esc(name)}${flag}${hint}</span>${ctl}</div>`;
     }).join('');
-    const note=editable?'':'<p class="gcx-small">These permissions are set by GLIME when you connect. They are enforced server-side.</p>';
+    const note='<p class="gcx-small">Turn a permission OFF to stop GLIME AI from using it. Changes apply immediately and are enforced on the server.</p>';
     return err+'<div class="gcx-perm-list">'+rows+'</div>'+note;
   }
 
@@ -199,16 +227,20 @@ function mount(hub,opts){
     if(!t||!t.matches||!t.matches('[data-gcm-perm]'))return;
     const holder=t.closest('[data-gcm-for]');
     const id=holder&&holder.dataset.gcmFor;
-    if(id!=='google-calendar')return;
-    const st=store[id];
+    if(!id||!API[id])return;
+    const st=getSt(id);
+    if(!st.perms)return;
     const key=t.dataset.gcmPerm;
     const want=t.checked;
+    if(st.busy[key])return;
     st.busy[key]=true;st.msg=null;st.err='';st.perms[key]=want;schedule();
     try{
-      const r=await call('glime-calendar-gateway','?action=permissions.update','POST',{permission_key:key,enabled:want});
-      if(r&&r.permissions)st.perms=r.permissions;
+      const a=API[id];
+      const r=await call(a.fn,a.upd,'POST',{permission_key:key,enabled:want});
+      const p=parsePerms(id,r);
+      if(id!=='google-calendar'||(r&&r.permissions)){st.perms=p.perms;st.meta=p.meta;}
     }catch(e){
-      console.error('GLIME calendar permission error:',e);
+      console.error('GLIME connector permission update error:',e);
       st.perms[key]=!want;
       st.err=cleanMsg(e);
     }
@@ -221,7 +253,7 @@ function mount(hub,opts){
     const holder=b.closest('[data-gcm-for]');
     const id=holder&&holder.dataset.gcmFor;
     if(!id)return;
-    const st=store[id]||(store[id]={perms:null,loading:false,err:'',busy:{},msg:null});
+    const st=getSt(id);
     const act=b.dataset.gcmAct;
     if(act==='perm-retry'){st.err='';st.perms=null;loadPerms(id);schedule();return;}
     if(act==='disconnect'){
