@@ -1,0 +1,461 @@
+/* =========================================================
+   GLIME homepage showcase - illustrated chat / order / payment visuals
+   Pure CSS + inline SVG (no external images). Uses :root vars from index.html
+========================================================= */
+
+.sc-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  margin-top: 56px;
+}
+
+.sc-row > * { min-width: 0; }
+
+.sc-copy h3 {
+  margin-top: 10px;
+  font-size: clamp(1.55rem, 5.2vw, 2.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.045em;
+}
+
+.sc-copy > p {
+  max-width: 520px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+.sc-points {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.sc-points li { display: flex; gap: 10px; }
+.sc-points li::before { content: "\2713"; color: var(--green); font-weight: 900; }
+
+.sc-copy .buttons { margin-top: 22px; }
+
+@media (min-width: 800px) {
+  .sc-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; margin-top: 78px; }
+  .sc-row.sc-rev .sc-copy { order: 2; }
+  .sc-row.sc-rev .sc-visual { order: 1; }
+}
+
+/* ---------- stage ---------- */
+
+.sc-visual {
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.sc-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 62px 14px 64px;
+  overflow: hidden;
+
+  background:
+    radial-gradient(circle at 50% 42%, rgba(80, 245, 168, 0.14), transparent 62%),
+    linear-gradient(150deg, rgba(24, 46, 60, 0.6), rgba(9, 19, 27, 0.78));
+  border: 1px solid var(--border);
+  border-radius: 28px;
+}
+
+.sc-stage::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 88%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  border: 1px dashed rgba(82, 232, 255, 0.22);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.sc-stage > * { position: relative; z-index: 1; }
+
+.sc-caption {
+  margin-top: 10px;
+  color: var(--dim);
+  font-size: 0.66rem;
+  text-align: center;
+}
+
+.sc-ic { width: 16px; height: 16px; flex: none; display: block; }
+
+/* floating badges */
+.sc-badge {
+  position: absolute !important;
+  z-index: 3 !important;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+
+  padding: 8px 12px;
+
+  color: var(--text);
+  background: rgba(10, 22, 31, 0.94);
+  border: 1px solid rgba(82, 232, 255, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.25;
+
+  animation: sc-bob 5s ease-in-out infinite;
+}
+
+.sc-badge::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
+}
+
+.sc-badge.sc-has-ic::before { display: none; }
+
+.sc-badge-a { top: 14px; left: 14px; }
+.sc-badge-b { bottom: 14px; right: 14px; animation-delay: -2.2s; }
+
+@keyframes sc-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -5px; }
+}
+
+/* ---------- Instagram post card ---------- */
+
+.sc-ig {
+  width: 84%;
+  overflow: hidden;
+
+  background: #0d1822;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.sc-ig-head { display: flex; align-items: center; gap: 9px; padding: 10px 12px; }
+
+.sc-ig-ava {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #feda75, #d62976 55%, #4f5bd5);
+}
+
+.sc-ig-ava::after {
+  content: "N";
+  position: absolute;
+  inset: 2px;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  background: #0d1822;
+  border-radius: 50%;
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.sc-ig-head b { display: block; font-size: 0.74rem; line-height: 1.2; }
+.sc-ig-head small { display: block; color: var(--dim); font-size: 0.6rem; }
+
+.sc-tick {
+  display: inline-grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  margin-left: 4px;
+  vertical-align: middle;
+  color: #fff;
+  background: #3797f0;
+  border-radius: 50%;
+  font-size: 0.46rem;
+  font-style: normal;
+}
+
+.sc-ig-img { aspect-ratio: 3 / 2; background: #10202d; }
+.sc-ig-img svg, .sc-mini svg, .sc-ord-img svg { display: block; width: 100%; height: 100%; }
+
+.sc-ig-cta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+
+  color: var(--green);
+  background: rgba(37, 211, 102, 0.14);
+
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.sc-ig-cap { padding: 9px 12px 12px; color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
+.sc-ig-cap b { color: var(--text); }
+
+/* ---------- chat card ---------- */
+
+.sc-chat {
+  width: 90%;
+  margin: 14px 0 0 auto;
+  overflow: hidden;
+
+  background: #0b1620;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.sc-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  background: #10202d;
+  border-bottom: 1px solid var(--border);
+}
+
+.sc-chat-ava {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: #021014;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.sc-chat-head b { display: block; font-size: 0.76rem; line-height: 1.2; }
+.sc-chat-head small { display: block; color: var(--green); font-size: 0.58rem; font-weight: 700; }
+
+.sc-chat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: radial-gradient(circle at 20% 0%, rgba(82, 232, 255, 0.05), transparent 60%);
+}
+
+.sc-msg {
+  max-width: 90%;
+  padding: 8px 10px;
+  color: var(--text);
+  border-radius: 12px;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.sc-biz {
+  align-self: flex-start;
+  background: #162636;
+  border: 1px solid var(--border);
+  border-top-left-radius: 4px;
+}
+
+.sc-me {
+  align-self: flex-end;
+  background: rgba(80, 245, 168, 0.14);
+  border: 1px solid rgba(80, 245, 168, 0.28);
+  border-top-right-radius: 4px;
+}
+
+.sc-msg time { display: block; margin-top: 3px; color: var(--dim); font-size: 0.54rem; text-align: right; }
+
+.sc-mini { margin-bottom: 6px; overflow: hidden; aspect-ratio: 3 / 2; border-radius: 8px; }
+
+.sc-act {
+  margin-top: 8px;
+  padding: 7px 0 1px;
+  color: var(--cyan);
+  border-top: 1px solid var(--border);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.sc-pay {
+  align-self: flex-end;
+  min-width: 58%;
+  padding: 10px 12px;
+
+  background: linear-gradient(150deg, rgba(80, 245, 168, 0.2), rgba(82, 232, 255, 0.12));
+  border: 1px solid rgba(80, 245, 168, 0.35);
+  border-radius: 12px;
+}
+
+.sc-pay strong { display: block; font-size: 1.25rem; line-height: 1.2; letter-spacing: -0.03em; }
+.sc-pay span { display: block; margin-top: 2px; color: var(--green); font-size: 0.62rem; font-weight: 800; }
+
+/* order placed pill */
+.sc-order-pill {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: max-content;
+  max-width: 100%;
+  margin: 16px auto 0;
+  padding: 10px 18px 10px 12px;
+
+  background: #0e1d2a;
+  border: 1px solid rgba(80, 245, 168, 0.4);
+  border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.sc-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: #021014;
+  background: var(--green);
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+/* ---------- phone mockup (shipment) ---------- */
+
+.sc-phone {
+  position: relative;
+  width: min(100%, 270px);
+  margin-inline: auto;
+  padding: 8px;
+
+  background: #06101a;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 36px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55), 0 0 50px rgba(80, 245, 168, 0.14);
+}
+
+.sc-phone-screen { min-height: 350px; overflow: hidden; background: #0b1620; border-radius: 28px; }
+
+.sc-phone-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px 6px;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.sc-notch { width: 64px; height: 15px; background: #02070b; border-radius: 99px; }
+
+.sc-phone .sc-chat-head { border-top: 1px solid var(--border); }
+
+.sc-phone .sc-chat-body { min-height: 260px; padding: 12px 10px; }
+
+.sc-ticks { color: var(--cyan); font-weight: 800; }
+
+.sc-plane { position: absolute !important; top: 14px; right: 14px; width: 30px; height: 30px; color: var(--green); z-index: 3 !important; }
+
+/* ---------- payment composition ---------- */
+
+.sc-flow { gap: 12px; }
+.sc-flow .sc-msg { max-width: 86%; font-size: 0.74rem; }
+
+.sc-ord {
+  align-self: flex-start;
+  width: 86%;
+  padding: 12px;
+
+  background: rgba(80, 245, 168, 0.09);
+  border: 1px solid rgba(80, 245, 168, 0.28);
+  border-radius: 14px;
+}
+
+.sc-ord-row { display: flex; align-items: center; gap: 10px; }
+.sc-ord-img { flex: none; width: 46px; height: 46px; overflow: hidden; border-radius: 10px; }
+.sc-ord-row b { display: block; font-size: 0.8rem; line-height: 1.25; }
+.sc-ord-row small { display: block; margin-top: 2px; color: var(--dim); font-size: 0.64rem; }
+
+.sc-ord-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  color: var(--muted);
+  border-top: 1px solid rgba(80, 245, 168, 0.2);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.sc-ord-total strong { color: var(--text); font-size: 0.84rem; }
+
+.sc-rcpt {
+  align-self: flex-end;
+  width: 84%;
+  padding: 12px 14px;
+
+  background: #0f1d2b;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--purple);
+  border-radius: 14px;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
+}
+
+.sc-rcpt b { display: block; font-size: 0.78rem; line-height: 1.25; }
+.sc-rcpt small { display: block; margin-top: 2px; color: var(--dim); font-size: 0.62rem; }
+.sc-rcpt > strong { display: block; margin-top: 8px; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.04em; }
+
+.sc-rcpt-ok {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 7px 9px;
+  color: var(--green);
+  background: rgba(80, 245, 168, 0.1);
+  border-radius: 9px;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.sc-rcpt-ok span {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  color: #021014;
+  background: var(--green);
+  border-radius: 50%;
+  font-size: 0.55rem;
+}
+
+@media (max-width: 380px) {
+  .sc-stage { padding-left: 10px; padding-right: 10px; }
+  .sc-ig { width: 90%; }
+  .sc-chat { width: 94%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-badge { animation: none !important; }
+}
