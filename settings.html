@@ -168,10 +168,11 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   Add a module/addon instead and reuse the shared API/helpers.
 
   Addons loaded (in order): settings-profile-addon.js, settings-ai-addon.js,
-  connector-ui.js, settings-connector-addon.js
+  settings-automation-addon.js, connector-ui.js, settings-connector-addon.js
 
   Deep links:  settings.html#ai            opens the AI module
                settings.html#ai-knowledge  opens AI > Knowledge
+               settings.html#automation    opens the Automation module
                settings.html#connector     opens the Connector module
                settings.html#profile       opens Profile (owner photo + business logo)
                settings.html#<module-id>   opens any registered module
@@ -614,7 +615,7 @@ async function loadSettingsAddon(src){
 
 (async()=>{
   /* Addons load in order; one failing addon never blocks the others. */
-  for(const src of ['settings-profile-addon.js','settings-ai-addon.js','connector-ui.js','settings-connector-addon.js']){
+  for(const src of ['settings-profile-addon.js','settings-ai-addon.js','settings-automation-addon.js','connector-ui.js','settings-connector-addon.js']){
     try{
       await loadSettingsAddon(src);
     }catch(error){
