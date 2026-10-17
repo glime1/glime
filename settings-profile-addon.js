@@ -21,6 +21,11 @@
 
   function letter(v) { return String(v || 'G').trim().charAt(0).toUpperCase() || 'G'; }
 
+  /* GLIME-themed confirm box; falls back to the native one if the dialog file is missing. */
+  function gdConfirm(msg, o) {
+    return window.GLIME_DIALOG ? window.GLIME_DIALOG.confirm(msg, o) : Promise.resolve(window.confirm(msg));
+  }
+
   function card(type, id, title, hint, seed, square) {
     return '<section class="pf-card">' +
       '<h3>' + esc(title) + '</h3><p>' + esc(hint) + '</p>' +
@@ -68,13 +73,13 @@
         P.apply();
       }
 
-      ctx.container.addEventListener('click', function (e) {
+      ctx.container.addEventListener('click', async function (e) {
         var pk = e.target.closest('[data-pf-pick]');
         if (pk) { var t = pk.getAttribute('data-pf-pick'); P.pick(t, id, t === 'owner' ? (client.name || biz) : biz); return; }
         var rm = e.target.closest('[data-pf-remove]');
         if (rm) {
           var type = rm.getAttribute('data-pf-remove');
-          if (!window.confirm('Remove this photo?')) return;
+          if (!(await gdConfirm('Remove this photo?', { title: 'Remove photo', confirmText: 'Remove', danger: true }))) return;
           P.remove(type, id).then(function () { window.GLIME_SETTINGS.ui.toast('Photo removed'); syncButtons(); })
             .catch(function (err) { window.GLIME_SETTINGS.ui.toast(err.message || 'Could not remove photo', true); });
         }
