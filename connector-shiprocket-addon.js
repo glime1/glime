@@ -51,6 +51,10 @@ function fmtDate(iso){
   const d=new Date(iso);
   return isNaN(d)?'':d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
 }
+/* GLIME-themed confirm box; falls back to the native one if glime-dialog.js is missing. */
+function gdConfirm(message,options){
+  return window.GLIME_DIALOG?window.GLIME_DIALOG.confirm(message,options):Promise.resolve(window.confirm(message));
+}
 async function copyText(text){
   try{
     if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true;}
@@ -416,7 +420,7 @@ function mount(container,opts){
 
     if(act==='disconnect'){
       if(st.busy)return;
-      if(!window.confirm('Disconnect Shiprocket Cargo? GLIME will delete the stored Cargo credentials and stop creating or tracking shipments.'))return;
+      if(!(await gdConfirm('Disconnect Shiprocket Cargo? GLIME will delete the stored Cargo credentials and stop creating or tracking shipments.',{title:'Disconnect Shiprocket Cargo',confirmText:'Disconnect',danger:true})))return;
       st.busy=true;st.msg=null;draw();
       try{
         await api.disconnect();

@@ -58,6 +58,11 @@ function cleanMsg(e){
 }
 function mkErr(message,code){const e=new Error(message);e.code=code;return e;}
 
+/* GLIME-themed confirm box; falls back to the native one if glime-dialog.js is missing. */
+function gdConfirm(message,options){
+  return window.GLIME_DIALOG?window.GLIME_DIALOG.confirm(message,options):Promise.resolve(window.confirm(message));
+}
+
 /* Calendar returns permissions as a {key:bool} map; the other gateways return
    permission_map plus a permissions array with scope details. */
 function parsePerms(id,r){
@@ -259,7 +264,7 @@ function mount(hub,opts){
     if(act==='disconnect'){
       if(busyDisconnect)return;
       const cfg=CONFIG[id];
-      if(!window.confirm('Disconnect '+cfg.name+'? GLIME will stop using it and its permissions will be removed.'))return;
+      if(!(await gdConfirm('Disconnect '+cfg.name+'? GLIME will stop using it and its permissions will be removed.',{title:'Disconnect '+cfg.name,confirmText:'Disconnect',danger:true})))return;
       busyDisconnect=id;st.msg=null;schedule();
       try{
         if(id==='google-sheets')await call('glime-connector-gateway','?action=disconnect','POST',{});
