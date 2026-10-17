@@ -89,6 +89,13 @@ function fmt(n){
   try{ return Number(n).toLocaleString('en-IN'); }catch(e){ return String(n); }
 }
 
+/* GLIME-themed confirm box; falls back to the native one if glime-dialog.js is missing. */
+function gdConfirm(message, options){
+  return window.GLIME_DIALOG
+    ? window.GLIME_DIALOG.confirm(message, options)
+    : Promise.resolve(window.confirm(message));
+}
+
 function numberRow(esc, ch, field, value, opts){
   const r = RANGE[field];
   const on = Number(value) > 0;
@@ -343,9 +350,15 @@ S.register({
     const stopBox = container.querySelector('#gauStop');
     stopBox.addEventListener('change', async () => {
       const turningOn = stopBox.checked;
-      if(turningOn && !confirm('Turn on Emergency stop? GLIME will pause all automated sending and AI replies until you turn it off.')){
+      if(turningOn){
+        /* The switch has already flipped; keep it OFF until the client confirms. */
         stopBox.checked = false;
-        return;
+        const ok = await gdConfirm(
+          'GLIME will pause all automated sending and AI replies on every channel until you turn this off.',
+          {title:'Turn on Emergency stop?', confirmText:'Turn on', danger:true}
+        );
+        if(!ok) return;
+        stopBox.checked = true;
       }
       stopBox.disabled = true;
       const {error} = await sb.from('client_control_settings').upsert({
