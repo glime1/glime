@@ -593,7 +593,7 @@ function renderUsage(b){
   document.getElementById('aiMeta').textContent=`${(ai).toLocaleString('en-IN')} AI Tokens remaining`;
   document.getElementById('creditsValue').textContent=ai.toLocaleString('en-IN');
   document.getElementById('creditsMeta').textContent=`${Number(b.ai_credits?.used_credits||0).toLocaleString('en-IN')} credits used · ${Number(b.ai_credits?.granted_credits||0).toLocaleString('en-IN')} granted`;
-  setMeter('creditsMeter',0);
+  setMeter('creditsMeter',percent(b.ai_credits?.used_credits,b.ai_credits?.granted_credits));
   const wallet=b.wallet||{};
   document.getElementById('walletBalance').textContent=money(wallet.balance);
   document.getElementById('walletMeta').textContent=wallet.low_balance?'Low balance · Add funds in Billing':'Usage wallet';
