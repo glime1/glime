@@ -6,6 +6,7 @@
 <title>Settings | GLIME</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="glime-dialog.js"></script>
 <script src="glime-avatar.js?v=20261013" defer></script>
 <style>
 :root{
@@ -170,6 +171,9 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   Addons loaded (in order): settings-profile-addon.js, settings-ai-addon.js,
   settings-automation-addon.js, connector-ui.js, settings-connector-addon.js
 
+  Dialogs: glime-dialog.js (loaded in <head>) provides GLIME_DIALOG.confirm /
+  alert / prompt in GLIME colours instead of the browser's native boxes.
+
   Deep links:  settings.html#ai            opens the AI module
                settings.html#ai-knowledge  opens AI > Knowledge
                settings.html#automation    opens the Automation module
@@ -210,6 +214,13 @@ function toast(message, bad=false){
   el._timer = setTimeout(() => el.style.display='none', 3200);
 }
 
+/* GLIME-themed confirm box; falls back to the native one if glime-dialog.js is missing. */
+function gdConfirm(message, options){
+  return window.GLIME_DIALOG
+    ? window.GLIME_DIALOG.confirm(message, options)
+    : Promise.resolve(window.confirm(message));
+}
+
 function escapeHtml(value){
   return String(value ?? '')
     .replaceAll('&','&amp;')
@@ -242,7 +253,8 @@ window.GLIME_SETTINGS = {
   },
   ui: {
     toast,
-    escapeHtml
+    escapeHtml,
+    confirm: gdConfirm
   }
 };
 
@@ -440,10 +452,11 @@ async function saveChannel(channel, button){
 async function disconnectChannel(channel, button){
   const name = CHANNELS.find(x=>x.key===channel)?.name || channel;
 
-  if(!confirm(
+  if(!(await gdConfirm(
     `Disconnect ${name}? GLIME will stop the existing channel connection. ` +
-    `Saved customer and conversation data will not be deleted.`
-  )) return;
+    `Saved customer and conversation data will not be deleted.`,
+    {title:`Disconnect ${name}`, confirmText:'Disconnect', danger:true}
+  ))) return;
 
   button.disabled = true;
 
