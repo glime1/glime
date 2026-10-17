@@ -16,6 +16,10 @@
    - client_ai_brain_channels, client_channel_settings,
      client_channel_connections     read-only channel linkage
 
+   Customer Support knowledge is stored as specialist knowledge with the
+   "support" use case (knowledge_scope = specialist, category = support), so
+   no backend change is needed and AI reads it like all other knowledge.
+
    Never exposed here: model_provider, model_name,
    system_instructions, safety_instructions (GLIME controlled).
 ========================================================= */
@@ -101,6 +105,59 @@
     collections: 'Payment reminder rules, overdue process, approved wording'
   };
 
+  /* Guided topics for the Customer Support card.
+     key, title, hint (what to write), example (placeholder text) */
+  const SUPPORT_TOPICS = [
+    [
+      'order_status',
+      'Order status & tracking',
+      'Explain how a customer can find out where their order is.',
+      'Example: Share the tracking link from the SMS or WhatsApp message. Orders are usually delivered in 3-5 working days. If there is no update for 5 days, ask for the order number and phone number so our team can check.'
+    ],
+    [
+      'delivery_delay',
+      'Delivery delays',
+      'Tell AI what to say when an order is late.',
+      'Example: Apologise politely, say delays can happen due to courier or weather, ask for the order number, and promise a follow-up from the team within 24 hours.'
+    ],
+    [
+      'return_exchange',
+      'Return, exchange & refund help',
+      'Step-by-step help for customers who want to return, exchange or get a refund.',
+      'Example: Returns are accepted within 7 days if the item is unused. Ask for the order number and a photo of the item. Refunds reach the original payment method in 5-7 working days.'
+    ],
+    [
+      'payment_issue',
+      'Payment problems',
+      'What AI should do when a payment fails, is stuck or was charged twice.',
+      'Example: If money was deducted but the order is not confirmed, ask for the payment screenshot and transaction ID. Tell the customer it is usually adjusted automatically within 3 working days.'
+    ],
+    [
+      'product_help',
+      'Product / service help & troubleshooting',
+      'Common problems with your product or service and how to solve them.',
+      'Example: If the product does not turn on, ask the customer to charge it for 30 minutes and try again. If it still fails, ask for a short video and the order number.'
+    ],
+    [
+      'complaints',
+      'Complaints & unhappy customers',
+      'How AI should talk to a customer who is upset.',
+      'Example: Stay calm, apologise sincerely, repeat the problem in your own words, ask for the order number, and never argue. Offer a callback from the team if the customer stays unhappy.'
+    ],
+    [
+      'contact_hours',
+      'Support hours & contact details',
+      'When your team is available and how customers can reach a person.',
+      'Example: Our team is available Monday to Saturday, 10 AM to 7 PM. Customers can call or message on WhatsApp. Outside these hours, take their details and promise a reply the next working day.'
+    ],
+    [
+      'escalation',
+      'When to connect a human',
+      'Situations where AI must stop and ask a person from your team to take over.',
+      'Example: Connect a human for refunds above Rs. 5,000, legal threats, safety issues or if the customer asks for a person twice. Never promise that a person has already joined.'
+    ]
+  ];
+
   const DAYS = [
     ['monday', 'Monday'],
     ['tuesday', 'Tuesday'],
@@ -170,6 +227,7 @@
     { key: 'policy', label: 'Policies', owner: 'Managed here', scope: 'policy' },
     { key: 'rule', label: 'Business Rules', owner: 'Managed here', scope: 'rule' },
     { key: 'lead', label: 'Lead Capture', owner: 'Managed here' },
+    { key: 'support', label: 'Customer Support', owner: 'Managed here', scope: 'support' },
     { key: 'specialist', label: 'Specialist Knowledge', owner: 'Managed here', scope: 'specialist' }
   ];
 
@@ -177,7 +235,8 @@
     faq: ['No FAQs added yet.', 'Add your most common customer questions so AI can answer consistently.'],
     policy: ['No policies added yet.', 'Add cancellation, refund, payment and shipping policies so AI never has to guess.'],
     rule: ['No business rules added yet.', 'Add hard rules such as maximum discount or when to escalate to a human.'],
-    specialist: ['No specialist knowledge added yet.', 'Add focused guidance for lead generation, appointments, support, negotiation or collections.']
+    support: ['No customer support knowledge added yet.', 'Add the topics above one by one so AI can help customers who need support.'],
+    specialist: ['No specialist knowledge added yet.', 'Add focused guidance for lead generation, appointments, negotiation or collections.']
   };
 
   /* ---------------------------------------------------------
@@ -419,12 +478,22 @@
   function itemsFor(sectionScope) {
     return M.items.filter(item => {
       const n = normalize(item);
-      if (sectionScope === 'specialist') return n.scope === 'specialist' || n.scope === 'general';
+      // Customer Support = specialist knowledge with the "support" use case.
+      if (sectionScope === 'support') return n.scope === 'specialist' && n.category === 'support';
+      // Specialist Knowledge shows everything specialist except support (that has its own card).
+      if (sectionScope === 'specialist') {
+        return (n.scope === 'specialist' && n.category !== 'support') || n.scope === 'general';
+      }
       return n.scope === sectionScope;
     });
   }
 
   const activeCount = scope => itemsFor(scope).filter(i => i.status === 'active').length;
+
+  function supportTopicOf(item) {
+    const key = item && isObj(item.metadata) ? item.metadata.support_topic : '';
+    return SUPPORT_TOPICS.find(t => t[0] === key) || null;
+  }
 
   /* ---------------------------------------------------------
      PROFILE / LEAD CONFIG HELPERS
@@ -733,6 +802,16 @@
       .ai-chrow:first-of-type{border-top:0}
       .ai-chrow b{font-size:.84rem}
       .ai-chrow .tags{display:flex;gap:6px;flex-wrap:wrap}
+      .ai-steps{display:grid;gap:8px}
+      .ai-step{display:flex;align-items:center;gap:12px;border:1px solid var(--bd);background:var(--surf2);border-radius:14px;padding:11px 12px}
+      .ai-step-no{flex:none;width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:900}
+      .ai-step.done .ai-step-no{background:#fff;color:#031014;border-color:#fff}
+      .ai-step-main{flex:1;min-width:0}
+      .ai-step-main b{display:block;font-size:.82rem;line-height:1.3}
+      .ai-step-main small{display:block;font-size:.68rem;color:rgba(255,255,255,.66);margin-top:2px;line-height:1.4}
+      .ai-step .ai-btn{flex:none}
+      .ai-progress{height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin:2px 0 12px}
+      .ai-progress span{display:block;height:100%;border-radius:99px;background:linear-gradient(105deg,var(--gr),var(--cy))}
       .hidden{display:none!important}
       @media(max-width:640px){
         .ai-grid{grid-template-columns:1fr}
@@ -744,6 +823,7 @@
         .ai-btn{flex:1}
         .ai-actions .ai-btn{flex:1 1 100%}
         .ai-item-actions .ai-btn{flex:1}
+        .ai-step .ai-btn{flex:none}
       }
       @media(min-width:900px){
         .ai-kbgrid{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -1442,7 +1522,7 @@
     });
   }
 
-  /* ---- Collections: FAQ / Policy / Rule / Specialist ---- */
+  /* ---- Collections: FAQ / Policy / Rule / Customer Support / Specialist ---- */
   const COLLECTION_COPY = {
     faq: {
       title: 'FAQs',
@@ -1465,24 +1545,73 @@
       titleLabel: 'Rule name',
       contentLabel: 'Exact rule'
     },
+    support: {
+      title: 'Customer Support',
+      sub: 'What AI should say and do when a customer needs support, such as order help, complaints, refunds or product problems.',
+      add: '+ Add support knowledge',
+      titleLabel: 'Support topic',
+      contentLabel: 'What AI should say or do'
+    },
     specialist: {
       title: 'Specialist Knowledge',
-      sub: 'Focused guidance for lead generation, appointments, support, negotiation and collections.',
+      sub: 'Focused guidance for lead generation, appointments, negotiation and collections.',
       add: '+ Add knowledge',
       titleLabel: 'Title',
       contentLabel: 'Knowledge'
     }
   };
 
+  /* Guided, step-by-step card shown on top of Customer Support. */
+  function supportGuideHtml() {
+    const mine = itemsFor('support');
+    const byTopic = {};
+    mine.forEach(i => {
+      const t = supportTopicOf(i);
+      if (t && !byTopic[t[0]]) byTopic[t[0]] = i;
+    });
+
+    const doneCount = SUPPORT_TOPICS.filter(t => byTopic[t[0]]).length;
+    const pct = Math.round((doneCount / SUPPORT_TOPICS.length) * 100);
+
+    return `
+      <div class="ai-card">
+        <h3>Add support knowledge, one step at a time</h3>
+        <p class="ai-sub">Go through these topics one by one. For each topic, write in your own words how AI should help a customer. You can skip any step and come back later.</p>
+        <div class="ai-progress" aria-hidden="true"><span style="width:${pct}%"></span></div>
+        <p class="ai-note" style="margin:0 0 12px">${doneCount} of ${SUPPORT_TOPICS.length} topics added</p>
+
+        <div class="ai-steps">
+          ${SUPPORT_TOPICS.map(([key, title, hint], idx) => {
+            const item = byTopic[key];
+            return `
+              <div class="ai-step ${item ? 'done' : ''}">
+                <div class="ai-step-no">${item ? '✓' : idx + 1}</div>
+                <div class="ai-step-main">
+                  <b>${esc(title)}</b>
+                  <small>${esc(hint)}</small>
+                </div>
+                ${item
+                  ? `<button type="button" class="ai-btn small" data-act="kb-edit" data-id="${esc(item.id)}">Edit</button>`
+                  : `<button type="button" class="ai-btn small primary" data-act="sup-add" data-topic="${esc(key)}">Add</button>`}
+              </div>`;
+          }).join('')}
+        </div>
+
+        <p class="ai-note">Need something else? Use "${esc(COLLECTION_COPY.support.add)}" below to add your own support topic.</p>
+      </div>
+    `;
+  }
+
   function collectionHtml(section) {
     const scope = section.scope;
     const copy = COLLECTION_COPY[scope];
 
     return `
+      ${scope === 'support' ? supportGuideHtml() : ''}
       <div class="ai-card">
         <div class="ai-head" style="margin-bottom:10px">
           <div>
-            <h3>${esc(copy.title)}</h3>
+            <h3>${esc(scope === 'support' ? 'All support knowledge' : copy.title)}</h3>
             <p class="ai-sub" style="margin-bottom:0">${esc(copy.sub)} Only <b>Active</b> items are used by AI.</p>
           </div>
           <button type="button" class="ai-btn primary small" data-act="kb-add" style="flex:none">${esc(copy.add)}</button>
@@ -1528,9 +1657,11 @@
 
     return rows.map(i => {
       const n = normalize(i);
+      const topic = scope === 'support' ? supportTopicOf(i) : null;
       const catLabel =
         scope === 'policy' ? labelOf(POLICY_CATS, n.category)
         : scope === 'specialist' ? (n.scope === 'general' ? 'General' : labelOf(SPECIALIST_CATS, n.category))
+        : scope === 'support' ? (topic ? topic[1] : 'Custom topic')
         : n.category;
 
       return `
@@ -1556,6 +1687,15 @@
     const existing = M.editing.id ? M.items.find(i => i.id === M.editing.id) : null;
     const n = existing ? normalize(existing) : { scope, category: '' };
 
+    // Customer Support: find the guided topic (new item from a step, or an existing item saved from a step)
+    const topic =
+      scope === 'support'
+        ? (existing ? supportTopicOf(existing) : SUPPORT_TOPICS.find(t => t[0] === M.editing.topic) || null)
+        : null;
+
+    const titleValue = existing ? existing.title : topic ? topic[1] : '';
+    const contentPlaceholder = topic ? topic[3] : '';
+
     const categoryField =
       scope === 'policy'
         ? `<div class="ai-field">
@@ -1569,7 +1709,7 @@
           ? `<div class="ai-field">
               <label class="ai-label" for="kbCategory">Use case</label>
               <select class="ai-select" id="kbCategory">
-                ${opts([...SPECIALIST_CATS, ['general', 'General (no category)']], existing ? (n.scope === 'general' ? 'general' : n.category) : 'lead_generation')}
+                ${opts([...SPECIALIST_CATS.filter(c => c[0] !== 'support'), ['general', 'General (no category)']], existing ? (n.scope === 'general' ? 'general' : n.category) : 'lead_generation')}
               </select>
               <span class="ai-hint" id="kbCatHint">${esc(SPECIALIST_HINTS[n.category || 'lead_generation'] || '')}</span>
             </div>`
@@ -1585,15 +1725,16 @@
 
     return `
       <div class="ai-editor" id="aiEditor" data-form="kb">
-        <h3>${existing ? 'Edit' : 'New'} ${esc(copy.title.replace(/s$/, ''))}</h3>
+        <h3>${existing ? 'Edit' : 'New'} ${esc(scope === 'support' ? 'support knowledge' : copy.title.replace(/s$/, ''))}</h3>
         <div class="ai-grid">
           <div class="ai-field ai-full">
             <label class="ai-label" for="kbTitle">${esc(copy.titleLabel)}</label>
-            <input class="ai-input" id="kbTitle" maxlength="200" autocomplete="off" value="${esc(existing ? existing.title : '')}">
+            <input class="ai-input" id="kbTitle" maxlength="200" autocomplete="off" value="${esc(titleValue)}">
           </div>
           <div class="ai-field ai-full">
             <label class="ai-label" for="kbContent">${esc(copy.contentLabel)}</label>
-            <textarea class="ai-textarea" id="kbContent" maxlength="10000">${esc(existing ? existing.content : '')}</textarea>
+            <textarea class="ai-textarea" id="kbContent" maxlength="10000" placeholder="${esc(contentPlaceholder)}">${esc(existing ? existing.content : '')}</textarea>
+            ${topic ? `<span class="ai-hint">${esc(topic[2])}</span>` : ''}
           </div>
           ${categoryField}
           <div class="ai-field">
@@ -1617,16 +1758,16 @@
     `;
   }
 
-  function openEditor(scope, id) {
+  function openEditor(scope, id, topicKey) {
     if (M.dirty && !window.confirm('You have unsaved changes. Discard them?')) return;
     M.dirty = false;
-    M.editing = { scope, id: id || null };
-    const host = q('#aiEditorHost');
-    if (host) {
-      host.innerHTML = editorHtml(scope);
-      q('#aiEditor')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-      q('#kbTitle')?.focus?.();
-    }
+    M.editing = { scope, id: id || null, topic: topicKey || null };
+
+    // Re-render the section so the editor shows up in the right place (also from the guided steps card).
+    renderShell();
+
+    q('#aiEditor')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    q('#kbContent')?.focus?.();
   }
 
   function closeEditor() {
@@ -1661,6 +1802,15 @@
 
     if (scope === 'policy' && !category) {
       return ui.toast('Choose a policy category.', true);
+    }
+
+    if (scope === 'support') {
+      // Stored as specialist knowledge with the "support" use case.
+      knowledgeScope = 'specialist';
+      category = 'support';
+      metadata.use_case_category = 'support';
+      metadata.knowledge_scope = 'client';
+      if (M.editing.topic) metadata.support_topic = M.editing.topic;
     }
 
     if (scope === 'specialist') {
@@ -1962,6 +2112,9 @@
         if (s?.scope) openEditor(s.scope, null);
         break;
       }
+      case 'sup-add':
+        openEditor('support', null, el.dataset.topic || null);
+        break;
       case 'kb-edit': {
         const s = KB_SECTIONS.find(x => x.key === M.kb);
         if (s?.scope) openEditor(s.scope, el.dataset.id);
