@@ -15,6 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link rel="stylesheet" href="glime-3d.css">
+  <link rel="stylesheet" href="home-showcase.css">
 
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
@@ -1583,6 +1584,269 @@ body{
             </article>
 
           </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =========================
+         SEE IT IN ACTION (VISUAL SHOWCASE)
+    ========================== -->
+
+    <section class="section" id="showcase" aria-labelledby="sc-title">
+
+      <!-- showcase art sprite -->
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="sc-bg1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#1b3a4d"/>
+            <stop offset="1" stop-color="#2a2358"/>
+          </linearGradient>
+          <linearGradient id="sc-bag1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#50f5a8"/>
+            <stop offset="1" stop-color="#52e8ff"/>
+          </linearGradient>
+
+          <g id="sc-art-bag">
+            <rect width="240" height="160" fill="url(#sc-bg1)"/>
+            <circle cx="196" cy="34" r="46" fill="#a68cff" opacity=".22"/>
+            <circle cx="40" cy="140" r="52" fill="#52e8ff" opacity=".14"/>
+            <path d="M92 62c0-22 12-34 28-34s28 12 28 34" fill="none" stroke="#e9fbff" stroke-width="5" stroke-linecap="round"/>
+            <rect x="68" y="58" width="104" height="82" rx="14" fill="url(#sc-bag1)"/>
+            <rect x="68" y="58" width="104" height="22" rx="14" fill="#ffffff" opacity=".18"/>
+            <circle cx="120" cy="102" r="13" fill="#071016" opacity=".78"/>
+            <path d="M114 102l4 4 8-9" fill="none" stroke="#50f5a8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M200 96l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#ffffff" opacity=".85"/>
+            <rect x="14" y="14" width="66" height="24" rx="12" fill="#ff6b7a"/>
+            <text x="47" y="30" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff">20% OFF</text>
+          </g>
+
+          <symbol id="sc-i-plane" viewBox="0 0 24 24"><path fill="currentColor" d="M2 21l21-9L2 3v7l15 2-15 2z"/></symbol>
+        </defs>
+      </svg>
+
+      <div class="container">
+
+        <p class="eyebrow good">SEE IT IN ACTION</p>
+
+        <h2 class="section-title" id="sc-title">
+          From a scroll on Instagram to
+          <span class="gradient-text">an order in your dashboard.</span>
+        </h2>
+
+        <p class="section-copy">
+          Here is what your customers see while GLIME works behind
+          the scenes. The conversations below are sample illustrations.
+        </p>
+
+        <!-- ROW 1: message to order -->
+        <div class="sc-row">
+
+          <div class="sc-copy">
+            <p class="eyebrow">INSTAGRAM + WHATSAPP</p>
+            <h3>Every enquiry becomes a conversation that sells.</h3>
+            <p>
+              A customer taps your Instagram post and sends a message.
+              GLIME replies in seconds, answers their questions and
+              moves them smoothly towards placing the order.
+            </p>
+            <ul class="sc-points">
+              <li>Instant replies on Instagram and WhatsApp, day or night</li>
+              <li>Answers using the details of your products and services</li>
+              <li>The order is recorded with the customer's details</li>
+            </ul>
+            <div class="buttons">
+              <a href="signup.html" class="button button-primary">Start 7-Day Free Trial →</a>
+            </div>
+          </div>
+
+          <div class="sc-visual">
+            <div
+              class="sc-stage"
+              role="img"
+              aria-label="Sample: an Instagram post with a Send message button, a WhatsApp chat where GLIME replies instantly, and an Order placed confirmation"
+            >
+              <span class="sc-badge sc-badge-a">Replied in seconds</span>
+
+              <div class="sc-ig" aria-hidden="true">
+                <div class="sc-ig-head">
+                  <span class="sc-ig-ava"></span>
+                  <div>
+                    <b>nova.studio <i class="sc-tick">✓</i></b>
+                    <small>Sponsored</small>
+                  </div>
+                </div>
+                <div class="sc-ig-img">
+                  <svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice"><use href="#sc-art-bag"/></svg>
+                </div>
+                <div class="sc-ig-cta">
+                  <svg class="sc-ic"><use href="#gx-i-wa"/></svg>
+                  Send message
+                </div>
+                <p class="sc-ig-cap"><b>nova.studio</b> Festive offer: 20% off till midnight. Message us to order.</p>
+              </div>
+
+              <div class="sc-chat" aria-hidden="true">
+                <div class="sc-chat-head">
+                  <span class="sc-chat-ava">N</span>
+                  <div>
+                    <b>Nova Studio <i class="sc-tick">✓</i></b>
+                    <small>online</small>
+                  </div>
+                </div>
+                <div class="sc-chat-body">
+                  <div class="sc-msg sc-me">
+                    <div class="sc-mini"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice"><use href="#sc-art-bag"/></svg></div>
+                    Is this available?
+                    <time>10:14</time>
+                  </div>
+                  <div class="sc-msg sc-biz">
+                    Hey Riya! Yes, it's in stock. The offer is live till midnight, so place your order now and enjoy 20% off.
+                    <div class="sc-act">Place Order Now</div>
+                  </div>
+                  <div class="sc-pay">
+                    <strong>₹899.00</strong>
+                    <span>✓ Payment received</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sc-order-pill" aria-hidden="true">
+                <span class="sc-check">✓</span>
+                Order Placed
+              </div>
+
+              <span class="sc-badge sc-badge-b">Follow-ups on autopilot</span>
+            </div>
+            <p class="sc-caption">Sample conversation for illustration</p>
+          </div>
+
+        </div>
+
+
+        <!-- ROW 2: shipment updates -->
+        <div class="sc-row sc-rev">
+
+          <div class="sc-copy">
+            <p class="eyebrow">ORDERS &amp; SHIPMENTS</p>
+            <h3>Keep customers updated without lifting a finger.</h3>
+            <p>
+              Once the order is ready, shipment details reach the
+              customer on WhatsApp so they know when to expect
+              delivery. Fewer "where is my order?" messages for you.
+            </p>
+            <ul class="sc-points">
+              <li>Shipment details shared with the customer</li>
+              <li>A friendly check-in after the sale</li>
+              <li>Works with Shiprocket for fulfilment</li>
+            </ul>
+            <div class="buttons">
+              <a href="how-it-works.html" class="button button-secondary">See How Glime Works →</a>
+            </div>
+          </div>
+
+          <div class="sc-visual">
+            <div
+              class="sc-stage"
+              role="img"
+              aria-label="Sample: a phone showing a WhatsApp shipment update from the business and a thank you reply from the customer"
+            >
+              <span class="sc-badge sc-badge-a">Shipment update sent</span>
+              <svg class="sc-plane" aria-hidden="true"><use href="#sc-i-plane"/></svg>
+
+              <div class="sc-phone" aria-hidden="true">
+                <div class="sc-phone-screen">
+                  <div class="sc-phone-bar"><span>9:41</span><span class="sc-notch"></span><span>5G</span></div>
+                  <div class="sc-chat-head">
+                    <span class="sc-chat-ava">N</span>
+                    <div>
+                      <b>Nova Studio <i class="sc-tick">✓</i></b>
+                      <small>Business account</small>
+                    </div>
+                  </div>
+                  <div class="sc-chat-body">
+                    <div class="sc-msg sc-biz">
+                      <div class="sc-mini"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice"><use href="#sc-art-bag"/></svg></div>
+                      Your order <b>Aero Tote</b> has shipped and will reach you in 3–4 days.
+                      <div class="sc-act">Track shipment</div>
+                    </div>
+                    <div class="sc-msg sc-me">
+                      Thank you!
+                      <time>10:42 <span class="sc-ticks">✓✓</span></time>
+                    </div>
+                    <div class="sc-msg sc-biz">
+                      We'll check in after delivery to make sure everything is perfect.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <span class="sc-badge sc-badge-b">Customer replied</span>
+            </div>
+            <p class="sc-caption">Sample conversation for illustration</p>
+          </div>
+
+        </div>
+
+
+        <!-- ROW 3: payments in chat -->
+        <div class="sc-row">
+
+          <div class="sc-copy">
+            <p class="eyebrow">PAYMENTS IN CHAT</p>
+            <h3>Collect payment right inside the conversation.</h3>
+            <p>
+              Share the order summary and a payment link in the same
+              chat. The payment is tracked and the order is recorded,
+              so you see sales and money in one place.
+            </p>
+            <ul class="sc-points">
+              <li>Order summary shared in the chat</li>
+              <li>Payment links through Razorpay</li>
+              <li>Payment status tracked automatically</li>
+            </ul>
+            <div class="buttons">
+              <a href="demo.html" class="button button-secondary demo-btn">▶ Try the Live Demo</a>
+            </div>
+          </div>
+
+          <div class="sc-visual">
+            <div
+              class="sc-stage sc-flow"
+              role="img"
+              aria-label="Sample: GLIME creates an order in chat, the customer sees the order total of 899 rupees and the payment is received"
+            >
+              <span class="sc-badge sc-badge-a sc-has-ic"><svg class="sc-ic"><use href="#gx-i-rp"/></svg>Razorpay payment link</span>
+
+              <div class="sc-msg sc-biz" aria-hidden="true">
+                Sounds great! Let me create an order and you can pay here.
+              </div>
+
+              <div class="sc-ord" aria-hidden="true">
+                <div class="sc-ord-row">
+                  <div class="sc-ord-img"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice"><use href="#sc-art-bag"/></svg></div>
+                  <div>
+                    <b>Aero Tote</b>
+                    <small>Quantity 1</small>
+                  </div>
+                </div>
+                <div class="sc-ord-total"><span>Total</span><strong>₹899.00</strong></div>
+                <div class="sc-act">View details</div>
+              </div>
+
+              <div class="sc-rcpt" aria-hidden="true">
+                <b>Nova Studio</b>
+                <small>Order #1042 · Quantity 1</small>
+                <strong>₹899.00</strong>
+                <div class="sc-rcpt-ok"><span>✓</span> Payment received</div>
+              </div>
+
+              <span class="sc-badge sc-badge-b">Order recorded</span>
+            </div>
+            <p class="sc-caption">Sample conversation for illustration</p>
+          </div>
+
         </div>
 
       </div>
