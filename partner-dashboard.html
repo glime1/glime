@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Partner Dashboard | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="partner-base.css">
+<link rel="stylesheet" href="partner-dashboard.css">
+</head>
+<body>
+
+<div class="pd-loading" id="pdLoading" role="status" aria-live="polite">
+  <img src="glime_logo_clean.svg" alt="" width="56" height="56">
+  <p>Opening your partner dashboard...</p>
+</div>
+
+<div class="pd-shell" id="pdShell" hidden>
+  <header class="pd-top">
+    <a href="partner.html" class="pd-brand" aria-label="GLIME Partner Program">
+      <img src="glime_logo_clean.svg" alt="GLIME">
+      <span>Partner<em>Program</em></span>
+    </a>
+    <div class="pd-user">
+      <span class="chip info" id="pdTier">Starter</span>
+      <button type="button" class="pd-user-btn" id="pdUserBtn" aria-haspopup="true" aria-expanded="false">
+        <span class="pd-avatar" id="pdAvatar">P</span>
+        <span class="pd-user-name" id="pdUserName">Partner</span>
+      </button>
+      <div class="pd-menu" id="pdMenu" hidden>
+        <p class="pd-menu-email" id="pdMenuEmail"></p>
+        <a href="partner-docs.html">Partner Guide</a>
+        <a href="login.html">GLIME client login</a>
+        <button type="button" id="pdSignOut">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="pd-body">
+    <nav class="pd-nav" id="pdNav" aria-label="Partner dashboard sections">
+      <a href="#overview" data-view="overview"><i aria-hidden="true">◧</i><span>Overview</span></a>
+      <a href="#link" data-view="link"><i aria-hidden="true">⛓</i><span>Referral link</span></a>
+      <a href="#referrals" data-view="referrals"><i aria-hidden="true">☰</i><span>Referrals</span></a>
+      <a href="#earnings" data-view="earnings"><i aria-hidden="true">₹</i><span>Earnings</span></a>
+      <a href="#payouts" data-view="payouts"><i aria-hidden="true">⇥</i><span>Payouts</span></a>
+      <a href="#resources" data-view="resources"><i aria-hidden="true">✦</i><span>Resources</span></a>
+      <a href="#profile" data-view="profile"><i aria-hidden="true">☺</i><span>Profile</span></a>
+    </nav>
+
+    <main class="pd-main" id="pdMain" tabindex="-1">
+      <div class="pd-banner" id="pdBanner" hidden></div>
+      <div id="pdView"></div>
+    </main>
+  </div>
+</div>
+
+<div class="pd-toast" id="pdToast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="partner-config.js"></script>
+<script src="partner-dashboard.js"></script>
+</body>
+</html>
