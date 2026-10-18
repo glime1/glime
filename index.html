@@ -1259,6 +1259,52 @@
     .ph-badge-text { display: block; line-height: 1.1; }
     .ph-badge-text small { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
     .ph-badge-text b { display: block; margin-top: 2px; font-size: 23px; font-weight: 700; }
+    /* =========================
+       REFERRAL PARTNER PROGRAM
+    ========================= */
+
+    .ref-wrap {
+      margin-top: 34px;
+      padding: 26px;
+
+      background: linear-gradient(150deg, rgba(24,46,60,.62), rgba(9,19,27,.78));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .ref-points {
+      display: grid;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .ref-point b {
+      display: block;
+      color: var(--green);
+      font-size: 1.5rem;
+      letter-spacing: -0.03em;
+    }
+
+    .ref-point span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .ref-note {
+      margin-top: 18px;
+      color: var(--dim);
+      font-size: 0.78rem;
+      line-height: 1.6;
+    }
+
+    @media (min-width: 900px) {
+      .ref-wrap { padding: 36px; }
+      .ref-points { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+    }
+
   </style>
 
   <link rel="stylesheet" href="glime-global-nav.css?v=2">
@@ -2424,6 +2470,77 @@ body{
 
 
     <!-- =========================
+         REFERRAL PARTNER PROGRAM
+    ========================== -->
+
+    <section class="section" id="partner-program" aria-labelledby="ref-title">
+
+      <div class="container">
+
+        <p class="eyebrow good">
+          PARTNER PROGRAM
+        </p>
+
+        <h2 class="section-title" id="ref-title">
+          Recommend GLIME.
+          <span class="gradient-text">
+            Earn every month for 24 months.
+          </span>
+        </h2>
+
+        <p class="section-copy">
+          Know businesses that sell on WhatsApp or Instagram? Share your
+          personal link, and earn a recurring commission for every
+          customer who subscribes to GLIME through it. Sign up with
+          Google and your partner dashboard opens right away.
+        </p>
+
+        <div class="ref-wrap">
+
+          <div class="ref-points">
+
+            <div class="ref-point">
+              <b>Up to 30%</b>
+              <span>recurring commission on every paying customer you refer.</span>
+            </div>
+
+            <div class="ref-point">
+              <b>24 months</b>
+              <span>of earnings from each customer, paid out every month.</span>
+            </div>
+
+            <div class="ref-point">
+              <b>Free to join</b>
+              <span>No fees and no targets. Track clicks, sign-ups and earnings in your own dashboard.</span>
+            </div>
+
+          </div>
+
+          <div class="buttons">
+
+            <a href="partner.html" class="button button-primary">
+              Become a Partner →
+            </a>
+
+            <a href="partner-docs.html" class="button button-secondary">
+              Read the Partner Guide
+            </a>
+
+          </div>
+
+          <p class="ref-note">
+            Commission is paid on subscription fees GLIME actually
+            receives. Earnings are not guaranteed. See the Partner Guide
+            for the full terms.
+          </p>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =========================
          FINAL CTA
     ========================== -->
 
@@ -2522,6 +2639,7 @@ body{
           <a href="why-glime.html">Why GLIME</a>
           <a href="how-it-works.html">How It Works</a>
           <a href="index.html#packages">Packages</a>
+          <a href="partner.html">Partner Program</a>
           <a href="packages.html">All Plans</a>
           <a href="ai-problem-solver.html">AI Tools</a>
           <a href="glime-ai.html">GLIME AI</a>
