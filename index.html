@@ -944,6 +944,21 @@
 
     .pkg-fine { margin-top: 14px; color: var(--dim); font-size: 0.68rem; line-height: 1.7; text-align: center; }
 
+    .pkg-spec { display: grid; margin-top: 20px; list-style: none; }
+    .pkg-spec li { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+    .pkg-spec li:last-child { border-bottom: 0; }
+    .pkg-spec span { flex: none; color: var(--muted); }
+    .pkg-spec strong { text-align: right; font-weight: 800; }
+
+    .pkg-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .pkg-chips span { padding: 5px 11px; color: var(--green); background: rgba(80,245,168,0.08); border: 1px solid rgba(80,245,168,0.28); border-radius: 999px; font-family: "DM Mono", monospace; font-size: 0.68rem; letter-spacing: 0.03em; }
+
+    .pkg-badge { display: inline-block; padding: 3px 9px; color: #031014; background: linear-gradient(105deg, var(--green), var(--cyan)); border-radius: 999px; font-size: 0.6rem; letter-spacing: 0.08em; }
+
+    .pay-box { margin-top: 18px; padding: 26px; background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: var(--radius); }
+    .pay-box h3 { margin-top: 8px; font-size: 1.25rem; letter-spacing: -0.03em; }
+    .pay-box p:not(.pkg-tag) { margin-top: 10px; max-width: 720px; color: var(--muted); font-size: 0.82rem; line-height: 1.7; }
+
     /* =========================
        FOUNDER
     ========================= */
@@ -2235,66 +2250,17 @@ body{
         </h2>
 
         <p class="section-copy">
-          Try GLIME free for 7 days, no card needed. If it works for
-          your business, continue with GLIME Growth for just ₹299 a month.
+          Try GLIME free for 7 days, no card needed. When you're ready,
+          continue with GLIME Growth from ₹299 a month, or go bigger
+          with GLIME Omni.
         </p>
 
         <div class="pkg-grid">
 
-          <!-- FREE TRIAL -->
-          <article class="pkg-card pkg-featured">
-
-            <p class="pkg-tag">Step 1 · Try it</p>
-
-            <h3>7-Day Free Trial</h3>
-
-            <p class="pkg-sub">See GLIME work on your own Instagram and WhatsApp before you pay anything.</p>
-
-            <p class="pkg-price">
-              Free
-              <small>for 7 days</small>
-            </p>
-
-            <div class="pkg-stats">
-              <div class="pkg-stat">
-                <strong>10,000</strong>
-                <span>AI credits</span>
-              </div>
-              <div class="pkg-stat">
-                <strong>100</strong>
-                <span>Instagram messages</span>
-              </div>
-              <div class="pkg-stat">
-                <strong>50</strong>
-                <span>WhatsApp messages</span>
-              </div>
-              <div class="pkg-stat">
-                <strong>No card</strong>
-                <span>needed to start</span>
-              </div>
-            </div>
-
-            <p class="pkg-list-title">What you get:</p>
-
-            <ul class="pkg-list">
-              <li>Connect your Instagram and WhatsApp to GLIME</li>
-              <li>Lead management and business workflow tools</li>
-              <li>AI agents that reply to your customers</li>
-              <li>Some modules switch on after we verify your signup</li>
-            </ul>
-
-            <div class="pkg-cta">
-              <a href="signup.html" class="button button-primary">
-                Start 7-Day Free Trial →
-              </a>
-            </div>
-
-          </article>
-
           <!-- GLIME GROWTH -->
           <article class="pkg-card">
 
-            <p class="pkg-tag">Step 2 · Keep going</p>
+            <p class="pkg-tag">Growth</p>
 
             <h3>GLIME Growth</h3>
 
@@ -2306,21 +2272,21 @@ body{
             </p>
 
             <p class="pkg-price-alt">
-              or <strong>₹2,999</strong> / year <em>(save ₹589 vs paying monthly)</em>
+              or <strong>₹2,999</strong> / year <em>(save ₹589)</em>
             </p>
 
-            <p class="pkg-list-title">What you get:</p>
+            <ul class="pkg-spec">
+              <li><span>AI credits</span><strong>1,00,000</strong></li>
+              <li><span>Storage</span><strong>500 MB</strong></li>
+              <li><span>Business data</span><strong>50 MB</strong></li>
+              <li><span>Agents</span><strong>Core AI agents</strong></li>
+            </ul>
 
             <ul class="pkg-list">
               <li>Lead management and business workflow tools</li>
               <li>AI agents for your WhatsApp and Instagram conversations</li>
-              <li>GLIME modules available on your plan</li>
-              <li>New improvements as GLIME grows</li>
+              <li>Standard support</li>
             </ul>
-
-            <p class="pkg-note">
-              Not included: Voice Agent.
-            </p>
 
             <div class="pkg-cta">
               <a href="signup.html?package=glime_growth" class="button button-secondary">
@@ -2330,10 +2296,67 @@ body{
 
           </article>
 
+          <!-- GLIME OMNI -->
+          <article class="pkg-card pkg-featured">
+
+            <p class="pkg-tag">Omni · <span class="pkg-badge">Best value</span></p>
+
+            <h3>GLIME Omni</h3>
+
+            <p class="pkg-sub">Far more credits, storage and data, plus broader AI connectors.</p>
+
+            <p class="pkg-price">
+              ₹1,499
+              <small>/ month</small>
+            </p>
+
+            <p class="pkg-price-alt">
+              or <strong>₹15,999</strong> / year <em>(save ₹1,989)</em>
+            </p>
+
+            <div class="pkg-chips">
+              <span>10x credits</span>
+              <span>20x storage</span>
+              <span>4x data</span>
+            </div>
+
+            <ul class="pkg-spec">
+              <li><span>AI credits</span><strong>10,00,000</strong></li>
+              <li><span>Storage</span><strong>10 GB</strong></li>
+              <li><span>Business data</span><strong>200 MB</strong></li>
+              <li><span>Agents</span><strong>Core AI agents + priority access to new ones</strong></li>
+            </ul>
+
+            <ul class="pkg-list">
+              <li>Everything in Growth</li>
+              <li>ChatGPT + Claude connectors</li>
+              <li>Priority access to newly released agents</li>
+              <li>Priority support</li>
+            </ul>
+
+            <div class="pkg-cta">
+              <a href="signup.html?package=glime_omni" class="button button-primary">
+                Start with Omni →
+              </a>
+            </div>
+
+          </article>
+
+        </div>
+
+        <div class="pay-box">
+          <p class="pkg-tag">Pay as you use</p>
+          <h3>Your wallet. Pay only for what you use.</h3>
+          <p>
+            Add money to your GLIME wallet whenever you need. When your
+            AI replies to customers on WhatsApp and Instagram, the cost
+            is deducted from your wallet, only as much as you actually
+            use. Nothing else is charged.
+          </p>
         </div>
 
         <p class="pkg-more">
-          Need more? See all plans on
+          Want the full comparison? See
           <a href="packages.html">the Packages page →</a>
         </p>
 
