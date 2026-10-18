@@ -18,7 +18,7 @@
 
   /* ---------- program numbers ---------- */
   var values = {
-    recurringMonths: P.recurringMonths,
+    estimateMonths: P.estimateMonths,
     cookieDays: P.cookieDays,
     holdDays: P.holdDays,
     minPayout: U.inr(P.minPayout),
@@ -44,8 +44,8 @@
     var monthly = n * plan.monthly * tier.rate / 100;
     ex.textContent = "Say " + n + " customers you referred are paying for " + plan.name + " at " + U.inr(plan.monthly) +
       " per month. That puts you on the " + tier.name + " tier at " + tier.rate + "%, so your commission is about " +
-      U.inr(Math.round(monthly)) + " per month, or about " + U.inr(Math.round(monthly * P.recurringMonths)) +
-      " over " + P.recurringMonths + " months, before taxes, refunds and fees.";
+      U.inr(Math.round(monthly)) + " per month, or about " + U.inr(Math.round(monthly * P.estimateMonths)) +
+      " over " + P.estimateMonths + " months, before taxes, refunds and fees. Because commission is lifetime, it continues for as long as those customers stay subscribed.";
   }
 
   /* ---------- scroll spy ---------- */
