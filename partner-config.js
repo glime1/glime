@@ -18,7 +18,7 @@ window.GLIME_PARTNER = {
 
   program: {
     name: "GLIME Partner Program",
-    recurringMonths: 12,
+    recurringMonths: 24,
     cookieDays: 60,
     holdDays: 30,
     minPayout: 1000,
