@@ -19,7 +19,7 @@
   /* ---------- fill program numbers ---------- */
   var maxRate = P.tiers[P.tiers.length - 1].rate;
   var values = {
-    recurringMonths: P.recurringMonths,
+    estimateMonths: P.estimateMonths,
     cookieDays: P.cookieDays,
     holdDays: P.holdDays,
     minPayout: U.inr(P.minPayout),
@@ -43,7 +43,7 @@
         "<h3>" + U.esc(t.name) + "</h3>" +
         '<p class="rate">' + t.rate + "%</p>" +
         '<p class="req">' + U.esc(req) + "</p>" +
-        "<ul><li>Recurring for " + P.recurringMonths + " months</li>" +
+        "<ul><li>Lifetime recurring commission</li>" +
         "<li>Paid monthly</li><li>Dashboard reporting</li></ul></article>";
     }).join("");
   }
@@ -65,7 +65,7 @@
       document.getElementById("calcTier").textContent = tier.name;
       document.getElementById("calcRate").textContent = tier.rate;
       document.getElementById("calcMonthly").textContent = U.inr(Math.round(monthly));
-      document.getElementById("calcYear").textContent = U.inr(Math.round(monthly * P.recurringMonths));
+      document.getElementById("calcYear").textContent = U.inr(Math.round(monthly * P.estimateMonths));
     };
     range.addEventListener("input", calc);
     planSel.addEventListener("change", calc);

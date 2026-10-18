@@ -18,7 +18,11 @@ window.GLIME_PARTNER = {
 
   program: {
     name: "GLIME Partner Program",
-    recurringMonths: 24,
+    /* Commission is lifetime: it continues for as long as the referred
+       customer stays on a paid plan. estimateMonths is only the period
+       used for the illustrative earnings estimate and worked example. */
+    lifetime: true,
+    estimateMonths: 12,
     cookieDays: 60,
     holdDays: 30,
     minPayout: 1000,
