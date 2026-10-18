@@ -78,11 +78,11 @@
         <div>
           <p class="eyebrow">BILLING</p>
           <h2>Choose monthly or yearly</h2>
-          <p>Final pricing is loaded from GLIME's active billing catalog.</p>
+          <p>Switch to yearly and keep more of your budget.</p>
         </div>
-        <div class="billing-note">
-          <span class="dot"></span>
-          Prices shown below are the current catalog prices.
+        <div class="billing-toggle" role="group" aria-label="Billing period">
+          <button type="button" class="toggle-btn active" data-billing="monthly" aria-pressed="true">Monthly</button>
+          <button type="button" class="toggle-btn" data-billing="yearly" aria-pressed="false">Yearly <em>Save up to ₹1,989</em></button>
         </div>
       </div>
     </section>
@@ -92,8 +92,8 @@
         <p class="eyebrow">CORE PACKAGES</p>
         <h2>Two clear SaaS paths.</h2>
         <p>
-          Both plans use the same GLIME platform foundation. Omni adds broader AI and connector
-          capabilities for businesses that need a deeper automation layer.
+          Both plans use the same GLIME platform foundation. Omni adds far more credits, storage,
+          Voice Agent and broader AI connectors for businesses that need a deeper automation layer.
         </p>
       </div>
 
@@ -111,36 +111,31 @@
           </p>
 
           <div class="price-row">
-            <div>
-              <span class="price-prefix">Monthly</span>
-              <strong>₹299</strong>
-              <span class="price-suffix">/ month</span>
+            <div class="price-main">
+              <strong class="js-price" data-monthly="₹299" data-yearly="₹2,999">₹299</strong>
+              <span class="price-suffix js-period" data-monthly="/ month" data-yearly="/ year">/ month</span>
             </div>
-            <div class="yearly">
-              <span>Yearly</span>
-              <strong>₹2,999</strong>
-              <small>/ year</small>
-            </div>
+            <span class="save-badge js-save" hidden>Save ₹589</span>
           </div>
 
           <p class="price-note">7-day free trial. Billing is handled through the GLIME billing system.</p>
 
           <div class="package-divider"></div>
-          <p class="included-label">CORE GLIME ACCESS</p>
+          <p class="included-label">WHAT YOU GET</p>
+
+          <ul class="spec-list">
+            <li><span>AI credits</span><strong>1,00,000</strong></li>
+            <li><span>Storage</span><strong>500 MB</strong></li>
+            <li><span>Business data</span><strong>50 MB</strong></li>
+            <li><span>Agents</span><strong>Core AI agents</strong></li>
+            <li><span>Voice Agent</span><strong class="no">Not included</strong></li>
+          </ul>
 
           <ul class="feature-list">
             <li>GLIME business automation foundation</li>
             <li>Lead management and business workflow tools</li>
-            <li>Core AI agent access included in your account</li>
-            <li>Trial AI credits and channel message allowances</li>
-            <li>Access to supported GLIME modules based on entitlement</li>
-            <li>Ongoing product improvements</li>
+            <li>Standard support</li>
           </ul>
-
-          <div class="excluded">
-            <strong>Plan note</strong>
-            <span>Voice Agent is excluded from GLIME Growth.</span>
-          </div>
 
           <a href="signup.html?package=glime_growth" class="package-button">
             Start Growth Trial <span>→</span>
@@ -148,7 +143,7 @@
         </article>
 
         <article class="package-card package-featured">
-          <div class="popular-badge">GLIME OMNI</div>
+          <div class="popular-badge">BEST VALUE</div>
 
           <div class="package-top">
             <span class="package-number">02</span>
@@ -157,41 +152,144 @@
 
           <h3>GLIME Omni</h3>
           <p class="package-for">
-            A broader GLIME package for businesses that want deeper AI connectivity and priority
+            For businesses that want deeper AI connectivity, Voice Agent and priority
             access to newly released agents.
           </p>
 
           <div class="price-row">
-            <div>
-              <span class="price-prefix">Monthly</span>
-              <strong>₹1,499</strong>
-              <span class="price-suffix">/ month</span>
+            <div class="price-main">
+              <strong class="js-price" data-monthly="₹1,499" data-yearly="₹15,999">₹1,499</strong>
+              <span class="price-suffix js-period" data-monthly="/ month" data-yearly="/ year">/ month</span>
             </div>
-            <div class="yearly">
-              <span>Yearly</span>
-              <strong>₹15,999</strong>
-              <small>/ year</small>
-            </div>
+            <span class="save-badge js-save" hidden>Save ₹1,989</span>
           </div>
 
           <p class="price-note">7-day free trial. Billing is handled through the GLIME billing system.</p>
 
+          <div class="value-chips" aria-label="Omni versus Growth">
+            <span>10x credits</span>
+            <span>20x storage</span>
+            <span>4x data</span>
+          </div>
+
           <div class="package-divider"></div>
-          <p class="included-label">OMNI CAPABILITIES</p>
+          <p class="included-label">WHAT YOU GET</p>
+
+          <ul class="spec-list">
+            <li><span>AI credits</span><strong>10,00,000</strong></li>
+            <li><span>Storage</span><strong>10 GB</strong></li>
+            <li><span>Business data</span><strong>200 MB</strong></li>
+            <li><span>Agents</span><strong>All agents + priority access to new ones</strong></li>
+            <li><span>Voice Agent</span><strong class="yes">Included</strong></li>
+          </ul>
 
           <ul class="feature-list">
-            <li>Everything provided through the GLIME core platform</li>
-            <li>Core access plus broader AI connector capabilities</li>
-            <li>Designed for multi-channel business automation</li>
-            <li>AI sales and customer-operation workflows</li>
+            <li>Everything in Growth</li>
+            <li>ChatGPT + Claude connectors</li>
             <li>Priority access to newly released agents</li>
-            <li>Additional capabilities as GLIME entitlements evolve</li>
+            <li>Priority support</li>
           </ul>
 
           <a href="signup.html?package=glime_omni" class="package-button package-button-featured">
             Start Omni Trial <span>→</span>
           </a>
         </article>
+      </div>
+    </section>
+
+    <section class="compare-section container" id="compare">
+      <div class="section-heading">
+        <p class="eyebrow">COMPARE</p>
+        <h2>Growth vs Omni.</h2>
+      </div>
+
+      <div class="compare-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th scope="col">Feature</th>
+              <th scope="col">Growth</th>
+              <th scope="col" class="col-omni">Omni</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Price</th>
+              <td class="js-price" data-monthly="₹299 / month" data-yearly="₹2,999 / year">₹299 / month</td>
+              <td class="col-omni js-price" data-monthly="₹1,499 / month" data-yearly="₹15,999 / year">₹1,499 / month</td>
+            </tr>
+            <tr>
+              <th scope="row">AI credits</th>
+              <td>1,00,000</td>
+              <td class="col-omni">10,00,000</td>
+            </tr>
+            <tr>
+              <th scope="row">Storage</th>
+              <td>500 MB</td>
+              <td class="col-omni">10 GB</td>
+            </tr>
+            <tr>
+              <th scope="row">Business data</th>
+              <td>50 MB</td>
+              <td class="col-omni">200 MB</td>
+            </tr>
+            <tr>
+              <th scope="row">Core AI agents</th>
+              <td><span class="tick" aria-label="Included">✓</span></td>
+              <td class="col-omni"><span class="tick" aria-label="Included">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Voice Agent</th>
+              <td><span class="cross" aria-label="Not included">✕</span></td>
+              <td class="col-omni"><span class="tick" aria-label="Included">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">ChatGPT + Claude connectors</th>
+              <td><span class="cross" aria-label="Not included">✕</span></td>
+              <td class="col-omni"><span class="tick" aria-label="Included">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Priority access to new agents</th>
+              <td><span class="cross" aria-label="Not included">✕</span></td>
+              <td class="col-omni"><span class="tick" aria-label="Included">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Priority support</th>
+              <td><span class="cross" aria-label="Not included">✕</span></td>
+              <td class="col-omni"><span class="tick" aria-label="Included">✓</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="payg-section container" id="pay-as-you-use">
+      <div class="payg-card">
+        <div class="payg-head">
+          <p class="eyebrow">PAY AS YOU USE</p>
+          <h2>Need more AI credits? Top up anytime.</h2>
+          <p>Running low mid-month? Add extra AI credits without changing your plan. Buy only what you need.</p>
+        </div>
+
+        <div class="payg-grid">
+          <div class="payg-item">
+            <strong>10,000</strong>
+            <span>AI credits</span>
+            <em>₹49</em>
+          </div>
+          <div class="payg-item">
+            <strong>50,000</strong>
+            <span>AI credits</span>
+            <em>₹229</em>
+          </div>
+          <div class="payg-item">
+            <strong>2,00,000</strong>
+            <span>AI credits</span>
+            <em>₹849</em>
+          </div>
+        </div>
+
+        <p class="payg-note">Top-ups are for active Growth and Omni plans. Plan credits cost less per credit than top-ups.</p>
       </div>
     </section>
 
@@ -207,10 +305,9 @@
         </div>
 
         <div class="trial-grid">
-          <div class="trial-item"><strong>7 days</strong><span>Free trial period</span></div>
-          <div class="trial-item"><strong>10,000</strong><span>Trial GLIME AI credits</span></div>
-          <div class="trial-item"><strong>100</strong><span>Trial Instagram messages</span></div>
-          <div class="trial-item"><strong>50</strong><span>Trial WhatsApp messages</span></div>
+          <div class="trial-item"><strong>10,000</strong><span>Trial AI credits</span></div>
+          <div class="trial-item"><strong>100</strong><span>Instagram messages</span></div>
+          <div class="trial-item"><strong>50</strong><span>WhatsApp messages</span></div>
         </div>
       </div>
     </section>
@@ -328,6 +425,28 @@
     </div>
   </footer>
 
+  <script>
+    (function () {
+      var buttons = document.querySelectorAll('.toggle-btn');
+      function setBilling(mode) {
+        buttons.forEach(function (b) {
+          var on = b.getAttribute('data-billing') === mode;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        document.querySelectorAll('.js-price, .js-period').forEach(function (el) {
+          var v = el.getAttribute('data-' + mode);
+          if (v) el.textContent = v;
+        });
+        document.querySelectorAll('.js-save').forEach(function (el) {
+          el.hidden = mode !== 'yearly';
+        });
+      }
+      buttons.forEach(function (b) {
+        b.addEventListener('click', function () { setBilling(b.getAttribute('data-billing')); });
+      });
+    })();
+  </script>
   <script src="glime-global-nav.js" defer></script>
   <script src="website-analytics.js"></script>
 </body>
