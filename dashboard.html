@@ -777,6 +777,56 @@ function showAccessGate(){
   document.body.appendChild(overlay); document.getElementById('gateLogout').onclick=handleLogout;
 }
 
+/*
+ * Partner referral: if partner-referral.js saved a click_id that is still
+ * waiting (for example signup could not attribute it), try once more now.
+ * Runs in the background and never blocks or breaks the dashboard.
+ * Keep the storage key and the final error codes in sync with partner-referral.js.
+ */
+async function retryPartnerAttribution(session) {
+    try {
+        const raw = localStorage.getItem('glime_partner_click');
+        if (!raw) return;
+
+        const rec = JSON.parse(raw);
+        const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (!rec || !uuid.test(String(rec.click_id)) || !(Date.parse(rec.expires_at) > Date.now())) {
+            localStorage.removeItem('glime_partner_click');
+            return;
+        }
+
+        const token = session?.access_token;
+        if (!token) return;
+
+        const response = await fetch(SUPABASE_URL + '/functions/v1/glime-partner-api', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'apikey': SUPABASE_KEY
+            },
+            body: JSON.stringify({ action: 'attribute', click_id: rec.click_id })
+        });
+        const body = await response.json().catch(() => ({}));
+
+        const finalErrors = [
+            'REFERRAL_CLICK_NOT_FOUND', 'REFERRAL_CLICK_EXPIRED', 'REFERRAL_CLICK_ALREADY_USED',
+            'PARTNER_NOT_ACTIVE', 'PARTNER_SELF_REFERRAL_BLOCKED', 'ACCOUNT_NOT_NEW',
+            'ACCOUNT_TOO_OLD', 'INVALID_CLICK_ID'
+        ];
+
+        if ((response.ok && body.ok === true) || finalErrors.includes(body.error)) {
+            const cur = JSON.parse(localStorage.getItem('glime_partner_click') || 'null');
+            if (cur && cur.click_id === rec.click_id) {
+                localStorage.removeItem('glime_partner_click');
+            }
+        }
+    } catch (error) {
+        console.warn('Partner referral retry skipped:', error);
+    }
+}
+
 async function initializeDashboard() {
     try {
         loadingScreen.style.display =
@@ -839,6 +889,8 @@ async function initializeDashboard() {
             'glime_client_email',
             email
         );
+
+        retryPartnerAttribution(session);
 
         /*
          * Step 2:
