@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#05080c;--card:#111827;--green:#00ff88;--cyan:#00f0ff;--text:#fff;--muted:#9ca3af;--border:rgba(255,255,255,.08)}*{box-sizing:border-box;margin:0;padding:0;font-family:Poppins,sans-serif}body{min-height:100vh;background:radial-gradient(circle at 50% 0,rgba(0,240,255,.09),transparent 34%),radial-gradient(circle at 0 100%,rgba(0,255,136,.07),transparent 30%),var(--bg);color:var(--text);padding:28px 18px 55px}.page{width:100%;max-width:500px;margin:auto}.brand{display:flex;justify-content:center;margin-bottom:22px}.brand a{display:flex;align-items:center;gap:11px;color:#fff;text-decoration:none}.brand img{width:48px;height:48px;object-fit:contain}.brand span{font-size:1.15rem;font-weight:700;letter-spacing:4px}.card{background:rgba(17,24,39,.94);border:1px solid var(--border);border-radius:20px;padding:32px;box-shadow:0 18px 45px rgba(0,0,0,.4)}.logo{width:72px;height:72px;display:block;margin:0 auto 16px;object-fit:contain}h1{text-align:center;font-size:1.65rem;margin-bottom:7px}.subtitle{text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:26px}.group{margin-bottom:16px}label{display:block;color:#dbe3ea;font-size:.82rem;font-weight:600;margin-bottom:7px}input{width:100%;padding:12px 13px;border-radius:10px;border:1px solid var(--border);background:#0a111a;color:#fff;outline:none;font-size:.92rem}input:focus{border-color:rgba(0,240,255,.55);box-shadow:0 0 0 3px rgba(0,240,255,.08)}.hint{font-size:.7rem;color:var(--muted);margin-top:6px;line-height:1.5}button{width:100%;border:0;border-radius:11px;padding:13px 16px;background:linear-gradient(135deg,rgba(0,255,136,.18),rgba(0,240,255,.16));border:1px solid rgba(0,240,255,.42);color:#fff;font-weight:700;cursor:pointer;margin-top:5px}button.secondary{margin-top:8px;background:transparent;border-color:var(--border);font-weight:600}button:disabled{opacity:.55;cursor:not-allowed}.message{display:none;margin-top:15px;padding:11px 12px;border-radius:10px;font-size:.82rem;line-height:1.55}.error{background:rgba(255,82,99,.08);border:1px solid rgba(255,82,99,.28);color:#ff9aa6}.success{background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.25);color:#8dffc5}.hidden{display:none!important}.login{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}.login a,.footer a,.terms a{color:var(--cyan);text-decoration:none}.footer{text-align:center;color:#697586;font-size:.72rem;margin-top:20px;line-height:1.8}.terms{color:var(--muted);font-size:.72rem;line-height:1.55;margin:5px 0 16px}.otp-box input{text-align:center;letter-spacing:8px;font-size:1.15rem;font-weight:700}.otp-note{text-align:center;color:var(--muted);font-size:.72rem;margin-top:8px}.step-title{font-size:1rem;font-weight:700;text-align:center;margin-bottom:8px}
+:root{--bg:#05080c;--card:#111827;--green:#00ff88;--cyan:#00f0ff;--text:#fff;--muted:#9ca3af;--border:rgba(255,255,255,.08)}*{box-sizing:border-box;margin:0;padding:0;font-family:Poppins,sans-serif}body{min-height:100vh;background:radial-gradient(circle at 50% 0,rgba(0,240,255,.09),transparent 34%),radial-gradient(circle at 0 100%,rgba(0,255,136,.07),transparent 30%),var(--bg);color:var(--text);padding:28px 18px 55px}.page{width:100%;max-width:500px;margin:auto}.brand{display:flex;justify-content:center;margin-bottom:22px}.brand a{display:flex;align-items:center;gap:11px;color:#fff;text-decoration:none}.brand img{width:48px;height:48px;object-fit:contain}.brand span{font-size:1.15rem;font-weight:700;letter-spacing:4px}.card{background:rgba(17,24,39,.94);border:1px solid var(--border);border-radius:20px;padding:32px;box-shadow:0 18px 45px rgba(0,0,0,.4)}.logo{width:72px;height:72px;display:block;margin:0 auto 16px;object-fit:contain}h1{text-align:center;font-size:1.65rem;margin-bottom:7px}.subtitle{text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:26px}.group{margin-bottom:16px}label{display:block;color:#dbe3ea;font-size:.82rem;font-weight:600;margin-bottom:7px}input{width:100%;padding:12px 13px;border-radius:10px;border:1px solid var(--border);background:#0a111a;color:#fff;outline:none;font-size:.92rem}input:focus{border-color:rgba(0,240,255,.55);box-shadow:0 0 0 3px rgba(0,240,255,.08)}.hint{font-size:.7rem;color:var(--muted);margin-top:6px;line-height:1.5}button{width:100%;border:0;border-radius:11px;padding:13px 16px;background:linear-gradient(135deg,rgba(0,255,136,.18),rgba(0,240,255,.16));border:1px solid rgba(0,240,255,.42);color:#fff;font-weight:700;cursor:pointer;margin-top:5px}button.secondary{margin-top:8px;background:transparent;border-color:var(--border);font-weight:600}button:disabled{opacity:.55;cursor:not-allowed}.message{display:none;margin-top:15px;padding:11px 12px;border-radius:10px;font-size:.82rem;line-height:1.55}.error{background:rgba(255,82,99,.08);border:1px solid rgba(255,82,99,.28);color:#ff9aa6}.success{background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.25);color:#8dffc5}.hidden{display:none!important}.login{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}.login a,.footer a,.terms a{color:var(--cyan);text-decoration:none}.footer{text-align:center;color:#697586;font-size:.72rem;margin-top:20px;line-height:1.8}.terms{color:var(--muted);font-size:.72rem;line-height:1.55;margin:5px 0 16px}.otp-box input{text-align:center;letter-spacing:8px;font-size:1.15rem;font-weight:700}.otp-note{text-align:center;color:var(--muted);font-size:.72rem;margin-top:8px}.step-title{font-size:1rem;font-weight:700;text-align:center;margin-bottom:8px}.opt{color:var(--muted);font-weight:400}#referralCode{text-transform:uppercase}#referralCode::placeholder{text-transform:none}
 @media(max-width:520px){.card{padding:24px 20px}h1{font-size:1.45rem}}
 </style>
 </head>
@@ -28,6 +28,7 @@
 <div class="group"><label for="email">Email Address</label><input id="email" type="email" autocomplete="email" placeholder="you@company.com" maxlength="254" required></div>
 <div class="group"><label for="password">Password</label><input id="password" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" minlength="8" required></div>
 <div class="group"><label for="confirmPassword">Confirm Password</label><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Re-enter your password" minlength="8" required></div>
+<div class="group"><label for="referralCode">Referral code <span class="opt">(optional)</span></label><input id="referralCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Partner referral code" maxlength="12"><div class="hint">Got a code from a GLIME partner? Enter it here. If you came through a partner's link, it is filled in for you.</div></div>
 <div class="terms">By creating an account, you agree to GLIME's <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</div>
 <button type="submit" id="startBtn">Send Email OTP</button>
 </div>
@@ -54,6 +55,7 @@
 <div class="footer">© 2026 Glime AI Automation.<br><a href="index.html">Home</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></div>
 </div>
 
+<script src="partner-referral.js"></script>
 <script>
 const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
@@ -67,6 +69,13 @@ const resendEmailBtn=document.getElementById('resendEmailBtn');
 const errorMessage=document.getElementById('errorMessage');
 const successMessage=document.getElementById('successMessage');
 
+/* Partner referral: the page keeps working even if partner-referral.js is blocked. */
+const PR=window.GlimePartnerReferral||null;
+const referralInput=document.getElementById('referralCode');
+if(PR&&referralInput){
+ PR.ready.then(()=>{const r=PR.get();if(r&&r.code&&!referralInput.value)referralInput.value=r.code}).catch(()=>{});
+}
+
 function showError(m){errorMessage.textContent=m;errorMessage.style.display='block';successMessage.style.display='none'}
 function showSuccess(m){successMessage.textContent=m;successMessage.style.display='block';errorMessage.style.display='none'}
 function normalizePhone(v){let p=v.trim().replace(/[^\d+]/g,'');if(p.startsWith('0')&&!p.startsWith('+'))p='+91'+p.slice(1);if(/^\d{10}$/.test(p))p='+91'+p;return p}
@@ -78,13 +87,15 @@ function getDetails(){
  const email=document.getElementById('email').value.trim().toLowerCase();
  const password=document.getElementById('password').value;
  const confirmPassword=document.getElementById('confirmPassword').value;
+ const referralRaw=document.getElementById('referralCode').value.trim().toUpperCase();
  if(fullName.length<2)throw new Error('Please enter your full name.');
  if(businessName.length<2)throw new Error('Please enter your business name.');
  if(!/^\+[1-9]\d{9,14}$/.test(phone))throw new Error('Please enter a valid mobile number, for example +919876543210.');
  if(!/^\S+@\S+\.\S+$/.test(email))throw new Error('Please enter a valid email address.');
  if(password.length<8)throw new Error('Password must be at least 8 characters.');
  if(password!==confirmPassword)throw new Error('Passwords do not match.');
- return {fullName,businessName,phone,email,password};
+ if(referralRaw&&!/^[A-Z0-9]{6,12}$/.test(referralRaw))throw new Error('Please enter a valid referral code, or leave that box empty.');
+ return {fullName,businessName,phone,email,password,referralCode:referralRaw};
 }
 
 async function sendEmailOtp(email){
@@ -103,16 +114,38 @@ async function provisionClient(){
  return body;
 }
 
+/* A referral code typed into the box becomes a tracked click, unless it is the code already saved from the partner's link. */
+async function resolveTypedReferral(code){
+ if(!PR||!code)return;
+ await PR.ready;
+ const saved=PR.get();
+ if(saved&&saved.code===code)return;
+ const res=await PR.trackCode(code);
+ if(!res.ok&&res.error==='REFERRAL_CODE_NOT_FOUND')throw new Error('This referral code was not found. Please check it, or clear the box to continue without one.');
+ if(!res.ok)console.warn('Referral code could not be checked:',res.error);
+}
+
+/* Runs only after provisionClient() succeeded. A failure here never blocks signup; dashboard.html retries once. */
+async function attributeReferral(){
+ if(!PR)return;
+ try{
+  const {data}=await supabaseClient.auth.getSession();
+  const token=data?.session?.access_token;
+  if(token)await PR.attribute(token);
+ }catch(error){console.warn('Referral attribution skipped:',error)}
+}
+
 form.addEventListener('submit',async e=>{
  e.preventDefault(); errorMessage.style.display='none'; successMessage.style.display='none';
  try{
   const d=getDetails(); startBtn.disabled=true; startBtn.textContent='Creating account...';
+  await resolveTypedReferral(d.referralCode);
   const {data,error}=await supabaseClient.auth.signUp({email:d.email,password:d.password,options:{data:{full_name:d.fullName,business_name:d.businessName,phone:d.phone}}});
   if(error)throw error;
   if(data?.session){
    detailsStep.classList.add('hidden'); emailVerificationStep.classList.remove('hidden');
    showSuccess('Account created. Preparing your GLIME dashboard...');
-   await provisionClient(); window.location.replace('dashboard.html'); return;
+   await provisionClient(); await attributeReferral(); window.location.replace('dashboard.html'); return;
   }
   detailsStep.classList.add('hidden'); emailVerificationStep.classList.remove('hidden');
   document.getElementById('emailOtp').focus();
@@ -140,6 +173,7 @@ document.getElementById('verifyEmailBtn').addEventListener('click',async()=>{
   showSuccess('Email verified. Setting up your GLIME dashboard...');
   const provisioned=await provisionClient();
   if(!provisioned?.client)throw new Error('GLIME client account could not be prepared.');
+  await attributeReferral();
   window.location.replace('dashboard.html');
  }catch(error){
   console.error('Email OTP verification error:',error); showError(error.message||'Could not verify the email OTP.');
