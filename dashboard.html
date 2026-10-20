@@ -107,6 +107,7 @@
 </style>
 <link rel="stylesheet" href="glime-app-shell.css">
 <script src="glime-app-shell.js" defer></script>
+<script src="dashboard-notify.js" defer></script>
 </head>
 
 <body data-gas-title="Overview" data-gas-support>
@@ -125,6 +126,13 @@
         <p>Manage your GLIME account, plan, usage and access from one place.</p>
       </div>
       <div class="identity">
+        <div>
+          <label class="notify-switch" id="notifySwitchWrap" title="Get notified when someone signs up">
+            <span class="notify-switch-label">🔔 Notifications</span>
+            <input type="checkbox" id="notifyToggle" role="switch" aria-label="Turn sign-up notifications on or off">
+            <span class="notify-slider"></span>
+          </label>
+        </div>
         <div class="client-badge">Client ID: <span id="dynamicClientId">Loading...</span></div>
         <div id="clientEmailDisplay" class="email-display">Loading email...</div>
       </div>
