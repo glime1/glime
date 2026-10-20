@@ -1,5 +1,14 @@
 (function () {
 
+  /* Cookie consent banner (loads once on every page that uses the global nav) */
+  if (!window.GLIME_COOKIE_CONSENT && !document.getElementById("glime-cookie-consent-js")) {
+    const cc = document.createElement("script");
+    cc.id = "glime-cookie-consent-js";
+    cc.src = "cookie-consent.js?v=1";
+    cc.async = true;
+    document.head.appendChild(cc);
+  }
+
   /* GLIME AI floating button */
   if (!document.getElementById("glime-ai-float")) {
     const style = document.createElement("style");
