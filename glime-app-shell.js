@@ -152,6 +152,14 @@
     document.head.appendChild(s);
   }
 
+  function loadPushSystem() {
+    if (window.GlimePush || document.querySelector('script[src*="glime-push.js"]')) return;
+    var s = document.createElement('script');
+    s.src = 'glime-push.js?v=20261021';
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+
   function logout() {
     /* Dashboard defines its own handleLogout(); reuse it untouched. */
     if (typeof window.handleLogout === 'function') {
@@ -329,6 +337,7 @@
     syncInert();
     applyIdentity();
     loadPhotoSystem();
+    loadPushSystem();
   }
 
   window.GlimeAppShell = {
