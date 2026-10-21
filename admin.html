@@ -46,6 +46,7 @@
       <button data-view="modules">Modules</button>
       <button data-view="billing">Billing</button>
       <button data-view="rewards">Rewards</button>
+      <button data-view="notifications">Notifications</button>
       <button data-view="storage">Storage</button>
       <button data-view="safety">Safety Monitor</button>
       <button data-view="care">CARE</button>
@@ -110,6 +111,17 @@
         </div>
       </div>
       <div class="card" style="margin-top:14px"><h3>Reward History</h3><div style="overflow:auto"><table><thead><tr><th>Client</th><th>Code</th><th>Type</th><th>Qty</th><th>Status</th><th>Reason</th><th>Date</th></tr></thead><tbody id="rewardRows"></tbody></table></div></div>
+    </section>
+
+    <section class="view" id="view-notifications">
+      <div class="card"><h3>Send Notification to All Clients</h3>
+        <p class="sub">The notification appears in every client's dashboard bell as a message from the GLIME Team.</p>
+        <label>Title</label><input id="notifyTitle" maxlength="140" placeholder="e.g. New feature is live">
+        <label style="margin-top:9px">Message</label><textarea id="notifyBody" rows="4" maxlength="500" placeholder="Write the message clients will see (up to 500 characters)"></textarea>
+        <label style="margin-top:9px">Link (optional)</label><input id="notifyLink" placeholder="billing.html or https://glime.online/...">
+        <button class="btn primary" style="margin-top:12px" id="notifyBtn">Send to All Clients</button>
+        <div class="message" id="notifyMsg"></div>
+      </div>
     </section>
 
     <section class="view" id="view-storage"><div class="card"><h3>Client Storage</h3><p class="sub">Existing storage RPC is used for the selected client. Storage controls remain separate from billing payment state.</p><div id="storageContent"></div></div></section>
@@ -471,6 +483,21 @@
       billing backend exposes its admin grant RPC/Edge Function.
     */
     msg('rewardMsg',`Reward request prepared for ${ids.length} client(s). Secure grant endpoint is not exposed to this browser yet; no unsafe direct DB write was attempted.`);
+  };
+
+  // Send one notification to every client (server-side admin RPC creates one row per client).
+  $('notifyBtn').onclick=async()=>{
+    const title=$('notifyTitle').value.trim(),body=$('notifyBody').value.trim(),link=$('notifyLink').value.trim();
+    if(!title){msg('notifyMsg','Title is required.');return}
+    const total=clients.filter(x=>(x.account_status||'').toLowerCase()!=='archived').length;
+    if(!confirm(`Send this notification to all ${total} clients? This cannot be undone.`))return;
+    const b=$('notifyBtn');b.disabled=true;msg('notifyMsg','Sending...');
+    try{
+      const r=await sb.rpc('admin_send_notification',{p_title:title,p_body:body||null,p_link_url:link||null});
+      if(r.error)throw r.error;
+      msg('notifyMsg',`Notification sent to ${r.data?.recipients??0} client(s).`);
+      $('notifyTitle').value='';$('notifyBody').value='';$('notifyLink').value='';
+    }catch(e){msg('notifyMsg','Could not send: '+(e.message||e))}finally{b.disabled=false}
   };
 
   async function renderSimpleSections(){
