@@ -114,12 +114,23 @@
     </section>
 
     <section class="view" id="view-notifications">
-      <div class="card"><h3>Send Notification to All Clients</h3>
-        <p class="sub">The notification appears in every client's dashboard bell as a message from the GLIME Team.</p>
-        <label>Title</label><input id="notifyTitle" maxlength="140" placeholder="e.g. New feature is live">
+      <div class="card"><h3>Send Notification</h3>
+        <p class="sub">The notification appears in the client's dashboard bell as a message from the GLIME Team. Send it to one client, several clients, or everyone.</p>
+        <label>Recipients</label>
+        <select id="notifyRecipients"><option value="all">All clients</option><option value="selected">Selected clients (choose below)</option></select>
+        <div id="notifyPicker" style="display:none;margin-top:9px">
+          <input class="search" id="notifySearch" placeholder="Search by name, email, business or GLM ID">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0">
+            <button class="btn" type="button" id="notifySelectShown">Select all shown</button>
+            <button class="btn" type="button" id="notifyClearSel">Clear selection</button>
+            <span class="sub" id="notifyCount">0 selected</span>
+          </div>
+          <div id="notifyList" style="max-height:260px;overflow:auto"></div>
+        </div>
+        <label style="margin-top:12px">Title</label><input id="notifyTitle" maxlength="140" placeholder="e.g. New feature is live">
         <label style="margin-top:9px">Message</label><textarea id="notifyBody" rows="4" maxlength="500" placeholder="Write the message clients will see (up to 500 characters)"></textarea>
         <label style="margin-top:9px">Link (optional)</label><input id="notifyLink" placeholder="billing.html or https://glime.online/...">
-        <button class="btn primary" style="margin-top:12px" id="notifyBtn">Send to All Clients</button>
+        <button class="btn primary" style="margin-top:12px" id="notifyBtn">Send Notification</button>
         <div class="message" id="notifyMsg"></div>
       </div>
     </section>
@@ -158,6 +169,7 @@
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   const $=id=>document.getElementById(id);
   let clients=[],modules=[],clientModules=[],subs=[],rewards=[],current=null,mfaFactor=null,mfaChallenge=null,mfaEnrollmentBusy=false;
+  const notifySel=new Set();
 
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const dt=v=>v?new Date(v).toLocaleString():'—';
@@ -327,7 +339,7 @@
       if(clientRpc.error)throw clientRpc.error;
       clients=(clientRpc.data||[]).map(x=>x.client||x).filter(Boolean);
       modules=m;clientModules=cm;subs=s;rewards=rg;
-      renderOverview();renderClients();renderModules();renderBilling();renderRewards();renderMfa();
+      renderOverview();renderClients();renderModules();renderBilling();renderRewards();renderNotifyList();renderMfa();
       await renderSafety();renderSimpleSections();
     }catch(e){console.error(e);alert('Admin data load failed: '+e.message)}
   }
@@ -485,18 +497,49 @@
     msg('rewardMsg',`Reward request prepared for ${ids.length} client(s). Secure grant endpoint is not exposed to this browser yet; no unsafe direct DB write was attempted.`);
   };
 
-  // Send one notification to every client (server-side admin RPC creates one row per client).
+  // ---- Notifications: send to one, several or all clients ----
+  const notifyEligible=()=>clients.filter(x=>x.client_id&&(x.account_status||'').toLowerCase()!=='archived');
+  function notifyShown(){
+    const term=($('notifySearch').value||'').trim().toLowerCase();
+    return notifyEligible().filter(x=>!term||[x.client_id,x.email,x.full_name,x.client_name,x.name,x.business_name].join(' ').toLowerCase().includes(term));
+  }
+  function updateNotifyCount(){$('notifyCount').textContent=`${notifySel.size} selected`}
+  function renderNotifyList(){
+    const rows=notifyShown();
+    $('notifyList').innerHTML=rows.map(x=>`<label style="display:flex;gap:10px;align-items:center;padding:8px 4px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" data-cid="${esc(x.client_id)}" style="width:18px;height:18px;min-width:18px;flex:none;margin:0" ${notifySel.has(x.client_id)?'checked':''}><span style="min-width:0"><b>${esc(x.full_name||x.client_name||x.name||x.email||x.client_id)}</b><br><span class="sub">${esc(x.client_id)}${x.business_name?' · '+esc(x.business_name):''}${x.email?' · '+esc(x.email):''}</span></span></label>`).join('')||'<div class="sub">No clients found.</div>';
+    updateNotifyCount();
+  }
+  $('notifyRecipients').onchange=()=>{$('notifyPicker').style.display=$('notifyRecipients').value==='selected'?'block':'none'};
+  $('notifySearch').oninput=renderNotifyList;
+  $('notifyList').onchange=e=>{
+    const cb=e.target;if(!cb||!cb.dataset||!cb.dataset.cid)return;
+    if(cb.checked)notifySel.add(cb.dataset.cid);else notifySel.delete(cb.dataset.cid);
+    updateNotifyCount();
+  };
+  $('notifySelectShown').onclick=()=>{notifyShown().forEach(x=>notifySel.add(x.client_id));renderNotifyList()};
+  $('notifyClearSel').onclick=()=>{notifySel.clear();renderNotifyList()};
+
   $('notifyBtn').onclick=async()=>{
     const title=$('notifyTitle').value.trim(),body=$('notifyBody').value.trim(),link=$('notifyLink').value.trim();
+    const mode=$('notifyRecipients').value;
     if(!title){msg('notifyMsg','Title is required.');return}
-    const total=clients.filter(x=>(x.account_status||'').toLowerCase()!=='archived').length;
-    if(!confirm(`Send this notification to all ${total} clients? This cannot be undone.`))return;
+    let ids=null,who;
+    if(mode==='selected'){
+      const valid=new Set(notifyEligible().map(x=>x.client_id));
+      ids=[...notifySel].filter(id=>valid.has(id));
+      if(!ids.length){msg('notifyMsg','Select at least one client.');return}
+      who=ids.length===1?`1 client (${ids[0]})`:`${ids.length} selected clients`;
+    }else{
+      who=`all ${notifyEligible().length} clients`;
+    }
+    if(!confirm(`Send this notification to ${who}? This cannot be undone.`))return;
     const b=$('notifyBtn');b.disabled=true;msg('notifyMsg','Sending...');
     try{
-      const r=await sb.rpc('admin_send_notification',{p_title:title,p_body:body||null,p_link_url:link||null});
+      const r=await sb.rpc('admin_send_notification',{p_title:title,p_body:body||null,p_link_url:link||null,p_client_ids:ids});
       if(r.error)throw r.error;
       msg('notifyMsg',`Notification sent to ${r.data?.recipients??0} client(s).`);
       $('notifyTitle').value='';$('notifyBody').value='';$('notifyLink').value='';
+      notifySel.clear();renderNotifyList();
     }catch(e){msg('notifyMsg','Could not send: '+(e.message||e))}finally{b.disabled=false}
   };
 
