@@ -196,7 +196,7 @@
       position: relative;
       overflow: hidden;
 
-      padding: 60px 0 44px;
+      padding: 34px 0 44px;
     }
 
     .hero::before {
@@ -290,6 +290,48 @@
     .hero-note b {
       color: var(--green);
       font-weight: 700;
+    }
+
+    /* ---------- hero revenue headline ---------- */
+    .hero-banner {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 34px;
+      text-align: center;
+    }
+
+    .hb-title {
+      font-size: clamp(1.9rem, 7.4vw, 3.7rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.05em;
+    }
+
+    .hb-x {
+      background: linear-gradient(100deg, var(--green), var(--cyan));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+
+    .hb-wa { color: #25d366; }
+
+    .hb-ig {
+      background: linear-gradient(100deg, #feda75, #fa7e1e 30%, #d62976 62%, #962fbf);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+
+    .hb-sub {
+      max-width: 620px;
+      margin: 14px auto 0;
+
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
     }
 
     /* ---------- brand icon tile ---------- */
@@ -633,14 +675,14 @@
 
     .gx-agent-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
       margin-top: 20px;
     }
 
     .gx-agent {
       position: relative;
-      padding: 18px;
+      padding: 22px;
 
       background: linear-gradient(150deg, rgba(24,46,60,.62), rgba(9,19,27,.78));
       border: 1px solid var(--border);
@@ -665,10 +707,229 @@
 
     .gx-agent:hover { border-color: rgba(82,232,255,.36); transform: translateY(-3px); }
 
-    .gx-agent-top { display: flex; align-items: center; gap: 10px; }
-    .gx-agent .gx-tile { --ts: 36px; }
-    .gx-agent h3 { font-size: .86rem; line-height: 1.25; }
-    .gx-agent p { margin-top: 10px; color: var(--muted); font-size: .74rem; line-height: 1.55; }
+    .gx-agent-top { display: flex; align-items: center; gap: 12px; }
+    .gx-agent .gx-tile { --ts: 40px; }
+    .gx-agent h3 { font-size: 1rem; line-height: 1.25; letter-spacing: -.02em; }
+    .gx-agent p { margin-top: 12px; color: var(--muted); font-size: .8rem; line-height: 1.6; }
+
+    .gx-agent ul {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+      list-style: none;
+    }
+
+    .gx-agent li {
+      display: flex;
+      gap: 9px;
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.55;
+    }
+
+    .gx-agent li::before {
+      content: "✓";
+      flex: none;
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    /* ---------- visual cards (phone mockups) ---------- */
+    .vx-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .vx {
+      --vg: rgba(80,245,168,.28);
+
+      position: relative;
+      margin: 0;
+      padding: 30px 14px 18px;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      overflow: hidden;
+
+      background:
+        radial-gradient(120% 70% at 50% 0%, var(--vg), transparent 70%),
+        linear-gradient(160deg, rgba(24,46,60,.7), rgba(9,19,27,.92));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .vx-ig { --vg: rgba(214,41,118,.30); }
+    .vx-ca { --vg: rgba(166,140,255,.34); }
+    .vx-pay { --vg: rgba(82,232,255,.28); }
+    .vx-ship { --vg: rgba(80,245,168,.28); }
+
+    .vx-phone {
+      width: min(86%, 270px);
+      padding: 10px;
+
+      background: #0b1520;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 26px;
+
+      box-shadow: 0 22px 44px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    .vx-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .vx-av {
+      width: 26px;
+      height: 26px;
+      flex: none;
+
+      display: grid;
+      place-items: center;
+
+      color: #031014;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      border-radius: 50%;
+
+      font-size: .7rem;
+      font-weight: 800;
+    }
+
+    .vx-ig .vx-av { background: linear-gradient(135deg, #feda75, #d62976, #962fbf); color: #fff; }
+    .vx-ca .vx-av { background: linear-gradient(135deg, var(--purple), var(--cyan)); }
+
+    .vx-bar b { font-size: .74rem; line-height: 1.2; }
+    .vx-bar small { margin-left: auto; color: var(--green); font-size: .6rem; font-weight: 700; }
+
+    .vx-body { display: grid; gap: 8px; padding-top: 10px; }
+
+    .vx-b {
+      max-width: 88%;
+      padding: 8px 10px;
+
+      border-radius: 12px;
+
+      font-size: .7rem;
+      line-height: 1.45;
+    }
+
+    .vx-b.in {
+      justify-self: start;
+      color: var(--text);
+      background: rgba(255,255,255,.08);
+      border-bottom-left-radius: 4px;
+    }
+
+    .vx-b.out {
+      justify-self: end;
+      color: var(--text);
+      background: rgba(80,245,168,.16);
+      border: 1px solid rgba(80,245,168,.28);
+      border-bottom-right-radius: 4px;
+    }
+
+    .vx-ig .vx-b.out { background: rgba(214,41,118,.18); border-color: rgba(214,41,118,.35); }
+    .vx-ca .vx-b.out { background: rgba(166,140,255,.2); border-color: rgba(166,140,255,.38); }
+
+    .vx-card {
+      justify-self: end;
+      width: 88%;
+      padding: 10px;
+
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+
+      font-size: .7rem;
+    }
+
+    .vx-card b { display: block; font-size: .72rem; }
+    .vx-card strong { display: block; margin-top: 2px; font-size: 1.15rem; letter-spacing: -.03em; }
+    .vx-card .ok { display: block; margin-top: 6px; color: var(--green); font-size: .66rem; font-weight: 800; }
+
+    .vx-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      height: 34px;
+      margin-top: 8px;
+    }
+
+    .vx-bars i {
+      flex: 1;
+      display: block;
+      background: linear-gradient(180deg, var(--cyan), rgba(82,232,255,.25));
+      border-radius: 3px 3px 0 0;
+    }
+
+    .vx-steps {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      margin-top: 10px;
+    }
+
+    .vx-steps span {
+      flex: 1;
+      color: var(--dim);
+      font-size: .56rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .vx-steps span::before {
+      content: "";
+      display: block;
+      width: 10px;
+      height: 10px;
+      margin: 0 auto 4px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.14);
+    }
+
+    .vx-steps span.on { color: var(--green); }
+    .vx-steps span.on::before { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+    .vx-chip {
+      position: absolute;
+      z-index: 2;
+
+      padding: 6px 11px;
+
+      color: var(--green);
+      background: rgba(7,16,22,.88);
+      border: 1px solid rgba(80,245,168,.4);
+      border-radius: 999px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.4);
+
+      font-size: .66rem;
+      font-weight: 800;
+      white-space: nowrap;
+
+      animation: vx-float 5s ease-in-out infinite;
+    }
+
+    .vx-chip.c1 { top: 12px; left: 12px; }
+    .vx-chip.c2 { right: 10px; bottom: 74px; animation-delay: -2.2s; }
+
+    .vx figcaption {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: .76rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .vx figcaption b { display: block; color: var(--text); font-size: .86rem; }
+
+    @keyframes vx-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
 
     /* =========================
        WHAT GLIME DOES - FLOW
@@ -961,6 +1222,15 @@
     .pay-box h3 { margin-top: 8px; font-size: 1.25rem; letter-spacing: -0.03em; }
     .pay-box p:not(.pkg-tag) { margin-top: 10px; max-width: 720px; color: var(--muted); font-size: 0.82rem; line-height: 1.7; }
 
+    .rate-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 18px; max-width: 720px; }
+
+    .rate { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 14px; }
+    .rate .gx-tile { --ts: 40px; }
+    .rate strong { display: block; font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.04em; }
+    .rate small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.74rem; font-weight: 700; }
+
+    .pay-box .rate-note { margin-top: 14px; color: var(--dim); font-size: 0.74rem; }
+
     /* =========================
        FOUNDER
     ========================= */
@@ -1084,7 +1354,13 @@
 
       font-size: 0.75rem;
       font-weight: 900;
+
+      transition: border-color 0.2s ease, transform 0.2s ease;
     }
+
+    .socials a:hover { border-color: rgba(82,232,255,0.5); transform: translateY(-2px); }
+
+    .socials a svg { width: 20px; height: 20px; display: block; }
 
     .registration { margin-top: 25px; color: var(--dim); font-size: 0.68rem; }
     .registration strong { color: var(--cyan); }
@@ -1141,12 +1417,14 @@
     @media (min-width: 650px) {
       .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .flow::before { display: none; }
+
+      .rate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     @media (min-width: 800px) {
       .container { width: min(var(--container), calc(100% - 56px)); }
 
-      .hero { padding: 80px 0 54px; }
+      .hero { padding: 50px 0 54px; }
 
       .hero-grid {
         grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
@@ -1155,7 +1433,10 @@
 
       .gx-title { font-size: clamp(2.4rem, 4.6vw, 3.6rem); }
 
-      .gx-agent-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .gx-agent-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+      .vx-trio { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .vx-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
       .comparison { grid-template-columns: 1fr 1fr; }
 
@@ -1185,7 +1466,7 @@
 
       *, *::before, *::after { transition: none !important; }
 
-      .gx-orbit, .gx-card, .gx-float, .gx-core-inner { animation: none !important; }
+      .gx-orbit, .gx-card, .gx-float, .gx-core-inner, .vx-chip { animation: none !important; }
     }
 
     /* Live demo entry points */
@@ -1387,6 +1668,10 @@ body{
       <symbol id="gx-i-rp" viewBox="0 0 24 24"><path fill="#3395FF" d="M22.436 0l-11.91 7.773-1.174 4.276 6.625-4.297L11.65 24h4.391l6.395-24zM14.26 10.098L3.389 17.166 1.564 24h9.008l3.688-13.902Z"/></symbol>
 
       <symbol id="gx-i-gc" viewBox="0 0 24 24"><path fill="#4285F4" d="M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM18.316 5.684V0H1.895A1.894 1.894 0 0 0 0 1.895v16.421h5.684V5.684h12.632zm-7.207 6.25v-.065c.272-.144.5-.349.687-.617s.279-.595.279-.982c0-.379-.099-.72-.3-1.025a2.05 2.05 0 0 0-.832-.714 2.703 2.703 0 0 0-1.197-.257c-.6 0-1.094.156-1.481.467-.386.311-.65.671-.793 1.078l1.085.452c.086-.249.224-.461.413-.633.189-.172.445-.257.767-.257.33 0 .602.088.816.264a.86.86 0 0 1 .322.703c0 .33-.12.589-.36.778-.24.19-.535.284-.886.284h-.567v1.085h.633c.407 0 .748.109 1.02.327.272.218.407.499.407.843 0 .336-.129.614-.387.832s-.565.327-.924.327c-.351 0-.651-.103-.897-.311-.248-.208-.422-.502-.521-.881l-1.096.452c.178.616.505 1.082.977 1.401.472.319.984.478 1.538.477a2.84 2.84 0 0 0 1.293-.291c.382-.193.684-.458.902-.794.218-.336.327-.72.327-1.149 0-.429-.115-.797-.344-1.105a2.067 2.067 0 0 0-.881-.689zm2.093-1.931l.602.913L15 10.045v5.744h1.187V8.446h-.827l-2.158 1.557zM22.105 0h-3.289v5.184H24V1.895A1.894 1.894 0 0 0 22.105 0zm-3.289 23.5l4.684-4.684h-4.684V23.5zM0 22.105C0 23.152.848 24 1.895 24h3.289v-5.184H0v3.289z"/></symbol>
+
+      <symbol id="gx-i-li" viewBox="0 0 24 24"><path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></symbol>
+
+      <symbol id="gx-i-x" viewBox="0 0 24 24"><path fill="currentColor" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></symbol>
     </defs>
   </svg>
 
@@ -1437,6 +1722,17 @@ body{
     ========================== -->
 
     <section class="hero">
+
+      <div class="container hero-banner">
+        <p class="hb-title">
+          <span class="hb-x">10X Your Revenue</span><br>
+          with the Power of <span class="hb-wa">WhatsApp</span> &amp; <span class="hb-ig">Instagram</span>
+        </p>
+        <p class="hb-sub">
+          Instant replies, sales, payments and follow-ups, running on autopilot.
+        </p>
+      </div>
+
       <div class="container hero-grid">
 
         <div>
@@ -1619,7 +1915,13 @@ body{
                 <span class="gx-tile gx-t-wa" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-wa"/></svg></span>
                 <h3>WhatsApp Sales Specialist</h3>
               </div>
-              <p>Handles WhatsApp conversations and sales follow-ups.</p>
+              <p>Your always-on sales person on WhatsApp.</p>
+              <ul>
+                <li>Replies to customer messages in seconds, day or night</li>
+                <li>Answers questions using your products, prices and services</li>
+                <li>Guides the customer from enquiry to order and payment</li>
+                <li>Follows up with people who stopped replying</li>
+              </ul>
             </article>
 
             <article class="gx-agent">
@@ -1627,15 +1929,13 @@ body{
                 <span class="gx-tile gx-t-ig" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-ig"/></svg></span>
                 <h3>Instagram Sales Specialist</h3>
               </div>
-              <p>Works with Instagram DMs and comments to move leads forward.</p>
-            </article>
-
-            <article class="gx-agent">
-              <div class="gx-agent-top">
-                <span class="gx-tile" aria-hidden="true">AI</span>
-                <h3>Voice Agent</h3>
-              </div>
-              <p>Takes business conversations beyond text, onto voice.</p>
+              <p>Turns Instagram attention into real customers.</p>
+              <ul>
+                <li>Replies to Instagram DMs instantly</li>
+                <li>Responds to comments and moves interested people into a chat</li>
+                <li>Answers product questions and handles doubts</li>
+                <li>Keeps every lead moving towards an order</li>
+              </ul>
             </article>
 
             <article class="gx-agent">
@@ -1643,8 +1943,67 @@ body{
                 <span class="gx-tile gx-t-sr" aria-hidden="true">CA</span>
                 <h3>Client Assistant</h3>
               </div>
-              <p>Helps you ask questions about your business data and act on it.</p>
+              <p>Your business assistant: ask in plain language, get answers and get things done.</p>
+              <ul>
+                <li>Ask about your leads, orders and payments, for example “How many orders came in today?”</li>
+                <li>Get clear summaries of your business data in one chat</li>
+                <li>Drafts WhatsApp and Instagram messages to your customers, and sends them only after you approve</li>
+                <li>Upload an image or PDF and ask questions about it</li>
+                <li>Keeps your past conversations so you can pick up where you left off</li>
+              </ul>
             </article>
+
+          </div>
+
+          <div class="vx-row vx-trio">
+
+            <figure class="vx vx-wa" role="img" aria-label="Sample: a WhatsApp chat where a customer asks if a product is in stock and GLIME replies instantly and sends a payment link">
+              <span class="vx-chip c1">⚡ Replied in seconds</span>
+              <div class="vx-phone" aria-hidden="true">
+                <div class="vx-bar"><span class="vx-av">N</span><b>Nova Studio</b><small>online</small></div>
+                <div class="vx-body">
+                  <p class="vx-b in">Hi! Is the Aero Tote in stock?</p>
+                  <p class="vx-b out">Yes, it's in stock. 20% off till midnight. Shall I place your order?</p>
+                  <p class="vx-b in">Yes please!</p>
+                  <p class="vx-b out">Done ✓ Here is your payment link.</p>
+                </div>
+              </div>
+              <span class="vx-chip c2">24×7 on WhatsApp</span>
+              <figcaption><b>WhatsApp Sales Specialist</b>Sample illustration</figcaption>
+            </figure>
+
+            <figure class="vx vx-ig" role="img" aria-label="Sample: an Instagram direct message thread where GLIME answers a customer and saves them as a lead">
+              <span class="vx-chip c1">✓ Lead captured</span>
+              <div class="vx-phone" aria-hidden="true">
+                <div class="vx-bar"><span class="vx-av">N</span><b>nova.studio</b><small>active now</small></div>
+                <div class="vx-body">
+                  <p class="vx-b in">Saw your reel! What's the price?</p>
+                  <p class="vx-b out">Thanks for reaching out! It's ₹899 with free delivery. Want me to reserve one?</p>
+                  <p class="vx-b in">Yes, reserve it</p>
+                  <p class="vx-b out">Reserved ✓ Can I get your delivery address?</p>
+                </div>
+              </div>
+              <span class="vx-chip c2">DMs &amp; comments</span>
+              <figcaption><b>Instagram Sales Specialist</b>Sample illustration</figcaption>
+            </figure>
+
+            <figure class="vx vx-ca" role="img" aria-label="Sample: the Client Assistant answers how many orders came in today and prepares a message for approval">
+              <span class="vx-chip c1">✦ Ask anything</span>
+              <div class="vx-phone" aria-hidden="true">
+                <div class="vx-bar"><span class="vx-av">CA</span><b>Client Assistant</b><small>ready</small></div>
+                <div class="vx-body">
+                  <p class="vx-b in">How many orders came in today?</p>
+                  <div class="vx-b out">
+                    <b>18 orders · ₹16,182</b>
+                    <div class="vx-bars"><i style="height:35%"></i><i style="height:55%"></i><i style="height:45%"></i><i style="height:80%"></i><i style="height:65%"></i><i style="height:100%"></i></div>
+                  </div>
+                  <p class="vx-b in">Remind customers with pending payment</p>
+                  <p class="vx-b out">Message drafted. Approve to send ✓</p>
+                </div>
+              </div>
+              <span class="vx-chip c2">You approve first</span>
+              <figcaption><b>Client Assistant</b>Sample illustration</figcaption>
+            </figure>
 
           </div>
         </div>
@@ -1996,6 +2355,45 @@ body{
 
         </ol>
 
+        <div class="vx-row vx-two">
+
+          <figure class="vx vx-pay" role="img" aria-label="Sample: GLIME sends the order total in chat and the payment of 899 rupees is received">
+            <span class="vx-chip c1">Razorpay payment link</span>
+            <div class="vx-phone" aria-hidden="true">
+              <div class="vx-bar"><span class="vx-av">N</span><b>Nova Studio</b><small>online</small></div>
+              <div class="vx-body">
+                <p class="vx-b out">Your order total is ₹899. You can pay securely here.</p>
+                <div class="vx-card">
+                  <b>Aero Tote × 1</b>
+                  <strong>₹899.00</strong>
+                  <span class="ok">✓ Payment received</span>
+                </div>
+                <p class="vx-b out">Thank you! Order #1042 is confirmed.</p>
+              </div>
+            </div>
+            <span class="vx-chip c2">Order recorded</span>
+            <figcaption><b>Payment inside the chat</b>Sample illustration</figcaption>
+          </figure>
+
+          <figure class="vx vx-ship" role="img" aria-label="Sample: a WhatsApp shipment update with delivery progress and a thank you from the customer">
+            <span class="vx-chip c1">Shipment update sent</span>
+            <div class="vx-phone" aria-hidden="true">
+              <div class="vx-bar"><span class="vx-av">N</span><b>Nova Studio</b><small>online</small></div>
+              <div class="vx-body">
+                <p class="vx-b out">Your order <b>Aero Tote</b> has shipped and will reach you in 3–4 days.</p>
+                <div class="vx-card">
+                  <b>Delivery progress</b>
+                  <div class="vx-steps"><span class="on">Ordered</span><span class="on">Packed</span><span class="on">Shipped</span><span>Delivered</span></div>
+                </div>
+                <p class="vx-b in">Thank you!</p>
+              </div>
+            </div>
+            <span class="vx-chip c2">Customer replied</span>
+            <figcaption><b>Shipment updates on autopilot</b>Sample illustration</figcaption>
+          </figure>
+
+        </div>
+
         <div class="buttons">
 
           <a href="how-it-works.html" class="button button-secondary">
@@ -2287,6 +2685,7 @@ body{
             <ul class="pkg-list">
               <li>Lead management and business workflow tools</li>
               <li>AI agents for your WhatsApp and Instagram conversations</li>
+              <li>AI replies to customers within the 24-hour messaging window</li>
               <li>Standard support</li>
             </ul>
 
@@ -2331,6 +2730,7 @@ body{
 
             <ul class="pkg-list">
               <li>Everything in Growth</li>
+              <li>Message customers anytime, even beyond the 24-hour window</li>
               <li>ChatGPT + Claude connectors</li>
               <li>Priority access to newly released agents</li>
               <li>Priority support</li>
@@ -2350,10 +2750,27 @@ body{
           <p class="pkg-tag">Pay as you use</p>
           <h3>Your wallet. Pay only for what you use.</h3>
           <p>
-            Add money to your GLIME wallet whenever you need. When your
-            AI replies to customers on WhatsApp and Instagram, the cost
-            is deducted from your wallet, only as much as you actually
-            use. Nothing else is charged.
+            Add money to your GLIME wallet whenever you need. Every
+            time your AI replies to a customer on WhatsApp or
+            Instagram, a small fixed amount per message is deducted
+            from your wallet, only as much as you actually use.
+            Nothing else is charged.
+          </p>
+
+          <div class="rate-grid">
+            <div class="rate">
+              <span class="gx-tile gx-t-wa" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-wa"/></svg></span>
+              <div><strong>₹0.02</strong><small>per WhatsApp message</small></div>
+            </div>
+            <div class="rate">
+              <span class="gx-tile gx-t-ig" aria-hidden="true"><svg class="gx-ic"><use href="#gx-i-ig"/></svg></span>
+              <div><strong>₹0.01</strong><small>per Instagram message</small></div>
+            </div>
+          </div>
+
+          <p class="rate-note">
+            For example, 1,000 WhatsApp replies cost ₹20 and 1,000
+            Instagram replies cost ₹10 from your wallet.
           </p>
         </div>
 
@@ -2632,21 +3049,30 @@ body{
         <div class="socials">
 
           <a
-            href="https://www.linkedin.com/"
+            href="https://www.instagram.com/glime_online/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+          >
+            <svg aria-hidden="true"><use href="#gx-i-ig"/></svg>
+          </a>
+
+          <a
+            href="https://www.linkedin.com/company/glimeai/?viewAsMember=true"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="LinkedIn"
           >
-            in
+            <svg aria-hidden="true"><use href="#gx-i-li"/></svg>
           </a>
 
           <a
-            href="https://x.com/"
+            href="https://x.com/glime_web"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="X"
           >
-            X
+            <svg aria-hidden="true"><use href="#gx-i-x"/></svg>
           </a>
 
         </div>
