@@ -298,7 +298,7 @@
     if (!token) return;
 
     if (Notification.permission === 'granted') {
-      sync().catch(function () {});
+      if (lsGet('glime_notify_enabled') !== '0') { sync().catch(function () {}); }
     } else if (Notification.permission === 'default' && !recentlyDismissed()) {
       showCard();
     }

@@ -222,7 +222,7 @@
         box.appendChild(el('strong', null, title));
         if (message) { box.appendChild(el('span', null, message)); }
 
-        var timer = setTimeout(function () { box.remove(); }, 6000);
+        var timer = setTimeout(function () { box.remove(); }, message && message.length > 90 ? 11000 : 6000);
 
         box.addEventListener('click', function () {
             clearTimeout(timer);
@@ -237,29 +237,59 @@
         try { return localStorage.getItem(ALERT_KEY) === '1'; } catch (_) { return false; }
     }
 
+    function pushStatus() {
+        try {
+            if (window.GlimePush && typeof window.GlimePush.status === 'function') {
+                return window.GlimePush.status();
+            }
+        } catch (_) {}
+        return Promise.resolve('off');
+    }
+
+    function hasSavedChoice() {
+        try { return localStorage.getItem(ALERT_KEY) !== null; } catch (_) { return true; }
+    }
+
+    function systemNotify(item, body) {
+        var link = safeLink(item);
+        var url = link && link.origin === window.location.origin
+            ? link.pathname + link.search + link.hash
+            : '/dashboard.html';
+        var opts = { body: body, icon: '/glime_logo_clean.svg', tag: 'glime-' + item.id, data: { url: url } };
+
+        function viaConstructor() {
+            var n = new Notification(item.title, opts);
+            n.onclick = function () { window.focus(); openPanel(); n.close(); };
+        }
+
+        if ('serviceWorker' in navigator) {
+            return navigator.serviceWorker.getRegistration('/').then(function (reg) {
+                if (reg && typeof reg.showNotification === 'function') {
+                    return reg.showNotification(item.title, opts);
+                }
+                viaConstructor();
+            });
+        }
+        try { viaConstructor(); } catch (e) { return Promise.reject(e); }
+        return Promise.resolve();
+    }
+
     function alertUser(item) {
         if (!alertsEnabled()) { return; }
-
         var body = truncate(item.body, 140);
 
         if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-            try {
-                var n = new Notification(item.title, {
-                    body: body,
-                    icon: 'glime_logo_clean.svg',
-                    tag: 'glime-' + item.id
-                });
-                n.onclick = function () {
-                    window.focus();
-                    openPanel();
-                    n.close();
-                };
-                return;
-            } catch (error) {
+            pushStatus().then(function (s) {
+                var covered = s === 'on' && (item.type === 'whatsapp_message' ||
+                    item.type === 'instagram_message' || item.type === 'admin');
+                if (covered) { return; }
+                return systemNotify(item, body);
+            }).catch(function (error) {
                 console.warn('Browser notification failed:', error);
-            }
+                toast(item.title, body, openPanel);
+            });
+            return;
         }
-
         toast(item.title, body, openPanel);
     }
 
@@ -804,8 +834,31 @@
         }
     }
 
+    function failMessage(reason) {
+        if (reason === 'blocked') {
+            return 'Notifications are blocked for glime.online in this browser. Tap the lock icon next to the address bar, open Permissions, set Notifications to Allow, then switch Alerts on again. Until then alerts show on this page only.';
+        }
+        if (reason === 'unsupported') {
+            return 'This browser cannot show phone notifications, so alerts will show on this page only. Please open GLIME in Chrome (Android) or add it to the Home Screen (iPhone).';
+        }
+        if (reason === 'dismissed') {
+            return 'Notification permission was not given, so alerts will show on this page only. Switch Alerts on again and tap Allow.';
+        }
+        if (reason === 'signed-out') {
+            return 'Please sign in again, then switch Alerts on.';
+        }
+        return 'Could not connect phone notifications right now. Alerts will show on this page only. Please try again.';
+    }
+
     function bindSwitch() {
         paintSwitch(alertsEnabled());
+
+        setTimeout(function () {
+            if (hasSavedChoice()) { return; }
+            pushStatus().then(function (s) {
+                if (s === 'on' && !hasSavedChoice()) { saveSwitch(true); paintSwitch(true); }
+            });
+        }, 3500);
 
         els.toggle.addEventListener('change', function () {
             var on = els.toggle.checked;
@@ -813,21 +866,34 @@
             paintSwitch(on);
 
             if (!on) {
-                toast('Alerts off', 'New notifications will only appear in the bell.');
+                try {
+                    if (window.GlimePush && typeof window.GlimePush.disable === 'function') {
+                        window.GlimePush.disable();
+                    }
+                } catch (_) {}
+                toast('Alerts off', 'Phone and browser alerts are off. New notifications will only appear in the bell.');
                 return;
             }
 
-            var blocked = 'Browser pop-ups are blocked, so alerts will show on this page only.';
-            var good = 'You will be alerted when a new notification arrives.';
+            var good = 'You will get WhatsApp and Instagram message alerts on this phone, even when the website is closed.';
+
+            if (window.GlimePush && typeof window.GlimePush.enable === 'function') {
+                window.GlimePush.enable().then(function (r) {
+                    toast('Alerts on', r && r.ok ? good : failMessage(r && r.reason));
+                }).catch(function () {
+                    toast('Alerts on', failMessage('error'));
+                });
+                return;
+            }
 
             if (!('Notification' in window)) {
-                toast('Alerts on', blocked);
+                toast('Alerts on', failMessage('unsupported'));
             } else if (Notification.permission === 'default') {
                 requestPermission(function (result) {
-                    toast('Alerts on', result === 'granted' ? good : blocked);
+                    toast('Alerts on', result === 'granted' ? good : failMessage(result === 'denied' ? 'blocked' : 'dismissed'));
                 });
             } else {
-                toast('Alerts on', Notification.permission === 'granted' ? good : blocked);
+                toast('Alerts on', Notification.permission === 'granted' ? good : failMessage('blocked'));
             }
         });
     }
