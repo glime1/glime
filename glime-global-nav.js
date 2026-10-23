@@ -87,6 +87,23 @@
   })();
 
 
+  /* Sign Up link next to Login in the public navigation */
+  (function () {
+    function addSignupLink(nav) {
+      if (!nav || nav.querySelector("a[data-nav-signup]")) return;
+      const login = nav.querySelector('a[href="login.html"]');
+      if (!login) return;
+      const a = document.createElement("a");
+      a.href = "signup.html";
+      a.textContent = "Sign Up";
+      a.setAttribute("data-nav-signup", "1");
+      login.insertAdjacentElement("afterend", a);
+    }
+    addSignupLink(document.querySelector(".glime-desktop-nav"));
+    addSignupLink(document.getElementById("glime-mobile-nav"));
+  })();
+
+
   /* Existing GLIME mobile navigation */
   const button = document.getElementById("glime-menu-button");
   const menu = document.getElementById("glime-mobile-nav");
