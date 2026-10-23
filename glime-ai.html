@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="description" content="GLIME AI — an AI business consultant that understands your business and guides you toward the right system.">
   <title>GLIME AI | Business Consultant</title>
   <link rel="icon" type="image/jpeg" href="glime_logo_clean.svg">
@@ -11,8 +11,51 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="glime-ai.css">
   <link rel="stylesheet" href="glime-global-nav.css">
+  <link rel="stylesheet" href="glime-ai-app.css?v=1">
+  <script>
+    /* Mobile app screen: keep the layout exactly as tall as the visible area
+       (also when the keyboard opens) and never let the page itself scroll. */
+    (function () {
+      var mq = window.matchMedia("(max-width:700px)");
+      var root = document.documentElement;
+
+      function fit() {
+        if (!mq.matches) {
+          root.style.removeProperty("--app-h");
+          root.style.removeProperty("--app-top");
+          return;
+        }
+        var vv = window.visualViewport;
+        var h = vv ? vv.height : window.innerHeight;
+        var t = vv ? vv.offsetTop : 0;
+        root.style.setProperty("--app-h", Math.round(h) + "px");
+        root.style.setProperty("--app-top", Math.round(t) + "px");
+      }
+
+      fit();
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", fit);
+        window.visualViewport.addEventListener("scroll", fit);
+      }
+      window.addEventListener("resize", fit);
+      window.addEventListener("orientationchange", fit);
+
+      document.addEventListener("scroll", function (e) {
+        if (!mq.matches) return;
+        var t = e.target;
+        if (t === document) {
+          window.scrollTo(0, 0);
+        } else if (t && t.classList &&
+          (t.classList.contains("shell") ||
+           t.classList.contains("ai-shell") ||
+           t.classList.contains("chat-card"))) {
+          t.scrollTop = 0;
+        }
+      }, true);
+    })();
+  </script>
 </head>
-<body>
+<body class="ai-app-page">
   <div class="page-glow glow-one" aria-hidden="true"></div>
   <div class="page-glow glow-two" aria-hidden="true"></div>
 
@@ -77,10 +120,9 @@
         <div class="chat-window" id="chat-window" role="log" aria-live="polite" aria-label="GLIME AI conversation"></div>
 
         <div class="problem-solver-prompt" id="problem-solver-prompt">
-  <p>अपनी business problem को और बेहतर समझने के लिए आप पहले हमारा AI Problem Solver इस्तेमाल कर सकते हैं। Diagnosis के बाद मैं उसी जानकारी से आगे आपकी मदद करूँगा।</p>
-  <a class="button secondary" href="ai-problem-solver.html">
-    🔍 Check My Business Problem <span aria-hidden="true">→</span>
-  </a>
+          <a class="button secondary" href="ai-problem-solver.html">
+            🔍 Check My Business Problem <span aria-hidden="true">→</span>
+          </a>
         </div>
 
         <div class="composer-area" id="composer-area">

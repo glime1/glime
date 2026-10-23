@@ -1,0 +1,102 @@
+/* =========================================================
+   GLIME AI - mobile app layout (phones, up to 700px wide)
+   The screen stays fixed: header on top, composer at the
+   bottom, and only the chat messages scroll in between.
+   Desktop layout is not touched.
+========================================================= */
+@media (max-width:700px){
+  html:has(body.ai-app-page){height:100%;overflow:hidden;overscroll-behavior:none}
+
+  body.ai-app-page{
+    position:fixed;inset:0;width:100%;height:100%;min-height:0;
+    overflow:hidden;overscroll-behavior:none;
+  }
+
+  .ai-app-page .shell{
+    width:100%;max-width:none;margin:0;padding:0;
+    height:var(--app-h,100dvh);
+    display:flex;flex-direction:column;overflow:hidden;
+    transform:translateY(var(--app-top,0px));
+  }
+
+  /* compact app header, menu opens as an overlay */
+  .ai-app-page .glime-global-header{position:relative;flex:0 0 auto}
+  .ai-app-page .glime-nav-inner{min-height:56px}
+  .ai-app-page .glime-brand,
+  .ai-app-page .glime-brand img{width:46px;height:46px}
+  .ai-app-page .glime-menu-button{width:42px;height:42px;flex:0 0 42px}
+  .ai-app-page .glime-mobile-nav{
+    position:absolute;left:0;right:0;top:100%;width:auto;margin:0;
+    padding:8px 12px 14px;
+    max-height:calc(var(--app-h,100dvh) - 60px);overflow-y:auto;
+    background:rgba(5,11,16,.98);
+    border-bottom:1px solid rgba(184,222,234,.14);
+    box-shadow:0 20px 40px rgba(0,0,0,.5);
+  }
+
+  .ai-app-page .ai-shell{
+    flex:1 1 auto;min-height:0;padding:0;
+    display:flex;flex-direction:column;
+  }
+
+  /* the big heading is hidden visually (kept for screen readers) */
+  .ai-app-page .ai-heading{
+    flex:0 0 auto;padding:8px 12px;gap:10px;
+    flex-direction:row;align-items:center;justify-content:space-between;
+  }
+  .ai-app-page .ai-heading>div{
+    position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;
+  }
+  .ai-app-page .usage-badge{padding:6px 11px;font-size:.6rem}
+
+  /* chat fills the space, only the messages scroll */
+  .ai-app-page .chat-card{
+    flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+    border-width:1px 0 0;border-radius:20px 20px 0 0;box-shadow:none;
+  }
+  .ai-app-page .chat-topbar{flex:0 0 auto;padding:10px 14px}
+  .ai-app-page .chat-window{
+    flex:1 1 auto;min-height:0;max-height:none;padding:14px 12px;
+    overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
+
+  .ai-app-page .problem-solver-prompt{
+    flex:0 0 auto;padding:8px 12px 0;border-top:1px solid var(--line);
+  }
+  .ai-app-page .problem-solver-prompt .button{
+    width:100%;min-height:40px;padding:8px 14px;font-size:.78rem;
+  }
+
+  .ai-app-page .composer-area{
+    flex:0 0 auto;border-top:0;
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  }
+  .ai-app-page .composer textarea{font-size:16px}
+  .ai-app-page .composer-meta{flex-direction:row;justify-content:space-between;margin-top:6px}
+
+  /* result / access cards sit under the chat instead of pushing the page */
+  .ai-app-page .access-card[hidden],
+  .ai-app-page .lock-card[hidden],
+  .ai-app-page .diagnosis-card[hidden],
+  .ai-app-page .composer-area[hidden]{display:none!important}
+
+  .ai-app-page .access-card,
+  .ai-app-page .lock-card,
+  .ai-app-page .diagnosis-card{
+    flex:0 0 auto;margin:0;border-width:1px 0 0;border-radius:0;
+    max-height:calc(var(--app-h,100dvh)*.46);overflow-y:auto;
+    padding:14px 14px calc(14px + env(safe-area-inset-bottom));
+  }
+  .ai-app-page .access-card h2,
+  .ai-app-page .lock-card h2,
+  .ai-app-page .diagnosis-card h2{font-size:1.15rem;margin:6px 0}
+  .ai-app-page .access-form{margin-top:14px}
+  .ai-app-page .diagnosis-actions{flex-wrap:nowrap;gap:8px}
+  .ai-app-page .diagnosis-actions .button{
+    flex:1 1 0;min-height:42px;padding:8px 6px;font-size:.72rem;text-align:center;
+  }
+
+  /* a fixed app screen has no footer */
+  .ai-app-page .glime-global-footer{display:none}
+}
