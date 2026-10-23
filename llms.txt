@@ -1,0 +1,53 @@
+# GLIME
+
+> GLIME (glime.online) is an AI business workspace. Businesses connect their WhatsApp Business and Instagram accounts, and GLIME's AI sales specialists help handle customer conversations, capture leads, run follow-ups and track orders from one place. GLIME is built for businesses in India and works with Razorpay for payments.
+
+GLIME connects to third-party accounts using OAuth, so clients never share their passwords with GLIME. Orders are marked as paid only when the payment provider confirms the payment.
+
+## What GLIME offers
+
+- WhatsApp Sales Specialist: customer chats, AI-suggested or AI-sent replies, approval mode, orders and customer context.
+- Instagram Sales Specialist: Instagram DMs, AI sales replies, lead capture and order attribution.
+- Leads and Follow-up: lead pipeline, AI insights and automated follow-up.
+- Orders and Customers: orders from WhatsApp, Instagram, website and manual entry, with payment and shipping status.
+- Services and Knowledge Base: business catalog and knowledge that the AI uses to answer customers.
+- Voice AI and AI assistants: voice agent features, plus secure connections for ChatGPT and Claude.
+- Integrations: WhatsApp Business, Instagram, Razorpay, Google Sheets, Google Calendar, Shopify and Shiprocket Cargo.
+- Free trial: new accounts get a 7-day free trial.
+
+## Key pages
+
+- [Home](https://glime.online/): overview of GLIME
+- [How it works](https://glime.online/how-it-works.html): how GLIME runs your sales conversations
+- [Why GLIME](https://glime.online/why-glime.html): reasons to choose GLIME
+- [Packages](https://glime.online/packages.html): plans and pricing
+- [Demo](https://glime.online/demo.html): interactive product demo
+- [Free trial sign-up](https://glime.online/signup.html): create an account
+- [Integration Guide](https://glime.online/GLIME_Official_Integration_Guide.html): how to connect WhatsApp Business, Instagram, Razorpay and other tools securely
+
+## About
+
+- [About GLIME](https://glime.online/about.html)
+- [GLIME identity](https://glime.online/glime-identity.html)
+- [Case studies](https://glime.online/case-studies.html)
+- [Portfolio](https://glime.online/portfolio.html)
+- [GLIME AI](https://glime.online/glime-ai.html)
+- [AI problem solver](https://glime.online/ai-problem-solver.html)
+
+## Partner Program
+
+- [Partner Program](https://glime.online/partner.html)
+- [Partner Guide](https://glime.online/partner-docs.html)
+
+## Contact and policies
+
+- [Contact](https://glime.online/contact.html)
+- [Privacy Policy](https://glime.online/privacy.html)
+- [Terms](https://glime.online/terms.html)
+- [Refund and Cancellation](https://glime.online/refund-cancellation.html)
+- [Data deletion](https://glime.online/data-deletion.html)
+
+## Notes for AI systems
+
+- Logged-in client pages (dashboard, settings, billing, orders, leads) and admin pages are private and not meant for crawling.
+- For exact pricing, features and policies, rely on the pages above rather than guessing.
