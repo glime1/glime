@@ -16,6 +16,10 @@
   </url>
 
   <url>
+    <loc>https://glime.online/why-glime.html</loc>
+  </url>
+
+  <url>
     <loc>https://glime.online/packages.html</loc>
   </url>
 
@@ -39,6 +43,20 @@
 
   <url>
     <loc>https://glime.online/ai-problem-solver.html</loc>
+  </url>
+
+  <!-- Guides and documentation -->
+  <url>
+    <loc>https://glime.online/GLIME_Official_Integration_Guide.html</loc>
+  </url>
+
+  <!-- Partner Program -->
+  <url>
+    <loc>https://glime.online/partner.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/partner-docs.html</loc>
   </url>
 
   <!-- Proof and contact -->
