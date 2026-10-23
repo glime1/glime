@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Selected GLIME work, demonstrations and business systems built for practical AI-powered workflows.">
+  <meta name="description" content="Explore GLIME features and see, with your own numbers, how each one can help grow business revenue.">
   <title>Portfolio | GLIME</title>
   <link rel="icon" href="glime_logo_clean.svg">
   <style>
     :root{
       --bg:#071016;--deep:#050b10;--card:#101b29;--card2:#132132;
       --border:rgba(184,222,234,.13);--text:#f4fbfd;--muted:#9cabb9;
-      --cyan:#52e8ff;--green:#50f5a8;--purple:#a68cff;
+      --cyan:#52e8ff;--green:#50f5a8;--purple:#a68cff;--dim:#6f818c;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth;background:var(--bg)}
@@ -19,26 +19,71 @@
       radial-gradient(650px 500px at 5% 65%,rgba(166,140,255,.07),transparent 70%),var(--bg);
       font-family:Arial,sans-serif;line-height:1.6}
     a{color:inherit;text-decoration:none}
+    button{font:inherit;color:inherit;cursor:pointer}
     .container{width:min(1120px,calc(100% - 32px));margin:auto}
-    .navbar{position:sticky;top:0;z-index:1000;background:rgba(5,11,16,.9);border-bottom:1px solid rgba(184,222,234,.08);backdrop-filter:blur(16px)}
-    .nav{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-    .brand img{width:145px;display:block}
-    .links{display:flex;align-items:center;gap:4px}
-    .links a{padding:9px 11px;color:var(--muted);font-size:.8rem;font-weight:700;border-radius:9px}
-    .links a:hover,.links .active{color:var(--text);background:rgba(255,255,255,.04)}
-    .menu{display:none;width:44px;height:44px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.03);color:var(--text);font-size:22px}
-    .mobile{display:none;padding:8px 0 16px}
-    .mobile.open{display:block}
-    .mobile a{display:block;padding:12px 10px;color:var(--muted);font-weight:700}
-    .hero{text-align:center;padding:95px 0 65px}
+    .hero{text-align:center;padding:95px 0 55px}
     .eyebrow{color:var(--cyan);font-family:monospace;font-size:.72rem;letter-spacing:.13em;text-transform:uppercase}
     h1{font-size:clamp(2.7rem,8vw,5.5rem);line-height:1;letter-spacing:-.06em;margin-top:14px}
     .gradient{color:var(--cyan)}
-    .hero p{max-width:720px;margin:20px auto 0;color:var(--muted);font-size:1rem}
-    .note{max-width:760px;margin:28px auto 0;padding:16px 18px;background:rgba(82,232,255,.045);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:.82rem}
-    .section{padding:70px 0}
+    .hero p{max-width:740px;margin:20px auto 0;color:var(--muted);font-size:1rem}
+    .note{max-width:760px;margin:28px auto 0;padding:16px 18px;background:rgba(82,232,255,.045);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:.82rem;text-align:left}
+    .section{padding:60px 0}
     .section h2{font-size:clamp(2rem,5vw,3.5rem);line-height:1.05;letter-spacing:-.05em}
-    .section-copy{margin-top:14px;color:var(--muted);max-width:700px}
+    .section-copy{margin-top:14px;color:var(--muted);max-width:720px}
+
+    /* revenue stack bar */
+    .stack{margin-top:30px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:18px 20px;border-radius:16px;border:1px solid rgba(80,245,168,.25);background:linear-gradient(105deg,rgba(80,245,168,.08),rgba(82,232,255,.05))}
+    .stack small{display:block;color:var(--muted);font-size:.72rem}
+    .stack strong{font-size:1.7rem;letter-spacing:-.03em;color:var(--green)}
+    .stack .hint{color:var(--muted);font-size:.74rem;max-width:430px}
+
+    /* feature cards */
+    .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+    .fcard{position:relative;text-align:left;display:flex;flex-direction:column;gap:8px;padding:22px;border-radius:18px;border:1px solid var(--border);background:rgba(255,255,255,.025);transition:.2s}
+    .fcard:hover,.fcard:focus-visible{border-color:rgba(82,232,255,.4);transform:translateY(-3px);outline:none;background:rgba(82,232,255,.04)}
+    .ficon{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:1.4rem;background:linear-gradient(145deg,var(--card2),var(--deep));border:1px solid var(--border)}
+    .fcard h3{font-size:1.05rem;margin-top:4px}
+    .fcard p{color:var(--muted);font-size:.8rem}
+    .flever{margin-top:auto;padding-top:6px;color:var(--green);font:700 .68rem monospace;letter-spacing:.04em}
+    .fopen{color:var(--cyan);font-size:.78rem;font-weight:800;margin-top:4px}
+    .badge{position:absolute;top:14px;right:14px;padding:4px 8px;border-radius:8px;background:rgba(80,245,168,.14);color:var(--green);font:700 .62rem monospace;display:none}
+    .fcard.in-plan{border-color:rgba(80,245,168,.4)}
+    .fcard.in-plan .badge{display:block}
+
+    /* modal */
+    .modal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,8,12,.8);backdrop-filter:blur(6px)}
+    .modal.open{display:flex}
+    .sheet{position:relative;width:min(960px,100%);max-height:calc(100vh - 36px);overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:22px;padding:30px}
+    .close{position:absolute;top:14px;right:14px;width:42px;height:42px;border-radius:11px;border:1px solid var(--border);background:rgba(255,255,255,.04);font-size:1.3rem;line-height:1}
+    .close:hover{border-color:var(--cyan)}
+    .sheet h3{font-size:clamp(1.5rem,4vw,2.1rem);letter-spacing:-.03em;margin-top:8px;padding-right:46px}
+    .m-sum{color:var(--muted);margin-top:8px;max-width:680px;font-size:.92rem}
+    .m-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}
+    .panel{padding:20px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,.025)}
+    .panel h4{font:700 .7rem monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+    .panel p{color:var(--muted);font-size:.86rem;margin-top:8px}
+    .steps{list-style:none;margin-top:10px;display:grid;gap:9px}
+    .steps li{display:flex;gap:10px;font-size:.84rem;color:var(--text)}
+    .steps li b{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:rgba(82,232,255,.12);color:var(--cyan);font-size:.72rem}
+    .lever{margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(80,245,168,.07);border:1px solid rgba(80,245,168,.2);color:var(--green);font-size:.82rem;font-weight:700}
+    .field{margin-top:14px}
+    .field label{display:flex;justify-content:space-between;gap:10px;font-size:.78rem;color:var(--muted)}
+    .field output{color:var(--text);font-weight:800}
+    .field input[type=range]{width:100%;margin-top:6px;accent-color:var(--cyan)}
+    .result{margin-top:18px;padding:16px;border-radius:14px;border:1px solid rgba(80,245,168,.3);background:linear-gradient(105deg,rgba(80,245,168,.1),rgba(82,232,255,.06))}
+    .result small{color:var(--muted);font-size:.72rem}
+    .result strong{display:block;font-size:2rem;letter-spacing:-.04em;color:var(--green);line-height:1.15}
+    .rows{margin-top:10px;display:grid;gap:5px}
+    .rows div{display:flex;justify-content:space-between;gap:10px;font-size:.76rem;color:var(--muted)}
+    .rows span:last-child{color:var(--text);font-weight:700}
+    .m-note{margin-top:16px;font-size:.72rem;color:var(--dim)}
+    .m-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:10px;font-size:.78rem;font-weight:800;border:1px solid var(--border);background:transparent}
+    .btn:hover{border-color:var(--cyan)}
+    .btn.primary{color:#031014;background:linear-gradient(105deg,var(--green),var(--cyan));border:0}
+    .btn.on{border-color:rgba(80,245,168,.5);color:var(--green)}
+
+    /* existing demonstrations */
     .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:35px}
     .card{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:18px;padding:24px;overflow:hidden}
     .card:hover{border-color:rgba(82,232,255,.3);transform:translateY(-2px);transition:.2s}
@@ -54,21 +99,26 @@
     .card h3{margin-top:13px;font-size:1.2rem}
     .card p{margin-top:8px;color:var(--muted);font-size:.82rem}
     .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
-    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 15px;border-radius:10px;font-size:.76rem;font-weight:800;border:1px solid var(--border)}
-    .btn.primary{color:#031014;background:linear-gradient(105deg,var(--green),var(--cyan));border:0}
-    .cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}
-    .cap{padding:20px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:15px}
-    .cap h3{font-size:.95rem}.cap p{color:var(--muted);font-size:.76rem;margin-top:7px}
-    .disclaimer{margin-top:35px;color:var(--dim,#6f818c);font-size:.72rem}
+    .cta{margin-top:10px;padding:34px;border-radius:22px;border:1px solid var(--border);background:linear-gradient(120deg,rgba(82,232,255,.07),rgba(166,140,255,.06));display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between}
+    .cta h2{font-size:clamp(1.5rem,4vw,2.2rem)}
+    .cta p{color:var(--muted);margin-top:6px;font-size:.9rem}
+    .disclaimer{margin-top:35px;color:var(--dim);font-size:.72rem}
     footer{padding:45px 0 28px;border-top:1px solid rgba(184,222,234,.08);background:var(--deep);color:var(--muted);font-size:.74rem}
     .footer-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:30px}
     footer img{width:135px}.footer-links{display:grid;grid-template-columns:1fr 1fr;gap:9px}.footer-links a:hover{color:var(--cyan)}
     .copyright{margin-top:22px;color:#6f818c;font-size:.65rem}
+    @media(max-width:900px){.fgrid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:800px){
-      .links{display:none}.menu{display:block}.grid{grid-template-columns:1fr}.cap-grid{grid-template-columns:1fr}
-      .hero{padding:65px 0 45px}.section{padding:50px 0}.footer-grid{grid-template-columns:1fr}
-      .mock{height:190px}
+      .grid{grid-template-columns:1fr}.m-cols{grid-template-columns:1fr}
+      .hero{padding:65px 0 40px}.section{padding:46px 0}.footer-grid{grid-template-columns:1fr}
+      .mock{height:190px}.sheet{padding:22px 18px}
     }
+    @media(max-width:560px){
+      .fgrid{grid-template-columns:1fr}
+      .modal{padding:0;align-items:flex-end}
+      .sheet{max-height:94vh;border-radius:22px 22px 0 0}
+    }
+    @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
   </style>
   <link rel="stylesheet" href="glime-global-nav.css">
 </head>
@@ -113,9 +163,28 @@
 <section class="hero">
   <div class="container">
     <p class="eyebrow">SELECTED GLIME WORK</p>
-    <h1>Work that shows what <span class="gradient">GLIME builds.</span></h1>
-    <p>Instead of presenting made-up client results, this portfolio shows real GLIME capabilities and product demonstrations currently built into the project.</p>
-    <div class="note"><strong>Transparency:</strong> Items marked “GLIME Demo” are demonstrations or internal systems, not claims of completed client projects.</div>
+    <h1>See how GLIME can <span class="gradient">grow your revenue.</span></h1>
+    <p>Open any GLIME feature below to see the problem it solves, how it works, and a simple calculator where you enter your own business numbers to see the possible revenue impact.</p>
+    <div class="note"><strong>Transparency:</strong> The figures here are illustrative estimates calculated from numbers you set. They are not guaranteed results and not claims about any specific client.</div>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="container">
+    <p class="eyebrow">REVENUE STUDIES</p>
+    <h2>Click a feature. See the revenue logic.</h2>
+    <p class="section-copy">Each study shows where revenue is normally lost and how the feature recovers it. Add features to “My plan” to see a combined estimate.</p>
+
+    <div class="stack" aria-live="polite">
+      <div>
+        <small>MY PLAN: <span id="stack-count">0</span> FEATURES SELECTED</small>
+        <strong id="stack-total">₹0</strong> <small>/ month (illustrative)</small>
+      </div>
+      <p class="hint">Features overlap in real life (for example WhatsApp and 24×7 answers), so treat the combined figure as an upper-bound illustration, not a forecast.</p>
+    </div>
+
+    <div class="fgrid" id="fgrid"></div>
+    <noscript><p class="section-copy">Please enable JavaScript to open the interactive revenue studies.</p></noscript>
   </div>
 </section>
 
@@ -146,7 +215,7 @@
         </div>
         <span class="tag">GLIME SYSTEM</span>
         <h3>Client Portal & Dashboard</h3>
-        <p>A client-facing portal concept for viewing project progress, account information and connected business data.</p>
+        <p>A client-facing portal for viewing account information and connected business data.</p>
         <div class="actions"><a class="btn primary" href="login.html">Client Login →</a></div>
       </article>
 
@@ -174,25 +243,52 @@
         <div class="actions"><a class="btn primary" href="index.html">Open Home →</a></div>
       </article>
     </div>
-  </div>
-</section>
 
-<section class="section">
-  <div class="container">
-    <p class="eyebrow">CAPABILITIES</p>
-    <h2>What we can build</h2>
-    <div class="cap-grid">
-      <div class="cap"><h3>Web Applications</h3><p>Responsive business websites, portals and workflow-driven interfaces.</p></div>
-      <div class="cap"><h3>AI Workflows</h3><p>AI-assisted processes designed around a specific business problem.</p></div>
-      <div class="cap"><h3>Client Portals</h3><p>Authenticated spaces for project information and client-facing workflows.</p></div>
-      <div class="cap"><h3>Automation</h3><p>Connected processes that reduce repetitive manual work.</p></div>
-      <div class="cap"><h3>Business Systems</h3><p>Practical systems combining forms, data, dashboards and operational logic.</p></div>
-      <div class="cap"><h3>Ongoing Optimization</h3><p>Improve an existing workflow as business requirements change.</p></div>
+    <div class="cta" style="margin-top:40px">
+      <div>
+        <h2>Want these numbers for your business?</h2>
+        <p>Tell us your problem and we will map the right GLIME features to it.</p>
+      </div>
+      <a class="btn primary" href="ai-problem-solver.html">Solve My Business Problem →</a>
     </div>
-    <p class="disclaimer">We do not publish fabricated client names, fake testimonials, fake performance numbers or invented case-study results. Client work will be added here as it is genuinely completed and approved for publication.</p>
+
+    <p class="disclaimer">We do not publish fabricated client names, fake testimonials or invented case-study results. The calculators above use assumptions shown in each study and the numbers you enter. Real client results will be added here only when genuinely completed and approved for publication.</p>
   </div>
 </section>
 </main>
+
+<div class="modal" id="modal" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="m-title" tabindex="-1">
+    <button class="close" id="m-close" type="button" aria-label="Close study">×</button>
+    <p class="eyebrow" id="m-tag"></p>
+    <h3 id="m-title"></h3>
+    <p class="m-sum" id="m-sum"></p>
+    <div class="m-cols">
+      <div class="panel">
+        <h4>The problem</h4>
+        <p id="m-problem"></p>
+        <h4 style="margin-top:18px">How GLIME works here</h4>
+        <ol class="steps" id="m-steps"></ol>
+        <div class="lever" id="m-lever"></div>
+      </div>
+      <div class="panel">
+        <h4>Try it with your numbers</h4>
+        <div id="m-fields"></div>
+        <div class="result">
+          <small>ESTIMATED EXTRA REVENUE / MONTH</small>
+          <strong id="m-extra">₹0</strong>
+          <div class="rows" id="m-rows"></div>
+        </div>
+      </div>
+    </div>
+    <p class="m-note" id="m-assume"></p>
+    <div class="m-actions">
+      <button class="btn" id="m-toggle" type="button">+ Add to my plan</button>
+      <a class="btn primary" href="ai-problem-solver.html">Get this for my business →</a>
+      <a class="btn" href="contact.html">Talk to us</a>
+    </div>
+  </div>
+</div>
 
 <footer>
   <div class="container footer-grid">
@@ -212,7 +308,277 @@
   </div>
 </footer>
 
+<script>
+(function () {
+  "use strict";
 
+  var inr = function (n) { return "₹" + Math.round(n).toLocaleString("en-IN"); };
+  var num = function (n) { return Math.round(n).toLocaleString("en-IN"); };
+  var dec = function (n) { return (Math.round(n * 10) / 10).toLocaleString("en-IN"); };
+  var pct = function (n) { return n + "%"; };
+
+  var FEATURES = [
+    {
+      id: "wa", icon: "💬", tag: "WHATSAPP SALES AI", title: "WhatsApp Sales AI",
+      summary: "An AI sales assistant that answers customer messages on WhatsApp instantly, day and night.",
+      lever: "Recovers enquiries lost to slow replies",
+      problem: "Customers message on WhatsApp and expect an answer in minutes. When replies are late, many of them buy from someone else and the enquiry is lost silently.",
+      steps: ["Customer sends a message on WhatsApp.", "AI replies instantly with product details, prices and answers.", "Interested customers are qualified and guided toward an order.", "Hot conversations are handed to your team."],
+      inputs: [
+        { k: "e", label: "Enquiries per month", min: 50, max: 3000, step: 10, v: 300, f: num },
+        { k: "m", label: "Enquiries missed or answered late", min: 5, max: 80, step: 1, v: 35, f: pct },
+        { k: "c", label: "Enquiry to order conversion", min: 1, max: 40, step: 1, v: 8, f: pct },
+        { k: "a", label: "Average order value", min: 100, max: 20000, step: 50, v: 1500, f: inr }
+      ],
+      calc: function (v) {
+        var missed = v.e * v.m / 100, rec = missed * 0.4, orders = rec * v.c / 100;
+        return { extra: orders * v.a, rows: [["Missed enquiries", num(missed)], ["Recovered by instant AI reply (40%)", dec(rec)], ["Extra orders", dec(orders)]] };
+      },
+      assume: "Assumes instant AI replies recover 40% of missed enquiries, and they convert at the same rate as your normal enquiries."
+    },
+    {
+      id: "ig", icon: "📸", tag: "INSTAGRAM SALES AI", title: "Instagram Sales AI",
+      summary: "Turns Instagram DMs and comments into qualified buyers with instant, consistent replies.",
+      lever: "Improves DM to order conversion",
+      problem: "Instagram brings a flood of DMs asking price, availability and delivery. Slow or inconsistent replies make people drop off before they ever reach checkout.",
+      steps: ["A customer sends a DM about a post or product.", "AI answers instantly using your product and price information.", "It asks the right questions to qualify the buyer.", "Ready buyers move to order, and the lead is saved to your pipeline."],
+      inputs: [
+        { k: "d", label: "DMs per month", min: 50, max: 5000, step: 10, v: 400, f: num },
+        { k: "c", label: "Current DM to order conversion", min: 1, max: 30, step: 1, v: 4, f: pct },
+        { k: "u", label: "Expected improvement from instant replies", min: 5, max: 60, step: 1, v: 25, f: pct },
+        { k: "a", label: "Average order value", min: 100, max: 20000, step: 50, v: 1200, f: inr }
+      ],
+      calc: function (v) {
+        var base = v.d * v.c / 100, extraOrders = base * v.u / 100;
+        return { extra: extraOrders * v.a, rows: [["Orders from DMs today", dec(base)], ["Extra orders (+" + v.u + "%)", dec(extraOrders)]] };
+      },
+      assume: "The improvement percentage is your own assumption. Adjust it to be conservative."
+    },
+    {
+      id: "leads", icon: "🎯", tag: "LEADS PIPELINE", title: "Leads Pipeline & AI Insights",
+      summary: "Every lead lands in one pipeline with stages, history and AI suggestions on what to do next.",
+      lever: "Stops leads from falling through the cracks",
+      problem: "Leads arrive from many channels and live in chats, notes and memory. Some are never followed up, and those are sales you already paid to attract.",
+      steps: ["Leads from WhatsApp and Instagram are collected automatically.", "They appear on a Kanban pipeline by stage.", "AI highlights which leads are hot and what to do next.", "Nothing stays untouched without a visible reminder."],
+      inputs: [
+        { k: "l", label: "New leads per month", min: 20, max: 1500, step: 5, v: 150, f: num },
+        { k: "x", label: "Leads lost to no follow-up", min: 5, max: 70, step: 1, v: 30, f: pct },
+        { k: "r", label: "Lead to customer close rate", min: 2, max: 60, step: 1, v: 20, f: pct },
+        { k: "d", label: "Average deal value", min: 200, max: 100000, step: 100, v: 8000, f: inr }
+      ],
+      calc: function (v) {
+        var lost = v.l * v.x / 100, rec = lost * 0.35, deals = rec * v.r / 100;
+        return { extra: deals * v.d, rows: [["Leads lost today", dec(lost)], ["Recovered with pipeline (35%)", dec(rec)], ["Extra customers", dec(deals)]] };
+      },
+      assume: "Assumes a structured pipeline recovers 35% of leads that would otherwise be lost, closing at your normal rate."
+    },
+    {
+      id: "fu", icon: "🔁", tag: "FOLLOW-UP AUTOMATION", title: "Follow-up & Repeat Sales",
+      summary: "Automatic reminders and follow-ups bring past customers and cold leads back to buy again.",
+      lever: "Turns past customers into repeat revenue",
+      problem: "Most businesses get a sale and then go quiet. Past customers and unconverted leads are the cheapest source of new revenue, but nobody has time to message them all.",
+      steps: ["GLIME tracks who bought, who enquired and who went quiet.", "It sends timely, relevant follow-ups.", "Replies are handled by the AI assistant.", "Interested customers return to order."],
+      inputs: [
+        { k: "n", label: "Past customers and leads", min: 50, max: 10000, step: 50, v: 600, f: num },
+        { k: "r", label: "Share who respond and buy again", min: 1, max: 20, step: 1, v: 4, f: pct },
+        { k: "a", label: "Average order value", min: 100, max: 20000, step: 50, v: 1200, f: inr }
+      ],
+      calc: function (v) {
+        var orders = v.n * v.r / 100;
+        return { extra: orders * v.a, rows: [["People reached", num(v.n)], ["Repeat orders", dec(orders)]] };
+      },
+      assume: "Revenue is counted for one follow-up round per month at the response rate you set."
+    },
+    {
+      id: "ord", icon: "📦", tag: "ORDERS & SHIPPING", title: "Orders & Shiprocket Connect",
+      summary: "Order management with shipping connected, plus customer confirmation to cut cancellations and returns.",
+      lever: "Protects revenue lost to cancellations and RTO",
+      problem: "Orders that are cancelled or returned to origin cost you the sale and the shipping. Unconfirmed and wrong-address orders are a common cause.",
+      steps: ["Orders are collected in one place.", "Customers are asked to confirm order and address.", "Confirmed orders move to shipping through the Shiprocket connector.", "Status updates keep customers informed."],
+      inputs: [
+        { k: "o", label: "Orders per month", min: 50, max: 5000, step: 10, v: 500, f: num },
+        { k: "a", label: "Average order value", min: 100, max: 20000, step: 50, v: 1000, f: inr },
+        { k: "t", label: "Orders cancelled or returned today", min: 3, max: 50, step: 1, v: 18, f: pct }
+      ],
+      calc: function (v) {
+        var bad = v.o * v.t / 100, saved = bad * 0.25;
+        return { extra: saved * v.a, rows: [["Cancelled or returned orders", dec(bad)], ["Saved by confirmation (25%)", dec(saved)]] };
+      },
+      assume: "Assumes confirmation and clear status updates prevent 25% of cancellations and returns. Shipping cost savings are not counted."
+    },
+    {
+      id: "voice", icon: "📞", tag: "VOICE AI", title: "Voice AI Receptionist",
+      summary: "An AI that answers phone calls, handles common questions and captures the caller as a lead.",
+      lever: "Captures revenue from missed calls",
+      problem: "Calls come when you are busy, closed or on another line. A missed call is often a customer who calls your competitor next.",
+      steps: ["A customer calls your number.", "The voice AI answers and talks naturally.", "It answers questions and collects name and need.", "Call history and the lead are saved for follow-up."],
+      inputs: [
+        { k: "c", label: "Calls per month", min: 20, max: 2000, step: 10, v: 200, f: num },
+        { k: "m", label: "Calls missed today", min: 5, max: 80, step: 1, v: 40, f: pct },
+        { k: "r", label: "Call to order conversion", min: 2, max: 50, step: 1, v: 10, f: pct },
+        { k: "a", label: "Average order value", min: 100, max: 50000, step: 100, v: 2000, f: inr }
+      ],
+      calc: function (v) {
+        var missed = v.c * v.m / 100, caught = missed * 0.5, orders = caught * v.r / 100;
+        return { extra: orders * v.a, rows: [["Missed calls", num(missed)], ["Answered by voice AI (50%)", dec(caught)], ["Extra orders", dec(orders)]] };
+      },
+      assume: "Assumes the voice AI successfully handles 50% of calls that would otherwise be missed."
+    },
+    {
+      id: "kb", icon: "🧠", tag: "AI KNOWLEDGE BASE", title: "24×7 Answers from Your Knowledge Base",
+      summary: "Teach the AI your products, prices and policies once, and it answers correctly on every channel.",
+      lever: "Wins after-hours and repeat-question enquiries",
+      problem: "A large share of enquiries arrive at night or on weekends when nobody is working. The same questions are also asked again and again, slowing your team.",
+      steps: ["You add products, prices, FAQs and policies once.", "The same knowledge powers WhatsApp, Instagram and voice.", "Customers get correct answers at any hour.", "Your team handles only what needs a human."],
+      inputs: [
+        { k: "e", label: "Enquiries per month", min: 50, max: 3000, step: 10, v: 300, f: num },
+        { k: "h", label: "Arriving outside working hours", min: 5, max: 70, step: 1, v: 30, f: pct },
+        { k: "c", label: "Enquiry to order conversion", min: 1, max: 40, step: 1, v: 8, f: pct },
+        { k: "a", label: "Average order value", min: 100, max: 20000, step: 50, v: 1500, f: inr }
+      ],
+      calc: function (v) {
+        var off = v.e * v.h / 100, won = off * 0.5, orders = won * v.c / 100;
+        return { extra: orders * v.a, rows: [["After-hours enquiries", num(off)], ["Answered in time by AI (50%)", dec(won)], ["Extra orders", dec(orders)]] };
+      },
+      assume: "Assumes the AI engages 50% of after-hours enquiries that would otherwise wait until morning. Overlaps with the WhatsApp study."
+    },
+    {
+      id: "gi", icon: "📈", tag: "GROWTH INTELLIGENCE", title: "Growth Intelligence & Action Center",
+      summary: "Turns your business data into clear insights and recommended actions, so decisions are based on numbers.",
+      lever: "Better decisions on what, when and where to sell",
+      problem: "Business data sits across chats, orders and leads, and nobody has time to analyse it. Winning products, best channels and drop-off points stay hidden.",
+      steps: ["GLIME collects activity across your connected channels.", "It analyses sales, leads and customer behaviour.", "It surfaces insights and recommended actions.", "You act on what works and stop what does not."],
+      inputs: [
+        { k: "r", label: "Current monthly revenue", min: 10000, max: 5000000, step: 5000, v: 500000, f: inr },
+        { k: "u", label: "Improvement from better decisions", min: 1, max: 10, step: 0.5, v: 3, f: pct }
+      ],
+      calc: function (v) {
+        return { extra: v.r * v.u / 100, rows: [["Current monthly revenue", inr(v.r)], ["Improvement assumed", v.u + "%"]] };
+      },
+      assume: "This one depends most on your own assumption. Keep the improvement small; insights only help when acted on."
+    }
+  ];
+
+  var state = {}, selected = {}, byId = {}, current = null, lastFocus = null;
+  FEATURES.forEach(function (f) {
+    byId[f.id] = f; state[f.id] = {};
+    f.inputs.forEach(function (i) { state[f.id][i.k] = i.v; });
+  });
+
+  var grid = document.getElementById("fgrid");
+  var modal = document.getElementById("modal");
+  var sheet = modal.querySelector(".sheet");
+  var el = function (id) { return document.getElementById(id); };
+
+  function renderCards() {
+    FEATURES.forEach(function (f) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "fcard"; b.setAttribute("data-id", f.id);
+      b.innerHTML = '<span class="badge">IN PLAN ✓</span><span class="ficon" aria-hidden="true">' + f.icon +
+        '</span><h3>' + f.title + '</h3><p>' + f.summary + '</p><span class="flever">▲ ' + f.lever +
+        '</span><span class="fopen">Open revenue study →</span>';
+      b.addEventListener("click", function () { openStudy(f.id); });
+      grid.appendChild(b);
+    });
+  }
+
+  function updateStack() {
+    var total = 0, count = 0;
+    FEATURES.forEach(function (f) {
+      var card = grid.querySelector('[data-id="' + f.id + '"]');
+      var on = !!selected[f.id];
+      if (card) card.classList.toggle("in-plan", on);
+      if (on) { count++; total += f.calc(state[f.id]).extra; }
+    });
+    el("stack-count").textContent = count;
+    el("stack-total").textContent = inr(total);
+  }
+
+  function recalc() {
+    var f = byId[current], r = f.calc(state[current]);
+    el("m-extra").textContent = inr(r.extra);
+    var rows = el("m-rows"); rows.innerHTML = "";
+    r.rows.forEach(function (row) {
+      var d = document.createElement("div");
+      var a = document.createElement("span"), b = document.createElement("span");
+      a.textContent = row[0]; b.textContent = row[1];
+      d.appendChild(a); d.appendChild(b); rows.appendChild(d);
+    });
+    updateStack();
+  }
+
+  function syncToggle() {
+    var on = !!selected[current], t = el("m-toggle");
+    t.textContent = on ? "✓ In my plan (remove)" : "+ Add to my plan";
+    t.classList.toggle("on", on);
+  }
+
+  function openStudy(id) {
+    var f = byId[id]; current = id; lastFocus = document.activeElement;
+    el("m-tag").textContent = f.tag;
+    el("m-title").textContent = f.title;
+    el("m-sum").textContent = f.summary;
+    el("m-problem").textContent = f.problem;
+    el("m-lever").textContent = "Revenue lever: " + f.lever;
+    el("m-assume").textContent = "Illustrative estimate, not a guarantee or a client result. " + f.assume;
+
+    var steps = el("m-steps"); steps.innerHTML = "";
+    f.steps.forEach(function (s, i) {
+      var li = document.createElement("li"), n = document.createElement("b"), t = document.createElement("span");
+      n.textContent = i + 1; t.textContent = s; li.appendChild(n); li.appendChild(t); steps.appendChild(li);
+    });
+
+    var fields = el("m-fields"); fields.innerHTML = "";
+    f.inputs.forEach(function (inp) {
+      var wrap = document.createElement("div"); wrap.className = "field";
+      var lab = document.createElement("label"), txt = document.createElement("span"), out = document.createElement("output");
+      var rng = document.createElement("input");
+      var rid = "rng-" + id + "-" + inp.k;
+      rng.type = "range"; rng.id = rid; rng.min = inp.min; rng.max = inp.max; rng.step = inp.step; rng.value = state[id][inp.k];
+      lab.setAttribute("for", rid); txt.textContent = inp.label; out.textContent = inp.f(Number(rng.value));
+      lab.appendChild(txt); lab.appendChild(out); wrap.appendChild(lab); wrap.appendChild(rng); fields.appendChild(wrap);
+      rng.addEventListener("input", function () {
+        state[id][inp.k] = Number(rng.value);
+        out.textContent = inp.f(Number(rng.value));
+        recalc();
+      });
+    });
+
+    syncToggle(); recalc();
+    modal.classList.add("open"); modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    sheet.scrollTop = 0; el("m-close").focus();
+  }
+
+  function closeStudy() {
+    modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+    current = null;
+  }
+
+  el("m-close").addEventListener("click", closeStudy);
+  modal.addEventListener("click", function (e) { if (e.target === modal) closeStudy(); });
+  el("m-toggle").addEventListener("click", function () {
+    if (!current) return;
+    selected[current] = !selected[current];
+    syncToggle(); updateStack();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (!modal.classList.contains("open")) return;
+    if (e.key === "Escape") { closeStudy(); return; }
+    if (e.key === "Tab") {
+      var f = sheet.querySelectorAll("button, a[href], input");
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  renderCards(); updateStack();
+})();
+</script>
   <script src="glime-global-nav.js" defer></script>
 </body>
 </html>
