@@ -549,7 +549,9 @@ function renderAccount(billing,client){
   const sub=billing.current_subscription;
   const product=billing.current_product||{};
   const price=billing.current_price||{};
-  const paid=sub && ['active','past_due','paused'].includes(String(sub.status||'').toLowerCase());
+  const subStatus=String(sub?.status||'').toLowerCase();
+  const cancelledInPeriod=!!sub && subStatus==='cancelled' && !!sub.current_period_end && new Date(sub.current_period_end).getTime()>Date.now();
+  const paid=!!sub && (['active','past_due','paused'].includes(subStatus) || cancelledInPeriod);
   const end=a.free_trial_ends_at?new Date(a.free_trial_ends_at):null;
   document.getElementById('businessName').textContent=client?.business_name||'—';
   document.getElementById('detailEmail').textContent=client?.email||billing.customer?.email||'—';
