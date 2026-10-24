@@ -3,10 +3,11 @@
    - Google session guard (no session -> agency.html)
    - loads data from RPC `agency_get_dashboard`
    - Overview, Clients, Wallet, Plans, Renewals, Reports, Team,
-     Resources, Support, Profile
-   RPCs that exist today: agency_get_dashboard, agency_set_client_plan,
-   agency_set_client_price, agency_cancel_client_plan.
-   Others are listed in AGENCY_BACKEND_SPEC.md; until they exist the
+     Activity, Resources, Support, Profile
+   Edge functions: glime-agency-api (create_client, open_client,
+   client_setup_link), glime-agency-wallet (topup_create_order),
+   glime-agency-invoice (PDF download).
+   Other RPCs are listed in AGENCY_BACKEND_SPEC.md; until they exist the
    screen shows a friendly "coming soon" message instead of failing.
 ========================================================= */
 (function () {
@@ -18,8 +19,8 @@
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
   });
   var $ = function (id) { return document.getElementById(id); };
-  var VIEWS = ["overview", "clients", "wallet", "plans", "renewals", "reports", "team", "resources", "support", "profile"];
-  var state = { user: null, d: null, cFilter: "all", cQuery: "", txFilter: "all", extra: {} };
+  var VIEWS = ["overview", "clients", "wallet", "plans", "renewals", "reports", "team", "activity", "resources", "support", "profile"];
+  var state = { user: null, d: null, cFilter: "all", cQuery: "", cSort: "recent", txFilter: "all", extra: {} };
 
   /* ---------------- helpers ---------------- */
   var ERR = {
@@ -33,7 +34,27 @@
     INVALID_AMOUNT: "Please enter a valid amount.",
     AMOUNT_TOO_LOW: "The amount is below the minimum top-up.",
     CLIENT_ALREADY_EXISTS: "This client already exists or belongs to another agency.",
-    not_authenticated: "Your session expired. Please sign in again."
+    not_authenticated: "Your session expired. Please sign in again.",
+    PHONE_ALREADY_USED: "This phone number is already used by another account.",
+    EMAIL_ALREADY_REGISTERED: "This email is already registered on GLIME.",
+    INVALID_PHONE: "Please enter a valid phone number.",
+    INVALID_EMAIL: "Please enter a valid email.",
+    DAILY_LIMIT_REACHED: "You can add up to 10 clients per day. Please try again tomorrow.",
+    WALLET_UNAVAILABLE: "Your wallet is not available right now. Please contact GLIME.",
+    INVALID_STATUS: "That status is not allowed.",
+    INVALID_ROLE: "Please choose a valid role.",
+    MEMBER_ALREADY_EXISTS: "This person is already on your team.",
+    CANNOT_INVITE_OWNER: "The owner cannot be invited again.",
+    TEAM_LIMIT_REACHED: "Your team has reached the limit of 25 members.",
+    MEMBER_NOT_FOUND: "That team member was not found.",
+    INVALID_SUBJECT: "Please enter a valid subject.",
+    INVALID_MESSAGE: "Please enter a longer message.",
+    TOO_MANY_REQUESTS: "Too many requests. Please try again in a while.",
+    NOTHING_TO_UPDATE: "There is nothing to update.",
+    INVALID_PAN: "PAN looks wrong. Format: ABCDE1234F.",
+    INVALID_GST: "GST number should be 15 characters.",
+    INVALID_CITY: "Please enter a valid city.",
+    REQUEST_FAILED: "Could not reach the server. Please try again."
   };
   function isMissingFn(e) {
     var m = String((e && e.message) || "");
@@ -49,6 +70,24 @@
     var r = await sb.rpc(fn, args || {});
     if (r.error) throw r.error;
     return Array.isArray(r.data) ? r.data[0] : r.data;
+  }
+  var FN = C.supabaseUrl + "/functions/v1/";
+  async function token() {
+    var s0 = await sb.auth.getSession();
+    var t = s0 && s0.data && s0.data.session && s0.data.session.access_token;
+    if (!t) throw new Error("not_authenticated");
+    return t;
+  }
+  async function api(fn, body) {
+    var tok = await token();
+    var r = await fetch(FN + fn, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok, apikey: C.supabaseKey }, body: JSON.stringify(body) });
+    var j = null; try { j = await r.json(); } catch (e) {}
+    if (!j || j.ok === false) throw new Error((j && j.error) || "REQUEST_FAILED");
+    return j;
+  }
+  function errFor(code) { return ERR[code] || String(code || ""); }
+  function setupMessage(name, link) {
+    return "Hi " + (name || "") + "! Your GLIME account is ready. Set your password and get started here: " + link + " . We will help you connect WhatsApp and Instagram.";
   }
   var toastTimer;
   function toast(text, bad) {
@@ -189,6 +228,9 @@
     if (d.wallet && d.wallet.status === "frozen") alerts += '<div class="ad-alert bad">Your wallet is frozen. Please <a href="contact.html">contact GLIME</a>.</div>';
     else if (d.wallet && d.wallet.low_balance) alerts += '<div class="ad-alert bad">Your wallet balance is low (' + U.inr(balance()) + "). Client accounts are paused if it stays empty for " + esc(d.grace_days) + ' days. <button type="button" class="ag-link" data-act="goto" data-v="wallet">Top up now</button></div>';
     else if (dueCost > balance()) alerts += '<div class="ad-alert">Renewals due in 7 days need ' + U.inr(dueCost) + ", more than your wallet balance of " + U.inr(balance()) + '. <button type="button" class="ag-link" data-act="goto" data-v="wallet">Top up</button></div>';
+    var neg = live().filter(function (c) { var m0 = margin(c); return m0 != null && m0 < 0; });
+    if (neg.length) alerts += '<div class="ad-alert bad">' + neg.length + ' client' + (neg.length === 1 ? " is" : "s are") + ' priced below your wholesale cost. <a href="#clients">Review prices</a></div>';
+    if (t.unpriced) alerts += '<div class="ad-alert">' + t.unpriced + ' live client' + (t.unpriced === 1 ? " has" : "s have") + ' no price set, so margin is not tracked. <a href="#clients">Set prices</a></div>';
     var items = [
       { done: balance() > 0 || (d.transactions || []).length > 0, html: '<a href="#wallet">Add money to your wallet</a>' },
       { done: d.clients.length > 0, html: '<button type="button" class="ad-link" data-act="add-client">Add your first client</button>' },
@@ -227,6 +269,13 @@
       var hay = (String(c.name || "") + " " + String(c.email || "") + " " + String(c.phone || "") + " " + String(c.client_id)).toLowerCase();
       return okS && (!q || hay.indexOf(q) > -1);
     });
+    var so = state.cSort;
+    list = list.slice().sort(function (a, b) {
+      if (so === "name") return String(a.name || a.client_id).localeCompare(String(b.name || b.client_id));
+      if (so === "margin") return (margin(b) == null ? -1e9 : margin(b)) - (margin(a) == null ? -1e9 : margin(a));
+      if (so === "renewal") return (a.period_end ? new Date(a.period_end) : 1e15) - (b.period_end ? new Date(b.period_end) : 1e15);
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
     if (!list.length) return '<tr><td colspan="8"><div class="tbl-empty">' + (state.d.clients.length ? "No clients match your filters." : "No clients yet. Press Add client to create the first one.") + "</div></td></tr>";
     return list.map(function (c) {
       var s = clientState(c), m = margin(c);
@@ -240,6 +289,9 @@
       '<div class="tools"><input id="cSearch" type="search" placeholder="Search by name, phone or ID" value="' + esc(state.cQuery) + '" aria-label="Search clients"><select id="cFilter" aria-label="Filter by status">' +
       [["all", "All statuses"], ["active", "Active"], ["trial", "Trial"], ["paused", "Paused"], ["expired", "Expired"], ["no plan", "No plan"]].map(function (o) {
         return '<option value="' + o[0] + '"' + (state.cFilter === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
+      }).join("") + '</select><select id="cSort" aria-label="Sort clients">' +
+      [["recent", "Newest first"], ["name", "Name A to Z"], ["margin", "Highest margin"], ["renewal", "Renewing soonest"]].map(function (o) {
+        return '<option value="' + o[0] + '"' + (state.cSort === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
       }).join("") + '</select><button type="button" class="btn btn-ghost btn-sm" data-act="csv-clients">Export CSV</button></div>' +
       '<div class="tbl-wrap"><table class="ad-tight"><thead><tr><th>Client</th><th>Plan</th><th>Status</th><th class="r">Your price</th><th class="r">Wholesale</th><th class="r">Margin</th><th>Renews</th><th></th></tr></thead><tbody id="cBody">' + clientRows() + "</tbody></table></div>";
   }
@@ -285,7 +337,7 @@
     if (inv === "missing") return soon("GST invoices");
     if (!inv.length) return '<div class="tbl-empty">No invoices yet.</div>';
     return '<div class="tbl-wrap"><table class="ad-tight"><thead><tr><th>Invoice</th><th>Date</th><th class="r">Amount</th><th></th></tr></thead><tbody>' + inv.map(function (i) {
-      return "<tr><td>" + esc(i.invoice_number || i.id) + "</td><td>" + U.date(i.issued_at || i.created_at) + '</td><td class="r">' + U.inr(i.total_amount || i.amount) + "</td><td class=\"r\">" + (i.url && /^https:\/\//.test(i.url) ? '<a href="' + esc(i.url) + '" target="_blank" rel="noopener">Download</a>' : "") + "</td></tr>";
+      return "<tr><td>" + esc(i.invoice_number || i.id) + "</td><td>" + U.date(i.issued_at || i.created_at) + '</td><td class="r">' + U.inr(i.total_amount || i.amount) + "</td><td class=\"r\">" + (i.id ? '<button type="button" class="ad-link" data-act="dl-invoice" data-id="' + esc(i.id) + '">Download PDF</button>' : "") + "</td></tr>";
     }).join("") + "</tbody></table></div>";
   }
 
@@ -354,7 +406,7 @@
     ];
   }
   function vResources() {
-    var steps = ["Collect the client business name, WhatsApp number and email", "Agree your monthly price with the client", "Add the client here and choose the plan", "Set your client price so margin is tracked", "Connect WhatsApp and Instagram in the client account", "Add services, prices and FAQs to the Knowledge Base", "Test a few chats, then go live", "Share the first weekly report"];
+    var steps = ["Collect the client business name, WhatsApp number and email", "Agree your monthly price with the client", "Add the client here and choose the plan", "Set your client price so margin is tracked", "Send the client the setup link so they can set a password", "Connect WhatsApp and Instagram in the client account", "Add services, prices and FAQs to the Knowledge Base", "Test a few chats, then go live", "Share the first weekly report"];
     return head("Resources", "Everything to pitch, onboard and keep clients.") +
       '<div class="ad-split"><div class="pd-card"><h2>Client onboarding checklist</h2><ul class="check" style="margin-top:10px">' + steps.map(function (s, i) {
         var k = "glime_ad_step" + i;
@@ -379,7 +431,26 @@
       '<div class="pd-card pd-mt"><h2>Account</h2><p class="sub">Agency accounts are separate from GLIME client accounts. Signing out here does not affect a client login.</p><button type="button" class="btn btn-ghost btn-sm" data-act="signout">Sign out</button></div>';
   }
 
-  var RENDER = { overview: vOverview, clients: vClients, wallet: vWallet, plans: vPlans, renewals: vRenewals, reports: vReports, team: vTeam, resources: vResources, support: vSupport, profile: vProfile };
+  function vActivity() {
+    var a = state.extra.activity, body;
+    if (a === "missing") body = soon("Activity log");
+    else if (!a) body = '<div class="empty"><strong>Loading activity...</strong></div>';
+    else body = '<div class="tbl-wrap"><table class="ad-tight"><thead><tr><th>When</th><th>Event</th><th>Client</th></tr></thead><tbody>' +
+      (a.length ? a.map(function (x) {
+        return "<tr><td>" + U.date(x.created_at) + "</td><td>" + esc(String(x.event_type || "").replace(/_/g, " ")) + "</td><td>" + esc(x.client_id || "—") + "</td></tr>";
+      }).join("") : '<tr><td colspan="3"><div class="tbl-empty">No activity yet.</div></td></tr>') + "</tbody></table></div>";
+    return head("Activity", "Everything done on your agency account, including every time a client account is opened.") + body;
+  }
+  async function loadActivity() {
+    try {
+      var r = await sb.rpc("agency_get_activity", { p_limit: 50 });
+      if (r.error) throw r.error;
+      state.extra.activity = Array.isArray(r.data) ? r.data : (r.data && r.data.events) || [];
+    } catch (e) { state.extra.activity = "missing"; }
+    if (view() === "activity") render();
+  }
+
+  var RENDER = { overview: vOverview, clients: vClients, wallet: vWallet, plans: vPlans, renewals: vRenewals, reports: vReports, team: vTeam, activity: vActivity, resources: vResources, support: vSupport, profile: vProfile };
 
   /* ---------------- router ---------------- */
   function view() { var h = location.hash.replace(/^#/, ""); return VIEWS.indexOf(h) > -1 ? h : "overview"; }
@@ -393,6 +464,7 @@
     document.title = v.charAt(0).toUpperCase() + v.slice(1) + " | Agency Dashboard | GLIME";
     if (v === "reports" && !state.extra.usage) loadUsage();
     if (v === "team" && !state.extra.team) loadTeam();
+    if (v === "activity" && !state.extra.activity) loadActivity();
   }
   function go() { render(); window.scrollTo({ top: 0 }); $("pdMain").focus({ preventScroll: true }); }
   async function refresh() { await load(); paintUser(); render(); }
@@ -419,7 +491,7 @@
   /* ---------------- client modals ---------------- */
   function addClientModal() {
     var opts = state.d.plans.map(function (p) { return '<option value="' + esc(p.plan_code) + '">' + esc(p.name) + " — wholesale " + U.inr(p.wholesale_price) + "</option>"; }).join("");
-    openModal('<h2 id="adModalTitle">Add client</h2><p class="sub">A GLIME account is created for the client under your agency. The plan charge is taken from your wallet (balance ' + U.inr(balance()) + ").</p>" +
+    openModal('<h2 id="adModalTitle">Add client</h2><p class="sub">A GLIME account is created for the client under your agency (up to 10 new clients per day). The plan charge is taken from your wallet (balance ' + U.inr(balance()) + ").</p>" +
       '<form id="addForm" novalidate><div class="f"><label for="acName">Client business name *</label><input id="acName" type="text" maxlength="120"></div><div class="ad-row2"><div class="f"><label for="acPhone">WhatsApp number *</label><input id="acPhone" type="tel" maxlength="20" inputmode="tel"></div><div class="f"><label for="acEmail">Email *</label><input id="acEmail" type="email" maxlength="120"></div></div><div class="ad-row2"><div class="f"><label for="acPlan">Plan</label><select id="acPlan"><option value="">Choose later</option>' + opts + '</select></div><div class="f"><label for="acPrice">Your price (₹/month)</label><input id="acPrice" type="number" min="0" step="1" inputmode="numeric"></div></div><button type="submit" class="btn btn-primary btn-sm" id="acBtn">Create client</button><p class="f-msg" id="acMsg" role="alert"></p></form>');
     $("addForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -432,10 +504,22 @@
       if (price != null && (isNaN(price) || price < 0)) { msg.textContent = ERR.INVALID_PRICE; return; }
       btn.disabled = true; btn.textContent = "Creating...";
       try {
-        await call("agency_add_client", { p_name: name, p_phone: phone, p_email: email, p_plan_code: $("acPlan").value || null, p_client_price: price });
-        closeModal(); toast("Client created"); await refresh();
+        var planCode = $("acPlan").value || null;
+        var res = await api("glime-agency-api", { action: "create_client", name: name, phone: phone, email: email, plan_code: planCode, client_price: price });
+        await refresh();
+        createdModal(res, name, planCode);
       } catch (err) { msg.textContent = errText(err); btn.disabled = false; btn.textContent = "Create client"; }
     });
+  }
+
+  function createdModal(res, name, plan) {
+    var link = /^https:\/\//.test(String(res.setup_link || "")) ? res.setup_link : "";
+    state.lastLink = link; state.lastName = name;
+    var failed = plan && res.plan_charged === false;
+    if (failed) toast("Client created. Add the plan later.");
+    openModal('<h2 id="adModalTitle">Client created</h2><p class="sub">' + esc(name) + " now has a GLIME account under your agency.</p>" +
+      (failed ? '<div class="ad-alert">The plan was not applied' + (res.plan_error ? " (" + esc(errFor(res.plan_error)) + ")" : "") + ". You can apply it later from Manage.</div>" : "") +
+      (link ? '<p class="sub">The client has no password yet. Send this setup link so they can set one and sign in.</p><div class="copyblock">' + esc(link) + '</div><div class="ad-actions"><button type="button" class="btn btn-primary btn-sm" data-act="copy-setup">Copy setup message</button><button type="button" class="btn btn-ghost btn-sm" data-act="close-modal">Done</button></div>' : '<div class="ad-actions"><button type="button" class="btn btn-ghost btn-sm" data-act="close-modal">Done</button></div>'));
   }
 
   function manageModal(id) {
@@ -446,10 +530,10 @@
     openModal('<h2 id="adModalTitle">' + esc(c.name || c.client_id) + '</h2><p class="sub">' + esc(c.client_id) + " · " + esc(c.phone || c.email || "") + " · " + chip(s[0], s[1]) + "</p>" +
       '<dl class="kv"><dt>Plan</dt><dd>' + esc(planName(c.plan_key)) + "</dd><dt>Renews</dt><dd>" + (c.period_end ? U.date(c.period_end) + (c.auto_renew ? " (auto-renew)" : " (will not renew)") : "—") + "</dd><dt>Your price</dt><dd>" + (c.client_price != null ? U.inr(c.client_price) : "Not set") + "</dd><dt>Wholesale</dt><dd>" + (wprice(c) != null ? U.inr(wprice(c)) : "—") + "</dd><dt>Margin</dt><dd>" + (m == null ? "—" : U.inr(m)) + "</dd>" + (c.paused_reason ? "<dt>Paused because</dt><dd>" + esc(c.paused_reason) + "</dd>" : "") + "</dl><hr>" +
       '<h3>Plan</h3><div class="ad-row2"><div class="f"><select id="mgPlan" aria-label="Plan"><option value="">Choose a plan</option>' + opts + '</select></div><div class="f"><button type="button" class="btn btn-primary btn-sm" data-act="apply-plan" data-id="' + esc(id) + '">Apply plan</button></div></div><p class="ad-muted">A new or lapsed plan is charged from your wallet now. If a plan is already running, the change starts at the next renewal.</p>' +
-      '<h3 style="margin-top:16px">Your price</h3><div class="ad-row2"><div class="f"><input id="mgPrice" type="number" min="0" step="1" inputmode="numeric" value="' + (c.client_price != null ? esc(c.client_price) : "") + '" aria-label="Your price"></div><div class="f"><button type="button" class="btn btn-ghost btn-sm" data-act="save-price" data-id="' + esc(id) + '">Save price</button></div></div><hr>' +
+      '<h3 style="margin-top:16px">Your price</h3><div class="ad-row2"><div class="f"><input id="mgPrice" data-w="' + (wprice(c) != null ? wprice(c) : "") + '" type="number" min="0" step="1" inputmode="numeric" value="' + (c.client_price != null ? esc(c.client_price) : "") + '" aria-label="Your price"></div><div class="f"><button type="button" class="btn btn-ghost btn-sm" data-act="save-price" data-id="' + esc(id) + '">Save price</button></div></div><p class="ad-muted" id="mgMargin"></p><hr>' +
       '<div class="ad-actions">' + (c.auto_renew ? '<button type="button" class="btn btn-ghost btn-sm" data-act="cancel-plan" data-id="' + esc(id) + '">Stop auto-renewal</button>' : "") +
       (c.status === "paused" ? '<button type="button" class="btn btn-ghost btn-sm" data-act="set-status" data-st="active" data-id="' + esc(id) + '">Resume account</button>' : '<button type="button" class="btn btn-ghost btn-sm" data-act="set-status" data-st="paused" data-id="' + esc(id) + '">Pause account</button>') +
-      '<button type="button" class="btn btn-ghost btn-sm" data-act="open-client" data-id="' + esc(id) + '">Open client account</button><button type="button" class="btn btn-ghost btn-sm" data-act="copy-invite" data-id="' + esc(id) + '">Copy invite message</button></div><p class="ad-muted" style="margin-top:10px">Opening a client account is recorded in your agency activity log.</p>');
+      '<button type="button" class="btn btn-ghost btn-sm" data-act="open-client" data-id="' + esc(id) + '">Open client account</button><button type="button" class="btn btn-ghost btn-sm" data-act="copy-invite" data-id="' + esc(id) + '">Copy setup message</button></div><p class="ad-muted" style="margin-top:10px">Opening a client account is recorded in your agency activity log.</p>');
   }
 
   async function doAction(btn, fn, okMsg, keepOpen) {
@@ -466,7 +550,8 @@
     });
   }
   async function topup(amount) {
-    var d = await call("agency_create_topup_order", { p_amount: amount });
+    var res0 = await api("glime-agency-wallet", { action: "topup_create_order", amount: amount });
+    var d = res0.data || res0;
     if (d && d.checkout_url && /^https:\/\//.test(d.checkout_url)) { window.location.href = d.checkout_url; return; }
     if (d && d.razorpay_order_id && d.key_id) {
       await loadScript("https://checkout.razorpay.com/v1/checkout.js");
@@ -511,17 +596,37 @@
     } else if (act === "open-client") {
       el.disabled = true;
       try {
-        var r = await call("agency_open_client", { p_client_id: id });
-        if (r && r.url && /^https:\/\//.test(r.url)) window.open(r.url, "_blank", "noopener"); else toast("Client account opened.");
+        var r = await api("glime-agency-api", { action: "open_client", client_id: id });
+        var ou = r && (r.url || (r.data && r.data.url));
+        if (ou && /^https:\/\//.test(ou)) { var w = window.open(ou, "_blank", "noopener"); if (!w) openModal('<h2 id="adModalTitle">Open client account</h2><p class="sub">Your browser blocked the new tab.</p><a class="btn btn-primary btn-sm" href="' + esc(ou) + '" target="_blank" rel="noopener">Open client account</a>'); }
+        else toast("Client account opened.");
       } catch (err) { toast(errText(err), true); }
       el.disabled = false;
     } else if (act === "copy-invite") {
       var c = state.d.clients.filter(function (x) { return x.client_id === id; })[0] || {};
-      var txt = "Hi " + (c.name || "") + "! Your GLIME account is ready. Sign in at " + C.referralBase + "login.html using " + (c.email || "your registered email") + ". We will connect your WhatsApp and Instagram and guide you through setup.";
-      toast((await copyText(txt)) ? "Invite message copied" : "Could not copy", false);
+      el.disabled = true;
+      try {
+        var rs = await api("glime-agency-api", { action: "client_setup_link", client_id: id });
+        var lk = rs.setup_link || (rs.data && rs.data.setup_link) || "";
+        if (!/^https:\/\//.test(lk)) throw new Error("REQUEST_FAILED");
+        toast((await copyText(setupMessage(c.name, lk))) ? "Setup message copied" : "Could not copy");
+      } catch (err) { toast(errText(err), true); }
+      el.disabled = false;
     } else if (act === "copy-pitch") {
       toast((await copyText(pitch()[Number(el.getAttribute("data-i"))][1])) ? "Message copied" : "Could not copy");
-    } else if (act === "quick-amt") { $("tuAmt").value = el.getAttribute("data-a"); }
+    } else if (act === "copy-setup") { toast((await copyText(setupMessage(state.lastName, state.lastLink))) ? "Setup message copied" : "Could not copy"); }
+    else if (act === "dl-invoice") {
+      el.disabled = true;
+      try {
+        var rr = await fetch(FN + "glime-agency-invoice?invoice_id=" + encodeURIComponent(id), { headers: { Authorization: "Bearer " + (await token()), apikey: C.supabaseKey } });
+        if (!rr.ok) throw new Error("REQUEST_FAILED");
+        var blob = await rr.blob(), a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = "glime-invoice-" + id + ".pdf"; document.body.appendChild(a); a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      } catch (err) { toast("Could not download the invoice.", true); }
+      el.disabled = false;
+    }
+    else if (act === "quick-amt") { $("tuAmt").value = el.getAttribute("data-a"); }
     else if (act === "csv-clients") {
       csv("glime-agency-clients.csv", [["Client ID", "Name", "Phone", "Email", "Plan", "Status", "Your price", "Wholesale", "Margin", "Renews"]].concat(state.d.clients.map(function (c) {
         return [c.client_id, c.name, c.phone, c.email, planName(c.plan_key), clientState(c)[0], c.client_price, wprice(c), margin(c), c.period_end ? U.date(c.period_end) : ""];
@@ -549,9 +654,14 @@
 
   document.addEventListener("input", function (e) {
     if (e.target.id === "cSearch") { state.cQuery = e.target.value; $("cBody").innerHTML = clientRows(); }
+    else if (e.target.id === "mgPrice") {
+      var wr = e.target.getAttribute("data-w"), pv = e.target.value === "" ? null : Number(e.target.value), mm = $("mgMargin");
+      if (mm) mm.textContent = (wr === "" || pv == null || isNaN(pv)) ? "" : "Margin at this price: " + U.inr(pv - Number(wr)) + (pv > 0 ? " (" + Math.round(((pv - Number(wr)) / pv) * 100) + "%)" : "");
+    }
   });
   document.addEventListener("change", function (e) {
     if (e.target.id === "cFilter") { state.cFilter = e.target.value; $("cBody").innerHTML = clientRows(); }
+    else if (e.target.id === "cSort") { state.cSort = e.target.value; $("cBody").innerHTML = clientRows(); }
     else if (e.target.id === "txFilter") { state.txFilter = e.target.value; $("txBody").innerHTML = txRows(); }
   });
   document.addEventListener("submit", async function (e) {
@@ -563,7 +673,7 @@
       if (amt > 1000000) { msg.textContent = "For amounts above ₹10,00,000 please contact GLIME."; return; }
       btn.disabled = true; btn.textContent = "Opening payment...";
       try { await topup(amt); msg.className = "f-msg ok"; msg.textContent = "Complete the payment in the window that opened."; }
-      catch (err) { msg.textContent = isMissingFn(err) || /no checkout/.test(String(err && err.message)) ? "Online top-up switches on as soon as the payment backend is live." : errText(err); }
+      catch (err) { msg.textContent = isMissingFn(err) || /no checkout/.test(String(err && err.message)) ? "Online top-up could not start. Please try again or contact GLIME." : errText(err); }
       btn.disabled = false; btn.textContent = "Pay and add money";
     } else if (f === "teamForm") {
       e.preventDefault();
