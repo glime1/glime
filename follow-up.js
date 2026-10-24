@@ -17,6 +17,7 @@
   var S = {
     user: null, client: null, settings: null,
     leads: [], fuLeads: [], requests: [], cases: [], conclusions: [], changes: [], connections: [],
+    convByLead: {}, msgs: {}, loadErrors: [],
     tab: 'pipeline', range: 7, selected: null, lpTab: 'chat', expanded: {}, quick: ''
   };
 
@@ -40,6 +41,8 @@
   var DISCUSSION = ['in_discussion', 'discussion', 'negotiation', 'interested', 'qualified', 'proposal', 'hot', 'engaged'];
   var CONTACTED = ['contacted', 'initial_contact', 'replied', 'follow_up_sent', 'warm'];
   var DUE_STATES = ['follow_up', 'followup', 'follow_up_due', 'due'];
+  var QUIET_MS = 24 * 3600000;   // we sent last and customer silent this long -> Follow-up Due
+  var MSG_LIMIT = 100;           // latest messages loaded per channel in lead panel
 
   var TEMPLATES = [
     { tag: 'First touch', title: 'Warm welcome', body: 'Hi {name} 👋\nThanks for reaching out! I\'d be happy to share more details and help you choose what fits best. What are you looking for?' },
@@ -86,6 +89,11 @@
     n = Math.round(n || 0);
     return '₹' + n.toLocaleString('en-IN');
   }
+  function durLabel(ms) {
+    var h = Math.floor(ms / 3600000);
+    if (h < 24) return Math.max(1, h) + 'h';
+    return Math.floor(h / 24) + 'd';
+  }
   function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime(); }
   function icon(id, cls) { return '<svg class="ni' + (cls ? ' ' + cls : '') + '"><use href="#' + id + '"/></svg>'; }
   function fmtVal(v) {
@@ -128,7 +136,7 @@
 
   async function safeList(q, label) {
     var r = await q;
-    if (r.error) { console.warn('Follow-up load error (' + label + '):', r.error); return []; }
+    if (r.error) { console.warn('Follow-up load error (' + label + '):', r.error); S.loadErrors.push(label); return []; }
     return r.data || [];
   }
 
@@ -142,8 +150,31 @@
     S.settings = ins.data;
   }
 
+  function buildConvIndex(wa, ig) {
+    var idx = {};
+    function add(c, channel) {
+      if (!c.lead_id) return;
+      var k = String(c.lead_id);
+      var e = idx[k] || (idx[k] = { lastIn: 0, lastOut: 0, last: 0, convs: [] });
+      e.lastIn = Math.max(e.lastIn, ts(c.last_inbound_at));
+      e.lastOut = Math.max(e.lastOut, ts(c.last_outbound_at));
+      e.last = Math.max(e.last, ts(c.last_message_at), e.lastIn, e.lastOut);
+      e.convs.push({ id: c.id, channel: channel });
+    }
+    (wa || []).forEach(function (c) { add(c, 'whatsapp'); });
+    (ig || []).forEach(function (c) { add(c, 'instagram'); });
+    return idx;
+  }
+
+  function showLoadWarnings() {
+    if (S.loadErrors.length) {
+      pageMsg('Some data could not be loaded (' + esc(S.loadErrors.join(', ')) + '). <a href="#" id="retryLoad">Retry</a>', 'error');
+    } else { clearMsg(); }
+  }
+
   async function loadAll() {
     var cid = clientId();
+    S.loadErrors = [];
     await loadSettings();
     var res = await Promise.all([
       safeList(db.from('leads').select('*').eq('client_id', cid).order('created_at', { ascending: false }), 'leads'),
@@ -152,10 +183,13 @@
       safeList(db.from('follow_up_cases').select('*').eq('client_id', cid).order('created_at', { ascending: false }).limit(100), 'cases'),
       safeList(db.from('follow_up_conclusions').select('*').eq('client_id', cid).order('created_at', { ascending: false }).limit(50), 'conclusions'),
       safeList(db.from('follow_up_proposed_changes').select('*').eq('client_id', cid).order('created_at', { ascending: false }).limit(100), 'changes'),
-      safeList(db.from('client_channel_connections').select('*').eq('client_id', cid), 'connections')
+      safeList(db.from('client_channel_connections').select('*').eq('client_id', cid), 'connections'),
+      safeList(db.from('whatsapp_conversations').select('id,lead_id,last_message_at,last_inbound_at,last_outbound_at').eq('client_id', cid).not('lead_id', 'is', null).order('last_message_at', { ascending: false }).limit(1000), 'WhatsApp conversations'),
+      safeList(db.from('instagram_conversations').select('id,lead_id,last_message_at,last_inbound_at,last_outbound_at').eq('client_id', cid).not('lead_id', 'is', null).order('last_message_at', { ascending: false }).limit(1000), 'Instagram conversations')
     ]);
     S.leads = res[0]; S.fuLeads = res[1]; S.requests = res[2]; S.cases = res[3];
     S.conclusions = res[4]; S.changes = res[5]; S.connections = res[6];
+    S.convByLead = buildConvIndex(res[7], res[8]);
   }
 
   async function initialize() {
@@ -200,7 +234,9 @@
   function model(l) {
     var status = lc(l.status || l.stage || 'new');
     var nextAt = ts(l.next_follow_up_at);
-    var last = ts(l.last_contacted_at) || ts(l.updated_at) || ts(l.created_at);
+    var cv = S.convByLead[String(l.id)] || null;
+    var lastIn = cv ? cv.lastIn : 0, lastOut = cv ? cv.lastOut : 0;
+    var last = (cv && cv.last) || ts(l.last_contacted_at) || ts(l.updated_at) || ts(l.created_at);
     var m = {
       raw: l, id: l.id,
       name: l.name || l.full_name || l.customer_name || 'Unnamed lead',
@@ -209,18 +245,27 @@
       priority: lc(l.priority || ''), channel: leadChannel(l),
       source: l.source ? cap(l.source) : (leadChannel(l) === 'other' ? 'Website' : cap(leadChannel(l))),
       interest: l.interest || l.product_service || l.service || '',
-      budget: num(l.budget)
+      budget: num(l.budget), hasChat: !!cv, lastIn: lastIn, lastOut: lastOut, quietMs: 0
     };
-    var endToday = startOfDay(Date.now()) + 86400000 - 1;
+    var now = Date.now();
+    var endToday = startOfDay(now) + 86400000 - 1;
     var stage;
     if (CONVERTED.indexOf(status) > -1) stage = 'conv';
     else if (LOST.indexOf(status) > -1) stage = 'lost';
-    else if (DUE_STATES.indexOf(status) > -1 || (nextAt && nextAt <= endToday)) stage = 'due';
+    else if (DUE_STATES.indexOf(status) > -1 || (nextAt && nextAt <= endToday)) {
+      stage = 'due';
+      m.dueKind = (nextAt && nextAt < now) ? 'overdue' : 'today';
+    }
+    else if (cv && lastOut && lastOut >= lastIn && now - lastOut >= QUIET_MS) {
+      stage = 'due';
+      m.quietMs = now - lastOut;
+      m.dueKind = m.quietMs >= 3 * 86400000 ? 'overdue' : 'today';
+    }
     else if (DISCUSSION.indexOf(status) > -1) stage = 'disc';
+    else if (cv && lastOut) stage = lastIn > lastOut ? 'disc' : 'contact';
     else if (CONTACTED.indexOf(status) > -1) stage = 'contact';
     else stage = 'new';
     m.stage = stage;
-    if (stage === 'due') m.dueKind = (nextAt && nextAt < Date.now()) ? 'overdue' : 'today';
     return m;
   }
   function models() { return S.leads.map(model); }
@@ -323,7 +368,9 @@
     var tag = '';
     if (m.stage === 'new') tag = '<span class="tag new">New</span>';
     else if (m.stage === 'contact') tag = '<span class="tag contacted">Contacted</span>';
-    else if (m.stage === 'due') tag = m.dueKind === 'overdue' ? '<span class="tag overdue">Overdue</span>' : '<span class="tag today">Due Today</span>';
+    else if (m.stage === 'due') tag = m.quietMs
+      ? '<span class="tag ' + (m.dueKind === 'overdue' ? 'overdue' : 'today') + '">Quiet ' + esc(durLabel(m.quietMs)) + '</span>'
+      : (m.dueKind === 'overdue' ? '<span class="tag overdue">Overdue</span>' : '<span class="tag today">Due Today</span>');
     else if (m.stage === 'disc') tag = '<span class="tag disc">In Discussion</span>';
     else if (m.stage === 'conv') tag = '<span class="tag won">Won</span>';
     var sub = m.stage === 'conv' ? (m.budget ? money(m.budget) : cap(m.channel === 'other' ? 'website' : m.channel)) : (m.interest || m.source);
@@ -377,7 +424,7 @@
 
     var due = models().filter(function (m) { return m.stage === 'due'; }).sort(function (a, b) { return (a.nextAt || 9e15) - (b.nextAt || 9e15); });
     $('dueList').innerHTML = due.length ? due.map(function (m) {
-      return '<div class="row-card"><div class="row-top"><span class="av" style="--avbg:' + avColor(m.name) + '">' + esc(initials(m.name)) + '</span><div><b>' + esc(m.name) + '</b><small>' + esc(m.interest || m.source) + ' · ' + esc(m.nextAt ? fmtDate(m.nextAt) : 'follow-up due') + '</small></div>' +
+      return '<div class="row-card"><div class="row-top"><span class="av" style="--avbg:' + avColor(m.name) + '">' + esc(initials(m.name)) + '</span><div><b>' + esc(m.name) + '</b><small>' + esc(m.interest || m.source) + ' · ' + esc(m.nextAt ? fmtDate(m.nextAt) : (m.quietMs ? 'No reply for ' + durLabel(m.quietMs) : 'follow-up due')) + '</small></div>' +
         (m.dueKind === 'overdue' ? '<span class="tag overdue">Overdue</span>' : '<span class="tag today">Due Today</span>') + '</div>' +
         '<div class="row-acts"><button class="btn sm ghost" data-act="open" data-id="' + esc(m.id) + '" type="button">Open</button><button class="btn sm primary" data-act="draft" data-id="' + esc(m.id) + '" type="button">AI follow-up</button></div></div>';
     }).join('') : '<div class="empty">Nothing is due. You\'re all caught up.</div>';
@@ -524,10 +571,23 @@
     var view = '', foot = '';
     var reqs = S.requests.filter(function (r) { var l = reqLead(r); return l && String(l.id) === String(m.id); }).slice().reverse();
     if (S.lpTab === 'chat') {
-      view = reqs.length ? reqs.map(function (r) {
-        return '<div class="bub out">' + esc(reqMsg(r) || '—') + '<small>' + esc(cap(r.status || 'proposed')) + ' · ' + esc(ago(ts(r.created_at))) + '</small></div>';
-      }).join('') : '<div class="empty">No follow-up messages yet. Create an AI follow-up draft below.</div>';
-      view += '<div class="lp-note">Follow-up messages created in GLIME for this lead. Customer replies stay in the channel inbox.</div>';
+      var mm = S.msgs[String(m.id)];
+      var drafts = reqs.filter(function (r) { return PENDING_STATES.indexOf(lc(r.status)) > -1; });
+      if (!mm || mm.loading) {
+        view = '<div class="empty">Loading conversation…</div>';
+      } else {
+        if (mm.error) view += '<div class="empty">Could not load some messages: ' + esc(mm.error) + ' <button class="btn sm ghost" data-act="reload-msgs" data-id="' + esc(m.id) + '" type="button">Retry</button></div>';
+        view += mm.items.map(function (it) {
+          var cls = it.dir === 'inbound' ? 'in' : 'out';
+          var meta = [cap(it.channel), it.dir !== 'inbound' && it.status ? cap(it.status) : '', ago(it.t)].filter(Boolean).join(' · ');
+          return '<div class="bub ' + cls + '">' + esc(it.text || '[' + cap(it.type || 'message') + ']') + '<small>' + esc(meta) + '</small></div>';
+        }).join('');
+        view += drafts.map(function (r) {
+          return '<div class="bub out">' + esc(reqMsg(r) || '—') + '<small>Draft · waiting for approval</small></div>';
+        }).join('');
+        if (!mm.items.length && !drafts.length && !mm.error) view = '<div class="empty">No stored messages for this lead yet.</div>';
+        view += '<div class="lp-note">Latest ' + MSG_LIMIT + ' messages per channel. WhatsApp messages may be removed after your retention period.</div>';
+      }
       foot = '<div class="lp-compose"><button class="btn primary ai-btn" data-act="draft" data-id="' + esc(m.id) + '" type="button">' + icon('i-ai') + ' Create AI follow-up draft</button></div>';
     } else if (S.lpTab === 'details') {
       function kv(l, v) { return '<div><small>' + l + '</small><b>' + esc(v || '—') + '</b></div>'; }
@@ -550,10 +610,34 @@
     body.innerHTML = head + '<div class="lp-view">' + view + '</div>' + foot;
   }
 
+  async function loadMessages(id, force) {
+    var key = String(id);
+    if (S.msgs[key] && !S.msgs[key].loading && !force) return;
+    var cv = S.convByLead[key];
+    if (!cv) { S.msgs[key] = { items: [], error: '', loading: false }; renderLeadPanel(); return; }
+    S.msgs[key] = { items: [], error: '', loading: true };
+    renderLeadPanel();
+    var cid = clientId(), items = [], err = '';
+    for (var i = 0; i < cv.convs.length; i++) {
+      var c = cv.convs[i];
+      var table = c.channel === 'whatsapp' ? 'whatsapp_messages' : 'instagram_messages';
+      var r = await db.from(table).select('id,direction,message_type,text_body,status,provider_timestamp,created_at')
+        .eq('client_id', cid).eq('conversation_id', c.id).order('created_at', { ascending: false }).limit(MSG_LIMIT);
+      if (r.error) { console.warn('Messages load error:', r.error); err = r.error.message || 'load failed'; continue; }
+      (r.data || []).forEach(function (x) {
+        items.push({ t: ts(x.provider_timestamp) || ts(x.created_at), dir: x.direction, text: x.text_body, type: x.message_type, status: x.status, channel: c.channel });
+      });
+    }
+    items.sort(function (a, b) { return a.t - b.t; });
+    S.msgs[key] = { items: items, error: err, loading: false };
+    if (String(S.selected) === key) renderLeadPanel();
+  }
+
   function selectLead(id, open) {
     S.selected = id; S.lpTab = 'chat';
     renderBoard(); renderLeadPanel();
     if (open !== false) document.body.classList.add('lp-open');
+    loadMessages(id).catch(function (e) { console.error(e); });
   }
 
   /* ---------- render all ---------- */
@@ -590,7 +674,9 @@
   }
 
   async function reload() {
-    await loadAll(); renderAll();
+    S.msgs = {};
+    await loadAll(); renderAll(); showLoadWarnings();
+    if (S.selected) loadMessages(S.selected).catch(function (e) { console.error(e); });
   }
 
   async function requestFollowUp(id) {
@@ -754,6 +840,7 @@
 
     document.addEventListener('click', guard(async function (e) {
       var t = e.target;
+      if (t.closest('#retryLoad')) { e.preventDefault(); await reload(); return; }
       var exp = t.closest('[data-expand]');
       if (exp) { var s = exp.getAttribute('data-expand'); S.expanded[s] = !S.expanded[s]; renderBoard(); return; }
 
@@ -797,6 +884,7 @@
           case 'save-change': await saveChange(); break;
           case 'approve-change': await approveChange(id); break;
           case 'apply-change': await applyChange(id); break;
+          case 'reload-msgs': await loadMessages(id, true); break;
           case 'close-modal': closeModal(); break;
         }
         return;
@@ -823,7 +911,7 @@
     renderLeadPanel();
     try {
       var ok = await initialize();
-      if (ok) { clearMsg(); renderAll(); }
+      if (ok) { renderAll(); showLoadWarnings(); }
     } catch (e) {
       console.error('Follow-up Specialist init error:', e);
       pageMsg('Could not load Follow-up Specialist: ' + esc(e && e.message || 'unknown error'), 'error');
