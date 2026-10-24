@@ -160,6 +160,15 @@
     document.head.appendChild(s);
   }
 
+  /* "Download My Data" button: added to the sidebar by this addon. */
+  function loadExportSystem() {
+    if (window.GlimeDataExport || document.querySelector('script[src*="client-data-export-addon.js"]')) return;
+    var s = document.createElement('script');
+    s.src = 'client-data-export-addon.js?v=20261024';
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+
   function logout() {
     /* Dashboard defines its own handleLogout(); reuse it untouched. */
     if (typeof window.handleLogout === 'function') {
@@ -338,6 +347,7 @@
     applyIdentity();
     loadPhotoSystem();
     loadPushSystem();
+    loadExportSystem();
   }
 
   window.GlimeAppShell = {
