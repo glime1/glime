@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Download Data | Glime AI Automation</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2/dist/zip.min.js" defer></script>
+<style>
+:root{--bg:#05080c;--card:#111827;--green:#00ff88;--cyan:#00f0ff;--text:#fff;--muted:#9ca3af;--danger:#ff4757;--border:rgba(255,255,255,.07)}
+*{box-sizing:border-box;font-family:Poppins,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}
+.main-content{flex:1;padding:36px;max-width:1100px}
+.eyebrow{font-size:.72rem;letter-spacing:1.8px;color:var(--cyan);font-weight:700;margin-bottom:7px}
+h1{margin:0;font-size:1.7rem}
+.lead{color:var(--muted);margin:8px 0 0;line-height:1.6;font-size:.9rem}
+.notice{margin-top:18px;padding:13px 16px;border-radius:12px;border:1px solid rgba(255,71,87,.3);background:rgba(255,71,87,.06);color:#ffb3ba;font-size:.82rem;line-height:1.55}
+.step{margin-top:22px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.step-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.step-title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1rem}
+.num{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--cyan));color:#061018;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip,.mini{padding:10px 16px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#e5e7eb;font-size:.84rem;font-weight:600;cursor:pointer}
+.chip[aria-pressed="true"]{background:rgba(0,255,136,.12);border-color:rgba(0,255,136,.45);color:var(--green)}
+.mini{padding:6px 12px;font-size:.75rem}
+.custom{display:none;gap:12px;flex-wrap:wrap;margin-top:14px}
+.custom.on{display:flex}
+.custom label{font-size:.75rem;color:var(--muted);display:flex;flex-direction:column;gap:5px}
+input[type=date],input[type=password],input[type=text]{background:#0b1220;border:1px solid var(--border);color:#fff;border-radius:10px;padding:10px 12px;font-size:.88rem;outline:none;width:100%}
+input:focus{border-color:rgba(0,240,255,.5)}
+.group{margin-top:16px}
+.group:first-of-type{margin-top:0}
+.group-title{font-size:.7rem;letter-spacing:1.2px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:9px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.opt{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.03);cursor:pointer;user-select:none}
+.opt input{width:18px;height:18px;accent-color:#00ff88;flex:0 0 auto;margin:0}
+.opt.sel{border-color:rgba(0,255,136,.45);background:rgba(0,255,136,.07)}
+.opt.empty{opacity:.5}
+.opt-name{font-size:.88rem;font-weight:600;flex:1;min-width:0}
+.count{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.fmt{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.fmt .opt{flex-direction:column;align-items:flex-start;gap:4px}
+.fmt .opt-name{display:flex;align-items:center;gap:10px;width:100%}
+.fmt small{color:var(--muted);font-size:.74rem;line-height:1.45}
+.lock{margin-top:14px;padding:14px;border-radius:12px;border:1px dashed rgba(0,240,255,.3);background:rgba(0,240,255,.04)}
+.lock label.row{display:flex;gap:10px;align-items:center;font-size:.88rem;font-weight:600;cursor:pointer}
+.lock input[type=checkbox]{width:18px;height:18px;accent-color:#00ff88;margin:0}
+.lock-box{display:none;margin-top:12px}
+.lock-box.on{display:block}
+.lock-box small{display:block;color:var(--muted);font-size:.74rem;line-height:1.5;margin-top:8px}
+.pwrow{display:flex;gap:8px}
+.go{margin-top:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.btn{padding:13px 22px;border-radius:12px;border:0;font-weight:700;font-size:.92rem;cursor:pointer;color:#061018;background:linear-gradient(135deg,var(--green),var(--cyan))}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--border)}
+.status{font-size:.84rem;color:var(--muted)}
+.status.err{color:#ff8b96}.status.ok{color:var(--green)}
+.hint{color:var(--muted);font-size:.76rem;line-height:1.6;margin-top:16px}
+.ov{position:fixed;inset:0;z-index:5000;background:rgba(3,8,12,.8);display:none;align-items:center;justify-content:center;padding:18px}
+.ov.on{display:flex}
+.modal{width:min(430px,100%);background:#101b29;border:1px solid rgba(184,222,234,.16);border-radius:20px;padding:24px 22px}
+.modal h2{margin:0 0 6px;font-size:1.1rem}
+.modal p{color:var(--muted);font-size:.84rem;line-height:1.55;margin:0 0 14px}
+.modal .err{color:#ff8b96;font-size:.8rem;min-height:18px;margin-top:8px}
+.modal .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.chips-note{margin-top:12px;color:var(--muted);font-size:.78rem}
+@media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}.step{padding:16px}}
+@media(max-width:520px){.grid,.fmt{grid-template-columns:1fr}.go .btn{width:100%}}
+</style>
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
+</head>
+<body data-gas-title="Download Data">
+<main class="main-content" data-gas-content>
+  <div class="eyebrow">DATA EXPORT</div>
+  <h1>Download Your Data</h1>
+  <p class="lead">Choose the period, the data you need and the file type. Only your own business data is included.</p>
+  <div class="notice">🔒 This is confidential business data. You will be asked to confirm your identity again before every download. Keep downloaded files safe and never share them on public links.</div>
+
+  <section class="step">
+    <div class="step-head"><div class="step-title"><span class="num">1</span>Time period</div></div>
+    <div class="chips" id="rangeChips">
+      <button type="button" class="chip" data-r="today" aria-pressed="false">Today</button>
+      <button type="button" class="chip" data-r="7d" aria-pressed="false">Last 7 days</button>
+      <button type="button" class="chip" data-r="30d" aria-pressed="false">Last 1 month</button>
+      <button type="button" class="chip" data-r="all" aria-pressed="true">All data</button>
+      <button type="button" class="chip" data-r="custom" aria-pressed="false">Custom dates</button>
+    </div>
+    <div class="custom" id="customBox">
+      <label>From<input type="date" id="dFrom"></label>
+      <label>To<input type="date" id="dTo"></label>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head">
+      <div class="step-title"><span class="num">2</span>What to download</div>
+      <div><button type="button" class="mini" id="selAll">Select all</button> <button type="button" class="mini" id="selNone">Clear</button></div>
+    </div>
+    <div id="sets"></div>
+    <div class="chips-note" id="selNote"></div>
+  </section>
+
+  <section class="step">
+    <div class="step-head"><div class="step-title"><span class="num">3</span>File type</div></div>
+    <div class="fmt" id="fmts">
+      <label class="opt sel"><div class="opt-name"><input type="radio" name="fmt" value="xlsx" checked>Excel (.xlsx)</div><small>One workbook, one sheet for each data you selected.</small></label>
+      <label class="opt"><div class="opt-name"><input type="radio" name="fmt" value="zip">ZIP (CSV files)</div><small>A separate CSV file for every data. Best for large data.</small></label>
+      <label class="opt"><div class="opt-name"><input type="radio" name="fmt" value="pdf">PDF report</div><small>Readable report. Shows up to 5,000 rows per section; Hindi/emoji text may not display.</small></label>
+      <label class="opt"><div class="opt-name"><input type="radio" name="fmt" value="json">JSON</div><small>Complete raw data for developers and other software.</small></label>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head"><div class="step-title"><span class="num">4</span>Protect the file</div></div>
+    <div class="lock">
+      <label class="row"><input type="checkbox" id="lockOn"> Lock the downloaded file with a password</label>
+      <div class="lock-box" id="lockBox">
+        <div class="pwrow"><input type="password" id="filePw" placeholder="File password (min 8 characters)" autocomplete="new-password"><button type="button" class="mini" id="showPw">Show</button></div>
+        <small id="lockHelp"></small>
+      </div>
+    </div>
+    <p class="hint">Recommended: turn this on. Without a file password anyone who gets the file can read it. We cannot recover a forgotten file password.</p>
+  </section>
+
+  <div class="go">
+    <button type="button" class="btn" id="goBtn" disabled>Verify &amp; Download</button>
+    <span class="status" id="status">Loading your account…</span>
+  </div>
+
+  <div id="deleteMount"></div>
+</main>
+
+<div class="ov" id="vOv" role="dialog" aria-modal="true" aria-labelledby="vTitle">
+  <div class="modal">
+    <h2 id="vTitle">Confirm it's you</h2>
+    <p id="vText"></p>
+    <input type="password" id="vPw" placeholder="Account password" autocomplete="current-password">
+    <input type="text" id="vCode" placeholder="6-digit code from email" inputmode="numeric" autocomplete="one-time-code" style="display:none">
+    <div class="err" id="vErr"></div>
+    <div class="acts"><button type="button" class="btn ghost" id="vCancel">Cancel</button><button type="button" class="btn" id="vOk">Verify</button></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+window.supabaseClient=sb;
+
+const PAGE=1000, MAX_PAGES=200, PDF_ROWS=5000, COOLDOWN_MS=20000, MAX_FAILS=5, LOCK_MS=5*60*1000, LOCK_KEY='glime_dl_lock';
+const WA_COLS='id,client_id,conversation_id,provider_message_id,direction,message_type,text_body,media_id,status,sender_phone,recipient_phone,provider_timestamp,specialist_module_slug,metadata,created_at,updated_at';
+const IG_COLS='id,client_id,conversation_id,provider_message_id,direction,message_type,text_body,media_id,status,sender_instagram_user_id,recipient_instagram_user_id,provider_timestamp,specialist_module_slug,metadata,created_at,updated_at';
+const GROUPS=[
+ ['Leads & Customers',[['leads','Leads','leads'],['lead_timeline','Lead activity timeline','lead_timeline'],['customers','Customers','customers',1],['enquiries','Enquiries','enquiries',1]]],
+ ['WhatsApp',[['whatsapp_conversations','WhatsApp conversations','whatsapp_conversations'],['whatsapp_messages','WhatsApp messages','whatsapp_messages',0,WA_COLS]]],
+ ['Instagram',[['instagram_conversations','Instagram conversations','instagram_conversations'],['instagram_messages','Instagram messages','instagram_messages',0,IG_COLS],['instagram_comments','Instagram comments','instagram_comments']]],
+ ['Voice AI',[['voice_conversations','Voice conversations','voice_conversations'],['voice_messages','Voice messages','voice_messages',0,'*',1]]],
+ ['Orders & Business',[['orders','Orders','orders',1],['order_items','Order items','order_items'],['offers','Products / services','offers']]],
+ ['Account',[['knowledge_items','Knowledge base items','client_knowledge_items'],['invoices','Invoices','glime_billing_invoices']]]
+];
+const SETS=[];GROUPS.forEach(g=>g[1].forEach(s=>SETS.push({key:s[0],label:s[1],table:s[2],multi:!!s[3],cols:s[4]||'*',voice:!!s[5],count:null})));
+
+const $=id=>document.getElementById(id);
+const state={range:'all',sel:new Set(),fmt:'xlsx',ctx:null,busy:false,voiceIds:[],countToken:0,cooldownUntil:0};
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function setStatus(t,c){const s=$('status');s.textContent=t;s.className='status'+(c?' '+c:'');}
+function startOfDay(d){const x=new Date(d);x.setHours(0,0,0,0);return x;}
+
+/* ---------- Range ---------- */
+function bounds(){
+  const r=state.range, now=new Date();
+  if(r==='all')return{from:null,to:null,label:'all-data'};
+  if(r==='today')return{from:startOfDay(now).toISOString(),to:null,label:'today'};
+  if(r==='7d'){const d=startOfDay(now);d.setDate(d.getDate()-6);return{from:d.toISOString(),to:null,label:'last-7-days'};}
+  if(r==='30d'){const d=startOfDay(now);d.setMonth(d.getMonth()-1);return{from:d.toISOString(),to:null,label:'last-1-month'};}
+  const f=$('dFrom').value,t=$('dTo').value;
+  const from=f?startOfDay(f+'T00:00:00').toISOString():null;
+  let to=null;if(t){const e=new Date(t+'T00:00:00');e.setHours(23,59,59,999);to=e.toISOString();}
+  return{from,to,label:(f||'start')+'_to_'+(t||'now')};
+}
+function rangeText(b){
+  if(state.range==='all')return'All data';
+  const f=b.from?new Date(b.from).toLocaleDateString():'beginning',t=b.to?new Date(b.to).toLocaleDateString():'now';
+  return f+' → '+t;
+}
+function applyFilters(q,set,b,ids,key){
+  q=set.multi?q.in('client_id',ids):q.eq('client_id',key);
+  if(b.from)q=q.gte('created_at',b.from);
+  if(b.to)q=q.lte('created_at',b.to);
+  return q;
+}
+
+/* ---------- Render selection list ---------- */
+function renderSets(){
+  $('sets').innerHTML=GROUPS.map(g=>'<div class="group"><div class="group-title">'+esc(g[0])+'</div><div class="grid">'+
+    g[1].map(s=>'<label class="opt" data-k="'+s[0]+'"><input type="checkbox" value="'+s[0]+'"><span class="opt-name">'+esc(s[1])+'</span><span class="count" id="c_'+s[0]+'">…</span></label>').join('')+'</div></div>').join('');
+  $('sets').querySelectorAll('input').forEach(i=>i.addEventListener('change',()=>{
+    i.checked?state.sel.add(i.value):state.sel.delete(i.value);syncUi();}));
+}
+function syncUi(){
+  document.querySelectorAll('#sets .opt').forEach(l=>{
+    const k=l.dataset.k,s=SETS.find(x=>x.key===k);
+    l.classList.toggle('sel',state.sel.has(k));
+    l.classList.toggle('empty',s.count===0);
+    l.querySelector('input').checked=state.sel.has(k);
+  });
+  document.querySelectorAll('#fmts .opt').forEach(l=>l.classList.toggle('sel',l.querySelector('input').checked));
+  const n=state.sel.size;
+  $('selNote').textContent=n?n+' item'+(n>1?'s':'')+' selected':'Select at least one item to download.';
+  $('goBtn').disabled=!state.ctx||state.busy||!n;
+  lockHelp();
+}
+function lockHelp(){
+  const f=state.fmt,h=$('lockHelp');
+  h.textContent=f==='pdf'?'The PDF will ask for this password when opened.'
+   :f==='zip'?'The ZIP is locked with AES-256. Open it with 7-Zip, WinRAR or The Unarchiver (Windows Explorer and Mac Archive Utility cannot open it).'
+   :'Excel/JSON files cannot be locked directly, so they will be placed inside a password-locked ZIP (AES-256). Open it with 7-Zip, WinRAR or The Unarchiver.';
+}
+
+/* ---------- Counts ---------- */
+async function refreshCounts(){
+  if(!state.ctx)return;
+  const tok=++state.countToken,b=bounds(),{ids,key}=state.ctx;
+  SETS.forEach(s=>{s.count=null;$('c_'+s.key).textContent='…';});
+  await Promise.all(SETS.map(async s=>{
+    let n=0;
+    try{
+      if(s.voice){
+        for(let i=0;i<state.voiceIds.length;i+=100){
+          let q=sb.from('voice_messages').select('id',{count:'exact',head:true}).in('conversation_id',state.voiceIds.slice(i,i+100));
+          if(b.from)q=q.gte('created_at',b.from);if(b.to)q=q.lte('created_at',b.to);
+          const r=await q;if(r.error)throw r.error;n+=r.count||0;
+        }
+      }else{
+        const r=await applyFilters(sb.from(s.table).select('id',{count:'exact',head:true}),s,b,ids,key);
+        if(r.error)throw r.error;n=r.count||0;
+      }
+      if(tok!==state.countToken)return;
+      s.count=n;$('c_'+s.key).textContent=n.toLocaleString('en-IN')+' rows';
+    }catch(e){
+      if(tok!==state.countToken)return;
+      s.count=-1;$('c_'+s.key).textContent='n/a';
+    }
+  }));
+  if(tok===state.countToken)syncUi();
+}
+
+/* ---------- Data fetch ---------- */
+async function fetchAll(s,b,onRows){
+  const {ids,key}=state.ctx;const rows=[];
+  if(s.voice){
+    for(let i=0;i<state.voiceIds.length;i+=100){
+      const chunk=state.voiceIds.slice(i,i+100);
+      for(let p=0;p<MAX_PAGES;p++){
+        let q=sb.from('voice_messages').select('*').in('conversation_id',chunk);
+        if(b.from)q=q.gte('created_at',b.from);if(b.to)q=q.lte('created_at',b.to);
+        const r=await q.order('id').range(p*PAGE,(p+1)*PAGE-1);
+        if(r.error)throw r.error;(r.data||[]).forEach(x=>rows.push(x));
+        if((r.data||[]).length<PAGE)break;
+      }
+    }
+    return rows;
+  }
+  for(let p=0;p<MAX_PAGES;p++){
+    const q=applyFilters(sb.from(s.table).select(s.cols),s,b,ids,key);
+    const r=await q.order('id').range(p*PAGE,(p+1)*PAGE-1);
+    if(r.error)throw r.error;(r.data||[]).forEach(x=>rows.push(x));
+    onRows&&onRows(rows.length);
+    if((r.data||[]).length<PAGE)break;
+  }
+  return rows;
+}
+
+/* ---------- Format helpers ---------- */
+function headersOf(rows){const h=[],seen={};rows.forEach(r=>Object.keys(r).forEach(k=>{if(!seen[k]){seen[k]=1;h.push(k);}}));return h;}
+function flat(v){return v===null||v===undefined?'':typeof v==='object'?JSON.stringify(v):v;}
+function csvCell(v){let s=String(flat(v));if(/^[=@]/.test(s))s="'"+s;if(/[",\r\n]/.test(s))s='"'+s.replace(/"/g,'""')+'"';return s;}
+function toCsv(rows){const h=headersOf(rows);return '\ufeff'+[h.map(csvCell).join(',')].concat(rows.map(r=>h.map(k=>csvCell(r[k])).join(','))).join('\r\n');}
+function latin(s,n){s=String(flat(s)).replace(/[^\x20-\x7E\u00A0-\u00FF]/g,'?');return s.length>n?s.slice(0,n-1)+'…':s;}
+function sheetName(label,used){let n=label.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31);let i=2,base=n;while(used.has(n.toLowerCase())){n=base.slice(0,28)+' '+i++;}used.add(n.toLowerCase());return n;}
+
+async function zipBlob(entries,password){
+  const bw=new zip.BlobWriter('application/zip');
+  const w=new zip.ZipWriter(bw,password?{password,encryptionStrength:3}:{});
+  for(const e of entries){
+    await w.add(e.name,e.blob?new zip.BlobReader(e.blob):new zip.TextReader(e.text));
+  }
+  await w.close();return bw.getData();
+}
+function save(blob,name){
+  const u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);
+}
+
+async function build(datasets,fmt,pw,meta){
+  const readme=['GLIME - Your data export','Client ID: '+meta.key,'Period: '+meta.range,'Exported on: '+new Date().toISOString(),'','Contents:']
+    .concat(datasets.map(d=>' - '+d.label+': '+d.rows.length+' rows')).join('\r\n');
+  if(fmt==='zip'){
+    const entries=[{name:'README.txt',text:readme}].concat(datasets.map(d=>({name:d.key+'.csv',text:toCsv(d.rows)})));
+    return{blob:await zipBlob(entries,pw),ext:'zip'};
+  }
+  if(fmt==='xlsx'){
+    const wb=XLSX.utils.book_new(),used=new Set(['summary']);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['GLIME data export'],['Client ID',meta.key],['Period',meta.range],['Exported on',new Date().toISOString()],[],['Data','Rows']].concat(datasets.map(d=>[d.label,d.rows.length]))),'Summary');
+    datasets.forEach(d=>{
+      const h=headersOf(d.rows);
+      const aoa=[h].concat(d.rows.map(r=>h.map(k=>{const v=flat(r[k]);return typeof v==='string'&&v.length>32000?v.slice(0,32000):v;})));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),sheetName(d.label,used));
+    });
+    const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const xb=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    if(pw)return{blob:await zipBlob([{name:meta.base+'.xlsx',blob:xb}],pw),ext:'zip'};
+    return{blob:xb,ext:'xlsx'};
+  }
+  if(fmt==='json'){
+    const obj={exported_at:new Date().toISOString(),client_id:meta.key,period:meta.range,data:{}};
+    datasets.forEach(d=>obj.data[d.key]=d.rows);
+    const jb=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
+    if(pw)return{blob:await zipBlob([{name:meta.base+'.json',blob:jb}],pw),ext:'zip'};
+    return{blob:jb,ext:'json'};
+  }
+  /* pdf */
+  const opts={orientation:'landscape',unit:'pt',format:'a4'};
+  if(pw)opts.encryption={userPassword:pw,ownerPassword:pw+'#'+Math.random().toString(36).slice(2),userPermissions:['print']};
+  const doc=new window.jspdf.jsPDF(opts);
+  doc.setFontSize(18);doc.text('GLIME - Data export',40,50);
+  doc.setFontSize(10);doc.text('Client ID: '+latin(meta.key,60),40,72);doc.text('Period: '+latin(meta.range,80),40,86);doc.text('Exported on: '+new Date().toLocaleString(),40,100);
+  doc.text('Confidential business data. Text outside basic Latin characters may appear as "?". Use Excel or ZIP for the full data.',40,116);
+  let y=140;
+  datasets.forEach(d=>{
+    const skip=['id','client_id','metadata','raw_payload','media_id'];
+    let h=headersOf(d.rows).filter(k=>!skip.includes(k)&&!k.endsWith('_id'));
+    if(!h.length)h=headersOf(d.rows).slice(0,6);
+    h=h.slice(0,8);
+    const shown=d.rows.slice(0,PDF_ROWS);
+    doc.setFontSize(13);
+    if(y>500){doc.addPage();y=50;}
+    doc.text(latin(d.label+' ('+d.rows.length+' rows'+(d.rows.length>PDF_ROWS?', first '+PDF_ROWS+' shown':'')+')',100),40,y);
+    doc.autoTable({startY:y+10,head:[h.map(x=>latin(x,30))],body:shown.map(r=>h.map(k=>latin(r[k],120))),styles:{fontSize:7,cellPadding:3,overflow:'linebreak'},headStyles:{fillColor:[6,40,30]},margin:{left:40,right:40}});
+    y=doc.lastAutoTable.finalY+30;
+    if(y>520){doc.addPage();y=50;}
+  });
+  return{blob:doc.output('blob'),ext:'pdf'};
+}
+
+/* ---------- Identity verification ---------- */
+function lockInfo(){try{return JSON.parse(localStorage.getItem(LOCK_KEY)||'{}');}catch(e){return{};}}
+function setLock(o){try{localStorage.setItem(LOCK_KEY,JSON.stringify(o));}catch(e){}}
+function verify(){
+  return new Promise(resolve=>{
+    const li=lockInfo();
+    if(li.until&&li.until>Date.now()){setStatus('Too many wrong attempts. Try again in '+Math.ceil((li.until-Date.now())/60000)+' min.','err');return resolve(false);}
+    const ctx=state.ctx,usePw=ctx.provider==='email';
+    const ov=$('vOv'),pw=$('vPw'),code=$('vCode'),err=$('vErr'),ok=$('vOk'),cancel=$('vCancel');
+    let otpSent=false;
+    pw.value='';code.value='';err.textContent='';ok.disabled=false;
+    pw.style.display=usePw?'block':'none';code.style.display='none';
+    $('vText').textContent=usePw?'For your security, enter your account password to continue.':'We will email a 6-digit code to '+ctx.email+'. Enter it to continue.';
+    ok.textContent=usePw?'Verify':'Send code';
+    ov.classList.add('on');(usePw?pw:ok).focus();
+    function done(v){ov.classList.remove('on');ok.onclick=cancel.onclick=null;pw.onkeydown=code.onkeydown=null;pw.value='';code.value='';resolve(v);}
+    function fail(msg){
+      const l=lockInfo(),f=(l.fails||0)+1;
+      if(f>=MAX_FAILS){setLock({fails:0,until:Date.now()+LOCK_MS});err.textContent='Too many wrong attempts. Locked for 5 minutes.';setTimeout(()=>done(false),1200);return;}
+      setLock({fails:f,until:0});err.textContent=msg+' ('+(MAX_FAILS-f)+' attempts left)';ok.disabled=false;
+    }
+    async function submit(){
+      err.textContent='';ok.disabled=true;
+      try{
+        if(usePw){
+          if(!pw.value){err.textContent='Enter your password.';ok.disabled=false;return;}
+          const r=await sb.auth.signInWithPassword({email:ctx.email,password:pw.value});
+          if(r.error||!r.data?.user||r.data.user.id!==ctx.userId)return fail('Wrong password.');
+        }else if(!otpSent){
+          const r=await sb.auth.signInWithOtp({email:ctx.email,options:{shouldCreateUser:false}});
+          if(r.error){err.textContent='Could not send the code. Please try again later.';ok.disabled=false;return;}
+          otpSent=true;code.style.display='block';code.focus();ok.textContent='Verify';ok.disabled=false;
+          $('vText').textContent='Code sent to '+ctx.email+'. Enter it below.';return;
+        }else{
+          const r=await sb.auth.verifyOtp({email:ctx.email,token:code.value.trim(),type:'email'});
+          if(r.error||!r.data?.user||r.data.user.id!==ctx.userId)return fail('Wrong or expired code.');
+        }
+        setLock({fails:0,until:0});done(true);
+      }catch(e){err.textContent='Verification failed. Please try again.';ok.disabled=false;}
+    }
+    ok.onclick=submit;cancel.onclick=()=>done(false);
+    pw.onkeydown=code.onkeydown=e=>{if(e.key==='Enter')submit();if(e.key==='Escape')done(false);};
+  });
+}
+
+/* ---------- Main download ---------- */
+async function download(){
+  if(state.busy)return;
+  if(Date.now()<state.cooldownUntil){setStatus('Please wait a few seconds before the next download.','err');return;}
+  const lockOn=$('lockOn').checked,pwd=$('filePw').value;
+  if(lockOn&&pwd.length<8){setStatus('File password must be at least 8 characters.','err');$('filePw').focus();return;}
+  const fmt=state.fmt;
+  if(state.range==='custom'&&!$('dFrom').value&&!$('dTo').value){setStatus('Choose a From or To date.','err');return;}
+  if(!(await verify())){if(!$('status').classList.contains('err'))setStatus('Verification cancelled.','err');return;}
+  state.busy=true;syncUi();
+  try{
+    const b=bounds(),chosen=SETS.filter(s=>state.sel.has(s.key));
+    const datasets=[],failed=[];
+    for(let i=0;i<chosen.length;i++){
+      const s=chosen[i];setStatus('Reading '+s.label+' ('+(i+1)+'/'+chosen.length+')…');
+      try{const rows=await fetchAll(s,b,n=>setStatus('Reading '+s.label+' – '+n.toLocaleString('en-IN')+' rows…'));if(rows.length)datasets.push({key:s.key,label:s.label,rows});}
+      catch(e){failed.push(s.label);}
+    }
+    if(!datasets.length){setStatus(failed.length?'Could not read the selected data. Please try again.':'No data found for this selection and period.','err');return;}
+    setStatus('Creating file…');
+    const today=new Date().toISOString().slice(0,10);
+    const names=datasets.length===1?datasets[0].key:'multiple-data';
+    const base='glime-'+state.ctx.key+'-'+names+'-'+b.label+'-'+today;
+    const out=await build(datasets,fmt,lockOn?pwd:'',{key:state.ctx.key,range:rangeText(b),base});
+    save(out.blob,base+'.'+out.ext);
+    datasets.length=0;
+    setStatus('Downloaded ✓'+(lockOn?' (password-locked)':'')+(failed.length?' · Skipped: '+failed.join(', '):''),failed.length?'err':'ok');
+    state.cooldownUntil=Date.now()+COOLDOWN_MS;
+  }catch(e){
+    console.error('[GLIME] export failed',e);setStatus('Download failed. Please try again.','err');
+  }finally{state.busy=false;syncUi();}
+}
+
+/* ---------- Boot ---------- */
+async function handleLogout(){
+  try{await sb.auth.signOut({scope:'local'});}catch(e){}
+  try{localStorage.removeItem('glime_client_email');}catch(e){}
+  location.replace('login.html');
+}
+window.handleLogout=handleLogout;
+
+async function init(){
+  renderSets();syncUi();
+  try{
+    const r=await sb.auth.getSession();const sess=r.data&&r.data.session;
+    if(!sess||!sess.user){location.replace('login.html');return;}
+    const u=sess.user;
+    const cd=await sb.from('client_data').select('id,client_id,business_name,full_name').eq('auth_user_id',u.id).limit(1);
+    const row=cd.data&&cd.data[0];
+    if(!row||!row.client_id){setStatus('Your account could not be found.','err');return;}
+    const key=String(row.client_id),ids=[key];
+    if(row.id!=null&&String(row.id)!==key)ids.push(String(row.id));
+    const providers=(u.app_metadata&&u.app_metadata.providers)||[u.app_metadata&&u.app_metadata.provider];
+    state.ctx={userId:u.id,email:(u.email||'').toLowerCase(),key,ids,provider:providers.includes('email')?'email':'other'};
+    if(window.GlimeAppShell)window.GlimeAppShell.setIdentity({name:row.business_name||row.full_name||'',clientId:key});
+    else window.addEventListener('load',()=>window.GlimeAppShell&&window.GlimeAppShell.setIdentity({name:row.business_name||row.full_name||'',clientId:key}));
+    const vc=await sb.from('voice_conversations').select('id').eq('client_id',key).limit(5000);
+    state.voiceIds=(vc.data||[]).map(x=>x.id);
+    setStatus('Ready. Choose what you need.');
+    syncUi();refreshCounts();
+  }catch(e){console.error(e);setStatus('Could not load your account. Please refresh.','err');}
+}
+
+$('rangeChips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;
+  state.range=b.dataset.r;
+  document.querySelectorAll('#rangeChips .chip').forEach(c=>c.setAttribute('aria-pressed',String(c===b)));
+  $('customBox').classList.toggle('on',state.range==='custom');
+  refreshCounts();
+});
+['dFrom','dTo'].forEach(id=>$(id).addEventListener('change',()=>{if(state.range==='custom')refreshCounts();}));
+$('selAll').onclick=()=>{SETS.forEach(s=>{if(s.count!==0)state.sel.add(s.key);});syncUi();};
+$('selNone').onclick=()=>{state.sel.clear();syncUi();};
+$('fmts').addEventListener('change',e=>{if(e.target.name==='fmt'){state.fmt=e.target.value;syncUi();}});
+$('lockOn').addEventListener('change',e=>{$('lockBox').classList.toggle('on',e.target.checked);if(e.target.checked)$('filePw').focus();});
+$('showPw').onclick=()=>{const p=$('filePw');p.type=p.type==='password'?'text':'password';$('showPw').textContent=p.type==='password'?'Show':'Hide';};
+$('goBtn').onclick=download;
+sb.auth.onAuthStateChange((ev,s)=>{if(ev==='SIGNED_OUT'||!s){try{localStorage.removeItem('glime_client_email');}catch(e){}location.replace('login.html');}});
+window.addEventListener('pagehide',()=>{$('filePw').value='';});
+init();
+</script>
+<script src="data-deletion-section.js?v=20261024" defer></script>
+</body>
+</html>
