@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Agency Dashboard | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="partner-base.css">
+<link rel="stylesheet" href="partner-dashboard.css">
+<link rel="stylesheet" href="agency-dashboard.css">
+</head>
+<body>
+
+<div class="pd-loading" id="pdLoading" role="status" aria-live="polite">
+  <img src="glime_logo_clean.svg" alt="" width="56" height="56">
+  <p>Opening your agency dashboard...</p>
+</div>
+
+<div class="pd-shell" id="pdShell" hidden>
+  <header class="pd-top">
+    <a href="agency.html" class="pd-brand" aria-label="GLIME Agency Program">
+      <img src="glime_logo_clean.svg" alt="GLIME">
+      <span>Agency<em>Program</em></span>
+    </a>
+    <div class="pd-user">
+      <span class="chip info" id="pdTier">Starter</span>
+      <button type="button" class="pd-user-btn" id="pdUserBtn" aria-haspopup="true" aria-expanded="false">
+        <span class="pd-avatar" id="pdAvatar">A</span>
+        <span class="pd-user-name" id="pdUserName">Agency</span>
+      </button>
+      <div class="pd-menu" id="pdMenu" hidden>
+        <p class="pd-menu-email" id="pdMenuEmail"></p>
+        <a href="partner-docs.html">Partner Guide</a>
+        <a href="login.html">GLIME client login</a>
+        <button type="button" id="pdSignOut">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="pd-body">
+    <nav class="pd-nav" id="pdNav" aria-label="Agency dashboard sections">
+      <a href="#overview" data-view="overview"><i aria-hidden="true">◧</i><span>Overview</span></a>
+      <a href="#clients" data-view="clients"><i aria-hidden="true">☰</i><span>Clients</span></a>
+      <a href="#wallet" data-view="wallet"><i aria-hidden="true">₹</i><span>Wallet</span></a>
+      <a href="#plans" data-view="plans"><i aria-hidden="true">%</i><span>Plans &amp; pricing</span></a>
+      <a href="#renewals" data-view="renewals"><i aria-hidden="true">↻</i><span>Renewals</span></a>
+      <a href="#reports" data-view="reports"><i aria-hidden="true">▤</i><span>Reports</span></a>
+      <a href="#team" data-view="team"><i aria-hidden="true">☻</i><span>Team</span></a>
+      <a href="#resources" data-view="resources"><i aria-hidden="true">✦</i><span>Resources</span></a>
+      <a href="#support" data-view="support"><i aria-hidden="true">?</i><span>Support</span></a>
+      <a href="#profile" data-view="profile"><i aria-hidden="true">☺</i><span>Profile</span></a>
+    </nav>
+
+    <main class="pd-main" id="pdMain" tabindex="-1">
+      <div class="pd-banner" id="pdBanner" hidden></div>
+      <div id="pdView"></div>
+    </main>
+  </div>
+</div>
+
+<div class="ad-modal-back" id="adModal" hidden>
+  <div class="ad-modal" role="dialog" aria-modal="true" aria-labelledby="adModalTitle">
+    <button type="button" class="ad-x" data-act="close-modal" aria-label="Close">×</button>
+    <div id="adModalBody"></div>
+  </div>
+</div>
+
+<div class="pd-toast" id="pdToast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="partner-config.js"></script>
+<script src="agency-dashboard.js"></script>
+</body>
+</html>

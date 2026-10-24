@@ -36,6 +36,28 @@ window.GLIME_PARTNER = {
       { key: "growth", name: "GLIME Growth", monthly: 299 },
       { key: "omni",   name: "GLIME Omni",   monthly: 1499 }
     ]
+  },
+
+  /* Agency program. Keep these numbers equal to glime_agency_settings in
+     Supabase. The public agency page uses them; the dashboard uses the
+     live values returned by agency_get_dashboard() where available. */
+  agency: {
+    name: "GLIME Agency Program",
+    pages: { landing: "agency.html", dashboard: "agency-dashboard.html" },
+    termsVersion: "v1",
+    graceDays: 7,
+    minTopup: 1000,
+    lowBalance: 500,
+    tiers: [
+      { name: "Starter", minClients: 0,  discount: 20 },
+      { name: "Growth",  minClients: 10, discount: 25 },
+      { name: "Scale",   minClients: 30, discount: 30 }
+    ],
+    roles: [
+      { key: "manager", name: "Manager", desc: "clients and plans, no wallet or team" },
+      { key: "staff",   name: "Staff",   desc: "view and set up clients" },
+      { key: "viewer",  name: "Viewer",  desc: "read only" }
+    ]
   }
 };
 

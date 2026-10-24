@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agency Program | Manage all your clients on GLIME</title>
+<meta name="description" content="Run WhatsApp and Instagram sales automation for all your clients from one dashboard. Wholesale pricing up to 30% off, prepaid wallet, your own client pricing.">
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="partner-base.css">
+<link rel="stylesheet" href="agency.css">
+</head>
+<body>
+<div class="page-glow glow-one"></div>
+<div class="page-glow glow-two"></div>
+
+<header class="ag-top">
+  <div class="container ag-top-in">
+    <a href="index.html" class="ag-brand" aria-label="GLIME home"><img src="glime_logo_clean.svg" alt="GLIME" width="38" height="38"><span>Agency<em>Program</em></span></a>
+    <nav class="ag-nav" aria-label="Agency page sections">
+      <a href="#how">How it works</a>
+      <a href="#benefits">Benefits</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#calc">Calculator</a>
+      <a href="#faq">FAQ</a>
+      <a href="partner.html">Referral program</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="#apply">Apply now</a>
+  </div>
+</header>
+
+<main>
+  <section class="ag-hero">
+    <div class="container">
+      <p class="eyebrow">GLIME Agency Program</p>
+      <h1>Run WhatsApp &amp; Instagram sales for <span class="grad">all your clients</span> from one dashboard</h1>
+      <p class="ag-lead">Add clients, buy plans at a wholesale price, sell at your own price and keep the difference. One prepaid wallet, automatic billing, clear reports.</p>
+      <div class="ag-cta">
+        <a class="btn btn-primary" href="#apply">Apply as an agency</a>
+        <a class="btn btn-ghost" href="#calc">See what you can earn</a>
+      </div>
+      <ul class="ag-points">
+        <li><b>Up to 30%</b> wholesale discount</li>
+        <li><b>Your price</b> for every client</li>
+        <li><b>Prepaid</b> wallet, no surprises</li>
+        <li><b>One login</b> for every client</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="ag-sec" id="how">
+    <div class="container">
+      <p class="eyebrow">How it works</p>
+      <h2>From sign-up to first client in a day</h2>
+      <ol class="ag-steps">
+        <li><span>1</span><h3>Apply</h3><p>Sign in with Google and share your company details. We review every application.</p></li>
+        <li><span>2</span><h3>Add balance</h3><p>Top up your agency wallet online. The minimum top-up is shown below.</p></li>
+        <li><span>3</span><h3>Add a client</h3><p>Enter the client name, WhatsApp number and plan. Their GLIME account is created under your agency.</p></li>
+        <li><span>4</span><h3>Set up</h3><p>Connect WhatsApp, Instagram and auto-replies yourself, or send the client a setup message.</p></li>
+        <li><span>5</span><h3>Bill your way</h3><p>Plan charges are taken from your wallet at the wholesale price. You charge the client your own price.</p></li>
+        <li><span>6</span><h3>Track and grow</h3><p>See margin, usage and renewals per client. More clients unlock a bigger discount.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="ag-sec alt" id="benefits">
+    <div class="container">
+      <p class="eyebrow">Benefits</p>
+      <h2>Built for agencies that manage many clients</h2>
+      <div class="ag-cards">
+        <article><h3>Wholesale pricing</h3><p>Discount grows with the number of clients you manage. See the tiers below.</p></article>
+        <article><h3>Your own margin</h3><p>Set a different price for each client. The dashboard shows your margin per client and in total.</p></article>
+        <article><h3>Client management</h3><p>Client list, plan changes, pause and resume, renewal dates and invite messages in one place.</p></article>
+        <article><h3>Prepaid wallet</h3><p>Top up online, see every deduction, export the ledger and get low-balance warnings.</p></article>
+        <article><h3>Renewal alerts</h3><p>See which renewals are due soon and whether your wallet covers them.</p></article>
+        <article><h3>Reports</h3><p>Margin and usage per client and a combined agency summary, with CSV export.</p></article>
+        <article><h3>Team access</h3><p>Invite staff with limited roles so your team can work without owner access.</p></article>
+        <article><h3>Pitch material</h3><p>Ready messages and an onboarding checklist to help you sign and set up clients faster.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="ag-sec" id="pricing">
+    <div class="container">
+      <p class="eyebrow">Wholesale pricing</p>
+      <h2>More clients, bigger discount</h2>
+      <p class="ag-sub">The discount applies to the list price of every plan you buy for your clients. Your tier is based on how many clients you manage.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Tier</th><th>Clients managed</th><th class="r">Wholesale discount</th></tr></thead>
+        <tbody id="agTiers"></tbody>
+      </table></div>
+      <p class="ag-note" id="agTerms"></p>
+    </div>
+  </section>
+
+  <section class="ag-sec alt" id="calc">
+    <div class="container">
+      <p class="eyebrow">Earnings calculator</p>
+      <h2>Estimate your monthly margin</h2>
+      <div class="ag-calc">
+        <div class="ag-calc-in">
+          <div class="f"><label for="cPlan">Plan you sell</label><select id="cPlan"></select></div>
+          <div class="f"><label for="cClients">Number of clients: <b id="cClientsV">10</b></label><input id="cClients" type="range" min="1" max="100" value="10"></div>
+          <div class="f"><label for="cPrice">Your price per client (₹ / month)</label><input id="cPrice" type="number" min="0" step="1" inputmode="numeric"></div>
+        </div>
+        <div class="ag-calc-out" aria-live="polite">
+          <div><span>Your tier</span><b id="oTier">—</b></div>
+          <div><span>Wholesale cost per client</span><b id="oCost">—</b></div>
+          <div><span>Margin per client</span><b id="oMargin">—</b></div>
+          <div class="big"><span>Monthly margin</span><b id="oMonthly">—</b></div>
+          <div><span>Yearly margin</span><b id="oYearly">—</b></div>
+        </div>
+      </div>
+      <p class="ag-note">This is an estimate for illustration only. Actual prices and discounts are shown in your dashboard.</p>
+    </div>
+  </section>
+
+  <section class="ag-sec" id="apply">
+    <div class="container ag-apply">
+      <div>
+        <p class="eyebrow">Apply</p>
+        <h2>Become a GLIME agency</h2>
+        <p class="ag-sub">Sign in with Google, then fill in your company details. We review each application and you can see the status here.</p>
+        <ul class="ag-list">
+          <li>Takes about two minutes</li>
+          <li>PAN and GST are optional</li>
+          <li>Rejected? You can correct the details and apply again</li>
+        </ul>
+      </div>
+
+      <div class="ag-box">
+        <div id="agLoading" class="ag-state"><p>Checking your account...</p></div>
+
+        <div id="agSignin" class="ag-state" hidden>
+          <h3>Start with Google</h3>
+          <p>We use your Google account to sign you in. Agency accounts are separate from GLIME client accounts.</p>
+          <button type="button" class="btn btn-google" id="agGoogle">Continue with Google</button>
+          <p class="f-msg" id="agSigninMsg" role="alert"></p>
+        </div>
+
+        <div id="agStatus" class="ag-state" hidden></div>
+
+        <form id="agForm" class="ag-state" hidden novalidate>
+          <h3 id="agFormTitle">Company details</h3>
+          <p class="ag-who" id="agWho"></p>
+          <div class="f"><label for="fBiz">Company / agency name *</label><input id="fBiz" type="text" maxlength="120" autocomplete="organization" required></div>
+          <div class="ag-row">
+            <div class="f"><label for="fName">Your name</label><input id="fName" type="text" maxlength="120" autocomplete="name"></div>
+            <div class="f"><label for="fPhone">WhatsApp / phone *</label><input id="fPhone" type="tel" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" required></div>
+          </div>
+          <div class="ag-row">
+            <div class="f"><label for="fCity">City *</label><input id="fCity" type="text" maxlength="80" autocomplete="address-level2" required></div>
+            <div class="f"><label for="fWeb">Website or Instagram</label><input id="fWeb" type="text" maxlength="200" placeholder="https://"></div>
+          </div>
+          <div class="ag-row">
+            <div class="f"><label for="fPan">PAN</label><input id="fPan" type="text" maxlength="10" placeholder="ABCDE1234F" style="text-transform:uppercase" autocomplete="off"></div>
+            <div class="f"><label for="fGst">GST number (if any)</label><input id="fGst" type="text" maxlength="15" style="text-transform:uppercase" autocomplete="off"></div>
+          </div>
+          <div class="f"><label for="fAbout">About your agency</label><textarea id="fAbout" rows="3" maxlength="1000" placeholder="Services you offer and how many clients you manage today"></textarea></div>
+          <label class="ag-check"><input type="checkbox" id="fTerms"> <span>I have read and agree to the GLIME <a href="terms.html" target="_blank" rel="noopener">Terms</a> and the Agency Program terms.</span></label>
+          <button type="submit" class="btn btn-primary" id="agSubmit">Submit application</button>
+          <p class="f-msg" id="agMsg" role="alert"></p>
+          <p class="ag-fine"><button type="button" class="ag-link" id="agSignOut">Use a different Google account</button></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="ag-sec alt" id="faq">
+    <div class="container ag-faq">
+      <p class="eyebrow">FAQ</p>
+      <h2>Common questions</h2>
+      <details><summary>Who can apply?</summary><p>Marketing agencies, freelancers and consultants who manage WhatsApp or Instagram sales for businesses.</p></details>
+      <details><summary>How do I pay GLIME?</summary><p>You add money to a prepaid agency wallet. Each client plan charge is deducted from the wallet at your wholesale price.</p></details>
+      <details><summary>Can I set my own price for clients?</summary><p>Yes. You decide what to charge each client and collect it yourself. The dashboard records your price so it can show your margin.</p></details>
+      <details><summary>What happens if my wallet runs out?</summary><p>You get low-balance warnings first. If the wallet is still not topped up after the grace period, the affected client accounts are paused. They resume after you top up.</p></details>
+      <details><summary>Does my client also earn me referral commission?</summary><p>No. A client managed under an agency is not part of the referral program, so there is no double payment.</p></details>
+      <details><summary>Can the client see my wholesale price?</summary><p>No. Clients only see what you charge them.</p></details>
+      <details><summary>Is white-label available?</summary><p>Not yet. Your own logo, colours and domain are planned for a later release.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <img src="glime_logo_clean.svg" alt="GLIME" width="56" height="56">
+    <div class="footer-links">
+      <a href="index.html">Home</a><a href="partner.html">Partner Program</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="contact.html">Contact</a>
+    </div>
+    <p>© GLIME. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="partner-config.js"></script>
+<script src="agency.js"></script>
+</body>
+</html>

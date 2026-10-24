@@ -1,0 +1,40 @@
+/* GLIME Agency dashboard — extras on top of partner-base.css + partner-dashboard.css */
+[hidden]{display:none!important}
+
+.ad-alert{padding:14px 16px;border-radius:14px;border:1px solid rgba(255,200,87,.35);background:rgba(255,200,87,.07);color:var(--amber);font-size:.86rem;margin-bottom:16px}
+.ad-alert.bad{border-color:rgba(255,122,138,.4);background:rgba(255,122,138,.07);color:var(--red)}
+.ad-alert a,.ad-alert button.ag-link{color:inherit;text-decoration:underline}
+.ad-actions{display:flex;flex-wrap:wrap;gap:8px}
+.ad-actions form{display:contents}
+.ad-split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ad-mt{margin-top:18px}
+.ad-muted{color:var(--dim);font-size:.78rem}
+.ad-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.ad-chips button{cursor:pointer;background:rgba(255,255,255,.04);border:1px solid var(--line2);color:var(--text);border-radius:99px;padding:7px 14px;font:700 .8rem Manrope,Arial,sans-serif}
+.ad-chips button:hover{border-color:var(--green)}
+.ad-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ad-tight td,.ad-tight th{padding:10px 12px}
+.ad-neg{color:var(--red)}
+.ad-pos{color:var(--green)}
+.ad-link{background:none;border:0;color:var(--cyan);cursor:pointer;font:700 .8rem Manrope,Arial,sans-serif;padding:0}
+.ad-link:hover{text-decoration:underline}
+.ad-list{list-style:none}
+.ad-list li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.86rem}
+.ad-list li:last-child{border-bottom:0}
+
+.ad-modal-back{position:fixed;inset:0;z-index:300;background:rgba(2,6,10,.72);backdrop-filter:blur(4px);display:grid;place-items:center;padding:16px;overflow-y:auto}
+.ad-modal{position:relative;width:min(560px,100%);max-height:calc(100vh - 32px);overflow-y:auto;background:var(--card);border:1px solid var(--line2);border-radius:20px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.ad-modal h2{font-size:1.2rem;margin-bottom:6px}
+.ad-modal p.sub{color:var(--muted);font-size:.86rem;margin-bottom:16px}
+.ad-x{position:absolute;right:14px;top:10px;background:none;border:0;color:var(--muted);font-size:1.6rem;cursor:pointer;line-height:1}
+.ad-modal .f{margin-bottom:12px}
+.ad-modal .f label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+.ad-modal .f input,.ad-modal .f select,.ad-modal .f textarea,.pd-main .f textarea{width:100%;padding:11px 13px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--text);font:500 .9rem Manrope,Arial,sans-serif;outline:none}
+.ad-modal .f select option{background:#0d1822}
+.ad-modal hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.ad-modal h3{font-size:.95rem;margin-bottom:10px}
+.ag-link{background:none;border:0;cursor:pointer;font:700 .85rem Manrope,Arial,sans-serif;padding:0}
+
+@media (max-width:760px){
+  .ad-split,.ad-row2{grid-template-columns:1fr}
+}
