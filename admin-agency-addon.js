@@ -1,6 +1,7 @@
 /* =========================================================
    GLIME ADMIN — Agency approvals and wallet credit
-   Adds an "Agency Program" section inside #control-room.
+   Adds an "Agency" tab to the admin sidebar (falls back to
+   #control-room when that older layout exists).
    Uses RPCs: admin_agency_list, admin_agency_review,
    admin_agency_wallet_credit (all check is_glime_admin()).
    Does not modify admin.html or any other addon.
@@ -129,11 +130,30 @@
 
   function create() {
     if ($(ID)) return true;
-    const room = $("control-room");
-    if (!room) return false;
+    let room = $("control-room"), standalone = false;
+    if (!room) {
+      const main = document.querySelector("#app main"), nav = document.querySelector("#app nav");
+      if (!main || !nav) return false;
+      standalone = true;
+      room = document.createElement("section");
+      room.className = "view"; room.id = "view-agency";
+      main.appendChild(room);
+      const nb = document.createElement("button");
+      nb.type = "button"; nb.dataset.view = "agency"; nb.textContent = "Agency";
+      const lo = nav.querySelector(".logout");
+      nav.insertBefore(nb, nav.querySelector('[data-view="settings"]') || lo);
+      nb.addEventListener("click", () => {
+        document.querySelectorAll(".view").forEach((x) => x.classList.remove("active"));
+        room.classList.add("active");
+        document.querySelectorAll("nav button[data-view]").forEach((x) => x.classList.toggle("active", x === nb));
+        const ti = $("title"); if (ti) ti.textContent = "Agency";
+        load();
+      });
+    }
     styles();
     const s = document.createElement("div");
     s.id = ID;
+    if (standalone) s.style.cssText = "margin:0;padding:0;border:0";
     s.innerHTML = `<div class="ga-title">Agency Program</div>
       <div class="ga-sub">Approve agency applications, suspend or reactivate agencies, and credit a wallet after a manual payment.</div>
       <div class="ga-bar"><select id="gaFilter" aria-label="Agency status"><option value="pending">Pending approval</option><option value="active">Active</option><option value="rejected">Rejected</option><option value="suspended">Suspended</option><option value="all">All</option></select><button class="mid" id="gaRefresh" type="button">Refresh</button></div>
