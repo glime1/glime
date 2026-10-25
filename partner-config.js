@@ -100,7 +100,7 @@ window.GLIME_PARTNER.util = {
 
 /* Agency pages: load the "documents requested by admin" panel */
 (function () {
-  if (!/\/agency(-dashboard)?\.html$/.test(location.pathname)) return;
+  if (!/\/agency(-dashboard)?(\.html)?\/?$/.test(location.pathname)) return;
   var s = document.createElement("script");
   s.src = "agency-docs.js";
   s.defer = true;
