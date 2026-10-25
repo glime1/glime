@@ -13,6 +13,7 @@
   var sb = window.supabase.createClient(C.supabaseUrl, C.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
   var BUCKET = "agency-docs", MAX = 5 * 1024 * 1024, TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
   var rows = null, loading = false, uid = null, host = null;
+  var lastSig = "", lastLoad = 0;
   var esc = function (v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); };
 
   function css() {
@@ -62,7 +63,10 @@
       var r = await sb.rpc("agency_get_doc_requests");
       if (r.error) throw r.error;
       rows = Array.isArray(r.data) ? r.data : [];
-    } catch (e) { rows = []; }
+      var sig = JSON.stringify(rows);
+      if (sig === lastSig && document.getElementById("adDocsPanel")) return;
+      lastSig = sig;
+    } catch (e) { rows = rows || []; }
     finally { loading = false; }
     paint();
   }
@@ -99,7 +103,7 @@
     var h = findHost();
     if (!h) { host = null; return; }
     host = h;
-    if (!started) { started = true; load(); return; }
+    if (!started || Date.now() - lastLoad > 20000) { started = true; lastLoad = Date.now(); load(); return; }
     if (rows && rows.length && !document.getElementById("adDocsPanel")) paint();
   }, 1200);
 })();
