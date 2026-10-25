@@ -4,24 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Contact Glime AI Automation | Start Your Project</title>
+    <title>Contact GLIME | Projects, Client, Agency and Partner Support</title>
 
     <meta
         name="description"
-        content="Contact Glime AI Automation for AI automation, custom software, websites, lead generation systems and automated business workflows."
+        content="Contact GLIME for a new project, client support, agency support or partner support. Agencies and partners share their code so we can reach the real problem faster."
     >
 
     <link rel="canonical" href="https://glime.online/contact.html">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/jpeg" href="glime_logo_clean.svg">
+    <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Google Font -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet"
     >
 
@@ -30,11 +30,14 @@
         :root {
             --bg-dark: #0a0f16;
             --card-bg: #111827;
+            --card-2: #0d1420;
             --neon-green: #00ff88;
             --cyan-blue: #00f0ff;
+            --amber: #ffc857;
             --text-main: #ffffff;
             --text-muted: #9ca3af;
             --danger: #ff4757;
+            --line: rgba(255,255,255,0.08);
         }
 
         * {
@@ -53,180 +56,272 @@
         }
 
         .gradient-text {
-            background: linear-gradient(
-                90deg,
-                var(--neon-green),
-                var(--cyan-blue)
-            );
+            background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         /* =====================================================
-           NAVIGATION
-        ====================================================== */
-
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 8%;
-            background: rgba(10, 15, 22, 0.95);
-            backdrop-filter: blur(10px);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-        }
-
-        .brand-text {
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 3px;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-        }
-
-        .brand-i {
-            position: relative;
-            display: inline-block;
-            margin: 0 2px;
-        }
-
-        .sparkle-star {
-            position: absolute;
-            top: -16px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 16px;
-            height: 16px;
-            fill: #a855f7;
-            filter: drop-shadow(0 0 8px #a855f7);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 35px;
-            list-style: none;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text-main);
-            text-decoration: none;
-            font-weight: 400;
-            transition: 0.3s;
-            font-size: 1rem;
-        }
-
-        .nav-links a:hover,
-        .nav-links a.active {
-            color: var(--cyan-blue);
-        }
-
-        .client-login-link {
-            background: var(--neon-green);
-            color: #000 !important;
-            padding: 8px 18px;
-            border-radius: 5px;
-            font-weight: 700 !important;
-        }
-
-        .hamburger {
-            display: none;
-            cursor: pointer;
-            font-size: 28px;
-            color: var(--text-main);
-            background: none;
-            border: none;
-        }
-
-        /* =====================================================
-           HEADER
+           HERO
         ====================================================== */
 
         .page-header {
-            padding: 145px 20px 45px;
+            padding: 135px 20px 30px;
             text-align: center;
-            background:
-                radial-gradient(
-                    circle at center,
-                    rgba(0, 240, 255, 0.06) 0%,
-                    transparent 70%
-                );
+            background: radial-gradient(circle at 50% 0%, rgba(0,240,255,0.09) 0%, transparent 65%);
+        }
+
+        .eyebrow {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(0,255,136,0.3);
+            background: rgba(0,255,136,0.06);
+            color: var(--neon-green);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
         }
 
         .page-header h1 {
             font-size: 3rem;
-            margin-bottom: 15px;
+            line-height: 1.15;
+            margin-bottom: 14px;
         }
 
         .page-header p {
             color: var(--text-muted);
             font-size: 1.05rem;
-            max-width: 700px;
+            max-width: 680px;
             margin: 0 auto;
             line-height: 1.7;
+        }
+
+        /* =====================================================
+           LAYOUT
+        ====================================================== */
+
+        .section {
+            padding: 20px 6% 80px;
+        }
+
+        .layout {
+            max-width: 1120px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.85fr);
+            gap: 26px;
+            align-items: start;
+        }
+
+        .contact-box {
+            background: var(--card-bg);
+            padding: 34px;
+            border-radius: 20px;
+            border: 1px solid var(--line);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .step-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin: 0 0 12px;
+        }
+
+        .step-title b {
+            width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue));
+            color: #000;
+            font-size: 0.72rem;
+        }
+
+        /* =====================================================
+           WHO ARE YOU
+        ====================================================== */
+
+        .types {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            border: 0;
+            margin-bottom: 8px;
+        }
+
+        .type-card {
+            position: relative;
+            display: block;
+            cursor: pointer;
+            padding: 14px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.02);
+            transition: 0.25s;
+            text-align: left;
+        }
+
+        .type-card input {
+            position: absolute;
+            opacity: 0;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .type-card:hover {
+            border-color: rgba(0,240,255,0.4);
+            transform: translateY(-2px);
+        }
+
+        .type-card.on {
+            border-color: var(--neon-green);
+            background: rgba(0,255,136,0.06);
+            box-shadow: 0 0 0 1px rgba(0,255,136,0.35), 0 8px 24px rgba(0,255,136,0.08);
+        }
+
+        .type-card:focus-within {
+            outline: 2px solid var(--cyan-blue);
+            outline-offset: 2px;
+        }
+
+        .type-card svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--cyan-blue);
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            margin-bottom: 8px;
+        }
+
+        .type-card.on svg {
+            stroke: var(--neon-green);
+        }
+
+        .type-card strong {
+            display: block;
+            font-size: 0.86rem;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .type-card small {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            margin-top: 3px;
+            line-height: 1.35;
+        }
+
+        .type-note {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(0,240,255,0.05);
+            border: 1px solid rgba(0,240,255,0.2);
+            color: #cfe9ee;
+            font-size: 0.82rem;
+            line-height: 1.55;
+            margin: 6px 0 24px;
+        }
+
+        .type-note i {
+            font-style: normal;
+            color: var(--cyan-blue);
+            font-weight: 700;
         }
 
         /* =====================================================
            FORM
         ====================================================== */
 
-        .section {
-            padding: 35px 8% 80px;
-        }
-
-        .contact-box {
-            max-width: 720px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 45px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-        }
-
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
-        .form-group label {
+        .form-group label,
+        .form-group .lbl {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 7px;
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 600;
         }
 
-        .form-group label span {
+        .form-group label span.req {
             color: var(--danger);
         }
 
-        input,
+        .form-group .opt {
+            text-transform: none;
+            letter-spacing: 0;
+            font-weight: 400;
+            color: #6b7280;
+        }
+
+        .row2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .row3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        select,
         textarea {
             width: 100%;
-            padding: 14px 15px;
+            padding: 13px 14px;
             background: rgba(255,255,255,0.02);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
+            border-radius: 10px;
             color: white;
-            font-size: 1rem;
+            font-size: 0.95rem;
             transition: 0.3s;
         }
 
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%), linear-gradient(135deg, #9ca3af 50%, transparent 50%);
+            background-position: calc(100% - 20px) 52%, calc(100% - 14px) 52%;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            padding-right: 38px;
+        }
+
+        select option {
+            background: #111827;
+            color: #fff;
+        }
+
         input:focus,
+        select:focus,
         textarea:focus {
             outline: none;
             border-color: var(--cyan-blue);
@@ -234,19 +329,114 @@
             box-shadow: 0 0 15px rgba(0,240,255,0.1);
         }
 
-        input:disabled {
+        input:disabled,
+        select:disabled,
+        textarea:disabled {
             opacity: 0.7;
         }
 
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .counter {
+            text-align: right;
+            font-size: 0.72rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .code-field input {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-hint {
+            font-size: 0.76rem;
+            margin-top: 6px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .code-hint.ok { color: var(--neon-green); }
+        .code-hint.bad { color: #ff6b7a; }
+
+        /* conditional blocks */
+        .cond { display: none; }
+        form[data-type="business"] .c-business,
+        form[data-type="support"] .c-support,
+        form[data-type="agency"] .c-agency,
+        form[data-type="partner"] .c-partner,
+        form[data-type="agency"] .c-code,
+        form[data-type="partner"] .c-code,
+        form[data-type="agency"] .c-prio,
+        form[data-type="support"] .c-prio,
+        form[data-type="agency"] .c-ref,
+        form[data-type="support"] .c-ref,
+        form[data-type="partner"] .c-ref { display: block; }
+
+        .prio {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .prio label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 13px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-transform: none;
+            letter-spacing: 0;
+            font-weight: 500;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .prio label.on {
+            border-color: var(--amber);
+            background: rgba(255,200,87,0.07);
+        }
+
+        .prio label.on.normal {
+            border-color: var(--neon-green);
+            background: rgba(0,255,136,0.06);
+        }
+
+        .prio input { accent-color: var(--neon-green); }
+
+        .prio-note {
+            font-size: 0.74rem;
+            color: var(--amber);
+            margin-top: 6px;
+            display: none;
+        }
+
+        .consent {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+            margin: 6px 0 20px;
+        }
+
+        .consent input { margin-top: 3px; accent-color: var(--neon-green); }
+        .consent a { color: var(--cyan-blue); }
+
         .btn-primary {
-            background: linear-gradient(
-                90deg,
-                var(--neon-green),
-                var(--cyan-blue)
-            );
+            background: linear-gradient(90deg, var(--neon-green), var(--cyan-blue));
             color: #000;
             padding: 13px 30px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 700;
             transition: 0.3s;
             border: none;
@@ -272,12 +462,17 @@
             background: rgba(0,240,255,0.06);
             border: 1px solid rgba(0,240,255,0.25);
             padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 25px;
+            border-radius: 12px;
+            margin-bottom: 22px;
         }
 
-        .selected-info strong {
-            color: var(--cyan-blue);
+        .selected-info strong { color: var(--cyan-blue); }
+
+        .fine {
+            text-align: center;
+            font-size: 0.74rem;
+            color: #6b7280;
+            margin-top: 12px;
         }
 
         /* =====================================================
@@ -288,7 +483,7 @@
             display: none;
             margin-top: 25px;
             padding: 25px;
-            border-radius: 12px;
+            border-radius: 14px;
             border: 1px solid rgba(0,255,136,0.25);
             background: rgba(0,255,136,0.04);
         }
@@ -325,7 +520,7 @@
             background: transparent;
             border: 1px solid rgba(255,255,255,0.15);
             color: var(--text-muted);
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
         }
 
@@ -334,15 +529,15 @@
             color: var(--cyan-blue);
         }
 
-        .verify-btn {
-            flex: 2;
-        }
+        .secondary-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        .verify-btn { flex: 2; }
 
         #statusMessage {
             display: none;
             margin-top: 18px;
             padding: 12px 15px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 0.9rem;
             line-height: 1.5;
         }
@@ -354,6 +549,182 @@
             font-weight: 700;
             margin-top: 10px;
         }
+
+        /* =====================================================
+           SUCCESS
+        ====================================================== */
+
+        #successBox {
+            display: none;
+            text-align: center;
+            padding: 20px 6px;
+        }
+
+        #successBox .tick {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,255,136,0.1);
+            border: 1px solid rgba(0,255,136,0.4);
+            color: var(--neon-green);
+            font-size: 1.9rem;
+        }
+
+        #successBox h2 { font-size: 1.5rem; margin-bottom: 8px; }
+        #successBox p { color: var(--text-muted); line-height: 1.7; font-size: 0.95rem; }
+
+        .refbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin: 18px 0 8px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 1px dashed rgba(0,240,255,0.4);
+            background: rgba(0,240,255,0.05);
+        }
+
+        .refbox code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            color: var(--cyan-blue);
+            font-weight: 700;
+        }
+
+        .refbox button {
+            border: 1px solid rgba(255,255,255,0.18);
+            background: transparent;
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            cursor: pointer;
+        }
+
+        .next-list {
+            text-align: left;
+            max-width: 380px;
+            margin: 18px auto 0;
+            list-style: none;
+        }
+
+        .next-list li {
+            display: flex;
+            gap: 10px;
+            padding: 8px 0;
+            color: #cbd5e1;
+            font-size: 0.88rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .next-list li b { color: var(--neon-green); }
+
+        /* =====================================================
+           SIDE PANEL
+        ====================================================== */
+
+        .side {
+            display: grid;
+            gap: 16px;
+            position: sticky;
+            top: 96px;
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 22px;
+        }
+
+        .panel h3 {
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .sla {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,240,255,0.07));
+            border-color: rgba(0,255,136,0.25);
+        }
+
+        .sla .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 0 0 rgba(0,255,136,0.6);
+            animation: ping 2s infinite;
+            flex: none;
+        }
+
+        @keyframes ping {
+            0% { box-shadow: 0 0 0 0 rgba(0,255,136,0.55); }
+            70% { box-shadow: 0 0 0 10px rgba(0,255,136,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,255,136,0); }
+        }
+
+        .sla small { display: block; color: var(--text-muted); font-size: 0.74rem; margin-bottom: 2px; }
+        .sla strong { font-size: 0.98rem; }
+
+        .direct a {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding: 11px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.86rem;
+            margin-bottom: 8px;
+            transition: 0.25s;
+        }
+
+        .direct a:hover { border-color: var(--cyan-blue); transform: translateX(3px); }
+        .direct a small { display: block; color: var(--text-muted); font-size: 0.72rem; }
+        .direct a span.ic {
+            width: 34px; height: 34px; flex: none; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,240,255,0.08); color: var(--cyan-blue); font-weight: 700; font-size: 0.8rem;
+        }
+
+        .faq details {
+            border-bottom: 1px solid var(--line);
+            padding: 10px 0;
+        }
+
+        .faq details:last-child { border-bottom: 0; }
+
+        .faq summary {
+            cursor: pointer;
+            font-size: 0.84rem;
+            font-weight: 600;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .faq summary::-webkit-details-marker { display: none; }
+        .faq summary::after { content: "+"; color: var(--cyan-blue); font-weight: 700; }
+        .faq details[open] summary::after { content: "\2212"; }
+
+        .faq p {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.6;
+            margin-top: 8px;
+        }
+
+        .faq a { color: var(--cyan-blue); }
 
         /* =====================================================
            FOOTER
@@ -417,28 +788,15 @@
         }
 
         .whatsapp-float svg {
-            width: 35px;
-            height: 35px;
-            fill: white;
+            width: 32px;
+            height: 32px;
+            fill: currentColor;
         }
 
         @keyframes pulse {
-
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(37,211,102,0.7);
-            }
-
-            70% {
-                transform: scale(1.1);
-                box-shadow: 0 0 0 15px rgba(37,211,102,0);
-            }
-
-            100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(37,211,102,0);
-            }
-
+            0% { box-shadow: 0 0 0 0 rgba(37,211,102,0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(37,211,102,0); }
+            100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
         }
 
         /* =====================================================
@@ -456,80 +814,32 @@
             transform: translateY(0);
         }
 
+        @media (prefers-reduced-motion: reduce) {
+            .fade-in { opacity: 1; transform: none; transition: none; }
+            .whatsapp-float, .sla .dot { animation: none; }
+        }
+
         /* =====================================================
            MOBILE
         ====================================================== */
 
-        @media (max-width: 768px) {
+        @media (max-width: 960px) {
+            .layout { grid-template-columns: 1fr; }
+            .side { position: static; }
+            .types { grid-template-columns: repeat(2, 1fr); }
+        }
 
-            nav {
-                padding: 12px 5%;
-            }
-
-            .nav-links {
-                display: none;
-                flex-direction: column;
-                position: absolute;
-                top: 70px;
-                left: 0;
-                width: 100%;
-                background: var(--card-bg);
-                padding: 20px;
-                gap: 15px;
-                text-align: center;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-            }
-
-            .nav-links.active {
-                display: flex;
-            }
-
-            .hamburger {
-                display: block;
-            }
-
-            .page-header {
-                padding-top: 115px;
-            }
-
-            .page-header h1 {
-                font-size: 2rem;
-            }
-
-            .page-header p {
-                font-size: 0.9rem;
-            }
-
-            .section {
-                padding: 25px 5% 60px;
-            }
-
-            .contact-box {
-                padding: 25px 18px;
-            }
-
-            .otp-actions {
-                flex-direction: column;
-            }
-
-            .verify-btn,
-            .secondary-btn {
-                flex: auto;
-                width: 100%;
-            }
-
-            .whatsapp-float {
-                width: 45px;
-                height: 45px;
-                bottom: 20px;
-                right: 20px;
-            }
-
-            .whatsapp-float svg {
-                width: 25px;
-                height: 25px;
-            }
-
+        @media (max-width: 640px) {
+            .page-header { padding-top: 112px; }
+            .page-header h1 { font-size: 2rem; }
+            .page-header p { font-size: 0.92rem; }
+            .section { padding: 14px 4% 60px; }
+            .contact-box { padding: 22px 16px; }
+            .row2, .row3 { grid-template-columns: 1fr; gap: 0; }
+            .otp-actions { flex-direction: column; }
+            .verify-btn, .secondary-btn { flex: auto; width: 100%; }
+            .whatsapp-float { width: 45px; height: 45px; bottom: 20px; right: 20px; }
+            .whatsapp-float svg { width: 25px; height: 25px; }
         }
 
     </style>
@@ -538,10 +848,7 @@
 
 <body>
 
-    <!-- =====================================================
-         WHATSAPP
-    ====================================================== -->
-
+    <!-- WHATSAPP -->
     <a
         href="https://wa.me/918504926242?text=Hi%20Glime%20Team!%20I%20need%20help%20with%20my%20project."
         target="_blank"
@@ -554,10 +861,7 @@
         </svg>
     </a>
 
-    <!-- =====================================================
-         NAV
-    ====================================================== -->
-
+    <!-- NAV -->
     <header class="glime-global-header">
   <div class="glime-nav-inner">
     <a href="index.html" class="glime-brand" aria-label="GLIME Home">
@@ -594,1099 +898,867 @@
   </nav>
 </header>
 
-    <!-- =====================================================
-         HEADER
-    ====================================================== -->
-
+    <!-- HERO -->
     <header class="page-header fade-in">
-
-        <h1>
-            Ready to
-            <span class="gradient-text">
-                Upgrade?
-            </span>
-        </h1>
-
+        <span class="eyebrow">Contact GLIME</span>
+        <h1>How can we <span class="gradient-text">help you?</span></h1>
         <p>
-            Tell us about your brand and let's build a custom digital
-            growth engine that drives actual results.
+            Starting a project, need help with your account, or part of our
+            Agency or Partner program? Tell us who you are and we will send
+            your message straight to the right team.
         </p>
-
     </header>
 
-    <!-- =====================================================
-         CONTACT FORM
-    ====================================================== -->
-
+    <!-- CONTACT -->
     <section class="section fade-in">
+        <div class="layout">
 
-        <div class="contact-box">
+            <div class="contact-box" id="contactBox">
 
-            <div
-                id="selectedInfo"
-                class="selected-info"
-            >
-                <strong>Selected:</strong>
-                <span id="selectedPackage"></span>
-
-                <br>
-
-                <span
-                    id="selectedAddons"
-                    style="
-                        color:var(--text-muted);
-                        font-size:0.85rem;
-                    "
-                ></span>
-
-                <br>
-
-                <span
-                    id="selectedEstimate"
-                    style="
-                        color:var(--neon-green);
-                        font-size:0.85rem;
-                    "
-                ></span>
-            </div>
-
-            <form id="mainContactForm">
-
-                <div class="form-group">
-
-                    <label>
-                        Your Full Name
-                        <span>*</span>
-                    </label>
-
-                    <input
-                        type="text"
-                        name="fullName"
-                        placeholder="Your full name"
-                        autocomplete="name"
-                        required
-                    >
-
+                <div id="selectedInfo" class="selected-info">
+                    <strong>Selected:</strong>
+                    <span id="selectedPackage"></span>
+                    <br>
+                    <span id="selectedAddons" style="color:var(--text-muted);font-size:0.85rem;"></span>
+                    <br>
+                    <span id="selectedEstimate" style="color:var(--neon-green);font-size:0.85rem;"></span>
                 </div>
 
-                <div class="form-group">
+                <form id="mainContactForm" data-type="business" novalidate>
 
-                    <label>
-                        Business / Creator Name
-                        <span>*</span>
-                    </label>
+                    <div class="step-title"><b>1</b> Who are you?</div>
 
-                    <input
-                        type="text"
-                        name="businessName"
-                        placeholder="Your business"
-                        required
-                    >
+                    <fieldset class="types" aria-label="Who are you">
+                        <label class="type-card on" data-t="business">
+                            <input type="radio" name="inquiryType" value="business" checked>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
+                            <strong>New project</strong>
+                            <small>Automation, website or software</small>
+                        </label>
+                        <label class="type-card" data-t="support">
+                            <input type="radio" name="inquiryType" value="support">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13a8 8 0 0 1 16 0M4 13v3a2 2 0 0 0 2 2h1v-6H6a2 2 0 0 0-2 1zm16 0v3a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 1zM15 20h-3"/></svg>
+                            <strong>GLIME client</strong>
+                            <small>Help with my account</small>
+                        </label>
+                        <label class="type-card" data-t="agency">
+                            <input type="radio" name="inquiryType" value="agency">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3M3 13h18"/></svg>
+                            <strong>Agency</strong>
+                            <small>Agency Program member</small>
+                        </label>
+                        <label class="type-card" data-t="partner">
+                            <input type="radio" name="inquiryType" value="partner">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12l3 3 5-6M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>
+                            <strong>Partner</strong>
+                            <small>Referral Partner member</small>
+                        </label>
+                    </fieldset>
 
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Email Address
-                        <span>*</span>
-                    </label>
-
-                    <input
-                        type="email"
-                        name="email"
-                        id="emailInput"
-                        placeholder="name@company.com"
-                        autocomplete="email"
-                        required
-                    >
-
-                    <div
-                        id="verifiedBadge"
-                        class="verified-badge"
-                    >
-                        ✓ Email Verified
+                    <div class="type-note" id="typeNote" role="status">
+                        <i>i</i><span id="typeNoteText"></span>
                     </div>
 
-                </div>
+                    <div class="step-title"><b>2</b> Your details</div>
 
-                <div class="form-group">
+                    <div class="form-group cond c-code code-field" id="codeGroup">
+                        <label for="codeInput"><span id="codeLabel">Agency code</span> <span class="req">*</span></label>
+                        <input type="text" id="codeInput" name="code" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter your code">
+                        <div class="code-hint" id="codeHint"></div>
+                    </div>
 
-                    <label>
-                        Phone Number
-                        <span>*</span>
+                    <div class="row2">
+                        <div class="form-group">
+                            <label for="fullName">Your Full Name <span class="req">*</span></label>
+                            <input type="text" id="fullName" name="fullName" placeholder="Your full name" autocomplete="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="businessName"><span id="bizLabel">Business / Creator Name</span> <span class="req">*</span></label>
+                            <input type="text" id="businessName" name="businessName" placeholder="Your business" required>
+                        </div>
+                    </div>
+
+                    <div class="row2">
+                        <div class="form-group">
+                            <label for="emailInput">Email Address <span class="req">*</span></label>
+                            <input type="email" name="email" id="emailInput" placeholder="name@company.com" autocomplete="email" required>
+                            <div id="verifiedBadge" class="verified-badge">&#10003; Email Verified</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone / WhatsApp <span class="req">*</span></label>
+                            <input type="tel" id="phone" name="phone" placeholder="+91 85049 26242" autocomplete="tel" required>
+                        </div>
+                    </div>
+
+                    <div class="row3">
+                        <div class="form-group">
+                            <label for="city">City <span class="opt">(optional)</span></label>
+                            <input type="text" id="city" name="city" placeholder="Your city" autocomplete="address-level2">
+                        </div>
+                        <div class="form-group">
+                            <label for="state">State <span class="opt">(optional)</span></label>
+                            <input type="text" id="state" name="state" placeholder="Your state" autocomplete="address-level1">
+                        </div>
+                        <div class="form-group">
+                            <label for="country">Country</label>
+                            <input type="text" id="country" name="country" placeholder="Your country" value="India" autocomplete="country-name">
+                        </div>
+                    </div>
+
+                    <div class="step-title" style="margin-top:6px"><b>3</b> What do you need?</div>
+
+                    <div class="row2">
+                        <div class="form-group">
+                            <label for="topic">Topic <span class="req">*</span></label>
+                            <select id="topic" name="topic"></select>
+                        </div>
+                        <div class="form-group cond c-business">
+                            <label for="budget">Budget <span class="opt">(optional)</span></label>
+                            <select id="budget" name="budget">
+                                <option value="">Not sure yet</option>
+                                <option>Under &#8377;25,000</option>
+                                <option>&#8377;25,000 to &#8377;1,00,000</option>
+                                <option>&#8377;1,00,000 and above</option>
+                            </select>
+                        </div>
+                        <div class="form-group cond c-ref">
+                            <label for="refInput"><span id="refLabel">Reference</span> <span class="opt">(optional)</span></label>
+                            <input type="text" id="refInput" name="ref" maxlength="80" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="form-group cond c-prio">
+                        <span class="lbl">How urgent is it?</span>
+                        <div class="prio" id="prioBox">
+                            <label class="on normal"><input type="radio" name="priority" value="Normal" checked> Normal</label>
+                            <label><input type="radio" name="priority" value="Urgent"> Urgent</label>
+                        </div>
+                        <div class="prio-note" id="prioNote">Please use Urgent only when client accounts are down or payments are blocked.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message"><span id="msgLabel">Project Details</span> <span class="req">*</span></label>
+                        <textarea id="message" name="message" rows="5" maxlength="2000" placeholder="Tell us about your project requirements..." required></textarea>
+                        <div class="counter"><span id="msgCount">0</span> / 2000</div>
+                    </div>
+
+                    <div class="row2">
+                        <div class="form-group">
+                            <label for="contactPref">Best way to reach you</label>
+                            <select id="contactPref" name="contactPref">
+                                <option>WhatsApp</option>
+                                <option>Phone call</option>
+                                <option>Email</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactTime">Best time</label>
+                            <select id="contactTime" name="contactTime">
+                                <option>Anytime</option>
+                                <option>Morning (9 am to 12 pm)</option>
+                                <option>Afternoon (12 pm to 4 pm)</option>
+                                <option>Evening (4 pm to 8 pm)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Hidden values received from index.html / packages.html -->
+                    <input type="hidden" name="selectedPackage" id="selectedPackageInput">
+                    <input type="hidden" name="selectedAddons" id="selectedAddonsInput">
+                    <input type="hidden" name="estimatedAmount" id="estimatedAmountInput">
+
+                    <label class="consent">
+                        <input type="checkbox" id="consent">
+                        <span>I agree that GLIME may contact me about this request. See our <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
                     </label>
 
-                    <input
-                        type="tel"
-                        name="phone"
-                        placeholder="+91 85049 26242"
-                        autocomplete="tel"
-                        required
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        City
-                    </label>
-
-                    <input
-                        type="text"
-                        name="city"
-                        placeholder="Your city"
-                        autocomplete="address-level2"
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        State / Province
-                    </label>
-
-                    <input
-                        type="text"
-                        name="state"
-                        placeholder="Your state"
-                        autocomplete="address-level1"
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Country
-                    </label>
-
-                    <input
-                        type="text"
-                        name="country"
-                        placeholder="Your country"
-                        value="India"
-                        autocomplete="country-name"
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Project Details
-                        <span>*</span>
-                    </label>
-
-                    <textarea
-                        name="message"
-                        rows="5"
-                        placeholder="Tell us about your project requirements..."
-                        required
-                    ></textarea>
-
-                </div>
-
-                <!-- Hidden values received from index.html -->
-
-                <input
-                    type="hidden"
-                    name="selectedPackage"
-                    id="selectedPackageInput"
-                >
-
-                <input
-                    type="hidden"
-                    name="selectedAddons"
-                    id="selectedAddonsInput"
-                >
-
-                <input
-                    type="hidden"
-                    name="estimatedAmount"
-                    id="estimatedAmountInput"
-                >
-
-                <button
-                    type="button"
-                    onclick="sendOTP()"
-                    class="btn-primary"
-                    id="sendOtpBtn"
-                    style="
-                        width:100%;
-                        font-size:1.05rem;
-                        padding:15px;
-                    "
-                >
-                    Send Email OTP
-                </button>
-
-            </form>
-
-            <!-- =================================================
-                 OTP VERIFICATION
-            ================================================== -->
-
-            <div id="otpSection">
-
-                <div class="otp-title">
-                    Verify Your Email
-                </div>
-
-                <p class="otp-description">
-                    We've sent a 6-digit verification code to
-                    <strong id="otpEmailDisplay"></strong>.
-                    Enter the code below to verify your email.
-                </p>
-
-                <input
-                    type="text"
-                    id="otpInput"
-                    inputmode="numeric"
-                    maxlength="6"
-                    pattern="[0-9]{6}"
-                    placeholder="000000"
-                    autocomplete="one-time-code"
-                >
-
-                <div class="otp-actions">
-
-                    <button
-                        type="button"
-                        class="secondary-btn"
-                        id="resendBtn"
-                        onclick="sendOTP(true)"
-                    >
-                        Resend OTP
+                    <button type="button" onclick="sendOTP()" class="btn-primary" id="sendOtpBtn" style="width:100%;font-size:1.05rem;padding:15px;">
+                        Send Email OTP
                     </button>
+                    <p class="fine">We verify your email with a one-time code so your message reaches us safely.</p>
 
-                    <button
-                        type="button"
-                        class="btn-primary verify-btn"
-                        id="verifyOtpBtn"
-                        onclick="verifyEmailOTP()"
-                    >
-                        Verify Email
-                    </button>
+                </form>
 
+                <!-- OTP VERIFICATION -->
+                <div id="otpSection">
+                    <div class="otp-title">Verify Your Email</div>
+                    <p class="otp-description">
+                        We've sent a 6-digit verification code to
+                        <strong id="otpEmailDisplay"></strong>.
+                        Enter the code below to verify your email.
+                    </p>
+                    <input type="text" id="otpInput" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" aria-label="6-digit verification code">
+                    <div class="otp-actions">
+                        <button type="button" class="secondary-btn" id="resendBtn" onclick="sendOTP(true)">Resend OTP</button>
+                        <button type="button" class="btn-primary verify-btn" id="verifyOtpBtn" onclick="verifyEmailOTP()">Verify Email</button>
+                    </div>
+                </div>
+
+                <div id="statusMessage" role="status" aria-live="polite"></div>
+
+                <!-- SUCCESS -->
+                <div id="successBox">
+                    <div class="tick">&#10003;</div>
+                    <h2>Message received</h2>
+                    <p>Thank you. Your request is with our team. Keep this reference if you need to follow up.</p>
+                    <div class="refbox"><code id="refCode">GL-000000-0000</code><button type="button" id="copyRef">Copy</button></div>
+                    <ul class="next-list">
+                        <li><b>1</b><span id="nextOne">We read your request and the details you shared.</span></li>
+                        <li><b>2</b><span id="nextTwo">The right team member replies on your preferred channel.</span></li>
+                        <li><b>3</b><span>You get an update until it is resolved.</span></li>
+                    </ul>
                 </div>
 
             </div>
 
-            <div id="statusMessage"></div>
+            <aside class="side" aria-label="Contact information">
+
+                <div class="panel sla">
+                    <span class="dot"></span>
+                    <div>
+                        <small>Usual first reply for this request</small>
+                        <strong id="slaText">Within 24 hours</strong>
+                    </div>
+                </div>
+
+                <div class="panel direct">
+                    <h3>Prefer to talk now?</h3>
+                    <a href="https://wa.me/918504926242?text=Hi%20Glime%20Team!" target="_blank" rel="noopener noreferrer"><span class="ic">WA</span><span>WhatsApp<small>+91 85049 26242</small></span></a>
+                    <a href="tel:+918504926242"><span class="ic">Call</span><span>Phone<small>+91 85049 26242</small></span></a>
+                    <a href="mailto:connect@glime.online"><span class="ic">@</span><span>Email<small>connect@glime.online</small></span></a>
+                </div>
+
+                <div class="panel faq">
+                    <h3>Good to know</h3>
+                    <details>
+                        <summary>Where do I find my Agency code?</summary>
+                        <p>Sign in to your <a href="agency-dashboard.html#profile">Agency dashboard</a> and open Profile. Your Agency code is listed there.</p>
+                    </details>
+                    <details>
+                        <summary>Where do I find my Partner code?</summary>
+                        <p>Open your <a href="partner-dashboard.html">Partner dashboard</a>. Your Partner code is shown with your referral link.</p>
+                    </details>
+                    <details>
+                        <summary>Not an agency or partner yet?</summary>
+                        <p>Learn about the <a href="agency.html">Agency Program</a> or the <a href="partner.html">Partner Program</a> and apply from there.</p>
+                    </details>
+                    <details>
+                        <summary>Why do I need to verify my email?</summary>
+                        <p>It keeps spam out and makes sure our reply reaches the right person.</p>
+                    </details>
+                </div>
+
+            </aside>
 
         </div>
-
     </section>
 
-    <!-- =====================================================
-         FOOTER
-    ====================================================== -->
-
+    <!-- FOOTER -->
     <footer>
 
-        <p style="margin-bottom:8px;">
-            ✉️ connect@glime.online
-        </p>
-
-        <p style="margin-bottom:8px;">
-            📍 Sawai Madhopur, India
-        </p>
-
-        <p>
-            📞 +91 8504926242
-        </p>
+        <p style="margin-bottom:8px;">&#9993;&#65039; connect@glime.online</p>
+        <p style="margin-bottom:8px;">&#128205; Sawai Madhopur, India</p>
+        <p>&#128222; +91 8504926242</p>
 
         <div class="footer-social">
-
-            <a
-                href="https://www.linkedin.com/in/vishal-gouttam-b7834742a"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Glime LinkedIn"
-            >
-                in
-            </a>
-
-            <a
-                href="https://x.com/glime_web"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Glime X"
-            >
-                𝕏
-            </a>
-
+            <a href="https://www.linkedin.com/in/vishal-gouttam-b7834742a" target="_blank" rel="noopener noreferrer" aria-label="Glime LinkedIn">in</a>
+            <a href="https://x.com/glime_web" target="_blank" rel="noopener noreferrer" aria-label="Glime X">&#120143;</a>
         </div>
 
-        <p
-            style="
-                color:#6b7280;
-                font-size:0.8rem;
-                margin-top:15px;
-            "
-        >
-            Udyam Registration:
-            <span>
-                UDYAM-RJ-29-0042695
-            </span>
+        <p style="color:#6b7280;font-size:0.8rem;margin-top:15px;">
+            Udyam Registration: <span>UDYAM-RJ-29-0042695</span>
         </p>
 
-        <p
-            style="
-                margin-top:10px;
-                font-size:0.8rem;
-            "
-        >
-            Designed & Developed by
-            <span>
-                Vishal Gouttam & Team
-            </span>
-            | Glime AI Automation © 2026
+        <p style="margin-top:10px;font-size:0.8rem;">
+            Designed &amp; Developed by <span>Vishal Gouttam &amp; Team</span> | Glime AI Automation &copy; 2026
         </p>
 
     </footer>
-
-    <!-- =====================================================
-         JAVASCRIPT
-    ====================================================== -->
 
     <script>
 
         /* =====================================================
            SUPABASE
         ====================================================== */
+        const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const SUPABASE_URL =
-            'https://ufoulgbiqgjriwapuopc.supabase.co';
+        /* =====================================================
+           REQUEST TYPES  (edit the reply times and topics here)
+        ====================================================== */
+        const TYPES = {
+            business: {
+                tag: 'NEW INQUIRY',
+                label: 'New project inquiry',
+                sla: 'Within 24 hours',
+                note: 'Tell us what you want to build. Our team will suggest the right package and next steps.',
+                biz: 'Business / Creator Name',
+                msg: 'Project Details',
+                msgPh: 'Tell us about your project requirements...',
+                topics: ['WhatsApp automation', 'Instagram automation', 'Website or landing page', 'Custom software', 'AI voice agent', 'Something else']
+            },
+            support: {
+                tag: 'CLIENT SUPPORT',
+                label: 'GLIME client support',
+                sla: 'Within 12 working hours',
+                note: 'For existing GLIME clients. Add your registered email or client ID below so we can open your account faster.',
+                biz: 'Business Name',
+                msg: 'What is the problem?',
+                msgPh: 'Describe what happened, what you expected, and any error message you saw...',
+                refLabel: 'Registered email or Client ID',
+                refPh: 'e.g. the email you log in with',
+                topics: ['WhatsApp connection', 'Instagram connection', 'AI replies or Knowledge Base', 'Billing or plan', 'Leads or orders', 'Account or login', 'Something else'],
+                prio: true
+            },
+            agency: {
+                tag: 'AGENCY',
+                label: 'Agency Program support',
+                sla: 'Within 6 working hours',
+                note: 'Enter your Agency code so we can see your agency, wallet and clients right away. You can find it in Agency dashboard, Profile.',
+                biz: 'Agency Name',
+                msg: 'How can we help?',
+                msgPh: 'Describe the problem. Mention the client name or ID, amount or date if it helps...',
+                code: true,
+                codeLabel: 'Agency code',
+                codePh: 'Enter your agency code',
+                refLabel: 'Client ID (if it is about a client)',
+                refPh: 'Client ID or name',
+                topics: ['Wallet or top-up', 'Add or set up a client', 'Plan, pricing or margin', 'Billing or GST invoice', 'Application or documents', 'Team access', 'Technical issue', 'Something else'],
+                prio: true
+            },
+            partner: {
+                tag: 'PARTNER',
+                label: 'Partner Program support',
+                sla: 'Within 24 hours',
+                note: 'Enter your Partner code so we can check your referrals and earnings. It is shown in your Partner dashboard.',
+                biz: 'Name or Company',
+                msg: 'How can we help?',
+                msgPh: 'Describe the problem. Mention the referred customer, date or payout if it helps...',
+                code: true,
+                codeLabel: 'Partner code',
+                codePh: 'Enter your partner code',
+                refLabel: 'Referred customer email (if any)',
+                refPh: 'Customer email or name',
+                topics: ['Commission or payout', 'Referral not tracked', 'Referral link or code', 'Tier or rewards', 'Dashboard issue', 'Something else']
+            }
+        };
 
-        const SUPABASE_KEY =
-            'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-
-        const supabaseClient =
-            window.supabase.createClient(
-                SUPABASE_URL,
-                SUPABASE_KEY
-            );
-
+        const CODE_RX = /^[A-Z0-9-]{4,20}$/;
 
         /* =====================================================
            STATE
         ====================================================== */
-
         let emailVerified = false;
-
         let verifiedEmail = '';
-
         let otpSending = false;
-
         let otpVerifying = false;
+        let currentType = 'business';
+        let referenceId = '';
+        const codeCache = {};
 
-
-        /* =====================================================
-           MOBILE NAVIGATION
-        ====================================================== */
-
-        function toggleMenu() {
-
-            const nav =
-                document.getElementById('navLinks');
-
-            nav.classList.toggle('active');
-
-        }
-
-        document
-            .querySelectorAll('.nav-links a')
-            .forEach(function(link) {
-
-                link.addEventListener(
-                    'click',
-                    function() {
-
-                        document
-                            .getElementById('navLinks')
-                            .classList.remove('active');
-
-                    }
-                );
-
-            });
-
+        const $ = function(id) { return document.getElementById(id); };
+        const form = $('mainContactForm');
 
         /* =====================================================
            FADE ANIMATION
         ====================================================== */
-
-        const observer =
-            new IntersectionObserver(
-                function(entries) {
-
-                    entries.forEach(
-                        function(entry) {
-
-                            if (entry.isIntersecting) {
-
-                                entry.target.classList.add(
-                                    'visible'
-                                );
-
-                            }
-
-                        }
-                    );
-
-                },
-                {
-                    threshold: 0.1
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
                 }
-            );
-
-        document
-            .querySelectorAll('.fade-in')
-            .forEach(function(element) {
-
-                observer.observe(element);
-
             });
+        }, { threshold: 0.1 });
 
+        document.querySelectorAll('.fade-in').forEach(function(element) {
+            observer.observe(element);
+        });
 
         /* =====================================================
-           URL PACKAGE / ADD-ON DATA
+           REQUEST TYPE SWITCHING
         ====================================================== */
+        function setType(type, keepFields) {
+            if (!TYPES[type]) { type = 'business'; }
+            currentType = type;
+            const t = TYPES[type];
 
+            form.setAttribute('data-type', type);
+            document.querySelectorAll('.type-card').forEach(function(card) {
+                const on = card.getAttribute('data-t') === type;
+                card.classList.toggle('on', on);
+                card.querySelector('input').checked = on;
+            });
+
+            $('typeNoteText').textContent = t.note;
+            $('slaText').textContent = t.sla;
+            $('bizLabel').textContent = t.biz;
+            $('msgLabel').textContent = t.msg;
+            $('message').placeholder = t.msgPh;
+
+            if (t.code) {
+                $('codeLabel').textContent = t.codeLabel;
+                $('codeInput').placeholder = t.codePh;
+            }
+            if (t.refLabel) {
+                $('refLabel').textContent = t.refLabel;
+                $('refInput').placeholder = t.refPh || '';
+            }
+
+            const topic = $('topic');
+            const previous = keepFields ? topic.value : '';
+            topic.innerHTML = '<option value="">Choose a topic</option>' +
+                t.topics.map(function(x) {
+                    return '<option>' + x.replace(/&/g, '&amp;') + '</option>';
+                }).join('');
+            if (previous && t.topics.indexOf(previous) > -1) { topic.value = previous; }
+
+            setCodeHint('', '');
+            if (!t.prio) { setPriority('Normal'); }
+        }
+
+        document.querySelectorAll('.type-card input').forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                setType(radio.value, false);
+                saveDraft();
+            });
+        });
+
+        /* =====================================================
+           PRIORITY
+        ====================================================== */
+        function setPriority(value) {
+            document.querySelectorAll('#prioBox label').forEach(function(label) {
+                const input = label.querySelector('input');
+                input.checked = input.value === value;
+                label.classList.toggle('on', input.checked);
+                label.classList.toggle('normal', input.value === 'Normal');
+            });
+            $('prioNote').style.display = value === 'Urgent' ? 'block' : 'none';
+        }
+
+        document.querySelectorAll('#prioBox input').forEach(function(input) {
+            input.addEventListener('change', function() { setPriority(input.value); });
+        });
+
+        /* =====================================================
+           CODE CHECK
+        ====================================================== */
+        function setCodeHint(text, kind) {
+            const hint = $('codeHint');
+            hint.textContent = text;
+            hint.className = 'code-hint' + (kind ? ' ' + kind : '');
+        }
+
+        function normalizeCode(value) {
+            return String(value || '').toUpperCase().replace(/\s+/g, '').trim();
+        }
+
+        /*
+         * Returns true (found), false (not found) or null (could not check).
+         * Uses the optional RPC contact_verify_code(p_kind, p_code).
+         * If the RPC is not live yet, the code is accepted by format
+         * and our team verifies it from the message.
+         */
+        async function checkCode(type, code) {
+            const key = type + ':' + code;
+            if (key in codeCache) { return codeCache[key]; }
+            try {
+                const res = await supabaseClient.rpc('contact_verify_code', { p_kind: type, p_code: code });
+                if (res.error) { throw res.error; }
+                const d = res.data;
+                const ok = (d === true || (d && d.valid === true)) ? true : (d === false || (d && d.valid === false)) ? false : null;
+                codeCache[key] = ok;
+                return ok;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function liveCodeCheck() {
+            const t = TYPES[currentType];
+            if (!t.code) { return null; }
+            const code = normalizeCode($('codeInput').value);
+            $('codeInput').value = code;
+            if (!code) { setCodeHint('', ''); return null; }
+            if (!CODE_RX.test(code)) {
+                setCodeHint('A code has only letters, numbers and dashes (4 to 20 characters).', 'bad');
+                return false;
+            }
+            const ok = await checkCode(currentType, code);
+            if (ok === true) { setCodeHint('✓ Code found. Thank you.', 'ok'); }
+            else if (ok === false) { setCodeHint('We could not find this ' + t.codeLabel.toLowerCase() + '. Please check it in your dashboard.', 'bad'); }
+            else { setCodeHint('Code noted. Our team will confirm it when they reply.', ''); }
+            return ok;
+        }
+
+        $('codeInput').addEventListener('blur', liveCodeCheck);
+        $('codeInput').addEventListener('input', function() {
+            this.value = this.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+        });
+
+        /* =====================================================
+           MESSAGE COUNTER
+        ====================================================== */
+        $('message').addEventListener('input', function() {
+            $('msgCount').textContent = this.value.length;
+        });
+
+        /* =====================================================
+           URL PACKAGE / ADD-ON DATA  (from packages / index)
+        ====================================================== */
         function loadSelectedDetails() {
-
-            const params =
-                new URLSearchParams(
-                    window.location.search
-                );
-
-            const packageName =
-                params.get('package') || '';
-
-            const addons =
-                params.get('addons') || '';
-
-            const estimate =
-                params.get('estimate') || '';
-
-            const selectedInfo =
-                document.getElementById(
-                    'selectedInfo'
-                );
-
-            const selectedPackage =
-                document.getElementById(
-                    'selectedPackage'
-                );
-
-            const selectedAddons =
-                document.getElementById(
-                    'selectedAddons'
-                );
-
-            const selectedEstimate =
-                document.getElementById(
-                    'selectedEstimate'
-                );
-
-            const packageInput =
-                document.getElementById(
-                    'selectedPackageInput'
-                );
-
-            const addonsInput =
-                document.getElementById(
-                    'selectedAddonsInput'
-                );
-
-            const estimateInput =
-                document.getElementById(
-                    'estimatedAmountInput'
-                );
+            const params = new URLSearchParams(window.location.search);
+            const packageName = params.get('package') || '';
+            const addons = params.get('addons') || '';
+            const estimate = params.get('estimate') || '';
 
             if (packageName) {
-
-                selectedInfo.style.display =
-                    'block';
-
-                selectedPackage.textContent =
-                    packageName;
-
-                packageInput.value =
-                    packageName;
-
+                $('selectedInfo').style.display = 'block';
+                $('selectedPackage').textContent = packageName;
+                $('selectedPackageInput').value = packageName;
             }
 
             if (addons) {
-
-                selectedInfo.style.display =
-                    'block';
-
-                selectedAddons.textContent =
-                    'Add-ons: ' + addons;
-
-                addonsInput.value =
-                    addons;
-
+                $('selectedInfo').style.display = 'block';
+                $('selectedAddons').textContent = 'Add-ons: ' + addons;
+                $('selectedAddonsInput').value = addons;
             }
 
             if (estimate) {
-
-                selectedInfo.style.display =
-                    'block';
-
-                selectedEstimate.textContent =
-                    'Estimated amount: ₹' +
-                    Number(estimate)
-                        .toLocaleString('en-IN');
-
-                estimateInput.value =
-                    estimate;
-
+                $('selectedInfo').style.display = 'block';
+                $('selectedEstimate').textContent = 'Estimated amount: ₹' + Number(estimate).toLocaleString('en-IN');
+                $('estimatedAmountInput').value = estimate;
             }
-
         }
-
 
         /* =====================================================
            STATUS MESSAGE
         ====================================================== */
-
-        function showStatus(
-            message,
-            type
-        ) {
-
-            const element =
-                document.getElementById(
-                    'statusMessage'
-                );
-
-            element.style.display =
-                'block';
-
-            element.textContent =
-                message;
+        function showStatus(message, type) {
+            const element = $('statusMessage');
+            element.style.display = 'block';
+            element.textContent = message;
 
             if (type === 'success') {
-
-                element.style.color =
-                    'var(--neon-green)';
-
-                element.style.background =
-                    'rgba(0,255,136,0.08)';
-
-                element.style.border =
-                    '1px solid rgba(0,255,136,0.25)';
-
+                element.style.color = 'var(--neon-green)';
+                element.style.background = 'rgba(0,255,136,0.08)';
+                element.style.border = '1px solid rgba(0,255,136,0.25)';
             } else if (type === 'error') {
-
-                element.style.color =
-                    '#ff6b7a';
-
-                element.style.background =
-                    'rgba(255,71,87,0.08)';
-
-                element.style.border =
-                    '1px solid rgba(255,71,87,0.25)';
-
+                element.style.color = '#ff6b7a';
+                element.style.background = 'rgba(255,71,87,0.08)';
+                element.style.border = '1px solid rgba(255,71,87,0.25)';
             } else {
-
-                element.style.color =
-                    'var(--cyan-blue)';
-
-                element.style.background =
-                    'rgba(0,240,255,0.08)';
-
-                element.style.border =
-                    '1px solid rgba(0,240,255,0.25)';
-
+                element.style.color = 'var(--cyan-blue)';
+                element.style.background = 'rgba(0,240,255,0.08)';
+                element.style.border = '1px solid rgba(0,240,255,0.25)';
             }
-
         }
-
 
         /* =====================================================
            FORM DATA
         ====================================================== */
-
-        function getFormData() {
-
-            const form =
-                document.getElementById(
-                    'mainContactForm'
-                );
-
-            const formData =
-                new FormData(form);
-
-            return {
-
-                fullName:
-                    formData.get('fullName').trim(),
-
-                businessName:
-                    formData.get('businessName').trim(),
-
-                email:
-                    formData.get('email').trim().toLowerCase(),
-
-                phone:
-                    formData.get('phone').trim(),
-
-                city:
-                    formData.get('city').trim(),
-
-                state:
-                    formData.get('state').trim(),
-
-                country:
-                    formData.get('country').trim(),
-
-                message:
-                    formData.get('message').trim(),
-
-                selectedPackage:
-                    formData.get('selectedPackage').trim(),
-
-                selectedAddons:
-                    formData.get('selectedAddons').trim(),
-
-                estimatedAmount:
-                    formData.get('estimatedAmount').trim()
-
-            };
-
+        function val(name) {
+            const el = form.elements[name];
+            return el && typeof el.value === 'string' ? el.value.trim() : '';
         }
 
+        function getFormData() {
+            const t = TYPES[currentType];
+            return {
+                inquiryType: currentType,
+                fullName: val('fullName'),
+                businessName: val('businessName'),
+                email: val('email').toLowerCase(),
+                phone: val('phone'),
+                city: val('city'),
+                state: val('state'),
+                country: val('country'),
+                message: val('message'),
+                topic: val('topic'),
+                budget: currentType === 'business' ? val('budget') : '',
+                code: t.code ? normalizeCode(val('code')) : '',
+                ref: t.refLabel ? val('ref') : '',
+                priority: t.prio ? (form.querySelector('input[name="priority"]:checked') || {}).value || 'Normal' : 'Normal',
+                contactPref: val('contactPref'),
+                contactTime: val('contactTime'),
+                selectedPackage: val('selectedPackage'),
+                selectedAddons: val('selectedAddons'),
+                estimatedAmount: val('estimatedAmount')
+            };
+        }
 
         /* =====================================================
            VALIDATE BASIC FORM
         ====================================================== */
-
         function validateForm() {
+            const data = getFormData();
+            const t = TYPES[currentType];
 
-            const data =
-                getFormData();
+            if (t.code) {
+                if (!data.code) {
+                    showStatus('Please enter your ' + t.codeLabel.toLowerCase() + '. It helps us reach your real problem faster.', 'error');
+                    $('codeInput').focus();
+                    return false;
+                }
+                if (!CODE_RX.test(data.code)) {
+                    showStatus('Your ' + t.codeLabel.toLowerCase() + ' looks wrong. Use only letters, numbers and dashes.', 'error');
+                    $('codeInput').focus();
+                    return false;
+                }
+            }
 
             if (!data.fullName) {
-
-                showStatus(
-                    'Please enter your full name.',
-                    'error'
-                );
-
+                showStatus('Please enter your full name.', 'error');
                 return false;
-
             }
 
             if (!data.businessName) {
-
-                showStatus(
-                    'Please enter your business or creator name.',
-                    'error'
-                );
-
+                showStatus('Please enter your ' + t.biz.toLowerCase() + '.', 'error');
                 return false;
-
             }
 
-            if (!data.email) {
-
-                showStatus(
-                    'Please enter your email address.',
-                    'error'
-                );
-
+            if (!data.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email)) {
+                showStatus('Please enter a valid email address.', 'error');
                 return false;
-
             }
 
-            if (!data.phone) {
-
-                showStatus(
-                    'Please enter your phone number.',
-                    'error'
-                );
-
+            if (data.phone.replace(/\D/g, '').length < 8) {
+                showStatus('Please enter a valid phone number.', 'error');
                 return false;
-
             }
 
-            if (!data.message) {
-
-                showStatus(
-                    'Please describe your project requirement.',
-                    'error'
-                );
-
+            if (!data.topic) {
+                showStatus('Please choose a topic.', 'error');
+                $('topic').focus();
                 return false;
+            }
 
+            if (data.message.length < 10) {
+                showStatus('Please describe your request in a few words.', 'error');
+                return false;
+            }
+
+            if (!$('consent').checked) {
+                showStatus('Please tick the box to let us contact you about this request.', 'error');
+                return false;
             }
 
             return true;
-
         }
 
+        /* =====================================================
+           DRAFT (saved in this browser, never sent anywhere)
+        ====================================================== */
+        const DRAFT_KEY = 'glime_contact_draft';
+        let draftTimer = null;
+
+        function saveDraft() {
+            clearTimeout(draftTimer);
+            draftTimer = setTimeout(function() {
+                if (emailVerified) { return; }
+                try {
+                    const d = getFormData();
+                    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+                        inquiryType: d.inquiryType, fullName: d.fullName, businessName: d.businessName,
+                        email: d.email, phone: d.phone, city: d.city, state: d.state, country: d.country,
+                        topic: d.topic, code: d.code, ref: d.ref, message: d.message
+                    }));
+                } catch (e) {}
+            }, 400);
+        }
+
+        function restoreDraft() {
+            try {
+                const raw = localStorage.getItem(DRAFT_KEY);
+                if (!raw) { return; }
+                const d = JSON.parse(raw);
+                ['fullName', 'businessName', 'email', 'phone', 'city', 'state', 'country', 'message'].forEach(function(name) {
+                    if (d[name] && form.elements[name]) { form.elements[name].value = d[name]; }
+                });
+                if (d.code) { $('codeInput').value = d.code; }
+                if (d.ref) { $('refInput').value = d.ref; }
+                $('msgCount').textContent = $('message').value.length;
+                return d;
+            } catch (e) {}
+        }
+
+        form.addEventListener('input', saveDraft);
+        form.addEventListener('change', saveDraft);
+
+        /* =====================================================
+           REFERENCE + MESSAGE TEXT
+        ====================================================== */
+        function makeReference() {
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(2);
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let tail = '';
+            const bytes = new Uint8Array(4);
+            (window.crypto || window.msCrypto).getRandomValues(bytes);
+            bytes.forEach(function(b) { tail += chars[b % chars.length]; });
+            return 'GL-' + yy + mm + dd + '-' + tail;
+        }
+
+        function buildMessage(data, ref) {
+            const t = TYPES[data.inquiryType];
+            const head = ['[' + t.tag + ']'];
+            if (data.code) { head.push(t.codeLabel + ': ' + data.code); }
+            head.push('Topic: ' + data.topic);
+            if (t.prio) { head.push('Priority: ' + data.priority); }
+            if (data.ref) { head.push((t.refLabel || 'Ref').replace(/\s*\(.*\)$/, '') + ': ' + data.ref); }
+            if (data.budget) { head.push('Budget: ' + data.budget); }
+            head.push('Ref: ' + ref);
+            return head.join(' | ') + '\nPrefers: ' + data.contactPref + ', ' + data.contactTime + '\n\n' + data.message;
+        }
 
         /* =====================================================
            SEND EMAIL OTP
         ====================================================== */
+        async function sendOTP(isResend = false) {
+            if (otpSending) { return; }
+            if (!validateForm()) { return; }
 
-        async function sendOTP(
-            isResend = false
-        ) {
-
-            if (otpSending) {
-                return;
-            }
-
-            if (!validateForm()) {
-                return;
-            }
-
-            const data =
-                getFormData();
-
-            const emailInput =
-                document.getElementById(
-                    'emailInput'
-                );
-
-            const sendButton =
-                document.getElementById(
-                    'sendOtpBtn'
-                );
-
-            const otpSection =
-                document.getElementById(
-                    'otpSection'
-                );
-
-            const otpEmailDisplay =
-                document.getElementById(
-                    'otpEmailDisplay'
-                );
+            const data = getFormData();
+            const sendButton = $('sendOtpBtn');
 
             otpSending = true;
-
-            sendButton.disabled =
-                true;
-
-            sendButton.textContent =
-                isResend
-                    ? 'Resending OTP...'
-                    : 'Sending OTP...';
+            sendButton.disabled = true;
+            sendButton.textContent = isResend ? 'Resending OTP...' : 'Sending OTP...';
 
             try {
+                /* Agencies and partners: stop early if the code does not exist. */
+                if (data.code) {
+                    const ok = await liveCodeCheck();
+                    if (ok === false) {
+                        showStatus('We could not find that ' + TYPES[currentType].codeLabel.toLowerCase() + '. Please check it in your dashboard and try again.', 'error');
+                        return;
+                    }
+                }
 
                 /*
                  * Supabase Email OTP
-                 *
-                 * IMPORTANT:
-                 * Magic Link / OTP email template must contain
-                 * {{ .Token }} for a numeric OTP.
+                 * Magic Link / OTP email template must contain {{ .Token }}
+                 * for a numeric OTP.
                  */
+                const { error } = await supabaseClient.auth.signInWithOtp({
+                    email: data.email,
+                    options: { shouldCreateUser: true }
+                });
 
-                const {
-                    error
-                } =
-                    await supabaseClient.auth.signInWithOtp({
-
-                        email: data.email,
-
-                        options: {
-
-                            shouldCreateUser: true
-
-                        }
-
-                    });
-
-                if (error) {
-                    throw error;
-                }
+                if (error) { throw error; }
 
                 /*
                  * Save the form temporarily in this browser.
                  * It is submitted only after successful OTP verification.
                  */
+                localStorage.setItem('glime_pending_contact', JSON.stringify(data));
 
-                localStorage.setItem(
-                    'glime_pending_contact',
-                    JSON.stringify(data)
-                );
+                $('emailInput').disabled = true;
+                $('otpEmailDisplay').textContent = data.email;
+                $('otpSection').style.display = 'block';
 
-                emailInput.disabled =
-                    true;
-
-                otpEmailDisplay.textContent =
-                    data.email;
-
-                otpSection.style.display =
-                    'block';
-
-                showStatus(
-                    'OTP sent successfully. Please check your email.',
-                    'success'
-                );
-
-                document
-                    .getElementById('otpInput')
-                    .focus();
+                showStatus('OTP sent successfully. Please check your email.', 'success');
+                $('otpInput').focus();
 
             } catch (error) {
-
-                console.error(
-                    'OTP send error:',
-                    error
-                );
-
-                showStatus(
-                    'Unable to send OTP: ' +
-                    error.message,
-                    'error'
-                );
-
+                console.error('OTP send error:', error);
+                showStatus('Unable to send OTP: ' + error.message, 'error');
             } finally {
-
                 otpSending = false;
-
-                sendButton.disabled =
-                    false;
-
-                sendButton.textContent =
-                    'Send Email OTP';
-
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send Email OTP';
             }
-
         }
-
 
         /* =====================================================
            VERIFY EMAIL OTP
         ====================================================== */
-
         async function verifyEmailOTP() {
+            if (otpVerifying) { return; }
 
-            if (otpVerifying) {
-                return;
-            }
-
-            const email =
-                document
-                    .getElementById('emailInput')
-                    .value
-                    .trim()
-                    .toLowerCase();
-
-            const token =
-                document
-                    .getElementById('otpInput')
-                    .value
-                    .trim();
-
-            const verifyButton =
-                document.getElementById(
-                    'verifyOtpBtn'
-                );
+            const email = $('emailInput').value.trim().toLowerCase();
+            const token = $('otpInput').value.trim();
+            const verifyButton = $('verifyOtpBtn');
 
             if (!email) {
-
-                showStatus(
-                    'Email address is missing.',
-                    'error'
-                );
-
+                showStatus('Email address is missing.', 'error');
                 return;
-
             }
 
             if (!/^\d{6}$/.test(token)) {
-
-                showStatus(
-                    'Please enter the 6-digit OTP from your email.',
-                    'error'
-                );
-
+                showStatus('Please enter the 6-digit OTP from your email.', 'error');
                 return;
-
             }
 
             otpVerifying = true;
-
-            verifyButton.disabled =
-                true;
-
-            verifyButton.textContent =
-                'Verifying...';
+            verifyButton.disabled = true;
+            verifyButton.textContent = 'Verifying...';
 
             try {
+                const { data: authData, error } = await supabaseClient.auth.verifyOtp({
+                    email: email,
+                    token: token,
+                    type: 'email'
+                });
 
-                /*
-                 * Supabase verifies the six-digit email OTP.
-                 */
-
-                const {
-                    data: authData,
-                    error
-                } =
-                    await supabaseClient.auth.verifyOtp({
-
-                        email: email,
-
-                        token: token,
-
-                        type: 'email'
-
-                    });
-
-                if (error) {
-                    throw error;
-                }
+                if (error) { throw error; }
 
                 if (!authData || !authData.user) {
-
-                    throw new Error(
-                        'Email verification did not return a valid user.'
-                    );
-
+                    throw new Error('Email verification did not return a valid user.');
                 }
 
-                emailVerified =
-                    true;
+                emailVerified = true;
+                verifiedEmail = email;
 
-                verifiedEmail =
-                    email;
+                $('verifiedBadge').style.display = 'block';
+                $('otpInput').disabled = true;
+                verifyButton.textContent = 'Email Verified ✓';
+                verifyButton.style.background = 'linear-gradient(90deg,#00ff88,#00ff88)';
 
-                document
-                    .getElementById(
-                        'verifiedBadge'
-                    )
-                    .style.display =
-                    'block';
-
-                document
-                    .getElementById(
-                        'otpInput'
-                    )
-                    .disabled =
-                    true;
-
-                verifyButton.textContent =
-                    'Email Verified ✓';
-
-                verifyButton.style.background =
-                    'linear-gradient(90deg,#00ff88,#00ff88)';
-
-                showStatus(
-                    'Email verified successfully. Submitting your inquiry...',
-                    'success'
-                );
+                showStatus('Email verified successfully. Submitting your request...', 'success');
 
                 await submitVerifiedLead();
 
             } catch (error) {
-
-                console.error(
-                    'OTP verification error:',
-                    error
-                );
-
-                showStatus(
-                    'Verification failed: ' +
-                    error.message,
-                    'error'
-                );
-
-                verifyButton.disabled =
-                    false;
-
-                verifyButton.textContent =
-                    'Verify Email';
-
+                console.error('OTP verification error:', error);
+                showStatus('Verification failed: ' + error.message, 'error');
+                verifyButton.disabled = false;
+                verifyButton.textContent = 'Verify Email';
             } finally {
-
                 otpVerifying = false;
-
             }
-
         }
-
 
         /* =====================================================
            SUBMIT VERIFIED LEAD
         ====================================================== */
-
         async function submitVerifiedLead() {
-
-            const savedData =
-                localStorage.getItem(
-                    'glime_pending_contact'
-                );
+            const savedData = localStorage.getItem('glime_pending_contact');
 
             if (!savedData) {
-
-                throw new Error(
-                    'Your form session has expired. Please fill the form again.'
-                );
-
+                throw new Error('Your form session has expired. Please fill the form again.');
             }
 
-            const data =
-                JSON.parse(savedData);
+            const data = JSON.parse(savedData);
 
-            if (
-                !emailVerified ||
-                data.email !== verifiedEmail
-            ) {
-
-                throw new Error(
-                    'Email verification is required before submitting the inquiry.'
-                );
-
+            if (!emailVerified || data.email !== verifiedEmail) {
+                throw new Error('Email verification is required before submitting the inquiry.');
             }
+
+            const t = TYPES[data.inquiryType] || TYPES.business;
+            referenceId = makeReference();
 
             /*
-             * Keep project name readable for the existing
-             * dashboard/admin system.
+             * Existing admin pages read selected_package, so for agency,
+             * partner and support requests we show the request type there.
+             * The full details (code, topic, priority) are also written at
+             * the top of the message, so nothing is lost even before the
+             * extra columns exist in contact_leads.
              */
-
-            let projectName =
-                data.selectedPackage ||
-                'Custom Project / General Inquiry';
-
-            if (data.selectedAddons) {
-
-                projectName +=
-                    ' | Add-ons: ' +
-                    data.selectedAddons;
-
-            }
-
-            /*
-             * Insert into the existing client_data table.
-             *
-             * Existing admin/dashboard pages already read:
-             * email
-             * project_name
-             * payment_status
-             *
-             * Therefore payment_status is explicitly marked as
-             * a non-payment lead state.
-             */
-
-            const {
-    error
-} =
-    await supabaseClient
-        .from('contact_leads')
-        .insert([
-            {
+            const legacyRow = {
                 full_name: data.fullName,
                 business_name: data.businessName,
                 email: data.email,
@@ -1694,118 +1766,113 @@
                 city: data.city || null,
                 state: data.state || null,
                 country: data.country || null,
-                message: data.message,
-                selected_package: data.selectedPackage || null,
+                message: buildMessage(data, referenceId),
+                selected_package: data.selectedPackage || (data.inquiryType === 'business' ? null : t.label),
                 selected_addons: data.selectedAddons || null,
                 estimated_amount: data.estimatedAmount || null,
                 status: 'New'
+            };
+
+            /* Structured columns (see CONTACT_BACKEND_SPEC.md). */
+            const richRow = Object.assign({}, legacyRow, {
+                inquiry_type: data.inquiryType,
+                support_code: data.code || null,
+                topic: data.topic,
+                priority: data.priority,
+                client_ref: data.ref || null,
+                budget: data.budget || null,
+                contact_pref: data.contactPref + ', ' + data.contactTime,
+                reference_id: referenceId
+            });
+
+            let result = await supabaseClient.from('contact_leads').insert([richRow]);
+
+            if (result.error) {
+                const m = String(result.error.message || '');
+                const missingColumn = result.error.code === 'PGRST204' || result.error.code === '42703' || /column/i.test(m);
+                if (missingColumn) {
+                    result = await supabaseClient.from('contact_leads').insert([legacyRow]);
+                }
             }
-        ]);
 
-            if (error) {
-                throw error;
-            }
+            if (result.error) { throw result.error; }
 
-            /*
-             * Save useful details locally for the next page/session.
-             * The actual lead record is stored in Supabase.
-             */
+            localStorage.setItem('glime_verified_email', data.email);
+            localStorage.removeItem('glime_pending_contact');
+            try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
 
-            localStorage.setItem(
-                'glime_verified_email',
-                data.email
-            );
-
-            localStorage.removeItem(
-                'glime_pending_contact'
-            );
-
-            /*
-             * Final success state.
-             */
-
-            document
-                .getElementById(
-                    'mainContactForm'
-                )
-                .querySelectorAll('input, textarea, button')
-                .forEach(function(element) {
-
-                    element.disabled =
-                        true;
-
-                });
-
-            document
-                .getElementById(
-                    'otpSection'
-                )
-                .style.display =
-                'none';
-
-            showStatus(
-                '✓ Email verified and your inquiry has been submitted successfully. Our team will contact you soon.',
-                'success'
-            );
-
+            showSuccess(data.inquiryType);
         }
 
+        function showSuccess(type) {
+            form.style.display = 'none';
+            $('otpSection').style.display = 'none';
+            $('statusMessage').style.display = 'none';
+            $('selectedInfo').style.display = 'none';
+            document.querySelector('.sla').style.display = 'none';
+            $('refCode').textContent = referenceId;
+
+            const t = TYPES[type];
+            $('nextOne').textContent = type === 'agency' || type === 'partner'
+                ? 'We open your ' + t.codeLabel.toLowerCase() + ' record along with your message.'
+                : 'We read your request and the details you shared.';
+            $('nextTwo').textContent = 'The right team member replies ' + t.sla.toLowerCase() + ' on your preferred channel.';
+
+            $('successBox').style.display = 'block';
+            $('successBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        $('copyRef').addEventListener('click', function() {
+            const btn = this;
+            const done = function() { btn.textContent = 'Copied'; setTimeout(function() { btn.textContent = 'Copy'; }, 1500); };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(referenceId).then(done, function() {});
+            }
+        });
 
         /* =====================================================
            OTP INPUT - ONLY NUMBERS
         ====================================================== */
-
-        document
-            .getElementById('otpInput')
-            .addEventListener(
-                'input',
-                function() {
-
-                    this.value =
-                        this.value
-                            .replace(/\D/g, '')
-                            .slice(0, 6);
-
-                }
-            );
-
+        $('otpInput').addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        });
 
         /* =====================================================
            ENTER KEY TO VERIFY OTP
         ====================================================== */
-
-        document
-            .getElementById('otpInput')
-            .addEventListener(
-                'keydown',
-                function(event) {
-
-                    if (
-                        event.key === 'Enter'
-                    ) {
-
-                        event.preventDefault();
-
-                        verifyEmailOTP();
-
-                    }
-
-                }
-            );
-
+        $('otpInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                verifyEmailOTP();
+            }
+        });
 
         /* =====================================================
-           INITIALIZE
+           INITIALIZE  (?type=agency&code=XXXX&topic=... or #agency)
         ====================================================== */
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSelectedDetails();
 
-        document.addEventListener(
-            'DOMContentLoaded',
-            function() {
+            const params = new URLSearchParams(window.location.search);
+            const hash = window.location.hash.replace('#', '');
+            const fromUrl = params.get('type') || (TYPES[hash] ? hash : '');
 
-                loadSelectedDetails();
+            const draft = restoreDraft();
+            const start = TYPES[fromUrl] ? fromUrl : (draft && TYPES[draft.inquiryType] ? draft.inquiryType : 'business');
 
+            setType(start, false);
+
+            if (draft && draft.topic && TYPES[start].topics.indexOf(draft.topic) > -1 && start === draft.inquiryType) {
+                $('topic').value = draft.topic;
             }
-        );
+            if (params.get('topic') && TYPES[start].topics.indexOf(params.get('topic')) > -1) {
+                $('topic').value = params.get('topic');
+            }
+            if (params.get('code')) {
+                $('codeInput').value = normalizeCode(params.get('code'));
+            }
+            if ($('codeInput').value && TYPES[start].code) { liveCodeCheck(); }
+        });
 
     </script>
 
