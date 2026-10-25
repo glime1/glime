@@ -1,307 +1,124 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="809" height="809" viewBox="0 0 1080 1080" xml:space="preserve">
-<desc>Created with Fabric.js 6.5.3</desc>
+<desc>GLIME logo. The G draws itself once, then a pulse of light keeps travelling through the nodes, like a customer message moving through the GLIME system.</desc>
 <defs>
+<linearGradient id="gl-sheen" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0" gradientTransform="translate(-1.3 0)">
+  <stop offset="0" stop-color="#0b8f8c"/>
+  <stop offset="0.42" stop-color="#0b8f8c"/>
+  <stop offset="0.5" stop-color="#7dffe0"/>
+  <stop offset="0.58" stop-color="#0b8f8c"/>
+  <stop offset="1" stop-color="#0b8f8c"/>
+  <animateTransform attributeName="gradientTransform" type="translate" values="-1.3 0;1.3 0;1.3 0" keyTimes="0;0.22;1" dur="6s" begin="2.6s" repeatCount="indefinite"/>
+</linearGradient>
 <style>
-/* GLIME logo - 5 different premium animations, one every 5 seconds (25s loop).
-   0-5s   1 Classic draw   : G draws itself, nodes pop bottom to top, wordmark rises
-   5-10s  2 Reverse draw   : G draws from the opposite end, nodes ease in, wordmark fades up
-   10-15s 3 Cascade drop   : strokes draw fast, nodes drop in from above, wordmark zooms softly in
-   15-20s 4 Soft bloom     : everything blooms in with a gentle fade, nodes pulse once
-   20-25s 5 Draw and erase : G draws, rests, then erases itself along the same path
-   Each scene ends with a gentle fade-out so the next one starts clean. */
+/* GLIME logo animation
+   Intro (plays once, about 2 seconds):
+     the G draws itself, the three nodes pop in, the wordmark rises.
+   Then a calm loop (every 6 seconds):
+     a pulse of light travels through the G and each node answers with a
+     ripple, and a soft sheen passes over the wordmark. */
+
 .gl-path { stroke-dasharray: 1; stroke-dashoffset: 0; }
-.gl-p2 { animation: gl-p2 25s linear infinite; }
-.gl-p1 { animation: gl-p1 25s linear infinite; }
-.gl-p3 { animation: gl-p3 25s linear infinite; }
+.gl-p2 { animation: gl-draw 1.1s cubic-bezier(.65,0,.35,1) 0s both; }
+.gl-p1 { animation: gl-draw 1.1s cubic-bezier(.65,0,.35,1) .25s both; }
+.gl-p3 { animation: gl-draw .7s cubic-bezier(.65,0,.35,1) .6s both; }
 
-.gl-node { transform-box: fill-box; transform-origin: center; }
-.gl-n1 { animation: gl-n1 25s linear infinite; }
-.gl-n2 { animation: gl-n2 25s linear infinite; }
-.gl-n3 { animation: gl-n3 25s linear infinite; }
+.gl-node, .gl-ring { transform-box: fill-box; transform-origin: center; }
 
-.gl-word { animation: gl-word 25s linear infinite; }
+.gl-n1 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1s both, gl-ping 6s ease-in-out 2.4s infinite; }
+.gl-n2 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.15s both, gl-ping 6s ease-in-out 3.5s infinite; }
+.gl-n3 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.3s both, gl-ping 6s ease-in-out 4.6s infinite; }
 
-@keyframes gl-p1 {
-0%{stroke-dashoffset:1;opacity:0}
-2.18%{stroke-dashoffset:1;opacity:0}
-2.2%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-6.2%{stroke-dashoffset:0;opacity:1}
-17.6%{stroke-dashoffset:0;opacity:1}
-19.2%{stroke-dashoffset:0;opacity:0}
-19.99%{stroke-dashoffset:0;opacity:0}
-20%{stroke-dashoffset:-1;opacity:0}
-21.98%{stroke-dashoffset:-1;opacity:0}
-22%{stroke-dashoffset:-1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-26%{stroke-dashoffset:0;opacity:1}
-37.6%{stroke-dashoffset:0;opacity:1}
-39.2%{stroke-dashoffset:0;opacity:0}
-39.99%{stroke-dashoffset:0;opacity:0}
-40%{stroke-dashoffset:1;opacity:0}
-40.78%{stroke-dashoffset:1;opacity:0}
-40.8%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-45.6%{stroke-dashoffset:0;opacity:1}
-57.6%{stroke-dashoffset:0;opacity:1}
-59.2%{stroke-dashoffset:0;opacity:0}
-59.99%{stroke-dashoffset:0;opacity:0}
-60%{stroke-dashoffset:0;opacity:0}
-60.8%{stroke-dashoffset:0;opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-63.2%{stroke-dashoffset:0;opacity:1}
-77.6%{stroke-dashoffset:0;opacity:1}
-79.2%{stroke-dashoffset:0;opacity:0}
-79.99%{stroke-dashoffset:0;opacity:0}
-80%{stroke-dashoffset:1;opacity:0}
-82.18%{stroke-dashoffset:1;opacity:0}
-82.2%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-86.2%{stroke-dashoffset:0;opacity:1}
-94%{stroke-dashoffset:0;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-97.6%{stroke-dashoffset:-1;opacity:1}
-99.2%{stroke-dashoffset:-1;opacity:0}
-100%{stroke-dashoffset:-1;opacity:0}
+.gl-ring { fill: none; stroke: #50f5a8; stroke-width: 5; opacity: 0; }
+.gl-r1 { animation: gl-ripple 6s ease-out 2.4s infinite; }
+.gl-r2 { animation: gl-ripple 6s ease-out 3.5s infinite; }
+.gl-r3 { animation: gl-ripple 6s ease-out 4.6s infinite; }
+
+.gl-pulse { fill: none; stroke: #b6ffe9; stroke-width: 30; stroke-linecap: round; stroke-dasharray: .16 1; stroke-dashoffset: .16; opacity: 0; }
+.gl-q2 { animation: gl-run 6s ease-in-out 2.4s infinite; }
+.gl-q3 { animation: gl-run 6s ease-in-out 3.1s infinite; }
+.gl-q1 { animation: gl-run 6s ease-in-out 3.6s infinite; }
+
+.gl-word { animation: gl-rise .8s cubic-bezier(.22,.8,.3,1) 1.2s both; }
+
+@keyframes gl-draw {
+  0%   { stroke-dashoffset: 1; opacity: 0; }
+  2%   { stroke-dashoffset: 1; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
 }
-@keyframes gl-p2 {
-0%{stroke-dashoffset:1;opacity:0}
-0.18%{stroke-dashoffset:1;opacity:0}
-0.2%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-4.2%{stroke-dashoffset:0;opacity:1}
-17.6%{stroke-dashoffset:0;opacity:1}
-19.2%{stroke-dashoffset:0;opacity:0}
-19.99%{stroke-dashoffset:0;opacity:0}
-20%{stroke-dashoffset:-1;opacity:0}
-23.58%{stroke-dashoffset:-1;opacity:0}
-23.6%{stroke-dashoffset:-1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-27.6%{stroke-dashoffset:0;opacity:1}
-37.6%{stroke-dashoffset:0;opacity:1}
-39.2%{stroke-dashoffset:0;opacity:0}
-39.99%{stroke-dashoffset:0;opacity:0}
-40%{stroke-dashoffset:1;opacity:0}
-40.38%{stroke-dashoffset:1;opacity:0}
-40.4%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-45.2%{stroke-dashoffset:0;opacity:1}
-57.6%{stroke-dashoffset:0;opacity:1}
-59.2%{stroke-dashoffset:0;opacity:0}
-59.99%{stroke-dashoffset:0;opacity:0}
-60%{stroke-dashoffset:0;opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-62.4%{stroke-dashoffset:0;opacity:1}
-77.6%{stroke-dashoffset:0;opacity:1}
-79.2%{stroke-dashoffset:0;opacity:0}
-79.99%{stroke-dashoffset:0;opacity:0}
-80%{stroke-dashoffset:1;opacity:0}
-80.18%{stroke-dashoffset:1;opacity:0}
-80.2%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-84.2%{stroke-dashoffset:0;opacity:1}
-93.2%{stroke-dashoffset:0;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-96.8%{stroke-dashoffset:-1;opacity:1}
-99.2%{stroke-dashoffset:-1;opacity:0}
-100%{stroke-dashoffset:-1;opacity:0}
+@keyframes gl-pop {
+  0%   { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
-@keyframes gl-p3 {
-0%{stroke-dashoffset:1;opacity:0}
-4.18%{stroke-dashoffset:1;opacity:0}
-4.2%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-6.2%{stroke-dashoffset:0;opacity:1}
-17.6%{stroke-dashoffset:0;opacity:1}
-19.2%{stroke-dashoffset:0;opacity:0}
-19.99%{stroke-dashoffset:0;opacity:0}
-20%{stroke-dashoffset:-1;opacity:0}
-20.38%{stroke-dashoffset:-1;opacity:0}
-20.4%{stroke-dashoffset:-1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-23.2%{stroke-dashoffset:0;opacity:1}
-37.6%{stroke-dashoffset:0;opacity:1}
-39.2%{stroke-dashoffset:0;opacity:0}
-39.99%{stroke-dashoffset:0;opacity:0}
-40%{stroke-dashoffset:1;opacity:0}
-41.18%{stroke-dashoffset:1;opacity:0}
-41.2%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-44.4%{stroke-dashoffset:0;opacity:1}
-57.6%{stroke-dashoffset:0;opacity:1}
-59.2%{stroke-dashoffset:0;opacity:0}
-59.99%{stroke-dashoffset:0;opacity:0}
-60%{stroke-dashoffset:0;opacity:0}
-61.6%{stroke-dashoffset:0;opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-63.6%{stroke-dashoffset:0;opacity:1}
-77.6%{stroke-dashoffset:0;opacity:1}
-79.2%{stroke-dashoffset:0;opacity:0}
-79.99%{stroke-dashoffset:0;opacity:0}
-80%{stroke-dashoffset:1;opacity:0}
-84.18%{stroke-dashoffset:1;opacity:0}
-84.2%{stroke-dashoffset:1;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-86.2%{stroke-dashoffset:0;opacity:1}
-94.8%{stroke-dashoffset:0;opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-98%{stroke-dashoffset:-1;opacity:1}
-99.2%{stroke-dashoffset:-1;opacity:0}
-100%{stroke-dashoffset:-1;opacity:0}
+@keyframes gl-rise {
+  0%   { transform: translateY(14px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
-@keyframes gl-n1 {
-0%{transform:translateY(0px) scale(0);opacity:0}
-5.2%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}
-7.4%{transform:translateY(0px) scale(1);opacity:1}
-17.6%{transform:translateY(0px) scale(1);opacity:1}
-19.2%{transform:translateY(0px) scale(1);opacity:0}
-19.99%{transform:translateY(0px) scale(1);opacity:0}
-20%{transform:translateY(0px) scale(0.5);opacity:0}
-27.2%{transform:translateY(0px) scale(0.5);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-29.4%{transform:translateY(0px) scale(1);opacity:1}
-37.6%{transform:translateY(0px) scale(1);opacity:1}
-39.2%{transform:translateY(0px) scale(1);opacity:0}
-39.99%{transform:translateY(0px) scale(1);opacity:0}
-40%{transform:translateY(-60px) scale(1);opacity:0}
-44.8%{transform:translateY(-60px) scale(1);opacity:0;animation-timing-function:cubic-bezier(.22,1.2,.36,1)}
-47.2%{transform:translateY(0px) scale(1);opacity:1}
-57.6%{transform:translateY(0px) scale(1);opacity:1}
-59.2%{transform:translateY(0px) scale(1);opacity:0}
-59.99%{transform:translateY(0px) scale(1);opacity:0}
-60%{transform:translateY(0px) scale(0);opacity:0}
-62%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-64%{transform:translateY(0px) scale(1);opacity:1}
-66%{transform:translateY(0px) scale(1);opacity:1;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-67%{transform:translateY(0px) scale(1.4);opacity:1;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-68%{transform:translateY(0px) scale(1);opacity:1}
-77.6%{transform:translateY(0px) scale(1);opacity:1}
-79.2%{transform:translateY(0px) scale(1);opacity:0}
-79.99%{transform:translateY(0px) scale(1);opacity:0}
-80%{transform:translateY(0px) scale(0);opacity:0}
-84.8%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-86.8%{transform:translateY(0px) scale(1);opacity:1}
-94.8%{transform:translateY(0px) scale(1);opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-97.2%{transform:translateY(0px) scale(0);opacity:0}
-99.2%{transform:translateY(0px) scale(0);opacity:0}
-100%{transform:translateY(0px) scale(0);opacity:0}
+@keyframes gl-ping {
+  0%   { transform: scale(1);    fill: #0b8f8c; }
+  3%   { transform: scale(1.32); fill: #50f5a8; }
+  9%   { transform: scale(1);    fill: #0b8f8c; }
+  100% { transform: scale(1);    fill: #0b8f8c; }
 }
-@keyframes gl-n2 {
-0%{transform:translateY(0px) scale(0);opacity:0}
-5.8%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}
-8%{transform:translateY(0px) scale(1);opacity:1}
-17.6%{transform:translateY(0px) scale(1);opacity:1}
-19.2%{transform:translateY(0px) scale(1);opacity:0}
-19.99%{transform:translateY(0px) scale(1);opacity:0}
-20%{transform:translateY(0px) scale(0.5);opacity:0}
-26.6%{transform:translateY(0px) scale(0.5);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-28.8%{transform:translateY(0px) scale(1);opacity:1}
-37.6%{transform:translateY(0px) scale(1);opacity:1}
-39.2%{transform:translateY(0px) scale(1);opacity:0}
-39.99%{transform:translateY(0px) scale(1);opacity:0}
-40%{transform:translateY(-60px) scale(1);opacity:0}
-45.4%{transform:translateY(-60px) scale(1);opacity:0;animation-timing-function:cubic-bezier(.22,1.2,.36,1)}
-47.8%{transform:translateY(0px) scale(1);opacity:1}
-57.6%{transform:translateY(0px) scale(1);opacity:1}
-59.2%{transform:translateY(0px) scale(1);opacity:0}
-59.99%{transform:translateY(0px) scale(1);opacity:0}
-60%{transform:translateY(0px) scale(0);opacity:0}
-62.4%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-64.4%{transform:translateY(0px) scale(1);opacity:1}
-66.8%{transform:translateY(0px) scale(1);opacity:1;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-67.8%{transform:translateY(0px) scale(1.4);opacity:1;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-68.8%{transform:translateY(0px) scale(1);opacity:1}
-77.6%{transform:translateY(0px) scale(1);opacity:1}
-79.2%{transform:translateY(0px) scale(1);opacity:0}
-79.99%{transform:translateY(0px) scale(1);opacity:0}
-80%{transform:translateY(0px) scale(0);opacity:0}
-85.4%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-87.4%{transform:translateY(0px) scale(1);opacity:1}
-95.2%{transform:translateY(0px) scale(1);opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-97.6%{transform:translateY(0px) scale(0);opacity:0}
-99.2%{transform:translateY(0px) scale(0);opacity:0}
-100%{transform:translateY(0px) scale(0);opacity:0}
+@keyframes gl-ripple {
+  0%   { opacity: 0;   transform: scale(1); }
+  1%   { opacity: .85; transform: scale(1); }
+  11%  { opacity: 0;   transform: scale(2.7); }
+  100% { opacity: 0;   transform: scale(2.7); }
 }
-@keyframes gl-n3 {
-0%{transform:translateY(0px) scale(0);opacity:0}
-6.4%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}
-8.6%{transform:translateY(0px) scale(1);opacity:1}
-17.6%{transform:translateY(0px) scale(1);opacity:1}
-19.2%{transform:translateY(0px) scale(1);opacity:0}
-19.99%{transform:translateY(0px) scale(1);opacity:0}
-20%{transform:translateY(0px) scale(0.5);opacity:0}
-26%{transform:translateY(0px) scale(0.5);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-28.2%{transform:translateY(0px) scale(1);opacity:1}
-37.6%{transform:translateY(0px) scale(1);opacity:1}
-39.2%{transform:translateY(0px) scale(1);opacity:0}
-39.99%{transform:translateY(0px) scale(1);opacity:0}
-40%{transform:translateY(-60px) scale(1);opacity:0}
-46%{transform:translateY(-60px) scale(1);opacity:0;animation-timing-function:cubic-bezier(.22,1.2,.36,1)}
-48.4%{transform:translateY(0px) scale(1);opacity:1}
-57.6%{transform:translateY(0px) scale(1);opacity:1}
-59.2%{transform:translateY(0px) scale(1);opacity:0}
-59.99%{transform:translateY(0px) scale(1);opacity:0}
-60%{transform:translateY(0px) scale(0);opacity:0}
-62.8%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-64.8%{transform:translateY(0px) scale(1);opacity:1}
-67.6%{transform:translateY(0px) scale(1);opacity:1;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-68.6%{transform:translateY(0px) scale(1.4);opacity:1;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-69.6%{transform:translateY(0px) scale(1);opacity:1}
-77.6%{transform:translateY(0px) scale(1);opacity:1}
-79.2%{transform:translateY(0px) scale(1);opacity:0}
-79.99%{transform:translateY(0px) scale(1);opacity:0}
-80%{transform:translateY(0px) scale(0);opacity:0}
-86%{transform:translateY(0px) scale(0);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-88%{transform:translateY(0px) scale(1);opacity:1}
-95.6%{transform:translateY(0px) scale(1);opacity:1;animation-timing-function:cubic-bezier(.65,0,.35,1)}
-98%{transform:translateY(0px) scale(0);opacity:0}
-99.2%{transform:translateY(0px) scale(0);opacity:0}
-100%{transform:translateY(0px) scale(0);opacity:0}
-}
-@keyframes gl-word {
-0%{transform:translateY(14px) scale(1);opacity:0}
-6.8%{transform:translateY(14px) scale(1);opacity:0;animation-timing-function:ease-out}
-9.6%{transform:translateY(0px) scale(1);opacity:1}
-17.6%{transform:translateY(0px) scale(1);opacity:1}
-19.2%{transform:translateY(0px) scale(1);opacity:0}
-19.99%{transform:translateY(0px) scale(1);opacity:0}
-20%{transform:translateY(0px) scale(0.94);opacity:0}
-28%{transform:translateY(0px) scale(0.94);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-31.2%{transform:translateY(0px) scale(1);opacity:1}
-37.6%{transform:translateY(0px) scale(1);opacity:1}
-39.2%{transform:translateY(0px) scale(1);opacity:0}
-39.99%{transform:translateY(0px) scale(1);opacity:0}
-40%{transform:translateY(0px) scale(1.05);opacity:0}
-47.6%{transform:translateY(0px) scale(1.05);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-50.4%{transform:translateY(0px) scale(1);opacity:1}
-57.6%{transform:translateY(0px) scale(1);opacity:1}
-59.2%{transform:translateY(0px) scale(1);opacity:0}
-59.99%{transform:translateY(0px) scale(1);opacity:0}
-60%{transform:translateY(8px) scale(1);opacity:0}
-63.2%{transform:translateY(8px) scale(1);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-66%{transform:translateY(0px) scale(1);opacity:1}
-77.6%{transform:translateY(0px) scale(1);opacity:1}
-79.2%{transform:translateY(0px) scale(1);opacity:0}
-79.99%{transform:translateY(0px) scale(1);opacity:0}
-80%{transform:translateY(0px) scale(1);opacity:0}
-86%{transform:translateY(0px) scale(1);opacity:0;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-88.8%{transform:translateY(0px) scale(1);opacity:1}
-96%{transform:translateY(0px) scale(1);opacity:1;animation-timing-function:cubic-bezier(.22,.8,.3,1)}
-98%{transform:translateY(0px) scale(1);opacity:0}
-99.2%{transform:translateY(0px) scale(1);opacity:0}
-100%{transform:translateY(0px) scale(1);opacity:0}
+@keyframes gl-run {
+  0%   { stroke-dashoffset: .16; opacity: 0; }
+  1%   { stroke-dashoffset: .16; opacity: .95; }
+  15%  { stroke-dashoffset: -1;  opacity: .95; }
+  16%  { stroke-dashoffset: -1;  opacity: 0; }
+  100% { stroke-dashoffset: -1;  opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gl-path, .gl-node, .gl-word { animation: none !important; }
+  .gl-path, .gl-node, .gl-word, .gl-ring, .gl-pulse { animation: none !important; }
+  .gl-ring, .gl-pulse { opacity: 0; }
 }
 </style>
 </defs>
-<g transform="matrix(1.3043 0 0 1.3394 492.6044 1690.0746)"  >
-<rect style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;"  x="-500" y="-450" rx="0" ry="0" width="1000" height="900" />
+
+<!-- the G -->
+<g transform="matrix(1.3043 0 0 1.3394 598.3093 282.0332)">
+<path class="gl-path gl-p1" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-372.5, -160)" d="M 245 0 L 390 0 L 500 110 L 350 110 L 245 215 L 350 320 L 500 320 L 500 205" stroke-linecap="round" />
 </g>
-<g transform="matrix(1.3043 0 0 1.3394 598.3093 282.0332)"  >
-<path class="gl-path gl-p1" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-372.5, -160)" d="M 245 0 L 390 0 L 500 110 L 350 110 L 245 215 L 350 320 L 500 320 L 500 205" stroke-linecap="round" />
+<g transform="matrix(1.3043 0 0 1.3394 529.0886 326.8545)">
+<path class="gl-path gl-p2" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-322.5, -182.5)" d="M 255 0 L 145 110 L 145 255 L 255 365 L 400 365 L 500 265" stroke-linecap="round" />
 </g>
-<g transform="matrix(1.3043 0 0 1.3394 529.0886 326.8545)"  >
-<path class="gl-path gl-p2" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-322.5, -182.5)" d="M 255 0 L 145 110 L 145 255 L 255 365 L 400 365 L 500 265" stroke-linecap="round" />
+<g transform="matrix(1.3043 0 0 1.3394 604.8308 355.7059)">
+<path class="gl-path gl-p3" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-377.5, -215)" d="M 255 215 L 500 215" stroke-linecap="round" />
 </g>
-<g transform="matrix(1.3043 0 0 1.3394 604.8308 355.7059)"  >
-<path class="gl-path gl-p3" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  transform=" translate(-377.5, -215)" d="M 255 215 L 500 215" stroke-linecap="round" />
+
+<!-- travelling pulse of light, drawn over the G -->
+<g transform="matrix(1.3043 0 0 1.3394 529.0886 326.8545)">
+<path class="gl-pulse gl-q2" pathLength="1" transform=" translate(-322.5, -182.5)" d="M 255 0 L 145 110 L 145 255 L 255 365 L 400 365 L 500 265" />
 </g>
-<g transform="matrix(1.3043 0 0 1.3394 465.9229 102.5543)"  >
-<rect class="gl-node gl-n3" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<g transform="matrix(1.3043 0 0 1.3394 604.8308 355.7059)">
+<path class="gl-pulse gl-q3" pathLength="1" transform=" translate(-377.5, -215)" d="M 255 215 L 500 215" />
 </g>
-<g transform="matrix(1.3043 0 0 1.3394 791.9998 249.8912)"  >
-<rect class="gl-node gl-n2" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<g transform="matrix(1.3043 0 0 1.3394 598.3093 282.0332)">
+<path class="gl-pulse gl-q1" pathLength="1" transform=" translate(-372.5, -160)" d="M 245 0 L 390 0 L 500 110 L 350 110 L 245 215 L 350 320 L 500 320 L 500 205" />
 </g>
-<g transform="matrix(1.3043 0 0 1.3394 465.9229 524.4737)"  >
-<rect class="gl-node gl-n1" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;"  x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+
+<!-- nodes -->
+<g transform="matrix(1.3043 0 0 1.3394 465.9229 102.5543)">
+<rect class="gl-node gl-n3" style="stroke: none; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-ring gl-r3" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
 </g>
-<g transform="matrix(1.3043 0 0 1.3394 523.3107 749.0241)" style=""  >
-		<text class="gl-word" xml:space="preserve" font-family="Montserrat, Poppins, Arial, Helvetica, sans-serif" font-size="132" font-style="normal" font-weight="700" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1; white-space: pre;" ><tspan x="-252.9893" y="41.4665" >G</tspan><tspan x="-128.3154" y="41.4665" >L</tspan><tspan x="-25.6846" y="41.4665" >I</tspan><tspan x="32.9893" y="41.4665" >M</tspan><tspan x="164.9463" y="41.4665" >E</tspan></text>
+<g transform="matrix(1.3043 0 0 1.3394 791.9998 249.8912)">
+<rect class="gl-node gl-n2" style="stroke: none; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-ring gl-r2" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+</g>
+<g transform="matrix(1.3043 0 0 1.3394 465.9229 524.4737)">
+<rect class="gl-node gl-n1" style="stroke: none; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-ring gl-r1" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+</g>
+
+<!-- wordmark -->
+<g transform="matrix(1.3043 0 0 1.3394 523.3107 749.0241)">
+<text class="gl-word" xml:space="preserve" font-family="Montserrat, Poppins, Arial, Helvetica, sans-serif" font-size="132" font-style="normal" font-weight="700" style="stroke: none; fill: url(#gl-sheen); fill-rule: nonzero; opacity: 1; white-space: pre;"><tspan x="-252.9893" y="41.4665">G</tspan><tspan x="-128.3154" y="41.4665">L</tspan><tspan x="-25.6846" y="41.4665">I</tspan><tspan x="32.9893" y="41.4665">M</tspan><tspan x="164.9463" y="41.4665">E</tspan></text>
 </g>
 </svg>
