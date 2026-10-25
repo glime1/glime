@@ -236,46 +236,286 @@
   })();
 
 
-  /* Existing GLIME mobile navigation */
+  /* =========================================================
+     GLIME "SIGNAL LINE" MOBILE MENU
+     A small panel where a pulse of light travels down a line and
+     lights up each page in turn, like a message moving through
+     the GLIME journey. It is built from the links already in the
+     legacy mobile nav and is fully self-contained, so page-level
+     styles cannot break it.
+  ========================================================= */
   const button = document.getElementById("glime-menu-button");
-  const menu = document.getElementById("glime-mobile-nav");
-  if (!button || !menu) return;
+  const legacy = document.getElementById("glime-mobile-nav");
+  if (!button || !legacy) return;
 
-  function setOpen(open) {
-    menu.classList.toggle("open", open);
-    button.setAttribute("aria-expanded", String(open));
-    button.setAttribute(
-      "aria-label",
-      open ? "Close navigation menu" : "Open navigation menu"
-    );
-  }
+  /* split the existing links into: pages, account, trial button */
+  const pages = [];
+  const account = [];
+  let trial = null;
 
-  button.addEventListener("click", function () {
-    setOpen(!menu.classList.contains("open"));
+  Array.prototype.slice.call(legacy.querySelectorAll("a")).forEach(function (a) {
+    if (a.classList.contains("glime-mobile-cta")) { trial = a; return; }
+    const href = a.getAttribute("href") || "";
+    if (href === "login.html" || href === "signup.html") { account.push(a); } else { pages.push(a); }
   });
 
-  menu.querySelectorAll("a").forEach(function (link) {
-    link.addEventListener("click", function () {
-      setOpen(false);
-    });
+  const here = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+
+  function isActive(a) {
+    if (a.hash) return false;
+    const file = (a.pathname.split("/").pop() || "index.html").toLowerCase();
+    return file === here;
+  }
+
+  /* styles */
+  const css = document.createElement("style");
+  css.id = "glx-menu-css";
+  css.textContent = `
+    #glime-mobile-nav { display: none !important; }
+
+    #glx-scrim {
+      position: fixed; inset: 0; z-index: 9997;
+      background: rgba(2,7,11,.62);
+      -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+      opacity: 0; visibility: hidden;
+      transition: opacity .25s ease, visibility 0s linear .25s;
+    }
+    #glx-scrim.open { opacity: 1; visibility: visible; transition: opacity .25s ease; }
+
+    #glx-menu {
+      position: fixed; z-index: 9998; right: 12px; top: 80px;
+      width: min(272px, calc(100vw - 24px));
+      max-height: calc(100vh - 96px); max-height: calc(100dvh - 96px);
+      overflow-y: auto; overscroll-behavior: contain;
+      padding: 14px 12px 12px;
+      border-radius: 22px;
+      background: linear-gradient(165deg, #10212c, #060d13);
+      border: 1px solid rgba(120,220,235,.18);
+      box-shadow: 0 30px 70px rgba(0,0,0,.7), 0 0 50px rgba(82,232,255,.07), inset 0 1px 0 rgba(255,255,255,.06);
+      font-family: Manrope, Arial, sans-serif;
+      opacity: 0; visibility: hidden;
+      transform: translateY(-12px) scale(.95); transform-origin: top right;
+      transition: opacity .2s ease, transform .3s cubic-bezier(.2,.9,.25,1), visibility 0s linear .3s;
+    }
+    #glx-menu.open {
+      opacity: 1; visibility: visible; transform: none;
+      transition: opacity .2s ease, transform .3s cubic-bezier(.2,.9,.25,1), visibility 0s;
+    }
+
+    #glx-menu .glx-label {
+      display: flex; align-items: center; gap: 7px; margin: 0 4px 10px;
+      color: #6f8493; font: 500 .6rem/1 "DM Mono", monospace; letter-spacing: .16em;
+    }
+    #glx-menu .glx-label i {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #50f5a8; box-shadow: 0 0 8px #50f5a8;
+    }
+
+    /* the line and the travelling pulse */
+    #glx-menu .glx-list { position: relative; display: grid; gap: 2px; }
+    #glx-menu .glx-list::before {
+      content: ""; position: absolute; left: 13px; top: 14px; bottom: 14px; width: 2px; border-radius: 2px;
+      background: linear-gradient(#50f5a8, #52e8ff 62%, rgba(82,232,255,.12));
+      transform: scaleY(0); transform-origin: top;
+    }
+    #glx-menu .glx-list::after {
+      content: ""; position: absolute; left: 10px; top: 10px; width: 8px; height: 8px; border-radius: 50%;
+      background: #fff; box-shadow: 0 0 14px 4px rgba(80,245,168,.85); opacity: 0;
+    }
+    #glx-menu.open .glx-list::before { animation: glx-line var(--dur) cubic-bezier(.4,0,.2,1) .05s forwards; }
+    #glx-menu.open .glx-list::after  { animation: glx-pulse var(--dur) cubic-bezier(.4,0,.2,1) .05s forwards; }
+
+    #glx-menu .glx-item {
+      position: relative; display: flex; align-items: center;
+      min-height: 36px; padding: 7px 10px 7px 36px; border-radius: 11px;
+      color: #b2c2cd; text-decoration: none;
+      font: 700 .82rem/1.2 Manrope, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      opacity: 0; transform: translateX(10px);
+      transition: background .18s ease, color .18s ease;
+    }
+    #glx-menu .glx-item::before {
+      content: ""; position: absolute; left: 10px; top: 50%; width: 8px; height: 8px; margin-top: -4px;
+      border-radius: 50%; background: #1e303c; border: 1px solid #33505f;
+    }
+    #glx-menu .glx-item:active { background: rgba(255,255,255,.07); color: #fff; }
+    #glx-menu .glx-item.glx-active { color: #fff; background: rgba(80,245,168,.07); }
+
+    #glx-menu.open .glx-item {
+      animation: glx-in .38s cubic-bezier(.2,.9,.25,1) forwards;
+      animation-delay: calc(var(--i) * 55ms + 60ms);
+    }
+    #glx-menu.open .glx-item::before {
+      animation: glx-node .5s ease forwards;
+      animation-delay: calc(var(--i) * 55ms + 60ms);
+    }
+    #glx-menu.open .glx-item.glx-active::before { animation-name: glx-node-active; }
+
+    /* account + trial */
+    #glx-menu .glx-account {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(184,222,234,.1);
+    }
+    #glx-menu .glx-account a {
+      display: flex; align-items: center; justify-content: center; min-height: 38px;
+      border-radius: 11px; color: #dff5fa; text-decoration: none;
+      font: 700 .8rem/1 Manrope, Arial, sans-serif;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(184,222,234,.14);
+      -webkit-tap-highlight-color: transparent; opacity: 0;
+    }
+    #glx-menu .glx-account a:last-child:not(:only-child) {
+      color: #50f5a8; background: rgba(80,245,168,.07); border-color: rgba(80,245,168,.4);
+    }
+    #glx-menu .glx-account a:only-child { grid-column: 1 / -1; }
+    #glx-menu .glx-cta {
+      position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 44px; margin-top: 8px; border-radius: 12px;
+      color: #031014; text-decoration: none; font: 800 .84rem/1 Manrope, Arial, sans-serif;
+      background: linear-gradient(105deg, #50f5a8, #52e8ff);
+      box-shadow: 0 8px 22px rgba(80,245,168,.22);
+      -webkit-tap-highlight-color: transparent; opacity: 0;
+    }
+    #glx-menu .glx-cta::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.6) 50%, transparent 70%);
+      transform: translateX(-120%); animation: glx-shine 3s ease-in-out 1.2s infinite;
+    }
+    #glx-menu.open .glx-account a,
+    #glx-menu.open .glx-cta {
+      animation: glx-in .38s cubic-bezier(.2,.9,.25,1) forwards;
+      animation-delay: calc(var(--i) * 55ms + 60ms);
+    }
+    #glx-menu .glx-account a:active, #glx-menu .glx-cta:active { transform: scale(.97); }
+
+    #glx-menu a:focus-visible { outline: 2px solid #52e8ff; outline-offset: 2px; }
+
+    @keyframes glx-in    { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+    @keyframes glx-line  { to { transform: scaleY(1); } }
+    @keyframes glx-pulse { 0% { top: 10px; opacity: 1; } 88% { opacity: 1; } 100% { top: calc(100% - 18px); opacity: 0; } }
+    @keyframes glx-node  {
+      0%   { transform: scale(.5); background: #1e303c; }
+      55%  { transform: scale(1.7); background: #50f5a8; box-shadow: 0 0 12px #50f5a8; }
+      100% { transform: scale(1); background: #52e8ff; border-color: transparent; box-shadow: 0 0 6px rgba(82,232,255,.6); }
+    }
+    @keyframes glx-node-active {
+      0%   { transform: scale(.5); background: #1e303c; }
+      55%  { transform: scale(1.9); background: #50f5a8; box-shadow: 0 0 14px #50f5a8; }
+      100% { transform: scale(1.2); background: #50f5a8; border-color: transparent; box-shadow: 0 0 0 4px rgba(80,245,168,.2), 0 0 12px #50f5a8; }
+    }
+    @keyframes glx-shine { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+
+    @media (min-width: 861px) { #glx-menu, #glx-scrim { display: none !important; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      #glx-menu, #glx-menu.open, #glx-scrim, #glx-scrim.open { transition: none; }
+      #glx-menu .glx-item, #glx-menu .glx-account a, #glx-menu .glx-cta { opacity: 1; transform: none; animation: none !important; }
+      #glx-menu .glx-item::before { animation: none !important; background: #52e8ff; border-color: transparent; }
+      #glx-menu .glx-item.glx-active::before { background: #50f5a8; }
+      #glx-menu .glx-list::before { transform: none; animation: none !important; }
+      #glx-menu .glx-list::after, #glx-menu .glx-cta::after { display: none; }
+    }
+  `;
+  document.head.appendChild(css);
+
+  /* build the panel */
+  const scrim = document.createElement("div");
+  scrim.id = "glx-scrim";
+  scrim.setAttribute("aria-hidden", "true");
+
+  const panel = document.createElement("nav");
+  panel.id = "glx-menu";
+  panel.setAttribute("aria-label", "Site menu");
+
+  const label = document.createElement("div");
+  label.className = "glx-label";
+  label.innerHTML = "<i></i>NAVIGATE";
+  panel.appendChild(label);
+
+  const list = document.createElement("div");
+  list.className = "glx-list";
+  panel.appendChild(list);
+
+  let step = 0;
+
+  function clone(a, cls) {
+    const c = document.createElement("a");
+    c.href = a.getAttribute("href");
+    c.textContent = a.textContent.replace(/\s*[→>]\s*$/, "").trim();
+    c.className = cls;
+    c.style.setProperty("--i", String(step++));
+    return c;
+  }
+
+  pages.forEach(function (a) {
+    const c = clone(a, "glx-item");
+    if (isActive(a)) c.classList.add("glx-active");
+    list.appendChild(c);
+  });
+
+  list.style.setProperty("--dur", (pages.length * 55 + 250) + "ms");
+
+  if (account.length) {
+    const row = document.createElement("div");
+    row.className = "glx-account";
+    account.forEach(function (a) { row.appendChild(clone(a, "")); });
+    panel.appendChild(row);
+  }
+
+  if (trial) {
+    const t = clone(trial, "glx-cta");
+    t.innerHTML = "";
+    const txt = document.createElement("span");
+    txt.textContent = trial.textContent.replace(/\s*[→>]\s*$/, "").trim();
+    const arrow = document.createElement("span");
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "\u2192";
+    t.appendChild(txt);
+    t.appendChild(arrow);
+    panel.appendChild(t);
+  }
+
+  document.body.appendChild(scrim);
+  document.body.appendChild(panel);
+
+  /* open / close */
+  function place() {
+    const header = document.querySelector(".glime-global-header");
+    const bottom = header ? header.getBoundingClientRect().bottom : 76;
+    panel.style.top = Math.max(0, Math.round(bottom + 8)) + "px";
+  }
+
+  function isOpen() { return panel.classList.contains("open"); }
+
+  function setOpen(open) {
+    if (open) place();
+    panel.classList.toggle("open", open);
+    scrim.classList.toggle("open", open);
+    button.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+  }
+
+  button.setAttribute("aria-controls", "glx-menu");
+  button.setAttribute("aria-expanded", "false");
+
+  button.addEventListener("click", function (event) {
+    event.stopPropagation();
+    setOpen(!isOpen());
+  });
+
+  scrim.addEventListener("click", function () { setOpen(false); });
+
+  panel.addEventListener("click", function (event) {
+    if (event.target.closest("a")) setOpen(false);
   });
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") setOpen(false);
+    if (event.key === "Escape" && isOpen()) {
+      setOpen(false);
+      button.focus();
+    }
   });
 
   window.addEventListener("resize", function () {
-    if (window.innerWidth > 860) setOpen(false);
-  });
-
-  document.addEventListener("click", function (event) {
-    if (!menu.classList.contains("open")) return;
-
-    if (
-      !menu.contains(event.target) &&
-      !button.contains(event.target)
-    ) {
-      setOpen(false);
-    }
+    if (window.innerWidth > 860) { setOpen(false); } else if (isOpen()) { place(); }
   });
 })();
