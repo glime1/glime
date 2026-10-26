@@ -9,6 +9,15 @@
     document.head.appendChild(cc);
   }
 
+  /* App install (PWA): manifest + service worker, so the site can be installed as an app */
+  if (!window.GLIME_PWA && !document.getElementById("glime-pwa-js")) {
+    const pw = document.createElement("script");
+    pw.id = "glime-pwa-js";
+    pw.src = "glime-pwa.js?v=1";
+    pw.async = true;
+    document.head.appendChild(pw);
+  }
+
   /* GLIME AI floating button (3D orb). Not shown on the GLIME AI screen itself. */
   if (
     !document.getElementById("glime-ai-float") &&
@@ -468,7 +477,7 @@
     txt.textContent = trial.textContent.replace(/\s*[→>]\s*$/, "").trim();
     const arrow = document.createElement("span");
     arrow.setAttribute("aria-hidden", "true");
-    arrow.textContent = "\u2192";
+    arrow.textContent = "→";
     t.appendChild(txt);
     t.appendChild(arrow);
     panel.appendChild(t);
