@@ -21,8 +21,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
 .sub{color:var(--mu);font-size:.84rem}
 .message{display:none;margin:0 0 16px;padding:12px 14px;border-radius:12px;font-size:.8rem}
 .message.error{display:block;background:rgba(255,130,145,.08);border:1px solid rgba(255,130,145,.3);color:var(--rd)}
-.unavail{background:var(--surf);border:1px solid var(--bd);border-radius:18px;padding:20px}
-.unavail p{color:var(--mu);font-size:.84rem;margin-top:6px}
+.gcx-upgrade{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 @media(max-width:760px){h1{font-size:1.7rem}.wrap{width:min(100% - 18px,620px);padding-top:12px}}
 </style>
 </head>
@@ -45,6 +44,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
 const SUPABASE_URL="https://ufoulgbiqgjriwapuopc.supabase.co";
 const SUPABASE_KEY="sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 const MCP_ENDPOINT=SUPABASE_URL+"/functions/v1/glime-mcp-gateway";
+const UPGRADE_HREF="billing.html";
 const sb=window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY,
@@ -65,6 +65,29 @@ function showError(text){
   el.className="message error";
 }
 
+/* ChatGPT and Claude need the AI Connections module. When a client does not have it,
+   the card stays visible and the button asks for a plan upgrade instead of connecting.
+   Every other connector is shown and works the same for all clients. */
+function patchUpgradeButtons(){
+  hub.querySelectorAll('.gcx-card[data-provider="chatgpt"][data-state="unavailable"],.gcx-card[data-provider="claude"][data-state="unavailable"]').forEach(function(card){
+    const act=card.querySelector(".gcx-actions");
+    if(!act||act.querySelector("[data-upgrade]"))return;
+    const nameEl=card.querySelector(".gcx-name");
+    const name=nameEl?nameEl.textContent:"this connector";
+    const a=document.createElement("a");
+    a.className="gcx-btn primary gcx-upgrade";
+    a.setAttribute("data-upgrade","");
+    a.href=UPGRADE_HREF;
+    a.textContent="Upgrade plan to connect";
+    a.setAttribute("aria-label","Upgrade your plan to connect "+name);
+    act.textContent="";
+    act.appendChild(a);
+    const badge=card.querySelector(".gcx-badge");
+    if(badge)badge.textContent="Plan upgrade required";
+  });
+}
+new MutationObserver(patchUpgradeButtons).observe(hub,{childList:true,subtree:true});
+
 (async()=>{
   try{
     if(!UI)throw new Error("Connector UI could not be loaded");
@@ -79,17 +102,6 @@ function showError(text){
 
     const res=await UI.data.loadAll(sb,{supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
 
-    /* Existing ai-connections module entitlement still gates this page. */
-    if(!res.aiFailed&&!res.entitled){
-      document.getElementById("page").innerHTML=`
-        <a class="back" href="dashboard.html">← Dashboard</a>
-        <div class="unavail">
-          <h1>Connector</h1>
-          <p>Connector is currently unavailable for this client.</p>
-        </div>`;
-      return;
-    }
-
     UI.render(hub,{
       ...base,
       status:res.failed?"error":"ready",
@@ -100,6 +112,7 @@ function showError(text){
       shopifyApi:res.shopifyApi,
       sheetsApi:res.sheetsApi
     });
+    patchUpgradeButtons();
     if(res.entitled)UI.renderPermissions(perms,res.permissions);
   }catch(error){
     console.error("Connector load error:",error);
