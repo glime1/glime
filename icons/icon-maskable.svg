@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="GLIME">
+<rect width="512" height="512" fill="#071016"/>
+<g fill="none" stroke="#0b8f8c" stroke-width="30.4" stroke-linecap="square" stroke-linejoin="miter">
+<polyline points="205.5,143.2 290.2,143.2 354.5,209.2 266.8,209.2 205.5,272.2 266.8,335.2 354.5,335.2 354.5,266.2"/>
+<polyline points="209.5,149.8 145.2,215.8 145.2,302.8 209.5,368.8 294.3,368.8 352.7,308.8"/>
+<polyline points="211.3,272.2 354.5,272.2"/>
+</g>
+<g fill="#0b8f8c">
+<rect x="205.5" y="143.2" width="30.4" height="31.2"/>
+<rect x="351.6" y="209.2" width="30.4" height="31.2"/>
+<rect x="205.5" y="332.2" width="30.4" height="31.2"/>
+</g></svg>

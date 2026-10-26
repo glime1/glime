@@ -1,0 +1,32 @@
+{
+  "id": "/",
+  "name": "GLIME",
+  "short_name": "GLIME",
+  "description": "Connect Instagram and WhatsApp and run your business with GLIME AI.",
+  "start_url": "/dashboard.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#071016",
+  "theme_color": "#071016",
+  "lang": "en",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Leads", "url": "/leads.html" },
+    { "name": "Orders", "url": "/orders.html" },
+    { "name": "GLIME AI", "url": "/glime-ai.html" }
+  ]
+}
