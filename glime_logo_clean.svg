@@ -1,45 +1,47 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="809" height="809" viewBox="0 0 1080 1080" xml:space="preserve">
-<desc>GLIME logo. The G draws itself once, then a pulse of light keeps travelling through the nodes, like a customer message moving through the GLIME system.</desc>
+<desc>GLIME logo. The G draws itself once, then a bright pulse keeps travelling through the nodes like a customer message moving through the GLIME system, while the wordmark shimmers continuously.</desc>
 <defs>
-<linearGradient id="gl-sheen" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0" gradientTransform="translate(-1.3 0)">
+<linearGradient id="gl-sheen" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0" gradientTransform="translate(-1.4 0)">
   <stop offset="0" stop-color="#0b8f8c"/>
-  <stop offset="0.42" stop-color="#0b8f8c"/>
-  <stop offset="0.5" stop-color="#7dffe0"/>
-  <stop offset="0.58" stop-color="#0b8f8c"/>
+  <stop offset="0.36" stop-color="#0b8f8c"/>
+  <stop offset="0.46" stop-color="#43e0c4"/>
+  <stop offset="0.5" stop-color="#d9fff4"/>
+  <stop offset="0.54" stop-color="#43e0c4"/>
+  <stop offset="0.64" stop-color="#0b8f8c"/>
   <stop offset="1" stop-color="#0b8f8c"/>
-  <animateTransform attributeName="gradientTransform" type="translate" values="-1.3 0;1.3 0;1.3 0" keyTimes="0;0.22;1" dur="6s" begin="2.6s" repeatCount="indefinite"/>
+  <animateTransform attributeName="gradientTransform" type="translate" values="-1.4 0;1.4 0;1.4 0" keyTimes="0;0.78;1" dur="2.6s" begin="1.2s" repeatCount="indefinite"/>
 </linearGradient>
 <style>
 /* GLIME logo animation
-   Intro (plays once, about 2 seconds):
+   Intro (plays once, about 1.3 seconds):
      the G draws itself, the three nodes pop in, the wordmark rises.
-   Then a calm loop (every 6 seconds):
-     a pulse of light travels through the G and each node answers with a
-     ripple, and a soft sheen passes over the wordmark. */
+   Then a lively loop (every 4 seconds):
+     a bright pulse travels through the G and each node answers with a
+     glow and ripple. The wordmark shimmers continuously (every 2.6 seconds). */
 
 .gl-path { stroke-dasharray: 1; stroke-dashoffset: 0; }
-.gl-p2 { animation: gl-draw 1.1s cubic-bezier(.65,0,.35,1) 0s both; }
-.gl-p1 { animation: gl-draw 1.1s cubic-bezier(.65,0,.35,1) .25s both; }
-.gl-p3 { animation: gl-draw .7s cubic-bezier(.65,0,.35,1) .6s both; }
+.gl-p2 { animation: gl-draw .8s cubic-bezier(.65,0,.35,1) 0s both; }
+.gl-p1 { animation: gl-draw .8s cubic-bezier(.65,0,.35,1) .15s both; }
+.gl-p3 { animation: gl-draw .5s cubic-bezier(.65,0,.35,1) .4s both; }
 
 .gl-node, .gl-ring { transform-box: fill-box; transform-origin: center; }
 
-.gl-n1 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1s both, gl-ping 6s ease-in-out 2.4s infinite; }
-.gl-n2 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.15s both, gl-ping 6s ease-in-out 3.5s infinite; }
-.gl-n3 { animation: gl-pop .55s cubic-bezier(.34,1.56,.64,1) 1.3s both, gl-ping 6s ease-in-out 4.6s infinite; }
+.gl-n1 { animation: gl-pop .4s cubic-bezier(.34,1.56,.64,1) .7s both, gl-ping 4s ease-in-out 1.6s infinite; }
+.gl-n2 { animation: gl-pop .4s cubic-bezier(.34,1.56,.64,1) .8s both, gl-ping 4s ease-in-out 2.3s infinite; }
+.gl-n3 { animation: gl-pop .4s cubic-bezier(.34,1.56,.64,1) .9s both, gl-ping 4s ease-in-out 3s infinite; }
 
-.gl-ring { fill: none; stroke: #50f5a8; stroke-width: 5; opacity: 0; }
-.gl-r1 { animation: gl-ripple 6s ease-out 2.4s infinite; }
-.gl-r2 { animation: gl-ripple 6s ease-out 3.5s infinite; }
-.gl-r3 { animation: gl-ripple 6s ease-out 4.6s infinite; }
+.gl-ring { fill: none; stroke: #7dffc4; stroke-width: 7; opacity: 0; }
+.gl-r1 { animation: gl-ripple 4s ease-out 1.6s infinite; }
+.gl-r2 { animation: gl-ripple 4s ease-out 2.3s infinite; }
+.gl-r3 { animation: gl-ripple 4s ease-out 3s infinite; }
 
-.gl-pulse { fill: none; stroke: #b6ffe9; stroke-width: 30; stroke-linecap: round; stroke-dasharray: .16 1; stroke-dashoffset: .16; opacity: 0; }
-.gl-q2 { animation: gl-run 6s ease-in-out 2.4s infinite; }
-.gl-q3 { animation: gl-run 6s ease-in-out 3.1s infinite; }
-.gl-q1 { animation: gl-run 6s ease-in-out 3.6s infinite; }
+.gl-pulse { fill: none; stroke: #e6fff8; stroke-width: 38; stroke-linecap: round; stroke-dasharray: .18 1; stroke-dashoffset: .18; opacity: 0; }
+.gl-q2 { animation: gl-run 4s ease-in-out 1.6s infinite; }
+.gl-q3 { animation: gl-run 4s ease-in-out 2s infinite; }
+.gl-q1 { animation: gl-run 4s ease-in-out 2.4s infinite; }
 
-.gl-word { animation: gl-rise .8s cubic-bezier(.22,.8,.3,1) 1.2s both; }
+.gl-word { animation: gl-rise .6s cubic-bezier(.22,.8,.3,1) .8s both; }
 
 @keyframes gl-draw {
   0%   { stroke-dashoffset: 1; opacity: 0; }
@@ -56,21 +58,21 @@
 }
 @keyframes gl-ping {
   0%   { transform: scale(1);    fill: #0b8f8c; }
-  3%   { transform: scale(1.32); fill: #50f5a8; }
-  9%   { transform: scale(1);    fill: #0b8f8c; }
+  4%   { transform: scale(1.45); fill: #7dffc4; }
+  14%  { transform: scale(1);    fill: #0b8f8c; }
   100% { transform: scale(1);    fill: #0b8f8c; }
 }
 @keyframes gl-ripple {
-  0%   { opacity: 0;   transform: scale(1); }
-  1%   { opacity: .85; transform: scale(1); }
-  11%  { opacity: 0;   transform: scale(2.7); }
-  100% { opacity: 0;   transform: scale(2.7); }
+  0%   { opacity: 0; transform: scale(1); }
+  1%   { opacity: 1; transform: scale(1); }
+  16%  { opacity: 0; transform: scale(3); }
+  100% { opacity: 0; transform: scale(3); }
 }
 @keyframes gl-run {
-  0%   { stroke-dashoffset: .16; opacity: 0; }
-  1%   { stroke-dashoffset: .16; opacity: .95; }
-  15%  { stroke-dashoffset: -1;  opacity: .95; }
-  16%  { stroke-dashoffset: -1;  opacity: 0; }
+  0%   { stroke-dashoffset: .18; opacity: 0; }
+  1%   { stroke-dashoffset: .18; opacity: 1; }
+  20%  { stroke-dashoffset: -1;  opacity: 1; }
+  21%  { stroke-dashoffset: -1;  opacity: 0; }
   100% { stroke-dashoffset: -1;  opacity: 0; }
 }
 
