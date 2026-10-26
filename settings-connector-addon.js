@@ -4,6 +4,8 @@
    Registers Settings > Connector through window.GLIME_SETTINGS.
    Uses the shared UI layer (connector-ui.js).
    - ChatGPT / Claude: existing MCP status (read-only)
+     When a client does not have the AI Connections module, the cards stay
+     visible and the button opens the Omni plan (billing.html?plan=omni).
    - Google Calendar: existing backend (glime-google-calendar-oauth +
      glime-calendar-gateway). No client ID / secret in the frontend.
    - Razorpay: client's own account via glime-razorpay-oauth.
@@ -21,6 +23,31 @@ const S=window.GLIME_SETTINGS;
 if(!S||typeof S.register!=='function'){
   console.warn('GLIME Connector: Settings shell not found');
   return;
+}
+
+/* GLIME Omni (the Rs 1499 / month plan) */
+const UPGRADE_HREF='billing.html?plan=omni';
+
+/* ChatGPT and Claude need the AI Connections module. When a client does not have it,
+   the card stays visible and the button asks for a plan upgrade instead of connecting. */
+function patchUpgradeButtons(hub){
+  hub.querySelectorAll('.gcx-card[data-provider="chatgpt"][data-state="unavailable"],.gcx-card[data-provider="claude"][data-state="unavailable"]').forEach(function(card){
+    const act=card.querySelector('.gcx-actions');
+    if(!act||act.querySelector('[data-upgrade]'))return;
+    const nameEl=card.querySelector('.gcx-name');
+    const name=nameEl?nameEl.textContent:'this connector';
+    const a=document.createElement('a');
+    a.className='gcx-btn primary';
+    a.setAttribute('data-upgrade','');
+    a.href=UPGRADE_HREF;
+    a.style.cssText='display:inline-flex;align-items:center;justify-content:center;text-decoration:none';
+    a.textContent='Upgrade plan to connect';
+    a.setAttribute('aria-label','Upgrade your plan to connect '+name);
+    act.textContent='';
+    act.appendChild(a);
+    const badge=card.querySelector('.gcx-badge');
+    if(badge)badge.textContent='Plan upgrade required';
+  });
 }
 
 /* Shiprocket Cargo card lives in its own file so a problem there never breaks this page. */
@@ -124,6 +151,9 @@ S.register({
       return;
     }
 
+    /* Keep the upgrade button in place whenever the cards are redrawn. */
+    new MutationObserver(function(){patchUpgradeButtons(hub);}).observe(hub,{childList:true,subtree:true});
+
     const supabaseUrl=(api.supabase&&api.supabase.supabaseUrl)||'https://ufoulgbiqgjriwapuopc.supabase.co';
     const banner=oauthBanner();
     const base={
@@ -182,6 +212,7 @@ S.register({
         razorpayApi:res.razorpayApi,
         banner:b
       });
+      patchUpgradeButtons(hub);
       if(res.entitled)UI.renderPermissions(perms,res.permissions);
     }catch(error){
       console.error('GLIME Connector load error:',error);
