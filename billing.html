@@ -18,6 +18,7 @@
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}.brand img{width:46px;height:46px;object-fit:contain}.brand b{font-size:22px}.brand span{display:block;color:var(--muted);font-size:12px}
 .grid{display:grid;gap:16px}.cols{grid-template-columns:repeat(2,minmax(0,1fr))}.plans{grid-template-columns:repeat(2,minmax(0,1fr))}
 .card{background:rgba(13,21,31,.9);border:1px solid var(--line);border-radius:17px;padding:20px;box-shadow:0 14px 38px rgba(0,0,0,.2)}.section{margin-top:18px}
+.card.planFocus{border-color:rgba(0,240,255,.7);box-shadow:0 0 0 2px rgba(0,240,255,.22),0 14px 38px rgba(0,0,0,.2)}
 .card h2,.card h3{margin:0 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.price{font-size:30px;font-weight:850;margin:14px 0}.price small{font-size:13px;color:var(--muted);font-weight:500}
 .btn{border:1px solid rgba(0,255,136,.32);background:rgba(0,255,136,.07);color:var(--green);padding:10px 15px;border-radius:10px;cursor:pointer;font-weight:750;transition:.18s}.btn:hover{background:rgba(0,255,136,.14);box-shadow:0 0 18px rgba(0,255,136,.1)}.btn.primary{background:linear-gradient(135deg,rgba(0,255,136,.18),rgba(0,240,255,.14));border-color:rgba(0,240,255,.42);color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 .toggle{display:flex;justify-content:center;margin:0 0 18px}.toggle button{padding:9px 20px;border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.04);color:var(--muted);cursor:pointer}.toggle button:first-child{border-radius:10px 0 0 10px}.toggle button:last-child{border-radius:0 10px 10px 0}.toggle .active{background:linear-gradient(90deg,rgba(0,255,136,.18),rgba(0,240,255,.12));color:#fff;border-color:rgba(0,240,255,.45)}
@@ -88,6 +89,9 @@ const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const state={cycle:'monthly',catalog:{growth:null,omni:null,data:[],credits:[],all:[]},billing:null,billingLoaded:false,catalogLoaded:false};
+/* ?plan=omni (e.g. from the Connector page upgrade button) scrolls to and highlights that plan card. */
+const wantedPlan=(()=>{try{const v=new URLSearchParams(location.search).get('plan');return v?'glime_'+String(v).toLowerCase().replace(/[^a-z0-9_]/g,''):''}catch(e){return ''}})();
+let planFocusDone=false;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>v==null?'—':new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(Number(v));
@@ -332,7 +336,7 @@ function renderPlans(){
       ];
     }
 
-    return `<article class="card">
+    return `<article class="card${code===wantedPlan?' planFocus':''}" id="plan-${esc(code)}">
       <span class="badge">${esc(code.replace('glime_','').toUpperCase())}</span>
       <h2 style="margin-top:10px">${esc(product.name||'GLIME Plan')}</h2>
       <div class="muted">${esc(product.description||'')}</div>
@@ -347,6 +351,16 @@ function renderPlans(){
       <div id="planMessage-${esc(code)}" class="action-message hidden" role="alert"></div>
     </article>`;
   }).join('')||'<div class="card empty">Plans are unavailable right now.</div>';
+
+  /* Bring the requested plan (?plan=omni) into view. Repeats until the account data has
+     loaded, because other sections growing above can push the card out of view. */
+  if(wantedPlan&&!planFocusDone){
+    const el=document.getElementById('plan-'+wantedPlan);
+    if(el){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      if(state.billingLoaded)planFocusDone=true;
+    }
+  }
 }
 
 function renderCapacity(){
