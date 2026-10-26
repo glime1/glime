@@ -169,6 +169,15 @@
     document.head.appendChild(s);
   }
 
+  /* App install (PWA): manifest, service worker and the install banner on the dashboard. */
+  function loadPwaSystem() {
+    if (window.GLIME_PWA || document.querySelector('script[src*="glime-pwa.js"]')) return;
+    var s = document.createElement('script');
+    s.src = 'glime-pwa.js?v=1';
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+
   function logout() {
     /* Dashboard defines its own handleLogout(); reuse it untouched. */
     if (typeof window.handleLogout === 'function') {
@@ -348,6 +357,7 @@
     loadPhotoSystem();
     loadPushSystem();
     loadExportSystem();
+    loadPwaSystem();
   }
 
   window.GlimeAppShell = {
