@@ -37,6 +37,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
 
   <div id="message" class="message" role="alert"></div>
   <div id="hub"></div>
+  <div id="cargo" style="margin-top:6px"></div>
   <div id="permissions" style="margin-top:24px"></div>
 </div>
 
@@ -44,7 +45,8 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
 const SUPABASE_URL="https://ufoulgbiqgjriwapuopc.supabase.co";
 const SUPABASE_KEY="sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 const MCP_ENDPOINT=SUPABASE_URL+"/functions/v1/glime-mcp-gateway";
-const UPGRADE_HREF="billing.html";
+/* GLIME Omni (the Rs 1499 / month plan) */
+const UPGRADE_HREF="billing.html?plan=omni";
 const sb=window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY,
@@ -53,6 +55,7 @@ const sb=window.supabase.createClient(
 
 const UI=window.GLIME_CONNECTOR_UI;
 const hub=document.getElementById("hub");
+const cargoHost=document.getElementById("cargo");
 const perms=document.getElementById("permissions");
 const base={
   mcpEndpoint:MCP_ENDPOINT,
@@ -88,6 +91,18 @@ function patchUpgradeButtons(){
 }
 new MutationObserver(patchUpgradeButtons).observe(hub,{childList:true,subtree:true});
 
+/* Shiprocket Cargo lives in its own file, so a problem there never breaks this page. */
+function loadCargo(){
+  return new Promise(function(resolve){
+    if(window.GLIME_CARGO)return resolve(true);
+    const s=document.createElement("script");
+    s.src="connector-shiprocket-addon.js";
+    s.onload=function(){resolve(!!window.GLIME_CARGO);};
+    s.onerror=function(){resolve(false);};
+    document.head.appendChild(s);
+  });
+}
+
 (async()=>{
   try{
     if(!UI)throw new Error("Connector UI could not be loaded");
@@ -100,6 +115,12 @@ new MutationObserver(patchUpgradeButtons).observe(hub,{childList:true,subtree:tr
 
     UI.render(hub,{...base,status:"loading"});
 
+    /* Shiprocket Cargo loads and reports its own status independently. */
+    loadCargo().then(function(ok){
+      if(!ok||!cargoHost.isConnected)return;
+      window.GLIME_CARGO.mount(cargoHost,{sb:sb,supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
+    });
+
     const res=await UI.data.loadAll(sb,{supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
 
     UI.render(hub,{
@@ -110,14 +131,15 @@ new MutationObserver(patchUpgradeButtons).observe(hub,{childList:true,subtree:tr
       details:res.details,
       calendarApi:res.calendarApi,
       shopifyApi:res.shopifyApi,
-      sheetsApi:res.sheetsApi
+      sheetsApi:res.sheetsApi,
+      razorpayApi:res.razorpayApi
     });
     patchUpgradeButtons();
     if(res.entitled)UI.renderPermissions(perms,res.permissions);
   }catch(error){
     console.error("Connector load error:",error);
     if(UI){
-      UI.render(hub,{...base,status:"error",states:{chatgpt:"error",claude:"error","google-calendar":"error",shopify:"error","google-sheets":"error"}});
+      UI.render(hub,{...base,status:"error",states:{chatgpt:"error",claude:"error","google-calendar":"error",shopify:"error","google-sheets":"error",razorpay:"error"}});
     }else{
       showError("Connector status could not be loaded.");
     }
