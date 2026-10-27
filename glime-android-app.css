@@ -1,0 +1,75 @@
+/* GLIME — native Android-app shell for phones (<=720px). Loaded AFTER the page CSS. Desktop is untouched. */
+.gapp-cu{--gnav-bg:#08111a;--gnav-line:rgba(255,255,255,.08);--gnav-on:#12e58f;--gnav-accent:#12e58f}
+.gapp-ig{--gnav-bg:#000;--gnav-line:#262626;--gnav-on:#fff;--gnav-accent:#0095f6}
+.gnav{display:none}
+
+@media (max-width:720px){
+html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;touch-action:manipulation}
+body.gapp{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.gapp input,body.gapp textarea,body.gapp .bubble,body.gapp .context-value,body.gapp .context-muted{-webkit-user-select:text;user-select:text}
+body.gapp input,body.gapp textarea,body.gapp select{font-size:16px}
+body.gapp button,body.gapp a,body.gapp .conversation-item,body.gapp .crow{-webkit-tap-highlight-color:transparent}
+
+/* bottom navigation bar (fixed, like a native app) */
+.gnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:7000;height:calc(60px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:var(--gnav-bg);border-top:1px solid var(--gnav-line)}
+.gnav a,.gnav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;background:none;color:#8d98a5;font:600 10.5px/1 -apple-system,"Segoe UI",Roboto,Inter,sans-serif;text-decoration:none;position:relative;transition:background .15s}
+.gnav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.gnav .on{color:var(--gnav-on)}
+.gnav .on svg{stroke-width:2.4}
+.gnav .on::before{content:"";position:absolute;top:0;width:30px;height:3px;border-radius:0 0 4px 4px;background:var(--gnav-accent)}
+.gnav a:active,.gnav button:active{background:rgba(255,255,255,.09)}
+
+/* ===== INSTAGRAM SALES ===== */
+.gapp-ig .app-shell{display:block;height:100%}
+.gapp-ig .main{height:calc(100% - 60px - env(safe-area-inset-bottom,0px))}
+.gapp-ig:has(.workspace.ig-chat-open) .gnav{display:none}
+.gapp-ig:has(.workspace.ig-chat-open) .main{height:100%}
+.gapp-ig .topbar{min-height:56px;height:56px;padding:0 8px 0 10px}
+.gapp-ig .icon-btn{width:44px;height:44px}
+.gapp-ig .conversation-item{min-height:72px;padding:10px 14px}
+.gapp-ig .conversation-item:active{background:#1c1c1c}
+.gapp-ig .avatar{width:52px;height:52px;flex-basis:52px}
+.gapp-ig .chat-header .avatar{width:38px;height:38px;flex-basis:38px}
+.gapp-ig .messages{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.gapp-ig .conversation-list{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.gapp-ig .order-link{display:none}
+.gapp-ig .context{overscroll-behavior:contain;padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+.gapp-ig .toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+.gapp-ig:has(.workspace.ig-chat-open) .toast{bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+
+/* ===== CUSTOMERS ===== */
+.gapp-cu .shell{margin:0;min-height:0;height:calc(100% - 60px - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
+.gapp-cu .topbar{position:static;flex:0 0 auto;height:56px;padding:0 8px 0 10px;gap:6px;backdrop-filter:none;background:var(--bg)}
+.gapp-cu .icon-btn{width:42px;height:42px;border-radius:50%}
+.gapp-cu .gsearch{max-width:none;height:40px;border-radius:20px}
+.gapp-cu .range{position:relative;width:42px;height:42px;padding:0;margin-left:0;display:grid;place-items:center;border-radius:50%;overflow:hidden}
+.gapp-cu .range select{position:absolute;inset:0;width:100%;height:100%;max-width:none;opacity:0}
+.gapp-cu .top-av{display:none}
+.gapp-cu .page{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 12px calc(96px + env(safe-area-inset-bottom,0px))}
+.gapp-cu .head{gap:10px;margin-bottom:12px}
+.gapp-cu .head-ic,.gapp-cu .head p{display:none}
+.gapp-cu .head-l{min-width:0}
+.gapp-cu .head h1{font-size:22px}
+.gapp-cu .insight-card{padding:10px 12px;border-radius:14px}
+.gapp-cu .insight-card .sp{display:none}
+.gapp-cu .stats{display:flex;overflow-x:auto;gap:10px;margin:0 -12px 14px;padding:0 12px 2px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.gapp-cu .stats::-webkit-scrollbar{display:none}
+.gapp-cu .stat{flex:0 0 156px;scroll-snap-align:start}
+.gapp-cu .work{display:block}
+.gapp-cu .work-main{border:0;background:none;padding:0}
+.gapp-cu .list{max-height:none;overflow:visible}
+.gapp-cu .crow{min-height:68px}
+.gapp-cu .crow:active{transform:scale(.985)}
+.gapp-cu .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.gapp-cu .tabs::-webkit-scrollbar{display:none}
+.gapp-cu .tabs button{flex:0 0 auto}
+.gapp-cu .side{margin-top:14px}
+.gapp-cu .btn-primary#addBtn{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:6000;width:56px;height:56px;padding:0;border-radius:18px;font-size:0;box-shadow:0 8px 22px rgba(0,0,0,.5)}
+.gapp-cu #addBtn svg{font-size:26px}
+.gapp-cu:has(.split.show-detail) #addBtn{display:none}
+.gapp-cu .sidebar{z-index:7500;width:min(300px,86vw)}
+.gapp-cu .scrim{z-index:7400}
+.gapp-cu .modal{place-items:end stretch;padding:0;z-index:7600}
+.gapp-cu .modal-box{max-width:none;max-height:92%;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.gapp-cu .toast{left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));text-align:center}
+}
