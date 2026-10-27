@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="services.css">
+  <link rel="stylesheet" href="services-premium.css?v=20261027">
 </head>
 <body>
   <div id="bootScreen" class="boot-screen">
@@ -73,12 +74,6 @@
             <span id="categoryCount" class="count-pill">0</span>
           </div>
 
-          <label class="search-box">
-            <span>⌕</span>
-            <input id="serviceSearch" type="search" placeholder="Search services…" autocomplete="off">
-            <kbd>/</kbd>
-          </label>
-
           <div id="categoryList" class="category-list"></div>
 
           <button class="category-add" id="addCategoryBtn">＋ New category</button>
@@ -99,15 +94,23 @@
               <h2 id="gridTitle">All Services</h2>
               <p id="gridMeta">Loading your catalog…</p>
             </div>
-            <div class="toolbar-actions">
-              <select id="statusFilter" class="select-control" aria-label="Filter status">
-                <option value="all">All status</option>
-                <option value="active">Published</option>
-                <option value="draft">Draft</option>
-                <option value="review">In review</option>
-              </select>
-              <button class="icon-btn" id="refreshBtn" title="Refresh" aria-label="Refresh">↻</button>
-            </div>
+          </div>
+
+          <div id="svStats" class="sv-stats" aria-label="Service status summary"></div>
+
+          <div class="sv-tools">
+            <label class="sv-search">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input id="serviceSearch" type="search" placeholder="Search all services…" autocomplete="off">
+              <kbd>/</kbd>
+            </label>
+            <select id="statusFilter" class="select-control" aria-label="Filter status">
+              <option value="all">All status</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+              <option value="review">In review</option>
+            </select>
+            <button class="icon-btn" id="refreshBtn" title="Refresh" aria-label="Refresh">↻</button>
           </div>
 
           <div id="aiNudge" class="ai-nudge hidden">
@@ -356,7 +359,9 @@
   </div>
 
   <div id="toastHost" class="toast-host"></div>
+  <script src="glime-dialog.js?v=20261027"></script>
   <script src="services.js"></script>
+  <script src="services-premium-addon.js?v=20261027"></script>
   <script src="services-media-persistence-addon.js"></script>
   <script src="services-knowledge-base-addon.js"></script>
 </body>

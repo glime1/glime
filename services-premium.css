@@ -1,0 +1,52 @@
+/* GLIME Services — premium layer. Loaded after services.css. */
+body .gd-box{font-family:Poppins,Manrope,Arial,sans-serif}
+
+/* ---- status summary ---- */
+body .sv-stats{display:flex;gap:10px;overflow-x:auto;margin:14px 0 4px;padding:2px 2px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+body .sv-stats::-webkit-scrollbar{display:none}
+body .sv-stat{flex:1 0 auto;min-width:96px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(160deg,#101b27,#0a121b);color:#e9f1f7;font:inherit;text-align:left;cursor:pointer;transition:border-color .18s,background .18s,transform .12s}
+body .sv-stat:active{transform:scale(.97)}
+body .sv-stat b{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+body .sv-stat span{font-size:11.5px;color:#8fa1b2;font-weight:500}
+body .sv-stat.on{border-color:rgba(0,245,160,.55);background:linear-gradient(160deg,rgba(0,245,160,.15),rgba(0,229,255,.06))}
+body .sv-stat.on b{background:linear-gradient(100deg,#00f5a0,#00e5ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---- search + filter row ---- */
+body .sv-tools{display:flex;gap:10px;align-items:center;margin:10px 0 16px}
+body .sv-search{flex:1;min-width:0;display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:14px;border:1px solid rgba(255,255,255,.09);background:#0c141d;color:#7e90a2;transition:border-color .18s,box-shadow .18s}
+body .sv-search:focus-within{border-color:rgba(0,245,160,.5);box-shadow:0 0 0 3px rgba(0,245,160,.12);color:#00f5a0}
+body .sv-search svg{flex:0 0 20px}
+body .sv-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#f2f7fb;font:inherit;font-size:15px}
+body .sv-search input::placeholder{color:#6f8294}
+body .sv-search kbd{display:none;font:600 11px Poppins,sans-serif;padding:3px 8px;border:1px solid rgba(255,255,255,.14);border-radius:6px;color:#8fa1b2}
+body .sv-tools .select-control{height:48px;max-width:136px;border-radius:14px}
+body .sv-tools .icon-btn{width:48px;height:48px;flex:0 0 48px;border-radius:14px}
+@media(min-width:900px){body .sv-search kbd{display:inline-block}body .sv-tools .select-control{max-width:170px}}
+
+/* ---- service cards ---- */
+body .service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;align-items:start}
+@media(max-width:600px){body .service-grid{grid-template-columns:1fr;gap:12px}}
+body .service-card.sv-card{display:flex;flex-direction:column;overflow:hidden;border-radius:20px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#0f1a26,#0a121b);box-shadow:0 10px 30px rgba(0,0,0,.28);transition:transform .18s,border-color .18s,box-shadow .18s}
+body .service-card.sv-card:hover{transform:translateY(-2px);border-color:rgba(0,245,160,.35);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+body .service-card.sv-card .service-media{position:relative;height:150px;min-height:0;aspect-ratio:auto;display:grid;place-items:center;overflow:hidden;background:radial-gradient(120% 120% at 15% 0%,rgba(0,245,160,.16),transparent 55%),radial-gradient(120% 120% at 100% 100%,rgba(0,229,255,.13),transparent 55%),#0c141d}
+body .service-card.sv-card .service-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+body .service-card.sv-card .service-media .sv-ph{font-size:30px;color:#9fb4c6;opacity:.5}
+body .service-card.sv-card .service-status{position:absolute;top:12px;right:12px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+body .service-card.sv-card .service-body{display:flex;flex-direction:column;gap:6px;padding:16px}
+body .service-card.sv-card .service-category{font-size:11px;letter-spacing:.14em;font-weight:700}
+body .service-card.sv-card h3{margin:0;font-size:17px;line-height:1.3;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body .service-card.sv-card p{margin:0;font-size:13.5px;line-height:1.5;color:#9db0c0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+body .service-card.sv-card .service-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+body .service-card.sv-card .price{font-size:19px;letter-spacing:-.01em}
+body .service-card.sv-card .meta-small{padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.06);font-size:11.5px;text-transform:capitalize}
+body .service-card.sv-card .card-actions{display:grid;grid-template-columns:1fr 1fr 48px;gap:8px;margin-top:12px}
+body .service-card.sv-card .card-actions button{height:44px;min-width:0;border-radius:12px}
+body .service-card.sv-card .sv-del{display:grid;place-items:center;padding:0;border:1px solid rgba(255,93,115,.35);background:rgba(255,93,115,.08);color:#ff7a8a;cursor:pointer;transition:background .15s,color .15s,transform .12s}
+body .service-card.sv-card .sv-del:hover,body .service-card.sv-card .sv-del:active{background:#ff5d73;color:#2a0409}
+body .service-card.sv-card .sv-del:active{transform:scale(.95)}
+body .service-card.sv-card .sv-del:disabled{opacity:.5;pointer-events:none}
+
+/* ---- empty state ---- */
+body .empty-state{border-radius:20px}
+
+@media(prefers-reduced-motion:reduce){body .service-card.sv-card,body .sv-stat{transition:none}}
