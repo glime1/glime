@@ -42,6 +42,17 @@ html[data-theme="light"] .gas-download{color:#0a7a4a !important}
 html[data-theme="light"] .gas-download:hover,html[data-theme="light"] .gas-download[aria-current="page"]{background:rgba(0,255,136,.16) !important}
 html[data-theme="light"] .gas-sidebar{box-shadow:none}
 
+/* manual: profile photo system (glime-avatar.js builds its CSS with string concatenation) */
+html[data-theme="light"] .gp-edit::after{border-color:#ffffff !important}
+html[data-theme="light"] .gp-overlay{background:rgba(17,24,39,.45) !important}
+html[data-theme="light"] .gp-box{background:#ffffff !important;color:#000000 !important;border-color:#d1d5db !important;box-shadow:0 24px 70px rgba(0,0,0,.18) !important}
+html[data-theme="light"] .gp-box p,html[data-theme="light"] .gp-msg{color:#4b5563 !important}
+html[data-theme="light"] .gp-btn{color:#111827 !important;border-color:#d1d5db !important}
+html[data-theme="light"] .gp-btn.pri{color:#031014 !important;border:0 !important}
+html[data-theme="light"] .gp-btn.bad{color:#c62828 !important;border-color:rgba(198,40,40,.4) !important}
+html[data-theme="light"] .gp-msg.err{color:#c62828 !important}
+html[data-theme="light"] .gp-msg.ok{color:#0a7a4a !important}
+
 /* ===== customer.css (customer) ===== */
 html[data-theme="light"]:is([data-page="customer"]){
   --bg: #ffffff !important;
