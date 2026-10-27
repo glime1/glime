@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GLIME Help Center — answers about connecting WhatsApp and Instagram, AI replies, services, leads, billing and your data.">
+  <title>Help Center | GLIME</title>
+
+  <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+  <link rel="stylesheet" href="privacy.css">
+  <link rel="stylesheet" href="help.css?v=20261027">
+</head>
+
+<body>
+  <div class="page-glow glow-one" aria-hidden="true"></div>
+  <div class="page-glow glow-two" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html" aria-label="GLIME home">
+        <img src="glime_logo_clean.svg" alt="GLIME logo">
+        <span>GLIME</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="index.html">Home</a>
+        <a href="services.html">Services</a>
+        <a class="active" href="help.html" aria-current="page">Help</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container help-hero">
+      <div class="eyebrow"><span></span> GLIME HELP CENTER</div>
+      <h1>How can we help?</h1>
+      <p class="hero-copy">
+        Quick answers about connecting WhatsApp and Instagram, how your AI replies,
+        services, leads, billing and your data. Can’t find it? Write to us and a real person will reply.
+      </p>
+
+      <label class="help-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="helpSearch" type="search" placeholder="Search help, e.g. connect WhatsApp" autocomplete="off" aria-label="Search help articles">
+      </label>
+    </section>
+
+    <div class="container help-wrap">
+      <div class="help-chips" id="helpChips" role="group" aria-label="Help topics">
+        <button class="help-chip" type="button" data-cat="all" aria-pressed="true">All</button>
+        <button class="help-chip" type="button" data-cat="start" aria-pressed="false">Getting started</button>
+        <button class="help-chip" type="button" data-cat="whatsapp" aria-pressed="false">WhatsApp</button>
+        <button class="help-chip" type="button" data-cat="instagram" aria-pressed="false">Instagram</button>
+        <button class="help-chip" type="button" data-cat="ai" aria-pressed="false">AI replies</button>
+        <button class="help-chip" type="button" data-cat="services" aria-pressed="false">Services &amp; knowledge</button>
+        <button class="help-chip" type="button" data-cat="crm" aria-pressed="false">Leads &amp; orders</button>
+        <button class="help-chip" type="button" data-cat="account" aria-pressed="false">Billing &amp; data</button>
+      </div>
+
+      <div class="help-count" id="helpCount" aria-live="polite"></div>
+
+      <div class="faq-list" id="faqList">
+
+        <details class="faq" data-cat="start">
+          <summary><span>What is GLIME?</span><span class="faq-tag">Getting started</span></summary>
+          <div class="faq-body">
+            <p>GLIME is an AI business workspace. It connects your WhatsApp and Instagram so AI sales specialists can answer customers, share your services and prices, capture leads and help you track orders — while you stay in control of what gets sent.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="start">
+          <summary><span>How do I get started?</span><span class="faq-tag">Getting started</span></summary>
+          <div class="faq-body">
+            <ol>
+              <li><b>Sign up</b> and log in to your GLIME workspace.</li>
+              <li><b>Connect a channel</b> — WhatsApp, Instagram, or both.</li>
+              <li><b>Add your services</b> with price and description, then publish them.</li>
+              <li><b>Add your business knowledge</b> (FAQs, policies, rules) in Settings → AI → Knowledge.</li>
+              <li><b>Choose how the AI works</b> — start with approval mode so you can review replies.</li>
+              <li><b>Test it</b> by sending a message to your own account.</li>
+            </ol>
+            <p>For a detailed walkthrough, see the <a href="GLIME_Official_Integration_Guide.html">Integration Guide</a> and the <a href="documentation.html">documentation</a>.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="start">
+          <summary><span>Can I use GLIME on my phone?</span><span class="faq-tag">Getting started</span></summary>
+          <div class="faq-body">
+            <p>Yes. GLIME is built mobile-first and works in your phone’s browser. You can also add it to your home screen from the browser menu so it opens like an app.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="whatsapp">
+          <summary><span>How do I connect WhatsApp?</span><span class="faq-tag">WhatsApp</span></summary>
+          <div class="faq-body">
+            <p>Go to <b>Settings → Connector</b>, or use the connect button on the WhatsApp Sales page. You will sign in with Meta and authorize the WhatsApp Business account you want GLIME to use. You can disconnect at any time.</p>
+            <p>Step-by-step details are in the <a href="GLIME_Official_Integration_Guide.html">Integration Guide</a>.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="whatsapp">
+          <summary><span>Why can’t I send a message to a customer on WhatsApp?</span><span class="faq-tag">WhatsApp</span></summary>
+          <div class="faq-body">
+            <p>WhatsApp only allows free-form replies for a limited time (generally 24 hours) after the customer’s last message. After that window, a business can only start the conversation with an approved message template. Also check that your WhatsApp connection still shows as connected.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="whatsapp">
+          <summary><span>Can I use the number I already use on WhatsApp Business?</span><span class="faq-tag">WhatsApp</span></summary>
+          <div class="faq-body">
+            <p>The number has to be set up on the WhatsApp Business Platform, which has its own requirements from Meta. The <a href="GLIME_Official_Integration_Guide.html">Integration Guide</a> explains what is needed before you connect. If you are unsure, email us before you start so you do not disturb your live number.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="instagram">
+          <summary><span>How do I connect Instagram?</span><span class="faq-tag">Instagram</span></summary>
+          <div class="faq-body">
+            <p>Open the <b>Instagram Sales</b> page and press <b>Connect Instagram</b>. Your Instagram account must be a Professional account (Business or Creator). Sign in and allow the permissions GLIME asks for.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="instagram">
+          <summary><span>My Instagram messages are not showing up</span><span class="faq-tag">Instagram</span></summary>
+          <div class="faq-body">
+            <ul>
+              <li>Check the connection badge at the top of the Instagram Sales page. If it is not connected, press <b>Connect Instagram</b> again.</li>
+              <li>Tap the refresh button in the inbox.</li>
+              <li>In the Instagram app, make sure <b>Allow access to messages</b> is turned on for connected tools (Settings → Messages and story replies → Message controls → Connected tools).</li>
+              <li>Still stuck? Email us with your Instagram username.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="ai">
+          <summary><span>How does the AI know what to say?</span><span class="faq-tag">AI replies</span></summary>
+          <div class="faq-body">
+            <p>It uses what you give it: your <b>published services</b> (names, prices, descriptions) and your <b>business knowledge</b> (FAQs, policies, rules and business profile). The more accurate and complete these are, the better and more consistent the answers.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="ai">
+          <summary><span>What is the difference between Auto, Approval and Manual?</span><span class="faq-tag">AI replies</span></summary>
+          <div class="faq-body">
+            <ul>
+              <li><b>Auto</b> — the AI replies on its own.</li>
+              <li><b>AI + Approval</b> — the AI writes a reply and waits for you to approve or reject it before anything is sent.</li>
+              <li><b>Manual</b> — you write and send every reply yourself; the AI can still suggest one.</li>
+            </ul>
+            <p>We recommend starting with <b>AI + Approval</b> until you are happy with the answers.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="ai">
+          <summary><span>The AI gave a wrong answer. What should I do?</span><span class="faq-tag">AI replies</span></summary>
+          <div class="faq-body">
+            <p>Find where the wrong information came from and fix it there: the <b>service</b> (price or description) or your <b>knowledge</b> in Settings → AI → Knowledge. While you correct it, switch that conversation to approval or manual mode. You can always reply yourself.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="ai">
+          <summary><span>Can I limit how much the AI sends?</span><span class="faq-tag">AI replies</span></summary>
+          <div class="faq-body">
+            <p>Yes. In <b>Settings → Automation</b> you can set daily limits for WhatsApp and Instagram so usage stays within what you are comfortable with.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="services">
+          <summary><span>How do I add a service?</span><span class="faq-tag">Services</span></summary>
+          <div class="faq-body">
+            <p>Open <b>Services</b> and press <b>Add Service</b>. You will go through five short steps: basic details, pricing, availability, media, then review and publish. You can save a draft at any step and come back later.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="services">
+          <summary><span>Why is the AI not mentioning my service?</span><span class="faq-tag">Services</span></summary>
+          <div class="faq-body">
+            <p>Only <b>published</b> services are meant to be used for customer-facing answers. A service that is still a draft or in review will not be shared. Open it, make sure the name, description and price are filled in, and publish it.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="services">
+          <summary><span>Can I delete a service?</span><span class="faq-tag">Services</span></summary>
+          <div class="faq-body">
+            <p>Yes. Use the red delete button on the service card and confirm. This permanently removes the service with its pricing, variants, availability and media, and cannot be undone. Past orders are kept.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="services">
+          <summary><span>Where do I add FAQs, policies and business rules?</span><span class="faq-tag">Knowledge</span></summary>
+          <div class="faq-body">
+            <p>In <b>Settings → AI → Knowledge</b>. It is one central place used by WhatsApp, Instagram and Voice, so every channel gives customers the same answers.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="crm">
+          <summary><span>How do leads get created?</span><span class="faq-tag">Leads</span></summary>
+          <div class="faq-body">
+            <p>Conversations can become leads. On the Instagram Sales and WhatsApp Sales pages you can add a customer to <b>Leads</b> from the conversation details. The <b>Leads</b> page then shows them in a pipeline so you can follow up.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="crm">
+          <summary><span>Where can I see my customers and orders?</span><span class="faq-tag">Orders</span></summary>
+          <div class="faq-body">
+            <p>The <b>Customers</b> page lists everyone you have dealt with, with their orders and spending. The <b>Orders</b> page shows orders and where they came from, such as Instagram or WhatsApp. <b>Follow-up</b> helps you remember who to contact next.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="account">
+          <summary><span>Where do I see billing and plans?</span><span class="faq-tag">Billing</span></summary>
+          <div class="faq-body">
+            <p>Open the <b>Billing</b> page from the menu. For cancellations and refunds, read the <a href="refund-cancellation.html">Refund &amp; Cancellation policy</a>. For a billing problem, email us with your registered email address.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="account">
+          <summary><span>How do I delete my data or account?</span><span class="faq-tag">Your data</span></summary>
+          <div class="faq-body">
+            <p>Follow the steps on the <a href="data-deletion.html">Data Deletion</a> page, or email <a href="mailto:connect@glime.online">connect@glime.online</a> from your registered email address. We may ask you to verify your identity first.</p>
+          </div>
+        </details>
+
+        <details class="faq" data-cat="account">
+          <summary><span>Is my business data safe?</span><span class="faq-tag">Your data</span></summary>
+          <div class="faq-body">
+            <p>GLIME uses cloud infrastructure and access controls so each business can only see its own data. Read what we collect, how long we keep it and who we share it with in the <a href="privacy.html">Privacy Policy</a>.</p>
+          </div>
+        </details>
+
+      </div>
+
+      <div class="help-empty" id="helpEmpty">
+        <h3>No answers found</h3>
+        <p>Try a different word, or <a href="mailto:connect@glime.online">email us</a> and we will help.</p>
+      </div>
+
+      <section class="help-cta" aria-label="Contact support">
+        <div>
+          <h3>Still need help?</h3>
+          <p>Tell us what you were trying to do and what you saw on screen. A real person from the GLIME team will reply.</p>
+        </div>
+        <div class="help-cta-btns">
+          <a class="help-btn primary" href="mailto:connect@glime.online">Email support</a>
+          <a class="help-btn" href="contact.html">Contact page</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <a class="footer-brand" href="index.html">
+        <img src="glime_logo_clean.svg" alt="GLIME logo">
+        <span>GLIME</span>
+      </a>
+
+      <p>AI-powered business communication infrastructure.</p>
+
+      <div class="footer-links">
+        <a href="help.html" aria-current="page">Help Center</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms</a>
+        <a href="data-deletion.html">Data Deletion</a>
+        <a href="refund-cancellation.html">Refund &amp; Cancellation</a>
+        <a href="mailto:connect@glime.online">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    'use strict';
+    var items = Array.prototype.slice.call(document.querySelectorAll('#faqList .faq'));
+    var chips = Array.prototype.slice.call(document.querySelectorAll('#helpChips .help-chip'));
+    var input = document.getElementById('helpSearch');
+    var countEl = document.getElementById('helpCount');
+    var emptyEl = document.getElementById('helpEmpty');
+    var cat = 'all';
+
+    items.forEach(function (el) { el._text = el.textContent.toLowerCase(); });
+
+    function apply() {
+      var q = input.value.trim().toLowerCase();
+      var shown = 0;
+
+      items.forEach(function (el) {
+        var ok = (cat === 'all' || el.getAttribute('data-cat') === cat) && (!q || el._text.indexOf(q) !== -1);
+        el.style.display = ok ? '' : 'none';
+        if (ok) shown++;
+        if (!ok) el.removeAttribute('open');
+      });
+
+      if (q && shown === 1) {
+        items.forEach(function (el) { if (el.style.display !== 'none') el.setAttribute('open', ''); });
+      }
+
+      countEl.textContent = shown + (shown === 1 ? ' answer' : ' answers');
+      emptyEl.classList.toggle('show', shown === 0);
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        cat = chip.getAttribute('data-cat');
+        chips.forEach(function (c) { c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'); });
+        apply();
+      });
+    });
+
+    input.addEventListener('input', apply);
+    apply();
+  })();
+  </script>
+</body>
+</html>

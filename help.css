@@ -1,0 +1,54 @@
+/* GLIME Help Center — extends privacy.css (header, footer, hero, container, page-glow). */
+.help-hero{padding-bottom:8px}
+.help-search{position:relative;margin-top:22px;max-width:640px}
+.help-search svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;opacity:.6;pointer-events:none}
+.help-search input{width:100%;height:56px;padding:0 18px 0 50px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:inherit;font:inherit;font-size:16px;outline:0;transition:border-color .18s,box-shadow .18s}
+.help-search input::placeholder{color:rgba(255,255,255,.5)}
+.help-search input:focus{border-color:rgba(0,255,136,.6);box-shadow:0 0 0 4px rgba(0,255,136,.12)}
+
+.help-wrap{padding-top:22px;padding-bottom:30px}
+.help-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;margin:0 -2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.help-chips::-webkit-scrollbar{display:none}
+.help-chip{flex:0 0 auto;height:40px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:inherit;font:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.help-chip:hover{border-color:rgba(255,255,255,.3)}
+.help-chip[aria-pressed="true"]{background:linear-gradient(105deg,#00ff88,#00f0ff);border-color:transparent;color:#061016}
+
+.help-count{margin:6px 0 14px;font-size:13.5px;color:rgba(255,255,255,.62)}
+.faq-list{display:flex;flex-direction:column;gap:10px}
+.faq{border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.035);overflow:hidden;transition:border-color .18s,background .18s}
+.faq[open]{border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.05)}
+.faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:16px 18px;font-weight:600;font-size:15.5px;line-height:1.4}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";margin-left:auto;flex:0 0 28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.2);font-size:18px;line-height:1;transition:transform .2s,background .2s}
+.faq[open] summary::after{content:"\2212";background:rgba(0,255,136,.16);border-color:rgba(0,255,136,.5)}
+.faq summary:focus-visible{outline:2px solid #00f0ff;outline-offset:-2px;border-radius:16px}
+.faq-tag{flex:0 0 auto;font-size:10.5px;letter-spacing:.1em;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);text-transform:uppercase}
+.faq-body{padding:0 18px 18px;color:rgba(255,255,255,.82);font-size:14.5px;line-height:1.7}
+.faq-body p{margin:0 0 10px}
+.faq-body p:last-child{margin-bottom:0}
+.faq-body ol,.faq-body ul{margin:8px 0 10px;padding-left:20px}
+.faq-body li{margin:4px 0}
+.faq-body a{color:#00f0ff;text-decoration:underline;text-underline-offset:3px}
+.faq-body b{color:#fff}
+
+.help-empty{display:none;text-align:center;padding:42px 18px;border:1px dashed rgba(255,255,255,.2);border-radius:18px;margin-top:6px}
+.help-empty.show{display:block}
+.help-empty h3{margin:0 0 6px;font-size:18px}
+.help-empty p{margin:0;color:rgba(255,255,255,.68);font-size:14.5px}
+.help-empty a{color:#00f0ff}
+
+.help-cta{margin:34px 0 10px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:22px;border-radius:20px;border:1px solid rgba(0,255,136,.35);background:linear-gradient(120deg,rgba(0,255,136,.12),rgba(0,240,255,.05))}
+.help-cta h3{margin:0 0 4px;font-size:19px}
+.help-cta p{margin:0;color:rgba(255,255,255,.75);font-size:14.5px;max-width:480px}
+.help-cta-btns{display:flex;gap:10px;flex-wrap:wrap}
+.help-btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 20px;border-radius:13px;font-weight:700;font-size:14.5px;text-decoration:none;border:1px solid rgba(255,255,255,.25);color:inherit}
+.help-btn.primary{background:linear-gradient(105deg,#00ff88,#00f0ff);border:0;color:#061016}
+
+@media(max-width:600px){
+.faq summary{padding:15px 14px;font-size:15px;gap:10px}
+.faq-tag{display:none}
+.faq-body{padding:0 14px 16px}
+.help-cta{padding:18px}
+.help-cta-btns{width:100%}
+.help-btn{flex:1}
+}
