@@ -173,8 +173,22 @@
   function loadPwaSystem() {
     if (window.GLIME_PWA || document.querySelector('script[src*="glime-pwa.js"]')) return;
     var s = document.createElement('script');
-    s.src = 'glime-pwa.js?v=2';
+    s.src = 'glime-pwa.js?v=1';
     s.defer = true;
+    document.head.appendChild(s);
+  }
+
+  /* Light / dark mode: loads the theme files once; the toggle button is added to the sidebar by glime-theme.js. */
+  function loadThemeSystem() {
+    if (!document.querySelector('link[href*="glime-theme.css"]')) {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'glime-theme.css?v=1';
+      document.head.appendChild(l);
+    }
+    if (window.GlimeTheme || document.querySelector('script[src*="glime-theme.js"]')) return;
+    var s = document.createElement('script');
+    s.src = 'glime-theme.js?v=1';
     document.head.appendChild(s);
   }
 
@@ -358,6 +372,7 @@
     loadPushSystem();
     loadExportSystem();
     loadPwaSystem();
+    loadThemeSystem();
   }
 
   window.GlimeAppShell = {
