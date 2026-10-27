@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#071016">
+<meta name="color-scheme" content="dark">
+<title>Pocket Toolkit | GLIME</title>
+<style>
+:root{--bg:#071016;--surf:#101b29;--surf2:#0b1520;--bd:rgba(184,222,234,.13);--tx:#f4fbfd;--mu:#9cabb9;--cy:#52e8ff;--gr:#50f5a8;--rd:#ff7a8a;--am:#ffd166}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{min-height:100vh;color:var(--tx);font-family:Manrope,Arial,sans-serif;line-height:1.5;padding:max(12px,env(safe-area-inset-top)) 12px max(24px,env(safe-area-inset-bottom))}
+.app{width:min(480px,100%);margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.logo{flex:none;width:44px;height:44px;border-radius:12px}
+header .t{flex:1;min-width:0}
+h1{font-size:1.15rem;letter-spacing:-.02em}
+header p{color:var(--mu);font-size:.74rem;line-height:1.35}
+.icon-btn{flex:none;min-height:40px;padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:var(--tx);font:inherit;font-size:.76rem;font-weight:700;cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px;background:var(--surf);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px}
+.tabs button{min-height:42px;border:0;border-radius:10px;background:transparent;color:var(--mu);font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}
+.tabs button[aria-selected="true"]{background:linear-gradient(105deg,var(--gr),var(--cy));color:#031014}
+.card{background:var(--surf);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h2{font-size:.9rem;margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.f{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;min-width:0}
+.f label{font-size:.7rem;color:var(--mu);font-weight:700}
+input,select,textarea{width:100%;min-height:44px;padding:9px 11px;border-radius:10px;border:1px solid var(--bd);background:var(--surf2);color:var(--tx);font:inherit;font-size:16px}
+textarea{min-height:130px;resize:vertical;line-height:1.5}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.btn{min-height:44px;padding:10px 18px;border:0;border-radius:12px;background:linear-gradient(105deg,var(--gr),var(--cy));color:#031014;font:inherit;font-weight:800;font-size:.88rem;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--bd);font-weight:700}
+.btn.wide{width:100%}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btns .btn{flex:1;min-width:120px}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:11px 12px}
+.stat b{display:block;font-size:1.1rem;letter-spacing:-.02em}
+.stat span{font-size:.7rem;color:var(--mu);font-weight:700}
+.stat.warn b{color:var(--am)}
+.ord{border-top:1px solid var(--bd);padding:11px 0}
+.ord:first-child{border-top:0;padding-top:0}
+.ord .h{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ord .n{font-weight:800;font-size:.9rem;word-break:break-word}
+.ord .a{font-weight:800;color:var(--gr);white-space:nowrap}
+.ord .i{color:var(--mu);font-size:.78rem;margin:1px 0 8px;word-break:break-word}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid var(--bd);background:transparent;color:var(--mu);font:inherit;font-size:.74rem;font-weight:800;cursor:pointer}
+.chip.on{background:rgba(80,245,168,.14);border-color:rgba(80,245,168,.5);color:var(--gr)}
+.chip.sel{background:rgba(82,232,255,.14);border-color:rgba(82,232,255,.55);color:var(--cy)}
+.chip.red{color:var(--rd)}
+.empty{color:var(--mu);font-size:.82rem;text-align:center;padding:14px 4px}
+.out{display:grid;gap:6px}
+.out div{display:flex;justify-content:space-between;gap:10px;font-size:.84rem;padding:7px 0;border-top:1px solid var(--bd)}
+.out div:first-child{border-top:0}
+.out span{color:var(--mu)}
+.out b{text-align:right}
+.out .big b{font-size:1.05rem;color:var(--gr)}
+.out .neg b{color:var(--rd)}
+.note{color:var(--mu);font-size:.72rem;margin-top:8px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#16283a;border:1px solid var(--bd);color:var(--tx);padding:10px 16px;border-radius:12px;font-size:.82rem;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+#toast.show{opacity:1}
+[hidden]{display:none!important}
+.foot{text-align:center;margin-top:6px}
+.foot a{color:var(--cy);font-size:.78rem;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <svg class="logo" viewBox="0 0 512 512" role="img" aria-label="GLIME">
+      <rect width="512" height="512" fill="#071016"/>
+      <g fill="none" stroke="#0b8f8c" stroke-width="37.7" stroke-linecap="square" stroke-linejoin="miter">
+        <polyline points="193.3,116.1 298.4,116.1 378.1,198.0 269.4,198.0 193.3,276.1 269.4,354.2 378.1,354.2 378.1,268.7"/>
+        <polyline points="198.4,124.3 118.7,206.1 118.7,314.0 198.4,395.9 303.4,395.9 375.9,321.5"/>
+        <polyline points="200.6,276.1 378.1,276.1"/>
+      </g>
+      <g fill="#0b8f8c">
+        <rect x="193.3" y="116.1" width="37.7" height="38.7"/>
+        <rect x="374.5" y="198.0" width="37.7" height="38.7"/>
+        <rect x="193.3" y="350.5" width="37.7" height="38.7"/>
+      </g>
+    </svg>
+    <div class="t">
+      <h1>Pocket Toolkit</h1>
+      <p>Works without internet. Your notes stay on this phone.</p>
+    </div>
+    <button class="icon-btn" id="setBtn" type="button" aria-expanded="false" aria-controls="settings">Settings</button>
+  </header>
+
+  <section class="card" id="settings" hidden>
+    <h2>Your settings</h2>
+    <div class="f"><label for="sBiz">Business name (used in messages)</label><input id="sBiz" type="text" autocomplete="organization" placeholder="Example: Riya Boutique"></div>
+    <div class="row">
+      <div class="f"><label for="sCur">Currency</label>
+        <select id="sCur"><option value="&#8377;">&#8377; Rupee</option><option value="$">$ Dollar</option><option value="&#8364;">&#8364; Euro</option></select></div>
+      <div class="f"><label for="sCc">Country code</label><input id="sCc" type="tel" inputmode="numeric" placeholder="91"></div>
+    </div>
+    <div class="f"><label for="sLang">Message language</label>
+      <select id="sLang"><option value="en">English</option><option value="hi">Hinglish (Hindi in English letters)</option></select></div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Tools">
+    <button type="button" role="tab" id="tabO" aria-selected="true" data-tab="orders">Orders</button>
+    <button type="button" role="tab" id="tabP" aria-selected="false" data-tab="prices">Prices</button>
+    <button type="button" role="tab" id="tabM" aria-selected="false" data-tab="msgs">Messages</button>
+  </nav>
+
+  <!-- ORDERS -->
+  <section id="orders" role="tabpanel" aria-labelledby="tabO">
+    <div class="sum">
+      <div class="stat warn"><b id="sUnpaid">0</b><span id="sUnpaidN">Not paid yet</span></div>
+      <div class="stat"><b id="sTotal">0</b><span id="sTotalN">All orders</span></div>
+    </div>
+    <div class="card">
+      <h2>Add an order</h2>
+      <div class="row">
+        <div class="f"><label for="oName">Customer name</label><input id="oName" type="text" autocomplete="off" placeholder="Name"></div>
+        <div class="f"><label for="oPhone">WhatsApp number</label><input id="oPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="98765 43210"></div>
+      </div>
+      <div class="row">
+        <div class="f"><label for="oItem">Item or service</label><input id="oItem" type="text" autocomplete="off" placeholder="What did they order?"></div>
+        <div class="f"><label for="oAmt">Amount</label><input id="oAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+      </div>
+      <button class="btn wide" id="oAdd" type="button">Save order</button>
+    </div>
+    <div class="card">
+      <h2>Your orders</h2>
+      <div id="oList"></div>
+      <div class="btns" id="oTools" style="margin-top:12px" hidden>
+        <button class="btn ghost" id="oCsv" type="button">Download CSV</button>
+        <button class="btn ghost" id="oCopy" type="button">Copy list</button>
+      </div>
+      <p class="note">When you are back online, add these orders in GLIME. Nothing is sent anywhere from here.</p>
+    </div>
+  </section>
+
+  <!-- PRICES -->
+  <section id="prices" role="tabpanel" aria-labelledby="tabP" hidden>
+    <div class="card">
+      <h2>Price, GST and profit</h2>
+      <div class="row">
+        <div class="f"><label for="pCost">Your cost (per item)</label><input id="pCost" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+        <div class="f"><label for="pSell">Selling price (before GST)</label><input id="pSell" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+      </div>
+      <div class="row">
+        <div class="f"><label for="pDisc">Discount %</label><input id="pDisc" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="0"></div>
+        <div class="f"><label for="pGst">GST %</label>
+          <select id="pGst"><option value="0">No GST</option><option value="5">5%</option><option value="12">12%</option><option value="18">18%</option><option value="28">28%</option></select></div>
+      </div>
+      <div class="f"><label for="pQty">Quantity</label><input id="pQty" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
+      <div class="out" id="pOut"></div>
+      <p class="note">GST is added on top of your price. Profit is counted before GST.</p>
+    </div>
+    <div class="card">
+      <h2>What price should I charge?</h2>
+      <div class="row">
+        <div class="f"><label for="gCost">Your cost</label><input id="gCost" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+        <div class="f"><label for="gMar">Profit you want %</label><input id="gMar" type="number" inputmode="decimal" min="0" max="99" step="any" placeholder="30"></div>
+      </div>
+      <div class="out" id="gOut"></div>
+    </div>
+  </section>
+
+  <!-- MESSAGES -->
+  <section id="msgs" role="tabpanel" aria-labelledby="tabM" hidden>
+    <div class="card">
+      <h2>Ready WhatsApp messages</h2>
+      <div class="row">
+        <div class="f"><label for="mName">Customer name</label><input id="mName" type="text" autocomplete="off" placeholder="Name"></div>
+        <div class="f"><label for="mPhone">WhatsApp number</label><input id="mPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="98765 43210"></div>
+      </div>
+      <div class="row">
+        <div class="f"><label for="mItem">Item or service</label><input id="mItem" type="text" autocomplete="off" placeholder="Item"></div>
+        <div class="f"><label for="mAmt">Amount</label><input id="mAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+      </div>
+      <div class="f"><label for="mPay">Payment link or UPI ID (optional)</label><input id="mPay" type="text" autocomplete="off" placeholder="name@upi"></div>
+      <div class="chips" id="mChips" style="margin-bottom:10px" role="group" aria-label="Message type"></div>
+      <div class="f"><label for="mText">Your message (you can edit it)</label><textarea id="mText" placeholder="Pick a message type above."></textarea></div>
+      <div class="btns">
+        <button class="btn ghost" id="mCopy" type="button">Copy</button>
+        <button class="btn" id="mSend" type="button">Send on WhatsApp</button>
+      </div>
+      <p class="note">Sending needs internet. Copy works anytime.</p>
+    </div>
+  </section>
+
+  <p class="foot"><a href="/dashboard.html">Open GLIME dashboard</a></p>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'glime_toolkit_v1';
+  var memory = null;
+  function load() {
+    try { var s = localStorage.getItem(KEY); return s ? JSON.parse(s) : {}; }
+    catch (e) { return memory || {}; }
+  }
+  var S = load();
+  S.orders = Array.isArray(S.orders) ? S.orders : [];
+  S.biz = S.biz || '';
+  S.cur = S.cur || '\u20B9';
+  S.cc = S.cc || '91';
+  S.lang = S.lang || 'en';
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { memory = S; }
+  }
+
+  function $(id) { return document.getElementById(id); }
+  function val(id) { return ($(id).value || '').trim(); }
+  function esc(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function num(id) { var n = parseFloat($(id).value); return isFinite(n) ? n : 0; }
+
+  function money(n) {
+    return Number(n || 0).toLocaleString(S.cur === '\u20B9' ? 'en-IN' : 'en-US', { maximumFractionDigits: 2 });
+  }
+  function fmt(n) { return S.cur + money(n); }
+
+  var toastTimer = 0;
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1800);
+  }
+
+  /* ---------- pure helpers ---------- */
+  function normPhone(p, cc) {
+    var d = String(p || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.length === 10) return cc + d;
+    if (d.length === 11 && d.charAt(0) === '0') return cc + d.slice(1);
+    return d;
+  }
+
+  function waLink(phone, msg) {
+    return 'https://wa.me/' + (phone || '') + '?text=' + encodeURIComponent(msg);
+  }
+
+  function calc(cost, sell, disc, gst, qty) {
+    var net = sell * (1 - disc / 100);
+    var gstAmt = net * gst / 100;
+    var pay = net + gstAmt;
+    var profit = net - cost;
+    return {
+      net: net, gstAmt: gstAmt, pay: pay, profit: profit,
+      margin: net > 0 ? profit / net * 100 : 0,
+      totalPay: pay * qty, totalProfit: profit * qty
+    };
+  }
+
+  var KINDS = [
+    ['greet', 'Greeting'], ['quote', 'Price quote'], ['confirm', 'Order confirmed'],
+    ['pay', 'Payment reminder'], ['ship', 'Dispatched'], ['thanks', 'Thank you'], ['follow', 'Follow-up']
+  ];
+
+  function tpl(kind, d, lang, biz) {
+    var hi = lang === 'hi';
+    var n = d.n || (hi ? 'ji' : 'there');
+    var i = d.i || (hi ? 'aapka order' : 'your order');
+    var a = d.a || (hi ? 'amount' : 'the amount');
+    var b = biz ? ' - ' + biz : '';
+    var who = biz || (hi ? 'hamse' : 'us');
+    var pl = d.p ? (hi ? ' Yahan pay kar sakte hain: ' + d.p + '.' : ' You can pay here: ' + d.p + '.') : '';
+    var T = {
+      en: {
+        greet: 'Hi ' + n + '! Thanks for contacting ' + who + '. How can we help you today?',
+        quote: 'Hi ' + n + ', the price for ' + i + ' is ' + a + '. Let us know if you want to order.' + b,
+        confirm: 'Hi ' + n + ', your order for ' + i + ' (' + a + ') is confirmed. We will update you when it is ready. Thank you!' + b,
+        pay: 'Hi ' + n + ', a small reminder: the payment of ' + a + ' for ' + i + ' is pending.' + pl + ' Please ignore this if you have already paid. Thank you!' + b,
+        ship: 'Hi ' + n + ', good news! Your order for ' + i + ' has been dispatched. It will reach you soon.' + b,
+        thanks: 'Hi ' + n + ', thank you for choosing ' + who + '! We hope you liked ' + i + '. Please share your feedback. We would love to serve you again.',
+        follow: 'Hi ' + n + ', just checking in about ' + i + '. Would you like to go ahead? We are happy to answer any questions.' + b
+      },
+      hi: {
+        greet: 'Namaste ' + n + '! ' + who + ' se baat karne ke liye shukriya. Bataiye, hum aapki kya madad kar sakte hain?',
+        quote: 'Namaste ' + n + ', ' + i + ' ka price ' + a + ' hai. Order karna ho to bata dijiye.' + b,
+        confirm: 'Namaste ' + n + ', aapka ' + i + ' ka order (' + a + ') confirm ho gaya hai. Ready hote hi hum aapko bata denge. Shukriya!' + b,
+        pay: 'Namaste ' + n + ', ek chhota sa reminder: ' + i + ' ke ' + a + ' ka payment baaki hai.' + pl + ' Agar pay kar diya hai to is message ko ignore karein. Shukriya!' + b,
+        ship: 'Namaste ' + n + ', khushkhabri! Aapka ' + i + ' ka order dispatch ho gaya hai. Jaldi aap tak pahunch jayega.' + b,
+        thanks: 'Namaste ' + n + ', ' + (biz || 'humein') + ' chunne ke liye shukriya! Umeed hai aapko ' + i + ' pasand aaya hoga. Apna feedback zaroor bhejiye.',
+        follow: 'Namaste ' + n + ', ' + i + ' ke baare mein poochna tha. Kya aap aage badhna chahenge? Koi sawaal ho to bataiye.' + b
+      }
+    };
+    return T[hi ? 'hi' : 'en'][kind];
+  }
+
+  /* ---------- tabs and settings ---------- */
+  var TABS = ['orders', 'prices', 'msgs'];
+  var tabBtns = document.querySelectorAll('.tabs button');
+  function showTab(name) {
+    TABS.forEach(function (t) { $(t).hidden = t !== name; });
+    for (var i = 0; i < tabBtns.length; i++) {
+      tabBtns[i].setAttribute('aria-selected', String(tabBtns[i].getAttribute('data-tab') === name));
+    }
+  }
+  for (var tb = 0; tb < tabBtns.length; tb++) {
+    tabBtns[tb].addEventListener('click', function () { showTab(this.getAttribute('data-tab')); });
+  }
+
+  $('setBtn').addEventListener('click', function () {
+    var box = $('settings');
+    box.hidden = !box.hidden;
+    this.setAttribute('aria-expanded', String(!box.hidden));
+  });
+  $('sBiz').value = S.biz;
+  $('sCur').value = S.cur;
+  $('sCc').value = S.cc;
+  $('sLang').value = S.lang;
+  $('sBiz').addEventListener('input', function () { S.biz = val('sBiz'); save(); renderMsg(); });
+  $('sCc').addEventListener('input', function () { S.cc = val('sCc').replace(/\D/g, '') || '91'; save(); });
+  $('sCur').addEventListener('change', function () { S.cur = $('sCur').value; save(); renderOrders(); calcPrices(); suggest(); renderMsg(); });
+  $('sLang').addEventListener('change', function () { S.lang = $('sLang').value; save(); renderMsg(); });
+
+  /* ---------- orders ---------- */
+  function renderOrders() {
+    var list = S.orders, unpaid = 0, unpaidN = 0, total = 0, html = '';
+    for (var i = 0; i < list.length; i++) {
+      var o = list[i];
+      total += o.amt;
+      if (!o.paid) { unpaid += o.amt; unpaidN++; }
+      html += '<div class="ord" data-id="' + o.id + '">' +
+        '<div class="h"><span class="n">' + esc(o.name || 'No name') + '</span><span class="a">' + esc(fmt(o.amt)) + '</span></div>' +
+        '<div class="i">' + esc(o.item || 'No item') + (o.phone ? ' \u00B7 ' + esc(o.phone) : '') + '</div>' +
+        '<div class="chips">' +
+        '<button type="button" class="chip' + (o.paid ? ' on' : '') + '" data-act="paid">' + (o.paid ? 'Paid' : 'Not paid') + '</button>' +
+        '<button type="button" class="chip' + (o.done ? ' on' : '') + '" data-act="done">' + (o.done ? 'Delivered' : 'Not delivered') + '</button>' +
+        (!o.paid ? '<button type="button" class="chip sel" data-act="remind">Remind</button>' : '') +
+        '<button type="button" class="chip red" data-act="del">Delete</button>' +
+        '</div></div>';
+    }
+    $('oList').innerHTML = html || '<div class="empty">No orders yet. Add your first order above.</div>';
+    $('oTools').hidden = !list.length;
+    $('sUnpaid').textContent = fmt(unpaid);
+    $('sUnpaidN').textContent = unpaidN + (unpaidN === 1 ? ' order not paid' : ' orders not paid');
+    $('sTotal').textContent = fmt(total);
+    $('sTotalN').textContent = list.length + (list.length === 1 ? ' order in total' : ' orders in total');
+  }
+
+  $('oAdd').addEventListener('click', function () {
+    var name = val('oName'), item = val('oItem');
+    if (!name && !item) { toast('Add a name or an item first'); return; }
+    S.orders.unshift({ id: Date.now(), name: name, phone: val('oPhone'), item: item, amt: Math.max(0, num('oAmt')), paid: false, done: false });
+    save();
+    ['oName', 'oPhone', 'oItem', 'oAmt'].forEach(function (id) { $(id).value = ''; });
+    renderOrders();
+    toast('Order saved');
+  });
+
+  $('oList').addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('button[data-act]') : null;
+    if (!btn) return;
+    var row = btn.closest('.ord');
+    var id = Number(row.getAttribute('data-id'));
+    var idx = -1;
+    for (var i = 0; i < S.orders.length; i++) if (S.orders[i].id === id) idx = i;
+    if (idx < 0) return;
+    var o = S.orders[idx], act = btn.getAttribute('data-act');
+    if (act === 'paid') o.paid = !o.paid;
+    else if (act === 'done') o.done = !o.done;
+    else if (act === 'del') {
+      if (!window.confirm('Delete this order?')) return;
+      S.orders.splice(idx, 1);
+    } else if (act === 'remind') {
+      var msg = tpl('pay', { n: o.name, i: o.item, a: o.amt ? fmt(o.amt) : '', p: '' }, S.lang, S.biz);
+      window.open(waLink(normPhone(o.phone, S.cc), msg), '_blank');
+    }
+    save();
+    renderOrders();
+  });
+
+  function csvCell(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+
+  $('oCsv').addEventListener('click', function () {
+    var rows = [['Name', 'Phone', 'Item', 'Amount', 'Paid', 'Delivered']];
+    S.orders.forEach(function (o) { rows.push([o.name, o.phone, o.item, o.amt, o.paid ? 'Yes' : 'No', o.done ? 'Yes' : 'No']); });
+    var text = rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n');
+    try {
+      var url = URL.createObjectURL(new Blob(['\uFEFF' + text], { type: 'text/csv;charset=utf-8' }));
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'glime-orders.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      toast('CSV downloaded');
+    } catch (err) { toast('Could not download. Use Copy list.'); }
+  });
+
+  function copyText(text) {
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      toast(ok ? 'Copied' : 'Could not copy');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('Copied'); }, fallback);
+    } else fallback();
+  }
+
+  $('oCopy').addEventListener('click', function () {
+    var lines = S.orders.map(function (o) {
+      return (o.name || 'No name') + ' | ' + (o.item || '-') + ' | ' + fmt(o.amt) + ' | ' + (o.paid ? 'Paid' : 'Not paid') + ' | ' + (o.done ? 'Delivered' : 'Not delivered') + (o.phone ? ' | ' + o.phone : '');
+    });
+    copyText(lines.join('\n'));
+  });
+
+  /* ---------- prices ---------- */
+  function row(label, value, cls) {
+    return '<div' + (cls ? ' class="' + cls + '"' : '') + '><span>' + label + '</span><b>' + value + '</b></div>';
+  }
+
+  function calcPrices() {
+    var cost = num('pCost'), sell = num('pSell');
+    var disc = Math.min(100, Math.max(0, num('pDisc')));
+    var gst = Number($('pGst').value) || 0;
+    var qty = Math.max(1, Math.floor(num('pQty')) || 1);
+    if (!sell) { $('pOut').innerHTML = '<div class="empty">Type your selling price to see the numbers.</div>'; return; }
+    var r = calc(cost, sell, disc, gst, qty);
+    var html = row('Price after discount', fmt(r.net)) +
+      row('GST (' + gst + '%)', fmt(r.gstAmt)) +
+      row('Customer pays (each)', fmt(r.pay), 'big') +
+      row('Your profit (each)', fmt(r.profit), r.profit < 0 ? 'neg' : '') +
+      row('Profit margin', r.margin.toFixed(1) + '%', r.profit < 0 ? 'neg' : '');
+    if (qty > 1) html += row('Total bill for ' + qty, fmt(r.totalPay), 'big') + row('Total profit', fmt(r.totalProfit), r.totalProfit < 0 ? 'neg' : '');
+    $('pOut').innerHTML = html;
+  }
+  ['pCost', 'pSell', 'pDisc', 'pGst', 'pQty'].forEach(function (id) {
+    $(id).addEventListener('input', calcPrices);
+    $(id).addEventListener('change', calcPrices);
+  });
+
+  function suggest() {
+    var cost = num('gCost'), m = Math.min(99, Math.max(0, num('gMar')));
+    if (!cost) { $('gOut').innerHTML = '<div class="empty">Type your cost to get a price.</div>'; return; }
+    var price = cost / (1 - m / 100);
+    $('gOut').innerHTML = row('Sell at', fmt(price), 'big') + row('You earn (each)', fmt(price - cost));
+  }
+  $('gCost').addEventListener('input', suggest);
+  $('gMar').addEventListener('input', suggest);
+
+  /* ---------- messages ---------- */
+  var kind = '', dirty = false;
+  var chipsHtml = '';
+  KINDS.forEach(function (k) { chipsHtml += '<button type="button" class="chip" data-k="' + k[0] + '">' + k[1] + '</button>'; });
+  $('mChips').innerHTML = chipsHtml;
+
+  function renderMsg() {
+    if (!kind || dirty) return;
+    var d = { n: val('mName'), i: val('mItem'), a: num('mAmt') ? fmt(num('mAmt')) : '', p: val('mPay') };
+    $('mText').value = tpl(kind, d, S.lang, S.biz);
+  }
+
+  $('mChips').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-k]') : null;
+    if (!b) return;
+    kind = b.getAttribute('data-k');
+    dirty = false;
+    var all = $('mChips').querySelectorAll('.chip');
+    for (var i = 0; i < all.length; i++) all[i].classList.toggle('sel', all[i] === b);
+    renderMsg();
+  });
+  ['mName', 'mItem', 'mAmt', 'mPay'].forEach(function (id) { $(id).addEventListener('input', renderMsg); });
+  $('mText').addEventListener('input', function () { dirty = true; });
+
+  $('mCopy').addEventListener('click', function () {
+    if (!$('mText').value.trim()) { toast('Pick a message first'); return; }
+    copyText($('mText').value);
+  });
+  $('mSend').addEventListener('click', function () {
+    var text = $('mText').value.trim();
+    if (!text) { toast('Pick a message first'); return; }
+    window.open(waLink(normPhone(val('mPhone'), S.cc), text), '_blank');
+  });
+
+  /* ---------- start ---------- */
+  renderOrders();
+  calcPrices();
+  suggest();
+})();
+</script>
+<script src="/glime-pwa.js?v=2" defer></script>
+</body>
+</html>

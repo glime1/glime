@@ -2,31 +2,476 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#071016">
 <title>Offline | GLIME</title>
 <style>
 :root{--bg:#071016;--surf:#101b29;--bd:rgba(184,222,234,.13);--tx:#f4fbfd;--mu:#9cabb9;--cy:#52e8ff;--gr:#50f5a8}
 *{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--bg);color:var(--tx);font-family:Manrope,Arial,sans-serif;line-height:1.6}
-.box{width:min(420px,100%);text-align:center;padding:32px 22px;background:var(--surf);border:1px solid var(--bd);border-radius:20px}
-.logo{display:block;margin:0 auto 18px;border-radius:20px}
-h1{font-size:1.4rem;letter-spacing:-.02em;margin-bottom:8px}
-p{color:var(--mu);font-size:.88rem;margin-bottom:22px}
-button{min-height:46px;padding:10px 26px;border:0;border-radius:12px;background:linear-gradient(105deg,var(--gr),var(--cy));color:#031014;font:inherit;font-weight:800;font-size:.9rem;cursor:pointer}
+html,body{background:var(--bg)}
+body{min-height:100vh;display:grid;place-items:center;padding:14px;color:var(--tx);font-family:Manrope,Arial,sans-serif;line-height:1.5}
+.box{width:min(420px,100%);padding:18px 14px 16px;background:var(--surf);border:1px solid var(--bd);border-radius:20px;text-align:center}
+.top{display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:12px}
+.logo{flex:none;width:46px;height:46px;border-radius:12px}
+h1{font-size:1.15rem;letter-spacing:-.02em}
+.top p{color:var(--mu);font-size:.78rem;line-height:1.4}
+#net{margin-bottom:10px;padding:9px 12px;border-radius:12px;background:rgba(80,245,168,.14);border:1px solid rgba(80,245,168,.4);color:var(--gr);font-weight:800;font-size:.82rem}
+#net[hidden]{display:none}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.84rem;font-weight:800}
+.hud .you{color:var(--gr)}
+.hud .riv{color:#ff7a8a}
+.hud .tm{color:var(--tx);background:rgba(184,222,234,.1);border-radius:999px;padding:2px 12px}
+.stage{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--bd)}
+canvas{display:block;width:100%;aspect-ratio:3/4;touch-action:none;background:#0a131d;cursor:pointer}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:22px;background:rgba(7,16,22,.86)}
+.ov[hidden]{display:none}
+.ov h2{font-size:1.35rem;letter-spacing:-.02em}
+.ov p{color:var(--mu);font-size:.84rem;max-width:290px}
+.ov .big{color:var(--tx);font-size:.95rem;font-weight:800}
+button{min-height:44px;padding:10px 26px;border:0;border-radius:12px;background:linear-gradient(105deg,var(--gr),var(--cy));color:#031014;font:inherit;font-weight:800;font-size:.9rem;cursor:pointer}
 button:focus-visible{outline:2px solid var(--cy);outline-offset:3px}
+button.ghost{background:transparent;color:var(--tx);border:1px solid var(--bd);font-weight:700;min-height:40px;font-size:.8rem}
+.hint{color:var(--mu);font-size:.74rem;margin:10px 0 12px}
+.tool{display:block;margin:0 0 10px;padding:12px;border-radius:12px;border:1px solid rgba(82,232,255,.4);background:rgba(82,232,255,.08);color:var(--cy);font-weight:800;font-size:.85rem;text-decoration:none}
+.tool small{display:block;color:var(--mu);font-weight:600;font-size:.72rem}
 </style>
 </head>
 <body>
 <main class="box">
-  <img class="logo" src="/icons/icon.svg" width="88" height="88" alt="GLIME">
-  <h1>You're offline</h1>
-  <p>GLIME needs an internet connection to load your business data. Check your connection and try again.</p>
-  <button id="retry" type="button">Try again</button>
+  <div class="top">
+    <svg class="logo" viewBox="0 0 512 512" role="img" aria-label="GLIME">
+      <rect width="512" height="512" fill="#071016"/>
+      <g fill="none" stroke="#0b8f8c" stroke-width="37.7" stroke-linecap="square" stroke-linejoin="miter">
+        <polyline points="193.3,116.1 298.4,116.1 378.1,198.0 269.4,198.0 193.3,276.1 269.4,354.2 378.1,354.2 378.1,268.7"/>
+        <polyline points="198.4,124.3 118.7,206.1 118.7,314.0 198.4,395.9 303.4,395.9 375.9,321.5"/>
+        <polyline points="200.6,276.1 378.1,276.1"/>
+      </g>
+      <g fill="#0b8f8c">
+        <rect x="193.3" y="116.1" width="37.7" height="38.7"/>
+        <rect x="374.5" y="198.0" width="37.7" height="38.7"/>
+        <rect x="193.3" y="350.5" width="37.7" height="38.7"/>
+      </g>
+    </svg>
+    <div>
+      <h1>You're offline</h1>
+      <p>No internet right now. Play a quick game while you wait.</p>
+    </div>
+  </div>
+
+  <div id="net" hidden>You're back online! Opening GLIME...</div>
+
+  <div class="hud">
+    <span class="you" id="hYou">You: 0</span>
+    <span class="tm" id="hTime">45s</span>
+    <span class="riv" id="hRiv">Rivals: 0</span>
+  </div>
+
+  <div class="stage">
+    <canvas id="c" aria-label="Order Rush game. Drag to move your robot."></canvas>
+    <div class="ov" id="ov">
+      <h2 id="ovT">Order Rush</h2>
+      <p id="ovP">Rivals are grabbing the orders. Pick up orders and bring them to your bag before they do!</p>
+      <div class="big" id="ovB" hidden></div>
+      <button id="play" type="button">Play</button>
+    </div>
+  </div>
+
+  <p class="hint">Drag your finger to move your robot. Euro orders give the most points.</p>
+  <a class="tool" href="/business-tools.html">Open Pocket Toolkit<small>Order notebook, price calculator and ready messages. Works offline.</small></a>
+  <button id="retry" class="ghost" type="button">Try again</button>
 </main>
+
 <script>
-document.getElementById('retry').addEventListener('click',function(){location.reload();});
-window.addEventListener('online',function(){location.reload();});
+(function () {
+  'use strict';
+
+  /* ---------- setup ---------- */
+  var W = 360, H = 480, TOTAL = 45, MAXO = 14;
+  var PX = 180, PY = 225, PR = 72;
+  var cv = document.getElementById('c');
+  var ctx = cv.getContext('2d');
+  var ov = document.getElementById('ov');
+  var ovT = document.getElementById('ovT');
+  var ovP = document.getElementById('ovP');
+  var ovB = document.getElementById('ovB');
+  var playBtn = document.getElementById('play');
+  var hYou = document.getElementById('hYou');
+  var hRiv = document.getElementById('hRiv');
+  var hTime = document.getElementById('hTime');
+  var BEST_KEY = 'glime_order_rush_best';
+
+  var sc = 1, last = 0;
+  var state = 'idle';
+  var t = 0, spawn = 0, down = false, target = null;
+  var orders = [], rivals = [], floats = [], player = null;
+  var best = 0;
+  try { best = Number(localStorage.getItem(BEST_KEY)) || 0; } catch (e) {}
+
+  /* Order types: symbol, colour, points and amounts. */
+  var TYPES = [
+    { s: '\u20B9', c: '#50f5a8', p: 1, a: [100, 250, 500, 900] },
+    { s: '$',      c: '#52e8ff', p: 2, a: [5, 10, 20, 50] },
+    { s: '\u20AC', c: '#ffd166', p: 3, a: [5, 10, 20, 50] }
+  ];
+
+  var BASE_PLAYER = { x: 120, y: 412, w: 120, h: 54 };
+  var BASE_RIVALS = [
+    { x: 20,  y: 14, w: 90, h: 40 },
+    { x: 135, y: 14, w: 90, h: 40 },
+    { x: 250, y: 14, w: 90, h: 40 }
+  ];
+  var RIVAL_COLORS = ['#ff7a8a', '#ffa24d', '#b48cff'];
+  var RIVAL_SPEED = [50, 56, 62];
+
+  function fit() {
+    var r = cv.getBoundingClientRect();
+    var d = window.devicePixelRatio || 1;
+    cv.width = Math.max(1, Math.round(r.width * d));
+    cv.height = Math.max(1, Math.round(r.height * d));
+    sc = cv.width / W;
+  }
+
+  /* ---------- helpers ---------- */
+  function rnd(n) { return Math.random() * n; }
+
+  function pickType() {
+    var r = Math.random();
+    return r < 0.5 ? TYPES[0] : (r < 0.8 ? TYPES[1] : TYPES[2]);
+  }
+
+  function spawnOrder() {
+    var a = rnd(6.283), d = Math.sqrt(Math.random()) * (PR - 14), ty = pickType();
+    orders.push({
+      x: PX + Math.cos(a) * d,
+      y: PY + Math.sin(a) * d,
+      ty: ty,
+      amt: ty.a[(Math.random() * ty.a.length) | 0],
+      ph: rnd(6.28)
+    });
+  }
+
+  function robot(x, y, base, col, sp, isP) {
+    return { x: x, y: y, base: base, col: col, sp: sp, isP: isP, carry: null, score: 0, target: null, f: 1 };
+  }
+
+  function step(o, tx, ty, sp, dt) {
+    var dx = tx - o.x, dy = ty - o.y, d = Math.sqrt(dx * dx + dy * dy);
+    if (d < 0.5) return 0;
+    var m = Math.min(d, sp * dt);
+    o.x += dx / d * m;
+    o.y += dy / d * m;
+    if (Math.abs(dx) > 1) o.f = dx >= 0 ? 1 : -1;
+    return d - m;
+  }
+
+  function inRect(o, b) {
+    return o.x >= b.x && o.x <= b.x + b.w && o.y >= b.y && o.y <= b.y + b.h;
+  }
+
+  function dist(a, b) {
+    var dx = a.x - b.x, dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function takeOrder(r, o) {
+    var i = orders.indexOf(o);
+    if (i < 0) return false;
+    orders.splice(i, 1);
+    r.carry = o;
+    return true;
+  }
+
+  function deliver(r) {
+    var o = r.carry;
+    r.score += o.ty.p;
+    floats.push({
+      x: r.x, y: r.y - 24, life: 1,
+      txt: '+' + o.ty.s + o.amt,
+      col: r.isP ? '#50f5a8' : 'rgba(255,255,255,.4)'
+    });
+    r.carry = null;
+    r.target = null;
+  }
+
+  function pickTarget(r) {
+    if (!orders.length) return null;
+    if (Math.random() < 0.5) {
+      var best = null, bd = 1e9;
+      for (var i = 0; i < orders.length; i++) {
+        var d = dist(r, orders[i]);
+        if (d < bd) { bd = d; best = orders[i]; }
+      }
+      return best;
+    }
+    return orders[(Math.random() * orders.length) | 0];
+  }
+
+  function rivalTotal() {
+    var s = 0;
+    for (var i = 0; i < rivals.length; i++) s += rivals[i].score;
+    return s;
+  }
+
+  /* ---------- game flow ---------- */
+  function start() {
+    orders = []; floats = []; rivals = [];
+    for (var i = 0; i < 10; i++) spawnOrder();
+    player = robot(180, 438, BASE_PLAYER, '#2dd4bf', 185, true);
+    for (var k = 0; k < 3; k++) {
+      var b = BASE_RIVALS[k];
+      rivals.push(robot(b.x + b.w / 2, b.y + b.h / 2, b, RIVAL_COLORS[k], RIVAL_SPEED[k], false));
+    }
+    t = 0; spawn = 0.4; target = null; down = false;
+    state = 'play';
+    ov.hidden = true;
+  }
+
+  function finish() {
+    state = 'over';
+    var mine = player.score, all = mine + rivalTotal();
+    var share = all ? Math.round(mine / all * 100) : 0;
+    var msg;
+    if (share >= 40) msg = "You are the market leader!";
+    else if (share >= 25) msg = "Good job! You got a fair share.";
+    else msg = "Rivals took most of the orders. Try again!";
+    var isBest = share > best;
+    if (isBest) {
+      best = share;
+      try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {}
+    }
+    ovT.textContent = share >= 40 ? 'You win!' : (share >= 25 ? 'Nice!' : 'Time is up');
+    ovP.textContent = msg;
+    ovB.hidden = false;
+    ovB.textContent = 'You got ' + share + '% of all orders' + (isBest ? ' (new best!)' : ' (best: ' + best + '%)');
+    playBtn.textContent = 'Play again';
+    ov.hidden = false;
+  }
+
+  /* ---------- update ---------- */
+  function update(dt) {
+    t += dt;
+    if (t >= TOTAL) { finish(); return; }
+
+    spawn -= dt;
+    if (spawn <= 0 && orders.length < MAXO) { spawnOrder(); spawn = 0.55; }
+
+    /* player */
+    if (target) step(player, target.x, target.y, player.sp, dt);
+    player.x = Math.max(12, Math.min(W - 12, player.x));
+    player.y = Math.max(20, Math.min(H - 14, player.y));
+    if (!player.carry) {
+      var near = null, nd = 22;
+      for (var i = 0; i < orders.length; i++) {
+        var d = dist(player, orders[i]);
+        if (d <= nd) { nd = d; near = orders[i]; }
+      }
+      if (near) takeOrder(player, near);
+    } else if (inRect(player, player.base)) {
+      deliver(player);
+    }
+
+    /* rivals get a little faster as time passes */
+    var ramp = 1 + t / 100;
+    for (var k = 0; k < rivals.length; k++) {
+      var r = rivals[k], sp = r.sp * ramp;
+      if (!r.carry) {
+        if (!r.target || orders.indexOf(r.target) < 0) r.target = pickTarget(r);
+        if (r.target) {
+          step(r, r.target.x, r.target.y, sp, dt);
+          if (dist(r, r.target) < 14) {
+            takeOrder(r, r.target);
+            r.target = null;
+          }
+        } else {
+          step(r, PX, PY - PR - 10, sp, dt);
+        }
+      } else {
+        step(r, r.base.x + r.base.w / 2, r.base.y + r.base.h / 2, sp, dt);
+        if (inRect(r, r.base)) deliver(r);
+      }
+    }
+
+    for (var j = floats.length - 1; j >= 0; j--) {
+      floats[j].life -= dt * 1.1;
+      floats[j].y -= dt * 22;
+      if (floats[j].life <= 0) floats.splice(j, 1);
+    }
+  }
+
+  /* ---------- drawing ---------- */
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function label(txt, x, y, size, col) {
+    ctx.font = '800 ' + size + 'px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = col;
+    ctx.fillText(txt, x, y);
+  }
+
+  function coin(x, y, o, rad) {
+    ctx.beginPath();
+    ctx.arc(x, y, rad, 0, 6.283);
+    ctx.fillStyle = o.ty.c;
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(0,0,0,.35)';
+    ctx.stroke();
+    label(o.ty.s, x, y + 0.5, Math.round(rad * 1.15), '#05121a');
+  }
+
+  function drawBase(b, col, txt) {
+    rr(b.x, b.y, b.w, b.h, 12);
+    ctx.fillStyle = 'rgba(255,255,255,.04)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = col;
+    ctx.stroke();
+    label(txt, b.x + b.w / 2, b.y + b.h - 9, 10, col);
+  }
+
+  function drawRobot(r) {
+    ctx.save();
+    ctx.translate(r.x, r.y);
+    if (r.isP) {
+      ctx.beginPath();
+      ctx.arc(0, 2, 21, 0, 6.283);
+      ctx.fillStyle = 'rgba(80,245,168,.2)';
+      ctx.fill();
+    }
+    ctx.strokeStyle = r.col;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -11);
+    ctx.lineTo(0, -17);
+    ctx.stroke();
+    ctx.fillStyle = r.col;
+    ctx.beginPath();
+    ctx.arc(0, -18, 2.6, 0, 6.283);
+    ctx.fill();
+    rr(-13, -11, 26, 22, 7);
+    ctx.fill();
+    rr(-9, -6, 18, 10, 4);
+    ctx.fillStyle = '#071016';
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-4 + r.f, -1, 2.2, 0, 6.283);
+    ctx.arc(4 + r.f, -1, 2.2, 0, 6.283);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    ctx.fillRect(-9, 11, 7, 3);
+    ctx.fillRect(2, 11, 7, 3);
+    if (r.carry) coin(0, -31, r.carry, 9);
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.setTransform(sc, 0, 0, sc, 0, 0);
+    ctx.fillStyle = '#0a131d';
+    ctx.fillRect(0, 0, W, H);
+
+    /* order pool */
+    var g = ctx.createRadialGradient(PX, PY, 8, PX, PY, PR);
+    g.addColorStop(0, 'rgba(82,232,255,.18)');
+    g.addColorStop(1, 'rgba(80,245,168,.05)');
+    ctx.beginPath();
+    ctx.arc(PX, PY, PR, 0, 6.283);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(82,232,255,.45)';
+    if (ctx.setLineDash) ctx.setLineDash([6, 5]);
+    ctx.stroke();
+    if (ctx.setLineDash) ctx.setLineDash([]);
+    label('ORDERS', PX, PY + PR + 15, 10, 'rgba(156,171,185,.8)');
+
+    for (var k = 0; k < BASE_RIVALS.length; k++) drawBase(BASE_RIVALS[k], RIVAL_COLORS[k], 'RIVAL');
+    drawBase(BASE_PLAYER, '#50f5a8', 'YOUR BAG');
+
+    var now = Date.now() / 400;
+    for (var i = 0; i < orders.length; i++) {
+      var o = orders[i];
+      coin(o.x, o.y + Math.sin(now + o.ph) * 1.2, o, 11);
+    }
+
+    for (var m = 0; m < rivals.length; m++) drawRobot(rivals[m]);
+    if (player) drawRobot(player);
+
+    for (var f = 0; f < floats.length; f++) {
+      var fl = floats[f];
+      ctx.globalAlpha = Math.max(0, Math.min(1, fl.life));
+      label(fl.txt, fl.x, fl.y, 13, fl.col);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  var lastHud = '';
+  function hud() {
+    var left = Math.max(0, Math.ceil(TOTAL - t));
+    var s = state === 'idle' ? '0|0|' + TOTAL : (player.score + '|' + rivalTotal() + '|' + left);
+    if (s === lastHud) return;
+    lastHud = s;
+    var p = s.split('|');
+    hYou.textContent = 'You: ' + p[0];
+    hRiv.textContent = 'Rivals: ' + p[1];
+    hTime.textContent = p[2] + 's';
+  }
+
+  /* ---------- loop ---------- */
+  function loop(ts) {
+    var dt = (ts - last) / 1000;
+    last = ts;
+    if (!(dt > 0) || dt > 0.05) dt = 0.016;
+    if (state === 'play' && !document.hidden) update(dt);
+    draw();
+    hud();
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- input ---------- */
+  function pos(e) {
+    var r = cv.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width * W;
+    var y = (e.clientY - r.top) / r.height * H;
+    /* A finger hides the robot, so aim a little above the touch point. */
+    if (e.pointerType === 'touch') y -= 34;
+    return { x: x, y: y };
+  }
+
+  cv.addEventListener('pointerdown', function (e) {
+    if (state !== 'play') return;
+    down = true;
+    target = pos(e);
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (state === 'play' && down) target = pos(e);
+  });
+  function up() { down = false; }
+  cv.addEventListener('pointerup', up);
+  cv.addEventListener('pointercancel', up);
+
+  playBtn.addEventListener('click', start);
+  document.getElementById('retry').addEventListener('click', function () { location.reload(); });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('online', function () {
+    document.getElementById('net').hidden = false;
+    setTimeout(function () { location.reload(); }, 1500);
+  });
+
+  fit();
+  requestAnimationFrame(loop);
+})();
 </script>
 </body>
 </html>

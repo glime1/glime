@@ -19,8 +19,12 @@
        "icon": "https://...png", "badge": "https://...png", "tag": "..." }
    ========================================================= */
 
-var CACHE = 'glime-shell-v3';
-var PRECACHE = ['/offline.html', '/icons/icon.svg'];
+var CACHE = 'glime-shell-v5';
+var PRECACHE = ['/offline.html', '/icons/icon.svg', '/business-tools.html'];
+
+/* Pages that keep working with no internet. The key is the page path without
+   ".html", the value is the saved copy. */
+var SAVED_PAGES = { '/business-tools': '/business-tools.html' };
 
 /* A response that went through a redirect (for example /offline.html ->
    /offline) cannot be used to answer a page navigation: the browser shows
@@ -124,17 +128,36 @@ function offlinePage() {
   });
 }
 
+/* A saved page (like the Pocket Toolkit), or the offline page if it is missing. */
+function savedPage(url) {
+  return caches.match(url).then(function (res) {
+    if (!res) throw new Error('not saved');
+    return res.redirected ? clean(res) : res;
+  }).catch(function () { return offlinePage(); });
+}
+
 self.addEventListener('fetch', function (event) {
   var req = event.request;
   if (req.mode !== 'navigate') return;
 
+  var path = '';
+  try { path = new URL(req.url).pathname.replace(/\.html$/, '').replace(/\/+$/, ''); } catch (e) {}
+  var saved = SAVED_PAGES[path] || '';
+
   event.respondWith(
     fetch(req).then(function (res) {
       /* Server reachable but failing (for example hosting outage). */
-      if (res && res.status >= 500 && res.status <= 599) return unavailablePage();
+      if (res && res.status >= 500 && res.status <= 599) {
+        return saved ? savedPage(saved) : unavailablePage();
+      }
+      /* Keep the saved copy fresh while the visitor is online. */
+      if (saved && res && res.ok && !res.redirected) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { return c.put(saved, copy); }).catch(function () {});
+      }
       return res;
     }).catch(function () {
-      return offlinePage();
+      return saved ? savedPage(saved) : offlinePage();
     })
   );
 });
