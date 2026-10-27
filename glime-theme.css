@@ -693,56 +693,56 @@ html[data-theme="light"]:is([data-page="follow-up"]) .skel{
   background: linear-gradient(90deg,rgba(0,0,0,0.03),rgba(0,0,0,0.07),rgba(0,0,0,0.03)) !important;
 }
 
-/* ===== glime-app-shell.css (dashboard, glime-intelligence-center) ===== */
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]){
+/* ===== glime-app-shell.css (dashboard, data-download, glime-intelligence-center) ===== */
+html[data-theme="light"]{
   --gas-bg: #ffffff !important;
   --gas-surface: #ffffff !important;
   --gas-line: #e5e7eb !important;
   --gas-text: #000000 !important;
   --gas-muted: #4b5563 !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-icon-btn:hover,
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-burger:hover{
+html[data-theme="light"] .gas-icon-btn:hover,
+html[data-theme="light"] .gas-burger:hover{
   background: rgba(0,0,0,0.035) !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-link:hover{
+html[data-theme="light"] .gas-link:hover{
   background: rgba(0,0,0,0.035) !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-link[aria-current="page"]{
+html[data-theme="light"] .gas-link[aria-current="page"]{
   color: #0a7a4a !important;
   background: var(--gas-accent-soft) !important;
   box-shadow: inset 0 0 0 1px rgba(0,255,136,0.072) !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-link[aria-current="page"]::before{
+html[data-theme="light"] .gas-link[aria-current="page"]::before{
   background: var(--gas-accent) !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-account{
+html[data-theme="light"] .gas-account{
   background: rgba(0,0,0,0.03) !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-avatar{
+html[data-theme="light"] .gas-avatar{
   color: #04110a !important;
   background: var(--gas-accent) !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-logout{
+html[data-theme="light"] .gas-logout{
   color: #c62828 !important;
   background: rgba(255,71,87,.07) !important;
   border: 1px solid rgba(255,71,87,.25) !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-logout:hover{
+html[data-theme="light"] .gas-logout:hover{
   background: rgba(255,71,87,.14) !important;
 }
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-link:focus-visible,
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-brand:focus-visible,
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-icon-btn:focus-visible,
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-burger:focus-visible,
-html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-logout:focus-visible{
+html[data-theme="light"] .gas-link:focus-visible,
+html[data-theme="light"] .gas-brand:focus-visible,
+html[data-theme="light"] .gas-icon-btn:focus-visible,
+html[data-theme="light"] .gas-burger:focus-visible,
+html[data-theme="light"] .gas-logout:focus-visible{
   outline: 2px solid var(--gas-accent) !important;
 }
 @media (max-width:900px){
-  html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) body.gas-open .gas-sidebar{
+  html[data-theme="light"] body.gas-open .gas-sidebar{
     box-shadow: 12px 0 40px rgba(0,0,0,0.14) !important;
   }
-  html[data-theme="light"]:is([data-page="dashboard"],[data-page="glime-intelligence-center"]) .gas-topbar{
+  html[data-theme="light"] .gas-topbar{
     background: rgba(255,255,255,0.92) !important;
   }
 }
@@ -2635,6 +2635,81 @@ html[data-theme="light"][data-page="ai-connections"] .message.error{
   color: #c62828 !important;
 }
 
+/* ===== inline <style> of data-download.html ===== */
+html[data-theme="light"][data-page="data-download"]{
+  --bg: #ffffff !important;
+  --card: #ffffff !important;
+  --text: #000000 !important;
+  --muted: #4b5563 !important;
+  --border: #e5e7eb !important;
+}
+html[data-theme="light"][data-page="data-download"] .eyebrow{
+  color: #0e7490 !important;
+}
+html[data-theme="light"][data-page="data-download"] .notice{
+  border: 1px solid rgba(255,71,87,.3) !important;
+  background: rgba(255,71,87,.06) !important;
+  color: #c62828 !important;
+}
+html[data-theme="light"][data-page="data-download"] .num{
+  background: linear-gradient(135deg,var(--green),var(--cyan)) !important;
+  color: #061018 !important;
+}
+html[data-theme="light"][data-page="data-download"] .chip,
+html[data-theme="light"][data-page="data-download"] .mini{
+  background: rgba(0,0,0,0.03) !important;
+  color: #000000 !important;
+}
+html[data-theme="light"][data-page="data-download"] .chip[aria-pressed="true"]{
+  background: rgba(0,255,136,.12) !important;
+  border-color: rgba(0,255,136,.45) !important;
+  color: #0a7a4a !important;
+}
+html[data-theme="light"][data-page="data-download"] input[type=date],
+html[data-theme="light"][data-page="data-download"] input[type=password],
+html[data-theme="light"][data-page="data-download"] input[type=text]{
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+html[data-theme="light"][data-page="data-download"] input:focus{
+  border-color: rgba(0,240,255,.5) !important;
+}
+html[data-theme="light"][data-page="data-download"] .opt{
+  background: rgba(0,0,0,0.03) !important;
+}
+html[data-theme="light"][data-page="data-download"] .opt.sel{
+  border-color: rgba(0,255,136,.45) !important;
+  background: rgba(0,255,136,.07) !important;
+}
+html[data-theme="light"][data-page="data-download"] .lock{
+  border: 1px dashed rgba(0,240,255,.3) !important;
+  background: rgba(0,240,255,.04) !important;
+}
+html[data-theme="light"][data-page="data-download"] .btn{
+  color: #061018 !important;
+  background: linear-gradient(135deg,var(--green),var(--cyan)) !important;
+}
+html[data-theme="light"][data-page="data-download"] .btn.ghost{
+  background: rgba(0,0,0,0.042) !important;
+  color: #000000 !important;
+}
+html[data-theme="light"][data-page="data-download"] .status.err{
+  color: #c62828 !important;
+}
+html[data-theme="light"][data-page="data-download"] .status.ok{
+  color: #0a7a4a !important;
+}
+html[data-theme="light"][data-page="data-download"] .ov{
+  background: rgba(255,255,255,0.8) !important;
+}
+html[data-theme="light"][data-page="data-download"] .modal{
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+}
+html[data-theme="light"][data-page="data-download"] .modal .err{
+  color: #c62828 !important;
+}
+
 /* ===== inline <style> of billing.html ===== */
 html[data-theme="light"][data-page="billing"]{
   --bg: #ffffff !important;
@@ -3768,4 +3843,21 @@ html[data-theme="light"]:is([data-page="voice-ai"]) .glime-va-status.ok{
 }
 html[data-theme="light"]:is([data-page="voice-ai"]) .glime-va-status.err{
   color: #c62828 !important;
+}
+
+/* ---------- Part 3: automatic light mode for NEW logged-in pages ----------
+   Applies ONLY to pages that load glime-app-shell.js (the shell adds class
+   "gas-body" to <body>). Public pages (index, login, packages...) never get it.
+   A new page becomes light automatically if it uses the usual variable names
+   (--bg, --card, --panel, --surface, --text, --muted, --line, --border ...).
+   Page-specific rules above (higher specificity) still win for existing pages. */
+html[data-theme="light"] body.gas-body{
+  --bg:#ffffff !important;--bg2:#f9fafb !important;--bg-deep:#ffffff !important;
+  --panel:#ffffff !important;--panel2:#f9fafb !important;--panel-2:#f9fafb !important;
+  --card:#ffffff !important;--card2:#f9fafb !important;
+  --surface:#ffffff !important;--surface-2:#f9fafb !important;--surf:#ffffff !important;--surf2:#f9fafb !important;
+  --text:#000000 !important;--tx:#000000 !important;
+  --muted:#4b5563 !important;--mu:#4b5563 !important;--soft:#6b7280 !important;--dim:#6b7280 !important;
+  --line:#e5e7eb !important;--line2:#d1d5db !important;--border:#e5e7eb !important;--bd:#e5e7eb !important;
+  background:#ffffff !important;color:#000000 !important;
 }
