@@ -9,45 +9,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="orders.css">
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
 </head>
-<body>
+<body data-gas-title="Orders">
 
 <div id="boot" class="boot" role="status"><img src="glime_logo_clean.svg" alt="GLIME"><span>Securing your GLIME workspace…</span></div>
 
-<div class="app-shell">
-  <div id="navScrim" class="nav-scrim" data-act="menu"></div>
-  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
-    <div class="brand"><img src="glime_logo_clean.svg" alt="GLIME"><small>AI BUSINESS WORKSPACE</small></div>
-    <nav>
-      <a href="dashboard.html">⌂ <span>Dashboard</span></a>
-      <a href="services.html">▦ <span>Services</span></a>
-      <a href="instagram-sales-specialist.html">◎ <span>Instagram Sales</span></a>
-      <a href="whatsapp-sales-specialist.html">◉ <span>WhatsApp Sales</span></a>
-      <a href="follow-up.html">↗ <span>Follow-up</span></a>
-      <a href="leads.html">◈ <span>Leads AI</span></a>
-      <a href="customer.html">☺ <span>Customers</span></a>
-      <a class="active" href="orders.html" aria-current="page">🛒 <span>Orders</span></a>
-      <a href="billing.html">▣ <span>Billing</span></a>
-      <a href="settings.html">⚙ <span>Settings</span></a>
-    </nav>
-    <div class="side-bottom">
-      <div class="workspace-mini"><i></i><div><b id="businessName">Business</b><small id="clientId">Loading…</small></div></div>
-      <button id="logout" type="button">Secure Logout</button>
-    </div>
-  </aside>
-
-  <main class="main" id="main">
+<main class="main" id="main" data-gas-content>
 
     <!-- ============ ORDERS LIST ============ -->
     <section id="listView">
       <header class="topbar">
-        <button class="icon-btn mobile-menu" type="button" data-act="menu" aria-label="Open menu">☰</button>
         <div class="topbar-title">
           <div class="eyebrow">ORDER OPERATIONS</div>
           <h1>Orders</h1>
           <p>One order system for WhatsApp, Instagram, website and manual entry.</p>
         </div>
-        <button class="btn primary" type="button" data-act="create" id="createBtn">＋ Create Order</button>
+        <div class="topbar-actions">
+          <button class="btn ghost" type="button" data-act="export" id="exportBtn">⬇ Export CSV</button>
+          <button class="btn primary" type="button" data-act="create" id="createBtn">＋ Create Order</button>
+        </div>
       </header>
 
       <section class="stats" id="stats" aria-label="Order summary"></section>
@@ -68,8 +50,7 @@
     <!-- ============ ORDER DETAIL ============ -->
     <section id="detailView" hidden></section>
 
-  </main>
-</div>
+</main>
 
 <div id="sheetRoot" hidden></div>
 <div id="modalRoot" hidden></div>
