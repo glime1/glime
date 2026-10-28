@@ -220,3 +220,9 @@ svg.i{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-l
  .filters select{flex:1 1 120px}
 }
 @media(max-width:430px){.stats{grid-template-columns:1fr}.mini{grid-template-columns:1fr}.top-av{display:none}}
+/* shared app shell inside the fixed phone app layout: keep page scrolling inside .page */
+@media(max-width:720px){
+body.gapp-cu .gas-col{height:calc(100% - 60px - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;overflow:hidden}
+body.gapp-cu .gas-col>.gas-topbar{flex:0 0 auto}
+body.gapp-cu .shell{flex:1 1 auto;min-height:0;height:auto}
+}
