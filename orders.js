@@ -18,6 +18,7 @@
 const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = db;
 
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
@@ -287,6 +288,24 @@ function renderList() {
 }
 
 function refreshAll() { return Promise.all([loadList(true), loadSummary()]); }
+
+/* ---------- CSV export (orders currently loaded in the list) ---------- */
+function exportCsv() {
+  if (!S.rows.length) { toast('No orders to export', true); return; }
+  const cell = (v) => { let s = String(v ?? ''); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const head = ['Order', 'Date', 'Customer', 'Mobile', 'Product', 'Qty', 'Amount', 'Status', 'Payment', 'Channel'];
+  const lines = S.rows.map((o) => {
+    const c = o.customer || {};
+    return [o.order_number, o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : '', c.name, c.mobile, o.product_title, o.quantity || 1, o.total_amount,
+      ORDER_STATUS[o.status]?.label || title(o.status), PAY_STATUS[o.payment_status]?.label || title(o.payment_status), CHANNEL[String(o.source_channel || 'other').toLowerCase()]?.label || title(o.source_channel)].map(cell).join(',');
+  });
+  const blob = new Blob(['\ufeff' + [head.map(cell).join(','), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'glime-orders-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Exported ' + S.rows.length + ' orders');
+}
 
 /* ---------- filters sheet ---------- */
 function openFilters() {
@@ -777,11 +796,12 @@ document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-act]'); if (!t) return;
   const a = t.dataset.act;
   switch (a) {
-    case 'menu': $('sidebar').classList.toggle('open'); $('navScrim').classList.toggle('open'); break;
+    case 'menu': $('sidebar')?.classList.toggle('open'); $('navScrim')?.classList.toggle('open'); break;
     case 'tab': S.tab = t.dataset.tab; renderTabs(); loadList(true); break;
     case 'open': openDetail(t.dataset.id); break;
     case 'back': closeDetail(); break;
     case 'create': openCreate(); break;
+    case 'export': exportCsv(); break;
     case 'filters': openFilters(); break;
     case 'apply-filters': applyFilters(); break;
     case 'clear': clearFilters(); break;
@@ -818,13 +838,14 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (!$('modalRoot').hidden) finishModal(null);
   else if (!$('sheetRoot').hidden) closeSheet();
-  else if ($('sidebar').classList.contains('open')) { $('sidebar').classList.remove('open'); $('navScrim').classList.remove('open'); }
+  else if ($('sidebar')?.classList.contains('open')) { $('sidebar').classList.remove('open'); $('navScrim')?.classList.remove('open'); }
 });
 window.addEventListener('popstate', () => {
   const id = new URLSearchParams(location.search).get('id');
   if (id) openDetail(id, false); else closeDetail(false);
 });
-$('logout').onclick = async () => { await db.auth.signOut(); location.href = 'login.html'; };
+/* logout is handled by the shared app shell; kept null-safe in case an old button exists */
+$('logout')?.addEventListener('click', async () => { await db.auth.signOut(); location.href = 'login.html'; });
 
 /* =========================================================
    BOOT
@@ -835,10 +856,10 @@ async function boot() {
   const { data: c, error } = await db.from('client_data').select('client_id,business_name,name,full_name').eq('auth_user_id', session.user.id).maybeSingle();
   if (error || !c?.client_id) throw new Error(error?.message || 'Client account not found');
   S.clientId = c.client_id;
-  $('businessName').textContent = c.business_name || c.name || c.full_name || 'Business';
-  $('clientId').textContent = S.clientId;
+  const bn = $('businessName'); if (bn) bn.textContent = c.business_name || c.name || c.full_name || 'Business';
+  const ci = $('clientId'); if (ci) ci.textContent = S.clientId;
   renderTabs(); renderStats();
-  $('boot').remove();
+  $('boot')?.remove();
   const id = new URLSearchParams(location.search).get('id');
   refreshAll();
   if (id) openDetail(id, false);
