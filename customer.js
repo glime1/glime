@@ -4,6 +4,7 @@
 const SB_URL = "https://ufoulgbiqgjriwapuopc.supabase.co";
 const SB_KEY = "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 const db = window.supabase.createClient(SB_URL, SB_KEY);
+window.supabaseClient = db;
 
 const S = {
   clientId: null, businessName: "", customers: [], orders: [], leads: [], wa: [], ig: [], fu: [],
@@ -128,9 +129,10 @@ async function resolveClient() {
   if (error || !data?.client_id) throw new Error("Client workspace could not be resolved.");
   S.clientId = data.client_id;
   S.businessName = data.business_name || data.client_name || data.full_name || data.name || "Business";
-  $("businessName").textContent = S.businessName;
-  $("clientCode").textContent = data.client_id;
-  $("meAv").textContent = $("topAv").textContent = initials(S.businessName);
+  if ($("businessName")) $("businessName").textContent = S.businessName;
+  if ($("clientCode")) $("clientCode").textContent = data.client_id;
+  if ($("meAv")) $("meAv").textContent = initials(S.businessName);
+  if ($("topAv")) $("topAv").textContent = initials(S.businessName);
 }
 
 async function loadAll() {
@@ -420,11 +422,11 @@ function bind() {
   for (const id of ["modalClose", "modalCancel"]) $(id).addEventListener("click", () => { $("modal").hidden = true; });
   $("modal").addEventListener("click", (e) => { if (e.target === $("modal")) $("modal").hidden = true; });
   $("addForm").addEventListener("submit", addCustomer);
-  $("menuBtn").addEventListener("click", () => { $("sidebar").classList.add("open"); $("scrim").classList.add("show"); });
-  $("scrim").addEventListener("click", closeNav);
-  $("logoutBtn").addEventListener("click", async () => { try { await db.auth.signOut(); } catch (e) {} location.href = "login.html"; });
+  $("menuBtn")?.addEventListener("click", () => { $("sidebar")?.classList.add("open"); $("scrim")?.classList.add("show"); });
+  $("scrim")?.addEventListener("click", closeNav);
+  $("logoutBtn")?.addEventListener("click", async () => { try { await db.auth.signOut(); } catch (e) {} location.href = "login.html"; });
 }
-function closeNav() { $("sidebar").classList.remove("open"); $("scrim").classList.remove("show"); }
+function closeNav() { $("sidebar")?.classList.remove("open"); $("scrim")?.classList.remove("show"); }
 
 async function addCustomer(e) {
   e.preventDefault();
@@ -453,9 +455,10 @@ async function saveNote() {
 /* ---------- shell ---------- */
 function buildShell() {
   const nav = [["Overview", "home", "dashboard.html"], ["Leads", "target", "leads.html"], ["Customers", "users", "customer.html", 1], ["Orders", "cart", "orders.html"], ["Services", "grid", "services.html"], ["sec", "AI & Automation"], ["Follow-up Specialist", "repeat", "follow-up.html"], ["Business Intelligence", "chart", "glime-intelligence-center.html"], ["AI Assistant", "star", "client-assistant.html"], ["Instagram Sales", "insta", "instagram-sales-specialist.html"], ["WhatsApp Sales", "msg", "whatsapp-sales-specialist.html"], ["Voice AI", "mic", "voice-ai.html"], ["sec", "Manage"], ["Connectors", "plug", "ai-connections.html"], ["Billing", "card", "billing.html"], ["Settings", "gear", "settings.html"]];
-  $("nav").innerHTML = nav.map((n) => n[0] === "sec" ? `<div class="sec">${n[1]}</div>` : `<a href="${n[2]}" class="${n[3] ? "on" : ""}">${ic(n[1])}<span>${n[0]}</span></a>`).join("");
-  $("logoutBtn").innerHTML = ic("logout") + "<span>Logout</span>";
-  $("menuBtn").innerHTML = ic("menu"); $("gsIcon").innerHTML = ic("search"); $("fsIcon").innerHTML = ic("search");
+  if ($("nav")) $("nav").innerHTML = nav.map((n) => n[0] === "sec" ? `<div class="sec">${n[1]}</div>` : `<a href="${n[2]}" class="${n[3] ? "on" : ""}">${ic(n[1])}<span>${n[0]}</span></a>`).join("");
+  if ($("logoutBtn")) $("logoutBtn").innerHTML = ic("logout") + "<span>Logout</span>";
+  if ($("menuBtn")) $("menuBtn").innerHTML = ic("menu");
+  $("gsIcon").innerHTML = ic("search"); $("fsIcon").innerHTML = ic("search");
   $("rangeIcon").innerHTML = ic("cal"); $("bell").insertAdjacentHTML("afterbegin", ic("bell"));
   $("headIc").innerHTML = ic("users"); $("addBtn").innerHTML = ic("plus") + " Add Customer";
   $("filterBtn").innerHTML = ic("filter") + " Filters"; $("modalClose").innerHTML = ic("x");
