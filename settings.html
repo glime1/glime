@@ -169,7 +169,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   Add a module/addon instead and reuse the shared API/helpers.
 
   Addons loaded (in order): settings-profile-addon.js, settings-ai-addon.js,
-  settings-automation-addon.js, settings-followups-addon.js, connector-ui.js, settings-connector-addon.js
+  settings-teach-ai-addon.js, settings-automation-addon.js, settings-followups-addon.js, connector-ui.js, settings-connector-addon.js
 
   Dialogs: glime-dialog.js (loaded in <head>) provides GLIME_DIALOG.confirm /
   alert / prompt in GLIME colours instead of the browser's native boxes.
@@ -180,6 +180,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
                settings.html#followups     opens the Follow-ups module
                settings.html#connector     opens the Connector module
                settings.html#profile       opens Profile (owner photo + business logo)
+               settings.html#teach         opens Teach AI (the owner teaches the AI from customer questions)
                settings.html#<module-id>   opens any registered module
 */
 
@@ -629,7 +630,7 @@ async function loadSettingsAddon(src){
 
 (async()=>{
   /* Addons load in order; one failing addon never blocks the others. */
-  for(const src of ['settings-profile-addon.js','settings-ai-addon.js','settings-automation-addon.js','settings-followups-addon.js','connector-ui.js','settings-connector-addon.js']){
+  for(const src of ['settings-profile-addon.js','settings-ai-addon.js','settings-teach-ai-addon.js','settings-automation-addon.js','settings-followups-addon.js','connector-ui.js','settings-connector-addon.js']){
     try{
       await loadSettingsAddon(src);
     }catch(error){
