@@ -12,6 +12,7 @@
     console.error("[GLIME Leads] leads-data.js not loaded.");
     return;
   }
+  window.supabaseClient = D.db;
 
   const $ = (id) => document.getElementById(id);
   const esc = (v) =>
@@ -858,7 +859,7 @@
   );
   $("addLeadBtn").addEventListener("click", () => $("leadModal").classList.remove("hidden"));
   $("manageFieldsBtn").addEventListener("click", () => $("fieldsModal").classList.remove("hidden"));
-  $("logoutBtn").addEventListener("click", async () => {
+  $("logoutBtn")?.addEventListener("click", async () => {
     await D.db.auth.signOut();
     window.location.href = "login.html";
   });
