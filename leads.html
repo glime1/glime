@@ -12,24 +12,16 @@
 <link rel="stylesheet" href="lead-duplicate-addon.css">
 <link rel="stylesheet" href="lead-next-action-addon.css">
 <link rel="stylesheet" href="lead-phase8-handoff-addon.css">
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
 </head>
-<body>
+<body data-gas-title="Leads">
 <div id="loadingScreen" class="loading-screen">
   <div class="spinner"></div>
   <div>Loading Leads…</div>
 </div>
 
-<aside class="sidebar">
-  <div class="brand">
-    <img src="glime_logo_clean.svg" alt="GLIME" onerror="this.style.display='none'">
-    <span>Lead AI Employee</span>
-  </div>
-  <a class="nav-item active" href="leads.html">👥 Leads</a>
-  <a class="nav-item" href="dashboard.html">▦ Dashboard</a>
-  <button id="logoutBtn" class="logout-btn">Logout</button>
-</aside>
-
-<main class="main-content">
+<main class="main-content" data-gas-content>
   <header class="header">
     <div>
       <h1>Lead Pipeline</h1>
