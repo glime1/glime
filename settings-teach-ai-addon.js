@@ -14,6 +14,11 @@
              'archived' lesson the owner switched off
    source 'owner' | 'ai_suggested'
 
+   Suggestions: the "Find suggestions" button calls the edge function
+   client-ai-learn, which proposes lessons ONLY from chats where the owner
+   replied personally after the AI. They arrive as 'pending' and are never
+   used until the owner approves them here.
+
    Safety (enforced in client-ai-runtime): customers can never teach the
    AI, and a lesson never overrides prices, published offers, business
    rules, policies or safety instructions.
@@ -288,13 +293,22 @@
 
     const rows = S.items.filter(i => bucket(i) === S.filter);
 
+    const scanBox =
+      S.filter === 'pending'
+        ? `<div class="lr-item" style="border-style:dashed">
+            <h4>Let your AI review your recent chats</h4>
+            <p style="opacity:.8">It looks for moments when you replied personally after the AI answered, and suggests a lesson from your reply. Nothing is used until you approve it.</p>
+            <div class="lr-actions"><button type="button" class="lr-btn small primary" data-act="scan">Find suggestions</button></div>
+          </div>`
+        : '';
+
     if (!rows.length) {
       const text = {
         active: ['No active lessons yet.', 'Add your first lesson above. Your AI will start using it right away.'],
-        pending: ['No suggestions right now.', 'When your AI spots a question it struggled with, its suggested lesson will wait here for your approval.'],
+        pending: ['No suggestions right now.', 'Tap Find suggestions above. Lessons your AI proposes from your own replies will wait here for your approval.'],
         off: ['Nothing here.', 'Lessons you stop or reject will appear here.']
       }[S.filter];
-      host.innerHTML = `<div class="lr-empty"><b>${esc(text[0])}</b>${esc(text[1])}</div>`;
+      host.innerHTML = scanBox + `<div class="lr-empty"><b>${esc(text[0])}</b>${esc(text[1])}</div>`;
       return;
     }
 
@@ -303,7 +317,7 @@
         ? `<p class="lr-note" style="margin:0 0 10px">You have ${count('active')} active lessons. Your AI reads the ${ACTIVE_LIMIT} most recently updated ones, so stop old lessons you no longer need.</p>`
         : '';
 
-    host.innerHTML = warn + rows.map(itemHtml).join('');
+    host.innerHTML = scanBox + warn + rows.map(itemHtml).join('');
   }
 
   function renderError(message) {
@@ -457,6 +471,37 @@
     });
   }
 
+  async function scanChats(btn) {
+    await withBusy(btn, 'Reviewing chats…', async () => {
+      try {
+        const { data, error } = await db.functions.invoke('client-ai-learn', { body: { action: 'suggest' } });
+        if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
+
+        S.items = await fetchLessons();
+        renderChips();
+        renderList();
+
+        const n = Number((data && data.suggested) || 0);
+        const reason = data && data.reason;
+        if (n > 0) {
+          ui.toast(n === 1 ? '1 new suggestion is ready.' : n + ' new suggestions are ready.');
+        } else if (reason === 'too_soon') {
+          ui.toast('You just checked. Please try again in a few minutes.');
+        } else if (reason === 'too_many_pending') {
+          ui.toast('Approve or reject your current suggestions first.');
+        } else if (reason === 'no_new_corrections') {
+          ui.toast('No new replies from you to learn from yet.');
+        } else {
+          ui.toast('Nothing reusable found in your recent chats.');
+        }
+      } catch (e) {
+        console.error('[GLIME Teach AI] scan:', e);
+        ui.toast(errMsg(e), true);
+      }
+    });
+  }
+
   async function load() {
     if (ROOT) ROOT.innerHTML = '<div class="lr-loading">Loading Teach AI…</div>';
     try {
@@ -503,6 +548,9 @@
         break;
       case 'delete':
         deleteLesson(el);
+        break;
+      case 'scan':
+        scanChats(el);
         break;
       case 'retry':
         load();
