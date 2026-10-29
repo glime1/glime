@@ -10,8 +10,13 @@
    It does three things:
    1. Reads the saved choice (localStorage "glime_theme") and sets
       <html data-theme="light|dark"> before the page paints (no flash).
-   2. Adds a small sun/moon button (in the sidebar when the page uses
-      the shared GLIME app shell, otherwise a floating round button).
+   2. Adds a small sun/moon button. Where it goes:
+        - the sidebar of the shared GLIME app shell, or
+        - any element with data-gtheme-slot="row" (pages with their
+          own sidebar, e.g. Instagram Sales), or
+        - otherwise a floating round button.
+      Slots added later (a drawer built by another script) are picked
+      up by calling GlimeTheme.scan().
    3. Keeps all open tabs in sync.
    Dark stays the default. Nothing here touches login or data.
 ========================================================= */
@@ -56,7 +61,13 @@
       if (label) label.textContent = light ? 'Dark mode' : 'Light mode';
     });
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', light ? '#ffffff' : '#05080c');
+    if (meta) {
+      /* remember the page's own dark colour so dark mode restores exactly that */
+      if (!meta.hasAttribute('data-gtheme-dark')) {
+        meta.setAttribute('data-gtheme-dark', meta.getAttribute('content') || '#05080c');
+      }
+      meta.setAttribute('content', light ? '#ffffff' : meta.getAttribute('data-gtheme-dark'));
+    }
   }
 
   function apply(theme, persist) {
@@ -81,7 +92,21 @@
     return b;
   }
 
+  /* Pages with their own layout: put a button in every [data-gtheme-slot] that is still empty. */
+  function mountSlots() {
+    var slots = document.querySelectorAll('[data-gtheme-slot]');
+    var added = false;
+    Array.prototype.forEach.call(slots, function (slot) {
+      if (slot.querySelector('.gtheme-btn')) return;
+      slot.appendChild(makeButton(slot.getAttribute('data-gtheme-slot') === 'top' ? 'top' : 'row'));
+      added = true;
+    });
+    if (added) paintButtons();
+    return slots.length > 0;
+  }
+
   function mount() {
+    if (document.querySelector('[data-gtheme-slot]')) return mountSlots();
     if (document.querySelector('.gtheme-btn')) return true;
     var foot = document.querySelector('#gasSidebar .gas-sb-foot');
     if (foot) {
@@ -141,6 +166,7 @@
   window.GlimeTheme = {
     get: function () { return current; },
     set: function (t) { apply(t, true); },
-    toggle: toggle
+    toggle: toggle,
+    scan: mountSlots
   };
 })();

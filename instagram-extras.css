@@ -1,0 +1,118 @@
+/* =========================================================
+   GLIME — Instagram Sales extras
+   1. theme button placement   2. Lead details card
+   3. complete light palette (html[data-theme="light"]) for this page.
+   Loaded AFTER glime-theme.css so these rules win over its generic
+   Instagram block (which turned every dark surface plain white).
+   Dark mode is not touched by anything below section 3.
+========================================================= */
+
+/* ---------- 1. theme button ---------- */
+.gtheme-slot{display:block}
+.sidebar .gtheme-slot{margin-bottom:0}
+.sidebar .gtheme-row{width:100%;min-height:42px;border-radius:10px}
+.ig-drawer-theme{margin-bottom:8px}
+.ig-drawer-theme .gtheme-row{width:100%;min-height:42px;border-radius:10px}
+@media (min-width:721px) and (max-width:1179px){
+  .sidebar .gtheme-row{justify-content:center;padding-inline:0}
+  .sidebar .gtheme-row .gtheme-label{display:none}
+}
+
+/* ---------- 2. Lead details card ---------- */
+.ig-lead-notes-wrap[hidden]{display:none}
+.ig-lead-notes{margin:8px 0 0;max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:11px;line-height:1.5;color:var(--muted)}
+.ig-lead-notes-title{margin-top:10px;font-size:10px;letter-spacing:.14em;font-weight:700;color:var(--muted)}
+
+/* ---------- 3. light palette ---------- */
+html[data-theme="light"] body.gapp-ig{
+  --bg:#ffffff !important;--card:#ffffff !important;--elev:#efefef !important;
+  --line:#dbdbdb !important;--text:#000000 !important;--muted:#737373 !important;
+  --gnav-bg:#ffffff;--gnav-line:#dbdbdb;--gnav-on:#000000;
+  background:#ffffff !important;color:#000000 !important;
+}
+html[data-theme="light"] body.gapp-ig .boot,
+html[data-theme="light"] body.gapp-ig .sidebar,
+html[data-theme="light"] body.gapp-ig .inbox,
+html[data-theme="light"] body.gapp-ig .chat,
+html[data-theme="light"] body.gapp-ig .context{background:#ffffff !important}
+
+/* sidebar */
+html[data-theme="light"] body.gapp-ig .sidebar nav a:hover{background:#f2f2f2 !important}
+html[data-theme="light"] body.gapp-ig .workspace-mini{background:#f5f5f5 !important}
+html[data-theme="light"] body.gapp-ig #logout{background:#fdecee !important;color:#c62828 !important}
+html[data-theme="light"] body.gapp-ig .gtheme-btn{background:#f5f5f5;border-color:#dbdbdb;color:#111111}
+html[data-theme="light"] body.gapp-ig .gtheme-btn:hover{background:#ebebeb}
+
+/* top bar + buttons */
+html[data-theme="light"] body.gapp-ig .connection-badge{background:#f0f0f0 !important;color:#737373 !important}
+html[data-theme="light"] body.gapp-ig .connection-badge.online{background:rgba(49,209,89,.14) !important;color:#12873a !important}
+html[data-theme="light"] body.gapp-ig .connection-badge.offline{background:rgba(255,48,64,.1) !important;color:#c62828 !important}
+html[data-theme="light"] body.gapp-ig .primary-btn{background:#0095f6 !important;color:#ffffff !important}
+html[data-theme="light"] body.gapp-ig .primary-btn:hover{background:#1877f2 !important}
+html[data-theme="light"] body.gapp-ig .primary-btn.connected{background:#efefef !important;color:#000000 !important}
+html[data-theme="light"] body.gapp-ig .secondary-btn{background:#efefef !important;color:#000000 !important}
+html[data-theme="light"] body.gapp-ig .ghost-btn{background:transparent !important;color:#000000 !important}
+html[data-theme="light"] body.gapp-ig .danger-btn{background:#fdecee !important;color:#c62828 !important}
+html[data-theme="light"] body.gapp-ig .icon-btn{color:#000000 !important}
+html[data-theme="light"] body.gapp-ig .icon-btn:hover{background:#f2f2f2 !important}
+html[data-theme="light"] body.gapp-ig .status-pill{background:#efefef !important;color:#555555 !important}
+
+/* inbox */
+html[data-theme="light"] body.gapp-ig .search-box{background:#efefef !important}
+html[data-theme="light"] body.gapp-ig .conversation-item:hover{background:#fafafa !important}
+html[data-theme="light"] body.gapp-ig .conversation-item.active{background:#f2f2f2 !important}
+html[data-theme="light"] body.gapp-ig .avatar{background:#efefef !important;color:#000000 !important}
+html[data-theme="light"] body.gapp-ig .avatar.ring{background:var(--ring) !important}
+html[data-theme="light"] body.gapp-ig .avatar.ring::before{background:#ffffff !important}
+html[data-theme="light"] body.gapp-ig .avatar.ring::after{background:#efefef !important}
+html[data-theme="light"] body.gapp-ig .conv-closed{border-color:#dbdbdb !important}
+html[data-theme="light"] body.gapp-ig .conv-dot{background:#0095f6 !important}
+
+/* chat */
+html[data-theme="light"] body.gapp-ig .empty-grid div{background:#fafafa !important;border:1px solid #efefef !important}
+html[data-theme="light"] body.gapp-ig .m-av{background:#efefef !important}
+html[data-theme="light"] body.gapp-ig .in .bubble{background:#efefef !important;color:#000000 !important}
+html[data-theme="light"] body.gapp-ig .out .bubble{color:#ffffff !important}
+html[data-theme="light"] body.gapp-ig .bubble.media{color:#737373 !important}
+html[data-theme="light"] body.gapp-ig .ig-media{background:#f5f5f5 !important}
+html[data-theme="light"] body.gapp-ig .ig-status.fail{color:#c62828 !important}
+
+/* composer */
+html[data-theme="light"] body.gapp-ig .approval-box,
+html[data-theme="light"] body.gapp-ig .ai-suggestion{background:#fafafa !important;border:1px solid #dbdbdb !important}
+html[data-theme="light"] body.gapp-ig .approval-box{border-color:#e8c766 !important}
+html[data-theme="light"] body.gapp-ig .chip{background:#fafafa !important;border:1px solid #dbdbdb !important;color:#000000 !important}
+html[data-theme="light"] body.gapp-ig .chip.soft{color:#737373 !important}
+html[data-theme="light"] body.gapp-ig .ig-input-row{background:#ffffff !important;border:1px solid #dbdbdb !important}
+html[data-theme="light"] body.gapp-ig .ig-cam{background:#0095f6 !important;color:#ffffff !important}
+html[data-theme="light"] body.gapp-ig .ig-send{color:#0095f6 !important}
+
+/* customer context */
+html[data-theme="light"] body.gapp-ig .context-card{background:#fafafa !important;border:1px solid #efefef !important}
+html[data-theme="light"] body.gapp-ig .mode{background:#ffffff !important;border:1px solid #dbdbdb !important;color:#000000 !important}
+html[data-theme="light"] body.gapp-ig .mode.active{background:#e8f4fe !important;border-color:#0095f6 !important}
+html[data-theme="light"] body.gapp-ig .service-chip{background:#f0f0f0 !important}
+html[data-theme="light"] body.gapp-ig .timeline-item{border-left:2px solid #dbdbdb !important}
+html[data-theme="light"] body.gapp-ig #igWhatsAppHandoff{border-color:#dbdbdb !important}
+
+/* toast */
+html[data-theme="light"] body.gapp-ig .toast{background:#262626 !important;color:#ffffff !important}
+html[data-theme="light"] body.gapp-ig .toast.error{background:#fdecee !important;color:#c62828 !important;border:1px solid #f3c4c8 !important}
+
+/* phone bottom bar */
+html[data-theme="light"] body.gapp-ig .gnav a:active,
+html[data-theme="light"] body.gapp-ig .gnav button:active{background:rgba(0,0,0,.06)}
+
+@media (max-width:720px){
+  html[data-theme="light"] body.gapp-ig .conversation-item:active{background:#f2f2f2 !important}
+  html[data-theme="light"] body.gapp-ig .ig-mob-menu-btn{background:#efefef !important;color:#000000 !important}
+  html[data-theme="light"] body.gapp-ig .ig-mobile-drawer{background:#ffffff !important;color:#000000 !important;border-right:1px solid #dbdbdb !important}
+  html[data-theme="light"] body.gapp-ig .ig-drawer-close{background:#efefef !important;color:#000000 !important}
+  html[data-theme="light"] body.gapp-ig .ig-drawer-nav a{color:#000000 !important}
+  html[data-theme="light"] body.gapp-ig .ig-drawer-nav a.active{background:#f2f2f2 !important}
+  html[data-theme="light"] body.gapp-ig .ig-drawer-workspace{background:#f5f5f5 !important}
+  html[data-theme="light"] body.gapp-ig .ig-drawer-logout{background:#fdecee !important;color:#c62828 !important}
+}
+@media (max-width:1179px){
+  html[data-theme="light"] body.gapp-ig .context-head{background:#ffffff !important}
+}

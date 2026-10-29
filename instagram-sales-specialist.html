@@ -9,8 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="glime-avatar.js?v=20261013" defer></script>
+<script src="glime-theme.js?v=20261029"></script>
 <link rel="stylesheet" href="instagram-sales-specialist.css?v=20261004-3">
 <link rel="stylesheet" href="glime-android-app.css?v=20261027">
+<link rel="stylesheet" href="glime-theme.css?v=1">
+<link rel="stylesheet" href="instagram-extras.css?v=20261029">
 </head>
 <body class="gapp gapp-ig">
 <div id="boot" class="boot">
@@ -42,6 +45,7 @@
       <i></i>
       <div><b id="businessName">Business</b><small id="clientId">Loading…</small></div>
     </div>
+    <div class="gtheme-slot" data-gtheme-slot="row"></div>
     <button id="logout">Secure Logout</button>
   </div>
 </aside>
@@ -157,6 +161,20 @@
   </div>
 
   <div class="context-card">
+    <div class="card-label">LEAD DETAILS</div>
+    <div class="context-grid">
+      <div><small>Name</small><strong id="igLeadName">—</strong></div>
+      <div><small>Stage</small><strong id="igLeadStage">—</strong></div>
+      <div><small>Mobile</small><strong id="igLeadMobile">—</strong></div>
+      <div><small>City / area</small><strong id="igLeadCity">—</strong></div>
+    </div>
+    <div id="igLeadNotesWrap" class="ig-lead-notes-wrap" hidden>
+      <div class="ig-lead-notes-title">CAPTURED BY AI</div>
+      <pre id="igLeadNotes" class="ig-lead-notes"></pre>
+    </div>
+  </div>
+
+  <div class="context-card">
     <div class="card-label">AI SALES MODE</div>
     <div class="mode-grid">
       <button class="mode" data-mode="auto">AUTO<span>AI can send</span></button>
@@ -192,6 +210,7 @@
 <script src="instagram-content-context-addon.js?v=20261004-3"></script>
 <script src="instagram-sales-qualification-addon.js?v=20261004-3"></script>
 <script src="instagram-mobile-ui-addon.js?v=20261004-3"></script>
+<script src="instagram-extras-addon.js?v=20261029"></script>
 <script src="glime-connect-app.js?v=20261027"></script>
 <script src="glime-android-app.js?v=20261027"></script>
 </body>
