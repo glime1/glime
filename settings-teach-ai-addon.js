@@ -297,7 +297,7 @@
       S.filter === 'pending'
         ? `<div class="lr-item" style="border-style:dashed">
             <h4>Let your AI review your recent chats</h4>
-            <p style="opacity:.8">It looks for moments when you replied personally after the AI answered, and suggests a lesson from your reply. Nothing is used until you approve it.</p>
+            <p style="opacity:.8">It looks for moments when you replied personally after the AI answered, and suggests a lesson from your reply. Nothing is used until you approve it. Each review uses a small amount of your AI credits.</p>
             <div class="lr-actions"><button type="button" class="lr-btn small primary" data-act="scan">Find suggestions</button></div>
           </div>`
         : '';
@@ -488,6 +488,8 @@
           ui.toast(n === 1 ? '1 new suggestion is ready.' : n + ' new suggestions are ready.');
         } else if (reason === 'too_soon') {
           ui.toast('You just checked. Please try again in a few minutes.');
+        } else if (reason === 'no_credits') {
+          ui.toast('Not enough AI credits. Please recharge, then try again.', true);
         } else if (reason === 'too_many_pending') {
           ui.toast('Approve or reject your current suggestions first.');
         } else if (reason === 'no_new_corrections') {
