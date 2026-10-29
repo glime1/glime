@@ -7,11 +7,16 @@
 <title>WhatsApp Sales Specialist | GLIME</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="glime-theme.js?v=20261029"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="glime-avatar.js?v=20261013" defer></script>
 <link rel="stylesheet" href="whatsapp-sales-specialist.css?v=20261011-1">
+<link rel="stylesheet" href="glime-app-shell.css">
+<link rel="stylesheet" href="glime-theme.css?v=1">
+<link rel="stylesheet" href="whatsapp-extras.css?v=20261029">
+<script src="glime-app-shell.js" defer></script>
 </head>
-<body>
+<body data-gas-title="WhatsApp Sales">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
 <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
@@ -22,16 +27,7 @@
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
 <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></symbol>
-<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
-<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
-<symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" style="fill:currentColor"/></symbol>
 <symbol id="i-wa" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></symbol>
-<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/></symbol>
-<symbol id="i-trend" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol>
-<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" style="fill:currentColor"/></symbol>
-<symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></symbol>
-<symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18"/></symbol>
-<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
 <symbol id="i-attach" viewBox="0 0 24 24"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3"/></symbol>
 <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7" style="fill:currentColor"/><circle cx="12" cy="12" r="1.7" style="fill:currentColor"/><circle cx="12" cy="19" r="1.7" style="fill:currentColor"/></symbol>
 <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
@@ -50,32 +46,17 @@
 
 <div id="boot" class="boot"><img src="glime_logo_clean.svg" alt="GLIME"><div class="boot-spinner"></div><span>Securing your GLIME workspace…</span></div>
 
+<!-- hidden anchors the page script still binds to; the visible menu comes from glime-app-shell.js -->
+<div class="gas-stash" aria-hidden="true">
+  <div id="scrim"></div>
+  <button id="menuBtn" type="button" tabindex="-1"></button>
+  <span id="businessName">Business</span><span id="clientId">Loading…</span>
+  <button id="logout" type="button" tabindex="-1"></button>
+</div>
+
 <div class="app-shell">
-<div id="scrim" class="scrim"></div>
-
-<aside class="sidebar" id="sidebar">
-  <div class="brand"><img src="glime_logo_clean.svg" alt="GLIME"><small>AI BUSINESS WORKSPACE</small></div>
-  <nav>
-    <a href="dashboard.html"><svg class="ni"><use href="#i-home"/></svg><span>Dashboard</span></a>
-    <a href="services.html"><svg class="ni"><use href="#i-grid"/></svg><span>Services</span></a>
-    <a href="instagram-sales-specialist.html"><svg class="ni"><use href="#i-ig"/></svg><span>Instagram Sales</span></a>
-    <a class="active" href="whatsapp-sales-specialist.html"><svg class="ni"><use href="#i-wa"/></svg><span>WhatsApp Sales</span></a>
-    <a href="customer.html"><svg class="ni"><use href="#i-users"/></svg><span>Customers</span></a>
-    <a href="follow-up.html"><svg class="ni"><use href="#i-trend"/></svg><span>Follow-up</span></a>
-    <a href="leads.html"><svg class="ni"><use href="#i-target"/></svg><span>Leads AI</span></a>
-    <a href="orders.html"><svg class="ni"><use href="#i-bag"/></svg><span>Orders</span></a>
-    <a href="billing.html"><svg class="ni"><use href="#i-card"/></svg><span>Billing</span></a>
-    <a href="settings.html"><svg class="ni"><use href="#i-gear"/></svg><span>Settings</span></a>
-  </nav>
-  <div class="side-bottom">
-    <div class="workspace-mini"><i></i><div><b id="businessName">Business</b><small id="clientId">Loading…</small></div></div>
-    <button id="logout" type="button">Secure Logout</button>
-  </div>
-</aside>
-
-<main class="main">
+<main class="main" data-gas-content>
 <header class="topbar">
-  <button id="menuBtn" class="icon-btn menu-btn" type="button" aria-label="Menu"><svg class="ni"><use href="#i-menu"/></svg></button>
   <div class="title-block">
     <div class="eyebrow">WHATSAPP SALES SPECIALIST</div>
     <h1>WhatsApp Sales</h1>
@@ -281,5 +262,6 @@
 
 <script src="whatsapp-sales-specialist.js?v=20261011-1"></script>
 <script src="glime-connect-app.js?v=20261027"></script>
+<script src="whatsapp-shell-addon.js?v=20261029" defer></script>
 </body>
 </html>

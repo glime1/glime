@@ -1,0 +1,50 @@
+/* =========================================================
+   GLIME — WhatsApp Sales: shared app shell + light / dark
+   Loaded AFTER glime-theme.css so it can win with higher specificity.
+========================================================= */
+
+/* ---------- layout inside the shared shell ---------- */
+.app-shell{flex:1 1 auto;min-width:0;width:100%}
+body.gas-body .gas-col > .main{max-width:none;width:100%;min-width:0}
+.gas-stash{display:none!important}
+
+/* the shell's burger lives in the WhatsApp top bar (mobile only) */
+.topbar .gas-burger{display:none;flex:0 0 auto;margin-left:-4px}
+@media (max-width:900px){
+  .topbar .gas-burger{display:inline-flex}
+  .gas-topbar{display:none!important}
+}
+
+/* ---------- light palette (colours only) ---------- */
+html[data-theme="light"][data-page="whatsapp-sales-specialist"]:not(#g){
+  --bg:#ffffff!important;--panel:#ffffff!important;--panel2:#f6f7f8!important;
+  --line:#e3e6e8!important;--text:#111b21!important;--muted:#54656f!important;--soft:#667781!important;
+  --wa-bg:#efeae2!important;--wa-head:#f0f2f5!important;--wa-in:#ffffff!important;--wa-out:#d9fdd3!important;
+  --wa-text:#111b21!important;--wa-muted:#667781!important;--wa-input:#ffffff!important;
+  --wa-line:rgba(17,27,33,.12)!important;
+}
+html[data-theme="light"] body.gas-body .topbar{background:#fff!important}
+html[data-theme="light"] body.gas-body .chat-header{background:var(--wa-head)!important}
+html[data-theme="light"] body.gas-body .bubble{color:var(--wa-text)!important}
+html[data-theme="light"] body.gas-body .out .bubble{background:var(--wa-out)!important}
+html[data-theme="light"] body.gas-body .meta,
+html[data-theme="light"] body.gas-body .tk{color:var(--wa-muted)!important}
+html[data-theme="light"] body.gas-body .tk.read{color:#53bdeb!important}
+html[data-theme="light"] body.gas-body .tk.fail{color:#c62828!important}
+html[data-theme="light"] body.gas-body .day{background:#fff!important;color:var(--wa-muted)!important}
+html[data-theme="light"] body.gas-body .out .msg-menu{background:linear-gradient(90deg,transparent,#d9fdd3 40%)!important}
+html[data-theme="light"] body.gas-body .msg-menu{background:linear-gradient(90deg,transparent,#fff 40%)!important}
+html[data-theme="light"] body.gas-body .composer{background:var(--wa-head)!important}
+html[data-theme="light"] body.gas-body #input{background:#fff!important;color:var(--wa-text)!important}
+html[data-theme="light"] body.gas-body .wa-card{background:#fff!important;color:var(--wa-text)!important}
+html[data-theme="light"] body.gas-body .wa-card.approval{background:linear-gradient(180deg,rgba(255,193,7,.12),#fff)!important}
+html[data-theme="light"] body.gas-body .chip{color:var(--text)!important}
+html[data-theme="light"] body.gas-body .chip.warn{color:#c2410c!important}
+html[data-theme="light"] body.gas-body .empty-chat{background:var(--wa-bg)!important}
+html[data-theme="light"] body.gas-body .empty-chat h2{color:var(--wa-text)!important}
+html[data-theme="light"] body.gas-body .empty-chat p{color:var(--wa-muted)!important}
+html[data-theme="light"] body.gas-body .context,
+html[data-theme="light"] body.gas-body .context-head{background:#fff!important}
+html[data-theme="light"] body.gas-body .context-card{background:#f6f7f8!important;border-color:var(--line)!important}
+html[data-theme="light"] body.gas-body .boot{background:#fff!important}
+html[data-theme="light"] body.gas-body .modal-card{background:#fff!important;color:var(--text)!important}
