@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="The GLIME Payments Guide: how to collect customer payments through GLIME, fees with a calculator, KYC, balances, withdrawals, refunds, security and FAQ.">
+<title>GLIME Payments Guide | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="partner-base.css">
+<link rel="stylesheet" href="partner-docs.css">
+<link rel="stylesheet" href="glime-global-nav.css">
+<style>
+.doc[hidden]{display:none!important}
+.calc{background:rgba(255,255,255,.03);border:1px solid rgba(184,222,234,.16);border-radius:16px;padding:16px;margin:14px 0}
+.calc label{display:block;font-weight:800;font-size:.82rem;margin-bottom:6px}
+.calc input{width:100%;max-width:260px;background:rgba(0,0,0,.25);color:inherit;border:1px solid rgba(184,222,234,.22);border-radius:10px;padding:10px 12px;font:inherit}
+.calc dl{display:grid;grid-template-columns:1fr auto;gap:8px 16px;margin:14px 0 0;font-size:.88rem}
+.calc dt{margin:0}
+.calc dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.calc .tot{font-weight:800;border-top:1px solid rgba(184,222,234,.16);padding-top:8px}
+.cmp td,.cmp th{vertical-align:top}
+</style>
+</head>
+<body>
+<div class="page-glow glow-one" aria-hidden="true"></div>
+
+<header class="glime-global-header">
+  <div class="glime-nav-inner">
+    <a href="index.html" class="glime-brand" aria-label="GLIME Home"><img src="glime_logo_clean.svg" alt="GLIME"></a>
+    <nav class="glime-desktop-nav" aria-label="Main navigation">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="why-glime.html" data-nav="why">Why GLIME</a>
+      <a href="how-it-works.html" data-nav="how">How It Works</a>
+      <a href="packages.html" data-nav="packages">Packages</a>
+      <a href="glime-payments-docs.html" class="active">Payments Guide</a>
+      <a href="contact.html" data-nav="contact">Contact</a>
+      <a href="login.html">Login</a>
+    </nav>
+    <button class="glime-menu-button" id="glime-menu-button" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="glime-mobile-nav"><span></span><span></span><span></span></button>
+  </div>
+  <nav class="glime-mobile-nav" id="glime-mobile-nav" aria-label="Mobile navigation">
+    <a href="index.html" data-nav="home">Home</a>
+    <a href="why-glime.html" data-nav="why">Why GLIME</a>
+    <a href="how-it-works.html" data-nav="how">How It Works</a>
+    <a href="packages.html" data-nav="packages">Packages</a>
+    <a href="glime-payments-docs.html" class="active">Payments Guide</a>
+    <a href="contact.html" data-nav="contact">Contact</a>
+    <a href="login.html">Login</a>
+    <a href="signup.html" class="glime-mobile-cta">Start 7-Day Free Trial <span aria-hidden="true">→</span></a>
+  </nav>
+</header>
+
+<div class="docs container">
+
+  <aside class="docs-side" aria-label="Documentation navigation">
+    <div class="docs-search">
+      <label for="docSearch" class="sr">Search the guide</label>
+      <input id="docSearch" type="search" placeholder="Search the guide" autocomplete="off">
+    </div>
+    <nav class="toc" id="toc">
+      <p class="toc-h">Payments Guide</p>
+      <a href="#overview">Overview</a>
+      <a href="#how">How it works</a>
+      <a href="#start">Getting started</a>
+      <a href="#fees">Fees and calculator</a>
+      <a href="#kyc">KYC</a>
+      <a href="#balances">Your balances</a>
+      <a href="#withdrawals">Withdrawals</a>
+      <a href="#refunds">Refunds and chargebacks</a>
+      <a href="#security">Security</a>
+      <a href="#compare">Own Razorpay or GLIME</a>
+      <a href="#faq">FAQ</a>
+      <a href="#glossary">Glossary</a>
+      <a href="#support">Support</a>
+    </nav>
+    <a class="btn btn-primary btn-sm side-cta" href="settings.html#payments">Open Payments settings</a>
+  </aside>
+
+  <main class="docs-main" id="docMain">
+    <p class="crumbs">GLIME / Payments Guide</p>
+    <h1>GLIME Payments Guide</h1>
+    <p class="lead-doc">GLIME Payments lets your customers pay you inside WhatsApp and Instagram chats without you needing your own Razorpay account. This guide explains how the money moves, what it costs, and how to stay safe. Version <span data-cfg="version"></span>, <span data-cfg="effective"></span>.</p>
+
+    <p class="no-results" id="noResults" hidden>No sections match your search.</p>
+
+    <section class="doc" id="overview" data-title="Overview">
+      <h2>Overview</h2>
+      <p>Normally a business connects its own Razorpay account to GLIME. With GLIME Payments you do not need one. You complete a one-time KYC, GLIME and Razorpay create a payment account for your business, and customers pay through GLIME's payment partner. You see every payment, fee and balance in Settings &gt; Payments and you only ever receive money that your own customers paid.</p>
+      <div class="facts">
+        <div><strong data-cfg="service"></strong><span>GLIME service fee, on top of Razorpay's charges</span></div>
+        <div><strong>One-time</strong><span>KYC, done inside GLIME</span></div>
+        <div><strong>Net only</strong><span>fee deducted, rest is yours</span></div>
+        <div><strong>Your bank</strong><span>only to your verified account</span></div>
+      </div>
+      <div class="callout"><strong>Read first.</strong> By choosing GLIME Payments you agree to the <a href="glime-payments-terms.html">GLIME Payments Terms &amp; Conditions</a>. The same terms are shown to you in Settings &gt; Payments before you can continue.</div>
+    </section>
+
+    <section class="doc" id="how" data-title="How it works">
+      <h2>How it works</h2>
+      <div class="timeline">
+        <div><b>1. Customer pays</b><span>In the chat, your customer gets an order summary and a payment link and pays by UPI, card or netbanking.</span></div>
+        <div><b>2. Razorpay collects</b><span>The payment is captured by GLIME's payment partner and recorded against your account.</span></div>
+        <div><b>3. Fee is deducted</b><span>Razorpay's charges and GLIME's service fee are deducted. The rest is your net amount.</span></div>
+        <div><b>4. Hold period</b><span>Your net amount is held briefly to cover the refund and dispute window. It then becomes available.</span></div>
+        <div><b>5. Money reaches your bank</b><span>Depending on your account, it is settled automatically or you withdraw it. It goes only to your verified bank account.</span></div>
+      </div>
+      <p class="note">GLIME is a technology platform, not a bank. Payments are processed and settled by Razorpay and its banking partners.</p>
+    </section>
+
+    <section class="doc" id="start" data-title="Getting started">
+      <h2>Getting started</h2>
+      <ol class="num">
+        <li><h3>Open Payments settings</h3><p>Go to <a href="settings.html#payments">Settings &gt; Payments</a>. If you do not see it or it says GLIME Payments is not enabled, contact us. It is switched on per account.</p></li>
+        <li><h3>Choose GLIME Payments</h3><p>Select <em>Use GLIME Payments</em>. The Terms &amp; Conditions open first with your exact fee. Read to the end, tick both boxes and continue.</p></li>
+        <li><h3>Complete the KYC</h3><p>Fill in three short steps: business, contact and bank. See <a href="#kyc">KYC</a> below.</p></li>
+        <li><h3>Wait for verification</h3><p>Razorpay verifies your details, usually in 1 to 3 working days. Status shows <em>Under review</em>, then <em>Verified</em>.</p></li>
+        <li><h3>Start collecting</h3><p>Once verified, payment links created in your chats use GLIME Payments. Track everything in the Overview, Payments and Payouts tabs.</p></li>
+      </ol>
+    </section>
+
+    <section class="doc" id="fees" data-title="Fees and calculator">
+      <h2>Fees and calculator</h2>
+      <p>A total fee is deducted from each payment. It is made of Razorpay's charges plus GLIME's own service fee of <strong data-cfg="service"></strong>. The default rates are:</p>
+      <div class="tbl-doc"><table>
+        <thead><tr><th>Component</th><th>Default rate</th></tr></thead>
+        <tbody>
+          <tr><td>Razorpay payment gateway charges (standard rate, GST included)</td><td data-cfg="razorpay"></td></tr>
+          <tr><td>Razorpay Route transfer fee</td><td data-cfg="route"></td></tr>
+          <tr><td>GLIME service fee</td><td data-cfg="service"></td></tr>
+          <tr><td><strong>Total deducted from each payment</strong></td><td><strong data-cfg="total"></strong></td></tr>
+        </tbody>
+      </table></div>
+      <div class="calc">
+        <label for="calcAmt">Try it: customer payment amount (₹)</label>
+        <input id="calcAmt" type="number" inputmode="decimal" min="1" step="1" value="1000">
+        <dl id="calcOut" aria-live="polite"></dl>
+      </div>
+      <ul>
+        <li>Your exact rate is shown in Settings &gt; Payments before you accept the terms. That rate is the one that applies to you. The calculator uses the default rates above.</li>
+        <li>GLIME's service fee is separate and always charged in addition to Razorpay's charges.</li>
+        <li>Taxes such as GST on your sales and income tax are your responsibility.</li>
+      </ul>
+    </section>
+
+    <section class="doc" id="kyc" data-title="KYC">
+      <h2>KYC</h2>
+      <p>KYC is the identity and bank check required before anyone can receive customer money. You do it once.</p>
+      <h3>What you need</h3>
+      <ul>
+        <li>Business type: individual, proprietorship, partnership firm, LLP or private limited company.</li>
+        <li>PAN, and the legal name exactly as on the PAN. Firms and companies also need an authorised person's PAN.</li>
+        <li>GSTIN, only if you have one.</li>
+        <li>Contact name, email, a mobile number and your full address with pincode.</li>
+        <li>A bank account number and IFSC. The account holder name must match your PAN name or business name.</li>
+      </ul>
+      <h3>Statuses</h3>
+      <div class="tbl-doc"><table>
+        <thead><tr><th>Status</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td>Not started</td><td>You have not submitted KYC yet.</td></tr>
+          <tr><td>Under review</td><td>Submitted. Razorpay is checking. Usually 1 to 3 working days.</td></tr>
+          <tr><td>More information needed</td><td>Something is missing or does not match. The reason is shown. Correct it and submit again.</td></tr>
+          <tr><td>Verified</td><td>Approved. You can collect payments.</td></tr>
+          <tr><td>Rejected</td><td>Not approved. The reason is shown. You can fix the details and apply again.</td></tr>
+          <tr><td>Suspended</td><td>Paused for a risk or compliance reason. Contact support.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout tip"><strong>Your data.</strong> PAN and bank details go securely to Razorpay for verification. GLIME keeps only the last four digits, your bank name and IFSC. After submitting, the form is cleared from your screen.</div>
+    </section>
+
+    <section class="doc" id="balances" data-title="Your balances">
+      <h2>Your balances</h2>
+      <dl class="gloss">
+        <dt>Total received</dt><dd>The full amount your customers paid.</dd>
+        <dt>GLIME fee</dt><dd>The total fee deducted (Razorpay's charges plus GLIME's service fee), after any fee returned on refunds.</dd>
+        <dt>Refunded</dt><dd>Money returned to customers.</dd>
+        <dt>Your net earnings</dt><dd>Total received minus fee minus refunds.</dd>
+        <dt>Withdrawn / Settled</dt><dd>Net earnings already paid to your bank or requested.</dd>
+        <dt>On hold</dt><dd>Net earnings still inside the hold period.</dd>
+        <dt>Available</dt><dd>What you can withdraw now: net earnings minus withdrawn minus on hold.</dd>
+      </dl>
+      <p class="note">All balances are calculated by GLIME's servers from the ledger. Your browser cannot change them.</p>
+    </section>
+
+    <section class="doc" id="withdrawals" data-title="Withdrawals">
+      <h2>Withdrawals</h2>
+      <ul>
+        <li><strong>Two modes.</strong> Some accounts are settled automatically on Razorpay's schedule and need no action. Others have a <em>Withdraw</em> box in the Overview tab. Which one you have is shown in your dashboard.</li>
+        <li><strong>Amount.</strong> Enter an amount up to your available balance, or tap <em>Max</em>. There is a minimum withdrawal, shown in the dashboard.</li>
+        <li><strong>One at a time.</strong> You can have one withdrawal in progress. Request another after it finishes.</li>
+        <li><strong>Destination.</strong> Only your verified bank account. To change it, contact support. A new bank needs fresh verification.</li>
+        <li><strong>Timing.</strong> Withdrawals show Pending, Processing and then Paid with a bank reference (UTR). Banks can take working days.</li>
+        <li><strong>Failed withdrawals.</strong> The amount returns to your available balance.</li>
+        <li><strong>Safety.</strong> You are asked to confirm every withdrawal, and double submissions are blocked automatically.</li>
+      </ul>
+    </section>
+
+    <section class="doc" id="refunds" data-title="Refunds and chargebacks">
+      <h2>Refunds and chargebacks</h2>
+      <ul>
+        <li>If a customer is refunded or a payment is reversed, the amount is deducted from your balance with any charges the bank or Razorpay applies.</li>
+        <li>If your balance is not enough, the shortfall is taken from your future earnings. See section 7 of the <a href="glime-payments-terms.html#refunds">Terms</a>.</li>
+        <li>The hold period exists so that most refunds are settled before money is withdrawn.</li>
+        <li>Keep your orders and invoices. If a customer disputes a payment, they help resolve it.</li>
+      </ul>
+    </section>
+
+    <section class="doc" id="security" data-title="Security">
+      <h2>Security</h2>
+      <h3>What GLIME does</h3>
+      <ul>
+        <li>Payments are processed by Razorpay. GLIME does not see or store card numbers.</li>
+        <li>Balances and withdrawal limits are enforced on the server, so a withdrawal can never be more than your available balance.</li>
+        <li>Each withdrawal request is protected against double submission.</li>
+        <li>Every payment, fee, refund and withdrawal is written to an append-only ledger and checked against Razorpay.</li>
+        <li>Your PAN and bank number are never stored in full by GLIME. Your session must be signed in to see any of this.</li>
+        <li>Payouts can be frozen immediately if fraud is suspected.</li>
+      </ul>
+      <h3>What you should do</h3>
+      <ul>
+        <li>Never share your password or one-time codes. GLIME never asks for them.</li>
+        <li>Log out on shared devices and use a screen lock on your phone.</li>
+        <li>Check that the address bar shows <span class="mono">glime.online</span> before entering any details.</li>
+        <li>Write to <a href="mailto:connect@glime.online" data-cfg="email"></a> right away if you see a payment or withdrawal you do not recognise.</li>
+      </ul>
+    </section>
+
+    <section class="doc" id="compare" data-title="Own Razorpay or GLIME Payments">
+      <h2>Own Razorpay or GLIME Payments</h2>
+      <div class="tbl-doc"><table class="cmp">
+        <thead><tr><th></th><th>Your own Razorpay</th><th>GLIME Payments</th></tr></thead>
+        <tbody>
+          <tr><td>Razorpay account needed</td><td>Yes, you create and connect it</td><td>No</td></tr>
+          <tr><td>Setup</td><td>Connect under Settings &gt; Connector</td><td>Accept terms and complete KYC in Settings &gt; Payments</td></tr>
+          <tr><td>Who collects money</td><td>Your Razorpay account directly</td><td>GLIME's payment partner, paid on to your bank</td></tr>
+          <tr><td>Fees</td><td>Razorpay's charges only, as per your plan</td><td>Razorpay's charges plus GLIME's <span data-cfg="service"></span> service fee</td></tr>
+          <tr><td>Dashboard</td><td>Razorpay dashboard</td><td>Settings &gt; Payments in GLIME</td></tr>
+          <tr><td>Switching</td><td>Any time</td><td>Back to own Razorpay only with no balance, hold or pending withdrawal</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="doc" id="faq" data-title="FAQ">
+      <h2>Frequently asked questions</h2>
+      <div class="faq">
+        <details><summary>Do I need my own Razorpay account?</summary><p>No. That is the point of GLIME Payments. If you already have one and prefer it, keep using it under Connector.</p></details>
+        <details><summary>Is the 0.5% the only fee?</summary><p>No. <span data-cfg="service"></span> is GLIME's own service fee. Razorpay's charges are deducted too. The total for your account is shown in Settings &gt; Payments before you accept the terms.</p></details>
+        <details><summary>Can I withdraw more than I earned?</summary><p>Never. You can withdraw only your available balance, which is calculated by the server from your customers' payments.</p></details>
+        <details><summary>Why is some money "on hold"?</summary><p>Each payment is held briefly to cover refunds and disputes. It becomes available automatically afterwards.</p></details>
+        <details><summary>Can the money go to someone else's bank account?</summary><p>No. Only to the bank account verified in your KYC.</p></details>
+        <details><summary>How long does KYC take?</summary><p>Usually 1 to 3 working days after you submit correct details.</p></details>
+        <details><summary>KYC says "More information needed". What now?</summary><p>Read the reason shown, correct the details and submit again.</p></details>
+        <details><summary>What if a customer asks for a refund?</summary><p>Refund through your normal process. The amount is deducted from your balance as explained in the terms.</p></details>
+        <details><summary>I changed my bank account. What should I do?</summary><p>Contact support. A new bank account needs fresh verification before payouts go there.</p></details>
+        <details><summary>I do not recognise a withdrawal.</summary><p>Write to <a href="mailto:connect@glime.online" data-cfg="email"></a> immediately and change your password. We can freeze payouts while we check.</p></details>
+        <details><summary>Which businesses are not allowed?</summary><p>Anything illegal or restricted by Razorpay and the banking system. See section 8 of the <a href="glime-payments-terms.html#use">Terms</a>.</p></details>
+      </div>
+    </section>
+
+    <section class="doc" id="glossary" data-title="Glossary">
+      <h2>Glossary</h2>
+      <dl class="gloss">
+        <dt>KYC</dt><dd>Know Your Customer: the one-time identity and bank check.</dd>
+        <dt>Razorpay Route</dt><dd>Razorpay's product for splitting a payment and sending a share to a business's own linked account.</dd>
+        <dt>Linked account</dt><dd>The payment account Razorpay creates for your business after KYC.</dd>
+        <dt>Gross / Net</dt><dd>Gross is what the customer paid. Net is what remains after the fee.</dd>
+        <dt>Hold period</dt><dd>The short time a payment stays on hold before it is available.</dd>
+        <dt>Payout / Withdrawal</dt><dd>Money sent from your available balance to your bank account.</dd>
+        <dt>UTR</dt><dd>The bank reference number of a transfer.</dd>
+        <dt>Chargeback</dt><dd>A reversal started by a customer's bank after a dispute.</dd>
+      </dl>
+    </section>
+
+    <section class="doc" id="support" data-title="Support">
+      <h2>Support</h2>
+      <p>Need help with KYC, a payment or a withdrawal? Email <a href="mailto:connect@glime.online" data-cfg="email"></a> or use the contact page. Please include your business name and the payment date.</p>
+      <p><a class="btn btn-ghost btn-sm" href="glime-payments-terms.html">Read the Terms</a> <a class="btn btn-primary btn-sm" href="settings.html#payments">Open Payments settings</a></p>
+    </section>
+  </main>
+</div>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <a href="index.html" aria-label="Glime home"><img src="glime_logo_clean.svg" alt="GLIME"></a>
+    <div class="footer-links">
+      <a href="about.html">About</a>
+      <a href="packages.html">Packages</a>
+      <a href="glime-payments-docs.html">Payments Guide</a>
+      <a href="glime-payments-terms.html">Payments Terms</a>
+      <a href="refund-cancellation.html">Refund &amp; Cancellation</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <p>© 2026 GLIME. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="glime-payments-config.js"></script>
+<script>
+(function(){
+  var c=window.GLIME_PAYMENTS_CONFIG||{};
+  var rz=Number(c.razorpayBps)||0,rt=Number(c.routeBps)||0,sv=Number(c.serviceBps)||0;
+  function pct(b){return (b/100).toFixed(2).replace(/\.?0+$/,'')+'%';}
+  var vals={service:pct(sv),razorpay:pct(rz),route:pct(rt),total:pct(rz+rt+sv),version:c.termsVersion||'',effective:c.effectiveDate||'',email:c.supportEmail||'connect@glime.online'};
+  document.querySelectorAll('[data-cfg]').forEach(function(el){
+    var k=el.getAttribute('data-cfg');
+    if(Object.prototype.hasOwnProperty.call(vals,k))el.textContent=vals[k];
+  });
+
+  var inp=document.getElementById('calcAmt'),out=document.getElementById('calcOut');
+  function money(n){return '₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function calc(){
+    if(!inp||!out)return;
+    var a=parseFloat(inp.value);
+    out.textContent='';
+    if(!isFinite(a)||a<=0)return;
+    a=Math.min(a,10000000);
+    var r=a*rz/10000,t=a*rt/10000,s=a*sv/10000,net=a-r-t-s;
+    var rows=[['Customer pays',money(a)],['Razorpay gateway charges (incl. GST)','− '+money(r)],['Razorpay Route transfer fee','− '+money(t)],['GLIME service fee','− '+money(s)],['You receive',money(net)]];
+    rows.forEach(function(p,i){
+      var dt=document.createElement('dt'),dd=document.createElement('dd');
+      dt.textContent=p[0];dd.textContent=p[1];
+      if(i===rows.length-1){dt.className='tot';dd.className='tot';}
+      out.appendChild(dt);out.appendChild(dd);
+    });
+  }
+  if(inp){inp.addEventListener('input',calc);calc();}
+
+  var sIn=document.getElementById('docSearch');
+  if(sIn)sIn.addEventListener('input',function(){
+    var q=sIn.value.trim().toLowerCase(),n=0;
+    document.querySelectorAll('section.doc').forEach(function(s){
+      var hit=!q||s.textContent.toLowerCase().indexOf(q)!==-1;
+      s.hidden=!hit;if(hit)n++;
+    });
+    var nr=document.getElementById('noResults');
+    if(nr)nr.hidden=n>0;
+  });
+})();
+</script>
+<script src="glime-global-nav.js" defer></script>
+<script src="website-analytics.js"></script>
+</body>
+</html>
