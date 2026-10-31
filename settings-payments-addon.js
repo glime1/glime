@@ -24,6 +24,14 @@
    the console, and the form is wiped after a successful submit.
 
    Deep link: settings.html#payments
+
+   Terms gate: choosing "GLIME Payments" first opens the Terms & Conditions
+   (glime-payments-terms.html). The client must scroll to the end, tick both
+   boxes and accept. The accepted version comes from glime-payments-config.js
+   (loaded by this file). Acceptance is recorded with the optional RPC
+   accept_my_payments_terms(p_version); the KYC call also carries the version.
+   Fee shown = payment_accounts.fee_bps, split into Razorpay charges and the
+   GLIME service fee (serviceBps in the config).
    ========================================================= */
 (function(){
 'use strict';
@@ -37,6 +45,27 @@ if(!S||typeof S.register!=='function'){
 const KYC_FN='/functions/v1/glime-payments-kyc';
 const FALLBACK_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
 const PAGE=20;
+const CFG_FILE='glime-payments-config.js';
+const CFG_DEFAULT={
+  termsVersion:'2026-10-31',
+  serviceBps:50,
+  termsUrl:'glime-payments-terms.html',
+  docsUrl:'glime-payments-docs.html',
+  supportEmail:'connect@glime.online',
+  idleMs:10*60*1000
+};
+function cfg(){return Object.assign({},CFG_DEFAULT,window.GLIME_PAYMENTS_CONFIG||{});}
+function loadConfig(){
+  return new Promise(function(resolve){
+    if(window.GLIME_PAYMENTS_CONFIG)return resolve();
+    const s=document.createElement('script');
+    s.src=CFG_FILE;
+    s.onload=function(){resolve();};
+    s.onerror=function(){resolve();};
+    document.head.appendChild(s);
+  });
+}
+function pct(bps){return (Number(bps)/100).toFixed(2).replace(/\.?0+$/,'')+'%';}
 
 const BUSINESS_TYPES=[
   ['individual','Individual'],
@@ -81,7 +110,11 @@ const ERR={
   KYC_INVALID_PAN:'The PAN could not be verified. Please check it.',
   KYC_INVALID_BANK:'The bank details could not be verified. Please check them.',
   KYC_INVALID_IFSC:'The IFSC code is not valid.',
-  NOT_AUTHENTICATED:'Your session expired. Please log in again.'
+  NOT_AUTHENTICATED:'Your session expired. Please log in again.',
+  WITHDRAW_NOT_ALLOWED:'Withdrawals are not available for your account. Earnings are settled automatically.',
+  PAYOUTS_FROZEN:'Withdrawals are paused on your account. Please contact support.',
+  INVALID_REQUEST:'The request was not valid. Please refresh and try again.',
+  INVALID_MODE:'That option is not valid.'
 };
 
 const PAN_RE=/^[A-Z]{5}[0-9]{4}[A-Z]$/;
@@ -165,6 +198,12 @@ function injectCss(){
 .gpay-wd .gpay-input{max-width:200px}
 .gpay-big{font-size:1.6rem;font-weight:800;color:var(--gr);letter-spacing:-.02em}
 .badge.warn{color:#ffd166;border-color:rgba(255,209,102,.38)}
+.gpay-terms-box{max-height:280px;overflow:auto;background:var(--surf2);border:1px solid var(--bd);border-radius:12px;padding:12px 14px 12px 32px;margin:12px 0;font-size:.76rem;line-height:1.6;color:var(--mu)}
+.gpay-terms-box li{margin:0 0 8px}
+.gpay-fee{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--bd);font-size:.8rem}
+.gpay-fee:first-of-type{border-top:0}
+.gpay-fee.tot{font-weight:800}
+.gpay-gate .gpay-check{margin:10px 0}
 .gpay-kv{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;font-size:.78rem}
 .gpay-kv dt{color:var(--mu)}
 .gpay-kv dd{margin:0;word-break:break-word}
@@ -179,9 +218,10 @@ function injectCss(){
 /* ---------- render ---------- */
 async function render({container,api,state,ui}){
   injectCss();
+  await loadConfig();
   const ctx={
     container,api,state,ui,
-    body:null,ov:null,tab:'overview',step:0,form:{},busy:false,
+    body:null,ov:null,tab:'overview',step:0,form:{},busy:false,gate:false,idle:null,
     wdKey:newKey(),wdKeyAmount:0,
     lists:{
       payments:{rows:[],done:false,loading:false,error:'',filter:''},
@@ -206,6 +246,7 @@ async function load(ctx){
     ctx.ov=norm(await rpc(ctx.api,'get_my_payments_overview'));
   }catch(e){
     console.error('GLIME Payments load error:',e&&e.message);
+    if(String((e&&e.message)||'').indexOf('NOT_AUTHENTICATED')!==-1){location.href='login.html';return;}
     if(!ctx.body.isConnected)return;
     ctx.body.innerHTML='<div class="error">Could not load Payments. '+esc(errText(e,'Please refresh the page.'))+'</div>';
     return;
@@ -222,6 +263,11 @@ function draw(ctx){
     ctx.body.innerHTML='<div class="empty">GLIME Payments is not enabled for your account yet. You can keep collecting payments with your own Razorpay account under Connector.</div>';
     return;
   }
+  if(ctx.gate||(ov.mode==='glime'&&!termsAccepted(ctx))){
+    ctx.body.innerHTML=termsGate(ctx);
+    bindGate(ctx);
+    return;
+  }
   let h=modeCards(ctx);
   if(ov.mode==='glime')h+=glimeArea(ctx);
   else if(ov.mode==='own')h+=ownArea(ctx);
@@ -232,10 +278,139 @@ function draw(ctx){
 
 function kycStatus(ctx){return (ctx.ov&&ctx.ov.kyc&&ctx.ov.kyc.status)||'not_started';}
 
+/* ---------- terms gate ---------- */
+function termsKey(ctx){return 'gpay_terms_'+cfg().termsVersion+'_'+((ctx.state.client&&ctx.state.client.client_id)||'');}
+/* The server answer (ov.terms.version) is the real record. sessionStorage is only a
+   convenience so the gate does not reappear on every tab switch before the backend stores it. */
+function termsAccepted(ctx){
+  const t=ctx.ov&&ctx.ov.terms;
+  if(t&&t.version===cfg().termsVersion)return true;
+  try{return sessionStorage.getItem(termsKey(ctx))==='1';}catch(e){return false;}
+}
+function rememberTerms(ctx){try{sessionStorage.setItem(termsKey(ctx),'1');}catch(e){}}
+
+function feeParts(ctx){
+  const raw=ctx.ov&&ctx.ov.fee_bps;
+  const total=Number(raw);
+  if(raw==null||!isFinite(total))return null;
+  const svc=Math.min(cfg().serviceBps,total);
+  return {total:total,service:svc,gateway:Math.max(0,total-svc)};
+}
+function feeRows(p){
+  return '<div class="gpay-fee"><span>Razorpay charges (incl. GST)</span><b>'+esc(pct(p.gateway))+'</b></div>'+
+    '<div class="gpay-fee"><span>GLIME service fee</span><b>'+esc(pct(p.service))+'</b></div>'+
+    '<div class="gpay-fee tot"><span>Total deducted from each payment</span><b>'+esc(pct(p.total))+'</b></div>';
+}
+function linksHtml(){
+  const c=cfg();
+  return '<a href="'+esc(c.termsUrl)+'" target="_blank" rel="noopener noreferrer" style="color:var(--cy)">Terms &amp; Conditions</a> · '+
+    '<a href="'+esc(c.docsUrl)+'" target="_blank" rel="noopener noreferrer" style="color:var(--cy)">Payments Guide</a>';
+}
+function feeHtml(ctx){
+  const p=feeParts(ctx);
+  if(!p)return '';
+  return '<section class="channel-card"><div class="channel-head"><div class="channel-name">Fee on each payment</div></div>'+
+    feeRows(p)+'<p class="note">You receive the rest of every payment. '+linksHtml()+'</p></section>';
+}
+
+function termsGate(ctx){
+  const c=cfg(),p=feeParts(ctx);
+  const feeText=p
+    ?esc(pct(p.total))+' of each payment (Razorpay charges '+esc(pct(p.gateway))+' plus GLIME service fee '+esc(pct(p.service))+')'
+    :'a fee on each payment (Razorpay charges plus GLIME service fee '+esc(pct(c.serviceBps))+')';
+  const items=[
+    "GLIME collects your customers' payments through its payment partner Razorpay and passes your share to a payment account created for your business. GLIME is not a bank and does not keep your money as a wallet.",
+    "You must complete a one-time KYC with true details (PAN, business and bank). Collecting payments starts only after it is verified.",
+    "Fee: "+feeText+" is deducted automatically. You receive the net amount. GST and income tax are your own responsibility.",
+    "Each payment is held for a short period to cover refunds and disputes before it becomes available.",
+    "You can withdraw only what your own customers actually paid (after fee, refunds and amounts on hold), and only to your verified bank account. One withdrawal at a time, with a minimum amount.",
+    "Refunds, disputes and chargebacks are deducted from your balance. If it is not enough, the shortfall is taken from future earnings or you pay it on request.",
+    "Only lawful goods and services are allowed. Anything prohibited by law, Razorpay or the banks is not allowed.",
+    "GLIME or Razorpay may hold payments, freeze withdrawals or suspend the service for risk, fraud or compliance reasons.",
+    "Keep your login private. Anyone who can log in can request withdrawals. Report anything suspicious at once to "+esc(c.supportEmail)+".",
+    "Your PAN and bank details go securely to Razorpay. GLIME stores only the last 4 digits, your bank name and IFSC.",
+    "If the Terms change, you must accept the new version before you continue. Fee increases need 30 days' notice.",
+    "You can switch back to your own Razorpay account only when you have no balance, no payment on hold and no withdrawal in progress."
+  ];
+  return '<section class="channel-card gpay-gate">'+
+    '<div class="channel-head"><div class="channel-name">GLIME Payments: Terms &amp; Conditions</div><span class="badge warn">Please read</span></div>'+
+    '<p class="note" style="margin-top:0">Version '+esc(c.termsVersion)+'. Scroll the key terms below to the end to continue. Full text: '+linksHtml()+'.</p>'+
+    (p?feeRows(p):'')+
+    '<div class="gpay-terms-box" id="gpayTermsBox" tabindex="0" role="region" aria-label="Key terms"><ol>'+items.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ol></div>'+
+    '<label class="gpay-check"><input type="checkbox" data-g="1" disabled><span style="font-weight:600">I have read and agree to the GLIME Payments Terms &amp; Conditions (version '+esc(c.termsVersion)+').</span></label>'+
+    '<label class="gpay-check"><input type="checkbox" data-g="2" disabled><span style="font-weight:600">I understand that '+(p?esc(pct(p.total)):'the fee')+' is deducted from every payment (Razorpay charges plus GLIME '+esc(pct(p?p.service:c.serviceBps))+') and that I receive only the net amount.</span></label>'+
+    '<div class="gpay-msg" id="gpayMsg" role="alert"></div>'+
+    '<div class="actions"><button class="btn primary" type="button" data-act="accept-terms" disabled>Accept and continue</button>'+
+    '<button class="btn" type="button" data-act="cancel-gate">Cancel</button></div>'+
+    '</section>';
+}
+
+function bindGate(ctx){
+  const box=ctx.body.querySelector('#gpayTermsBox');
+  if(!box)return;
+  const check=function(){
+    if(box.scrollTop+box.clientHeight>=box.scrollHeight-6){
+      ctx.body.querySelectorAll('[data-g]').forEach(function(i){i.disabled=false;});
+    }
+  };
+  box.addEventListener('scroll',check);
+  setTimeout(check,60);
+}
+function updateGate(ctx){
+  const boxes=Array.prototype.slice.call(ctx.body.querySelectorAll('[data-g]'));
+  const btn=ctx.body.querySelector('[data-act="accept-terms"]');
+  if(btn)btn.disabled=!boxes.length||!boxes.every(function(i){return i.checked&&!i.disabled;});
+}
+
+async function activateGlime(ctx,btn,record){
+  const msg=ctx.body.querySelector('#gpayMsg');
+  const fail=function(t){if(msg)msg.textContent=t;else ctx.ui.toast(t,true);};
+  btn.disabled=true;
+  try{
+    if(record){
+      try{
+        await rpc(ctx.api,'accept_my_payments_terms',{p_version:cfg().termsVersion});
+      }catch(e){
+        const m=String((e&&(e.message||e.code))||'');
+        const missing=e&&(e.code==='PGRST202'||e.code==='42883'||/could not find the function|does not exist/i.test(m));
+        if(!missing)throw e;
+      }
+      rememberTerms(ctx);
+    }
+    if(!ctx.ov||ctx.ov.mode!=='glime')await rpc(ctx.api,'set_my_payment_mode',{p_mode:'glime'});
+    ctx.gate=false;
+    ctx.ui.toast('GLIME Payments selected');
+    await load(ctx);
+  }catch(e){
+    console.error('GLIME Payments start error:',e&&e.message);
+    if(String((e&&e.message)||'').indexOf('NOT_AUTHENTICATED')!==-1){location.href='login.html';return;}
+    btn.disabled=false;
+    fail(errText(e,'Could not continue. Please try again.'));
+  }
+}
+
+/* ---------- inactivity: sensitive KYC fields are cleared after a while ---------- */
+function wipeSensitive(ctx){
+  const keys=['pan','owner_pan','account_number','account_number2','ifsc','account_holder'];
+  let had=false;
+  keys.forEach(function(k){if(ctx.form[k]){had=true;delete ctx.form[k];}});
+  if(!had||!ctx.body||!ctx.body.isConnected)return;
+  const host=ctx.body.querySelector('#gpayKyc');
+  if(host){
+    host.innerHTML=kycForm(ctx);
+    const m=ctx.body.querySelector('#gpayMsg');
+    if(m)m.textContent='For your security, the PAN and bank fields were cleared after a period of inactivity.';
+  }
+}
+function bumpIdle(ctx){
+  clearTimeout(ctx.idle);
+  ctx.idle=setTimeout(function(){wipeSensitive(ctx);},cfg().idleMs);
+}
+
 /* ---------- mode selection ---------- */
 function modeCards(ctx){
   const ov=ctx.ov,m=ov.mode;
-  const fee=ov.fee_bps!=null?(Number(ov.fee_bps)/100).toString().replace(/\.0+$/,'')+'%':'';
+  const fee=ov.fee_bps!=null?pct(ov.fee_bps):'';
   return `<div class="gpay-opts">
     <div class="gpay-opt ${m==='own'?'sel':''}">
       <div class="gpay-opt-t">My own Razorpay account</div>
@@ -244,8 +419,8 @@ function modeCards(ctx){
     </div>
     <div class="gpay-opt ${m==='glime'?'sel':''}">
       <div class="gpay-opt-t">GLIME Payments</div>
-      <p>No Razorpay account needed. Complete a one-time KYC, collect payments through GLIME and withdraw your earnings to your bank.${fee?' GLIME fee: '+esc(fee)+' per payment.':''}</p>
-      ${m==='glime'?'<span class="badge on">● Active</span>':'<button class="btn primary" type="button" data-act="mode" data-mode="glime">Use GLIME Payments</button>'}
+      <p>No Razorpay account needed. Complete a one-time KYC, collect payments through GLIME and withdraw your earnings to your bank.${fee?' Total fee: '+esc(fee)+' per payment (Razorpay charges plus GLIME '+esc(pct(cfg().serviceBps))+').':''} ${linksHtml()}</p>
+      ${m==='glime'?'<span class="badge on">● Active</span>':'<button class="btn primary" type="button" data-act="start-glime">Use GLIME Payments</button>'}
     </div>
   </div>`;
 }
@@ -338,11 +513,11 @@ function kycForm(ctx){
       fld(ctx,'pincode','Pincode',{mode:'numeric',max:6});
   }else{
     body=fld(ctx,'account_holder','Account holder name',{full:true,hint:'Must match the name on the bank account.'})+
-      fld(ctx,'account_number','Bank account number',{mode:'numeric',max:18})+
-      fld(ctx,'account_number2','Confirm account number',{mode:'numeric',max:18})+
+      fld(ctx,'account_number','Bank account number',{type:'password',mode:'numeric',max:18})+
+      fld(ctx,'account_number2','Confirm account number',{type:'password',mode:'numeric',max:18})+
       fld(ctx,'ifsc','IFSC code',{ph:'HDFC0001234',max:11})+
       `<label class="gpay-check gpay-fld full"><input type="checkbox" data-f="consent" ${f.consent?'checked':''}>
-        <span style="font-weight:600">I confirm these details are correct and accept the GLIME Payments terms and the payment partner's terms. I agree that GLIME may verify my identity and bank account.</span></label>`;
+        <span style="font-weight:600">I confirm these details are correct and authorise GLIME and its payment partner to verify my identity and bank account. I have accepted the GLIME Payments Terms &amp; Conditions.</span></label>`;
   }
   const back=step>0?'<button class="btn" type="button" data-act="back">Back</button>':'';
   const next=step<2?'<button class="btn primary" type="button" data-act="next">Continue</button>'
@@ -399,7 +574,7 @@ async function submitKyc(ctx,btn){
     phone:T(f.phone),
     address:{line1:T(f.address_line1),line2:T(f.address_line2),city:T(f.city),state:f.state,pincode:T(f.pincode)},
     bank:{account_holder:T(f.account_holder),account_number:T(f.account_number),ifsc:T(f.ifsc)},
-    consent:{accepted:true,version:'v1',at:new Date().toISOString()}
+    consent:{accepted:true,version:cfg().termsVersion,at:new Date().toISOString()}
   };
   btn.disabled=true;btn.textContent='Submitting…';
   const msg=ctx.body.querySelector('#gpayMsg');
@@ -482,7 +657,7 @@ function overviewHtml(ctx){
     ${stat('YOUR NET EARNINGS',b.net_paise,true)}
     ${stat(ov.payout_mode==='withdraw'?'WITHDRAWN':'SETTLED',b.withdrawn_paise)}
     ${stat('ON HOLD',b.hold_paise)}
-  </div>${money_out}
+  </div>${money_out}${feeHtml(ctx)}
   <p class="note">Available = net earnings − already withdrawn − amount on hold. Held amounts are released after the hold period or a refund window.</p>`;
 }
 
@@ -578,6 +753,16 @@ async function withdraw(ctx,btn){
   if(paise<=0){say('Enter a valid amount.');return;}
   if(min&&paise<min){say('Minimum withdrawal is '+money(min)+'.');return;}
   if(paise>(Number(b.available_paise)||0)){say('This is more than your available balance of '+money(b.available_paise)+'.');return;}
+  /* Re-read the balance from the server right before asking for confirmation. */
+  try{
+    const fresh=norm(await rpc(ctx.api,'get_my_payments_overview'));
+    if(fresh)ctx.ov=fresh;
+  }catch(e){
+    say(errText(e,'Could not verify your balance. Please try again.'));
+    return;
+  }
+  const avail=Number(((ctx.ov&&ctx.ov.balances)||{}).available_paise)||0;
+  if(paise>avail){say('Your available balance is now '+money(avail)+'. Please enter a smaller amount.');return;}
   const ok=await ctx.ui.confirm('Withdraw '+money(paise)+' to your bank account ending '+((ov.kyc&&ov.kyc.bank_last4)||'••••')+'?',{title:'Confirm withdrawal',confirmText:'Withdraw'});
   if(!ok)return;
   if(ctx.wdKeyAmount!==paise){ctx.wdKey=newKey();ctx.wdKeyAmount=paise;}
@@ -606,6 +791,21 @@ async function onClick(ctx,e){
     const b=document.querySelector('[data-module="connector"]');
     if(b)b.click();
     return;
+  }
+  if(act==='start-glime'){
+    if(!termsAccepted(ctx)){ctx.gate=true;draw(ctx);return;}
+    if(!(await ctx.ui.confirm('Use GLIME Payments? You will complete a one-time KYC. Customer payments will then be collected through GLIME instead of your own Razorpay account.',{title:'Change payment method',confirmText:'Continue'})))return;
+    await activateGlime(ctx,el,false);
+    return;
+  }
+  if(act==='accept-terms'){await activateGlime(ctx,el,true);return;}
+  if(act==='cancel-gate'){
+    if(ctx.ov&&ctx.ov.mode==='glime'){
+      const b=document.querySelector('[data-module="channels"]');
+      if(b)b.click();
+      return;
+    }
+    ctx.gate=false;draw(ctx);return;
   }
   if(act==='mode'){
     const m=el.dataset.mode;
@@ -668,11 +868,13 @@ function onInput(ctx,e){
     if(v!==t.value)t.value=v;
   }
   ctx.form[name]=v;
+  bumpIdle(ctx);
 }
 
 function onChange(ctx,e){
   const t=e.target;
   if(!t)return;
+  if(t.dataset&&t.dataset.g){updateGate(ctx);return;}
   if(t.dataset&&t.dataset.act==='pfilter'){
     ctx.lists.payments.filter=t.value;
     loadList(ctx,'payments',true);
