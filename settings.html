@@ -630,7 +630,7 @@ async function loadSettingsAddon(src){
 
 (async()=>{
   /* Addons load in order; one failing addon never blocks the others. */
-  for(const src of ['settings-profile-addon.js','settings-ai-addon.js','settings-teach-ai-addon.js','settings-automation-addon.js','settings-followups-addon.js','connector-ui.js','settings-connector-addon.js']){
+  for(const src of ['settings-profile-addon.js','settings-ai-addon.js','settings-teach-ai-addon.js','settings-automation-addon.js','settings-followups-addon.js','connector-ui.js','settings-connector-addon.js','settings-payments-addon.js']){
     try{
       await loadSettingsAddon(src);
     }catch(error){
