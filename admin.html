@@ -60,6 +60,9 @@
     <div class="topbar"><div><h1 id="title">Overview</h1><div class="sub">GLIME operational control center</div></div><button class="btn" id="refreshBtn">↻ Refresh</button></div>
 
     <section class="view active" id="view-overview">
+      <!-- Old placeholder cards. Hidden by admin-command-center-addon.js once the real Command Center loads.
+           Kept in the page so admin.html's renderOverview() keeps working. -->
+      <div id="legacyOverview">
       <div class="grid">
         <div class="card metric"><small>Total Clients</small><strong id="mTotal">0</strong></div>
         <div class="card metric"><small>Active</small><strong id="mActive">0</strong></div>
@@ -75,6 +78,7 @@
       <div class="split" style="margin-top:14px">
         <div class="card"><h3>Recent Activity</h3><div id="activity"></div></div>
         <div class="card"><h3>Safety Snapshot</h3><div id="safetySnapshot"></div></div>
+      </div>
       </div>
     </section>
 
@@ -138,7 +142,7 @@
     <section class="view" id="view-storage"><div class="card"><h3>Client Storage</h3><p class="sub">Existing storage RPC is used for the selected client. Storage controls remain separate from billing payment state.</p><div id="storageContent"></div></div></section>
 
     <section class="view" id="view-safety">
-      <div class="card"><h3>Meta Safety Monitor</h3><p class="sub">Read-only monitoring of WhatsApp and Instagram conversations/messages. Admin reviews activity and can suspend an account when misuse is identified.</p>
+      <div class="card"><h3>Meta Safety Monitor</h3><p class="sub">Read-only monitoring of WhatsApp and Instagram conversations/messages. The counters show the real totals; the table below lists the latest 100 messages. Admin reviews activity and can suspend an account when misuse is identified.</p>
         <div class="grid" style="margin-bottom:14px"><div class="card metric"><small>WhatsApp Messages</small><strong id="waCount">0</strong></div><div class="card metric"><small>Instagram Messages</small><strong id="igCount">0</strong></div><div class="card metric"><small>WhatsApp Conversations</small><strong id="waConv">0</strong></div><div class="card metric"><small>Instagram Conversations</small><strong id="igConv">0</strong></div></div>
         <div style="overflow:auto"><table><thead><tr><th>Platform</th><th>Client</th><th>Customer</th><th>Direction</th><th>Message</th><th>Time</th><th></th></tr></thead><tbody id="safetyRows"></tbody></table></div>
       </div>
@@ -167,6 +171,8 @@
   const ADMIN_EMAIL='admin@glime.online';
   const ADMIN_UUID='c21669ee-04e2-4d8a-9ad2-98b969db57a3';
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  // One shared client for every admin addon (avoids several GoTrue clients on one session).
+  window.supabaseClient=sb;
   const $=id=>document.getElementById(id);
   let clients=[],modules=[],clientModules=[],subs=[],rewards=[],current=null,mfaFactor=null,mfaChallenge=null,mfaEnrollmentBusy=false;
   const notifySel=new Set();
@@ -476,7 +482,10 @@
       sb.from('whatsapp_conversations').select('id,client_id,customer_name,customer_phone,last_message_at').order('last_message_at',{ascending:false}).limit(100),
       sb.from('instagram_conversations').select('id,client_id,username,last_message_at').order('last_message_at',{ascending:false}).limit(100)
     ]);
-    $('waCount').textContent=(wa.data||[]).length;$('igCount').textContent=(ig.data||[]).length;$('waConv').textContent=(wc.data||[]).length;$('igConv').textContent=(ic.data||[]).length;$('mSafety').textContent=(wa.data||[]).length+(ig.data||[]).length;
+    // Real totals (exact row counts), not the length of the limited lists above.
+    const cnt=async t=>{const r=await sb.from(t).select('id',{count:'exact',head:true});return r.error?'—':Number(r.count||0).toLocaleString('en-IN')};
+    const [nwa,nig,nwc,nic]=await Promise.all([cnt('whatsapp_messages'),cnt('instagram_messages'),cnt('whatsapp_conversations'),cnt('instagram_conversations')]);
+    $('waCount').textContent=nwa;$('igCount').textContent=nig;$('waConv').textContent=nwc;$('igConv').textContent=nic;$('mSafety').textContent=(wa.data||[]).length+(ig.data||[]).length;
     const rows=[...(wa.data||[]).map(x=>({...x,platform:'WhatsApp',customer:x.customer_phone})),...(ig.data||[]).map(x=>({...x,platform:'Instagram',customer:'Instagram user'}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,100);
     $('safetyRows').innerHTML=rows.map(x=>`<tr><td>${x.platform}</td><td>${esc(x.client_id)}</td><td>${esc(x.customer)}</td><td>${esc(x.direction)}</td><td style="max-width:420px">${esc(x.text_body||'['+(x.message_type||'message')+']')}</td><td>${dt(x.created_at)}</td><td><button class="btn" onclick="window.findClient('${esc(x.client_id)}')">View</button></td></tr>`).join('')||'<tr><td colspan="7">No messages available.</td></tr>';
     $('safetySnapshot').innerHTML=rows.slice(0,5).map(x=>`<div class="activity"><i class="dot"></i><div><b>${esc(x.platform)} · ${esc(x.client_id)}</b><br>${esc((x.text_body||'').slice(0,100))}<br><span class="sub">${dt(x.created_at)}</span></div></div>`).join('')||'<div class="sub">No message records available.</div>';
@@ -589,14 +598,16 @@
 <script src="./admin-client-detail-view-addon.js"></script> 
 <script src="./admin-client-profile-account-secure-addon.js"></script>  
 <script src="./account-review-flow.js"></script>
-<script src="./account-review-decision-addon.js"></script>
 <script src="./admin-website-analytics-addon.js"></script>
 <script src="./admin-mobile.js"></script>
 <script src="admin-agency-addon.js"></script>
 <script src="admin-agency-docs-addon.js"></script>
 <script src="admin-partner-addon.js?v=20261101"></script>
+<script src="admin-payments-addon.js?v=20261101"></script>
+<script src="admin-data-requests-addon.js?v=20261101"></script>
 <script src="admin-contact-addon.js"></script>
 <script src="admin-rewards-addon.js"></script>
 <script src="admin-feedback-addon.js?v=20261028"></script>
+<script src="admin-command-center-addon.js?v=20261101"></script>
 </body>
 </html>
