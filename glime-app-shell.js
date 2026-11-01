@@ -10,9 +10,13 @@
      <body data-gas-title="Page title">      (optional [data-gas-support])
        ... <main data-gas-content> ... </main>
 
-   Navigation only, with ONE exception: the in-app Feedback form
-   (see the FEEDBACK section). It sends through a single RPC,
-   client_submit_feedback; the contract is in FEEDBACK_BACKEND_SPEC.md.
+   Navigation only, with TWO exceptions:
+   1. the in-app Feedback form (see the FEEDBACK section). It sends
+      through a single RPC, client_submit_feedback; the contract is in
+      FEEDBACK_BACKEND_SPEC.md.
+   2. the live number badges next to Leads, Customers and Orders. They
+      are READ-ONLY row counts (select count, head only) for the signed-in
+      client; RLS already limits every table to the client's own rows.
    Authentication is never handled here; each page keeps its own
    session handling.
    The owner photo in the account card comes from the shared photo
@@ -45,6 +49,8 @@
     support: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/>',
     feedback: '<path d="M4 5h16v11H9.5L5 20v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
     logout: '<path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5"/><path d="M15 8l4 4-4 4M19 12H9"/>',
+    bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    shield: '<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="M9 12l2 2 4-4"/>',
     chevron: '<path d="M15 6l-6 6 6 6"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>'
@@ -58,70 +64,112 @@
       (PATHS[name] || '') + '</svg>';
   }
 
-  /* Sidebar icon tiles: every menu icon sits in a soft coloured tile.
-     Instagram and WhatsApp use their real brand look (brand colours + glyph). */
-  var TONES = {
-    home: '#10b981',
-    leads: '#6366f1',
-    customers: '#0ea5e9',
-    orders: '#f59e0b',
-    services: '#8b5cf6',
-    assistant: '#a855f7',
-    chart: '#14b8a6',
-    followup: '#f97316',
-    mic: '#ef4444',
-    link: '#0ea5e9',
-    card: '#22c55e',
-    box: '#d97706',
-    sliders: '#64748b',
-    feedback: '#ec4899',
-    support: '#06b6d4',
-    logout: '#ef4444'
-  };
-
+  /* Instagram and WhatsApp use their real brand look (brand colours + glyph).
+     The AI Assistant uses the Anaya avatar from glime-library/.
+     Every other icon is a line icon painted with the GLIME green-to-cyan gradient. */
   var BRAND = {
     instagram:
       '<rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2" fill="none" stroke="#fff" stroke-width="1.9"/>' +
       '<circle cx="12" cy="12" r="4.1" fill="none" stroke="#fff" stroke-width="1.9"/>' +
-      '<circle cx="17.2" cy="6.8" r="1.2" fill="#fff"/>',
+      '<circle cx="17.2" cy="6.8" r="1.2" fill="#fff" stroke="none"/>',
     whatsapp:
       '<path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.6A7.5 7.5 0 1 1 20 11.5z" fill="none" stroke="#fff" stroke-width="1.9" stroke-linejoin="round"/>' +
-      '<path transform="translate(6.3 5.9) scale(.48)" fill="#fff" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'
+      '<path transform="translate(6.3 5.9) scale(.48)" fill="#fff" stroke="none" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'
   };
 
+  var ANAYA_SRC = 'glime-library/anaya-avatar-primary.webp';
+
   function iconTile(name) {
+    if (name === 'assistant') {
+      return '<span class="gas-ico gas-ico-anaya" aria-hidden="true">' +
+        '<img class="gas-anaya" src="' + ANAYA_SRC + '" alt="" width="36" height="36" decoding="async"></span>';
+    }
     var brand = BRAND[name];
-    var tone = TONES[name] || '#10b981';
-    return '<span class="gas-ico' + (brand ? ' gas-ico-brand gas-ico-' + name : '') +
-      '" style="--t:' + tone + '" aria-hidden="true">' +
+    return '<span class="gas-ico' + (brand ? ' gas-ico-brand gas-ico-' + name : '') + '" aria-hidden="true">' +
       (brand
         ? '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">' + brand + '</svg>'
-        : icon(name, 20)) +
+        : icon(name, 22)) +
       '</span>';
   }
 
-  var GAS_CSS =
-    '.gas-sidebar .gas-link{transition:background .22s ease,color .22s ease,transform .22s ease}' +
-    '.gas-sidebar .gas-label{transition:transform .22s ease}' +
-    '.gas-sidebar .gas-link:hover .gas-label{transform:translateX(2px)}' +
-    '.gas-sidebar .gas-ico{position:relative;flex:0 0 auto;width:34px;height:34px;border-radius:11px;display:inline-grid;place-items:center;color:var(--t);isolation:isolate;transition:transform .28s cubic-bezier(.34,1.56,.64,1),box-shadow .28s ease,color .22s ease}' +
-    '.gas-sidebar .gas-ico::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--t);opacity:.14;z-index:-1;transition:opacity .22s ease}' +
-    '.gas-sidebar .gas-ico svg{width:19px;height:19px;display:block}' +
-    '.gas-sidebar .gas-link:hover .gas-ico,.gas-sidebar .gas-logout:hover .gas-ico{transform:translateY(-1px) scale(1.08) rotate(-4deg);box-shadow:0 6px 14px -5px var(--t)}' +
-    '.gas-sidebar .gas-link:hover .gas-ico::before,.gas-sidebar .gas-logout:hover .gas-ico::before{opacity:.24}' +
-    '.gas-sidebar .gas-link[aria-current="page"] .gas-ico{color:#fff;box-shadow:0 6px 16px -6px var(--t),inset 0 1px 0 rgba(255,255,255,.35)}' +
-    '.gas-sidebar .gas-link[aria-current="page"] .gas-ico::before{opacity:1}' +
-    '.gas-sidebar .gas-link[aria-current="page"] .gas-ico::after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid var(--t);opacity:0;animation:gasRing 2.8s ease-out infinite;pointer-events:none}' +
-    '.gas-sidebar .gas-ico.gas-ico-brand{color:#fff;box-shadow:0 4px 12px -5px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.3)}' +
-    '.gas-sidebar .gas-ico.gas-ico-brand::before{opacity:1}' +
-    '.gas-sidebar .gas-ico-instagram::before{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285aeb 90%)}' +
-    '.gas-sidebar .gas-ico-whatsapp::before{background:linear-gradient(145deg,#3ee67d 0%,#25d366 45%,#128c7e 100%)}' +
-    '.gas-sidebar .gas-link:hover .gas-ico.gas-ico-brand{box-shadow:0 8px 18px -6px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.35)}' +
-    '@keyframes gasIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}' +
-    '@keyframes gasRing{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(1.4);opacity:0}}' +
-    '@media(min-width:901px){.gas-sidebar .gas-link{animation:gasIn .45s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*35ms)}}' +
-    '@media(max-width:900px){.gas-open .gas-sidebar .gas-link{animation:gasIn .4s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*30ms + 80ms)}}' +
-    '@media(prefers-reduced-motion:reduce){.gas-sidebar .gas-link,.gas-sidebar .gas-ico,.gas-sidebar .gas-ico::after,.gas-sidebar .gas-label{animation:none!important;transition:none!important}}';
+  var GAS_CSS = [
+    /* palette: dark (default) and light */
+    '.gas-sidebar{--s-g1:#00ff88;--s-g2:#00f0ff;--s-text:#eaf3f8;--s-muted:#9fb0bf;--s-line:rgba(255,255,255,.09);--s-glass:rgba(255,255,255,.055)}',
+    'html[data-theme="light"] .gas-sidebar{--s-g1:#00b86e;--s-g2:#0098c8;--s-text:#0b1a24;--s-muted:#4b5b68;--s-line:#e2e8ee;--s-glass:rgba(0,0,0,.045)}',
+
+    /* surface: soft GLIME glow on a deep background */
+    'html body.gas-body .gas-sidebar{background:radial-gradient(130% 55% at 100% 0%,rgba(0,240,255,.17),transparent 58%),radial-gradient(100% 45% at 0% 100%,rgba(0,255,136,.13),transparent 60%),linear-gradient(180deg,#07121b,#050a10) !important;border-right:1px solid var(--s-line) !important}',
+    'html[data-theme="light"] body.gas-body .gas-sidebar{background:radial-gradient(130% 50% at 100% 0%,rgba(0,184,220,.11),transparent 58%),radial-gradient(100% 40% at 0% 100%,rgba(0,200,120,.10),transparent 60%),linear-gradient(180deg,#ffffff,#f3fbf8) !important}',
+
+    /* header */
+    '.gas-sidebar .gas-brand small{font-size:.8rem;letter-spacing:.01em;text-transform:none;font-weight:600;line-height:1.3;color:var(--s-muted)}',
+    '.gas-sidebar .gas-brand img{filter:drop-shadow(0 0 10px rgba(0,255,136,.35))}',
+
+    /* group titles */
+    '.gas-sidebar .gas-group-title{display:flex;align-items:center;gap:8px;padding:6px 12px 8px;font-size:.7rem;letter-spacing:.14em;color:var(--s-muted);opacity:1}',
+    '.gas-sidebar .gas-group-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--s-line),transparent)}',
+    '.gas-sidebar .gas-gt-ico{display:inline-grid;color:var(--s-g2)}',
+    '.gas-sidebar .gas-gt-ico svg{width:16px;height:16px;display:block}',
+
+    /* links */
+    '.gas-sidebar .gas-link{gap:12px;min-height:46px;padding:5px 12px;margin-bottom:3px;border-radius:14px;color:var(--s-text);font-size:.92rem;transition:background .22s ease,box-shadow .22s ease}',
+    '.gas-sidebar .gas-link .gas-label{flex:1 1 auto;min-width:0;transition:transform .22s ease}',
+    '.gas-sidebar .gas-link:hover .gas-label{transform:translateX(2px)}',
+    'html body.gas-body .gas-sidebar .gas-link:hover{background:var(--s-glass) !important;color:var(--s-text)}',
+    'html body.gas-body .gas-sidebar .gas-link[aria-current="page"]{color:var(--s-text) !important;background:linear-gradient(100deg,rgba(0,255,136,.18),rgba(0,240,255,.12)) !important;box-shadow:0 0 0 1px rgba(0,255,136,.5),0 10px 26px -12px rgba(0,255,136,.6) !important}',
+    'html body.gas-body .gas-sidebar .gas-link[aria-current="page"]::before{display:none !important}',
+    '.gas-sidebar .gas-link[aria-current="page"]:not(.gas-has-badge)::after{content:"";flex:0 0 auto;width:18px;height:18px;margin-right:2px;border-radius:2px;background:linear-gradient(var(--s-g2),var(--s-g2)) 0 100%/4px 40% no-repeat,linear-gradient(var(--s-g2),var(--s-g2)) 7px 100%/4px 70% no-repeat,linear-gradient(var(--s-g1),var(--s-g1)) 14px 100%/4px 100% no-repeat}',
+
+    /* icons */
+    '.gas-sidebar .gas-ico{position:relative;flex:0 0 auto;width:36px;height:36px;display:inline-grid;place-items:center;border-radius:11px;isolation:isolate;transition:transform .28s cubic-bezier(.34,1.56,.64,1),filter .25s ease}',
+    '.gas-sidebar .gas-ico svg{width:22px;height:22px;display:block;stroke:url(#gasGrad);stroke-width:1.7}',
+    '.gas-sidebar .gas-link:hover .gas-ico,.gas-sidebar .gas-logout:hover .gas-ico{transform:scale(1.1) rotate(-4deg);filter:drop-shadow(0 0 7px rgba(0,255,136,.55))}',
+    '.gas-sidebar .gas-link[aria-current="page"] .gas-ico{filter:drop-shadow(0 0 8px rgba(0,255,136,.6))}',
+
+    /* brand tiles (Instagram, WhatsApp) */
+    '.gas-sidebar .gas-ico-brand{box-shadow:0 4px 12px -5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.3)}',
+    '.gas-sidebar .gas-ico-brand::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1}',
+    '.gas-sidebar .gas-ico-brand svg{width:20px;height:20px;stroke-width:1.9}',
+    '.gas-sidebar .gas-ico-instagram::before{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285aeb 90%)}',
+    '.gas-sidebar .gas-ico-whatsapp::before{background:linear-gradient(145deg,#3ee67d 0%,#25d366 45%,#128c7e 100%)}',
+    '.gas-sidebar .gas-link:hover .gas-ico-brand{filter:none;box-shadow:0 8px 18px -6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.35)}',
+
+    /* Anaya avatar (AI Assistant) */
+    '.gas-sidebar .gas-ico-anaya{border-radius:50%;padding:2px;background:linear-gradient(135deg,var(--s-g1),var(--s-g2));box-shadow:0 0 14px -2px rgba(0,255,136,.5)}',
+    '.gas-sidebar .gas-ico-anaya img{width:100%;height:100%;display:block;border-radius:50%;object-fit:cover;background:#0a141c;animation:gasFloat 3.2s ease-in-out infinite}',
+
+    /* live number badges + AI pill */
+    '.gas-sidebar .gas-badge{flex:0 0 auto;min-width:30px;height:26px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-size:.78rem;font-weight:800;color:var(--s-text);background:rgba(0,255,136,.14);border:1px solid rgba(0,255,136,.38);font-variant-numeric:tabular-nums}',
+    '.gas-sidebar .gas-badge[hidden]{display:none}',
+    '.gas-sidebar .gas-badge[data-gas-count="customers"]{background:rgba(0,240,255,.13);border-color:rgba(0,240,255,.38)}',
+    '.gas-sidebar .gas-badge[data-gas-count="orders"]{background:linear-gradient(100deg,rgba(0,255,136,.14),rgba(0,240,255,.14))}',
+    '.gas-sidebar .gas-pill{flex:0 0 auto;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:800;letter-spacing:.04em;color:#04110a;background:linear-gradient(105deg,var(--s-g1),var(--s-g2))}',
+
+    /* footer */
+    '.gas-sidebar .gas-account{padding:10px 12px;border-radius:16px;border:1px solid var(--s-line);background:var(--s-glass) !important}',
+    'html body.gas-body .gas-sidebar .gas-logout{min-height:48px;border-radius:14px;background:linear-gradient(100deg,rgba(255,71,87,.20),rgba(255,71,87,.08)) !important;border:1px solid rgba(255,71,87,.35) !important}',
+    '.gas-sidebar .gas-logout .gas-label{flex:1 1 auto;text-align:left}',
+    '.gas-sidebar .gas-logout .gas-ico{border-radius:50%;background:rgba(255,71,87,.18)}',
+    '.gas-sidebar .gas-logout .gas-ico svg{stroke:#ff6b78}',
+    'html[data-theme="light"] .gas-sidebar .gas-logout .gas-ico svg{stroke:#c62828}',
+    '.gas-sidebar .gas-shield{flex:0 0 auto;display:inline-grid;color:var(--s-muted)}',
+    '.gas-sidebar .gas-shield svg{width:20px;height:20px;display:block}',
+
+    /* collapsed desktop rail */
+    'body.gas-collapsed .gas-sidebar .gas-badge,body.gas-collapsed .gas-sidebar .gas-pill,body.gas-collapsed .gas-sidebar .gas-shield{display:none}',
+    'body.gas-collapsed .gas-sidebar .gas-link::after{display:none}',
+
+    /* motion */
+    '@keyframes gasIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}',
+    '@keyframes gasFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}',
+    '@media(min-width:901px){.gas-sidebar .gas-link{animation:gasIn .45s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*35ms)}}',
+    '@media(max-width:900px){.gas-open .gas-sidebar .gas-link{animation:gasIn .4s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*30ms + 80ms)}}',
+
+    /* mobile drawer: theme + download side by side */
+    '@media(max-width:900px){.gas-sidebar .gas-sb-foot{display:grid;grid-template-columns:1fr 1fr;gap:8px}.gas-sidebar .gas-sb-foot>.gas-account,.gas-sidebar .gas-sb-foot>.gas-logout{grid-column:1/-1}.gas-sidebar .gas-sb-foot .gtheme-row,.gas-sidebar .gas-sb-foot .gas-download{margin:0;min-width:0;padding:8px 10px;gap:8px;font-size:.76rem;justify-content:center;border-radius:14px}}',
+
+    '@media(prefers-reduced-motion:reduce){.gas-sidebar .gas-link,.gas-sidebar .gas-ico,.gas-sidebar .gas-ico img,.gas-sidebar .gas-label{animation:none!important;transition:none!important}}'
+  ].join('');
 
   function gasEnsureStyle() {
     if (document.getElementById('gasPremiumStyle')) return;
@@ -131,22 +179,30 @@
     document.head.appendChild(s);
   }
 
+  /* Hidden SVG defs: the GLIME green-to-cyan gradient used to paint line icons. */
+  var GAS_DEFS =
+    '<svg class="gas-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">' +
+    '<defs><linearGradient id="gasGrad" gradientUnits="userSpaceOnUse" x1="2" y1="22" x2="22" y2="2">' +
+    '<stop offset="0" style="stop-color:var(--s-g1)"/><stop offset="1" style="stop-color:var(--s-g2)"/>' +
+    '</linearGradient></defs></svg>';
+
   /* Every href below is an existing page in the repository. */
   var MENU = [
     {
       title: 'Workspace',
       items: [
         { label: 'Overview', href: 'dashboard.html', icon: 'home' },
-        { label: 'Leads', href: 'leads.html', icon: 'leads' },
-        { label: 'Customers', href: 'customer.html', icon: 'customers' },
-        { label: 'Orders', href: 'orders.html', icon: 'orders' },
+        { label: 'Leads', href: 'leads.html', icon: 'leads', badge: 'leads' },
+        { label: 'Customers', href: 'customer.html', icon: 'customers', badge: 'customers' },
+        { label: 'Orders', href: 'orders.html', icon: 'orders', badge: 'orders' },
         { label: 'Services', href: 'services.html', icon: 'services' }
       ]
     },
     {
       title: 'AI &amp; Intelligence',
+      icon: 'bolt',
       items: [
-        { label: 'AI Assistant', href: 'client-assistant.html', icon: 'assistant' },
+        { label: 'AI Assistant', href: 'client-assistant.html', icon: 'assistant', pill: 'AI' },
         { label: 'Business Growth Intelligence', href: 'glime-intelligence-center.html', icon: 'chart' },
         { label: 'Instagram Sales Specialist', href: 'instagram-sales-specialist.html', icon: 'instagram' },
         { label: 'WhatsApp Sales Specialist', href: 'whatsapp-sales-specialist.html', icon: 'whatsapp' },
@@ -156,6 +212,7 @@
     },
     {
       title: 'Manage',
+      icon: 'sliders',
       items: [
         { label: 'Connector', href: 'ai-connections.html', icon: 'link' },
         { label: 'Billing &amp; Plans', href: 'billing.html', icon: 'card' },
@@ -193,7 +250,10 @@
       (item.external ? ' target="_blank" rel="noopener noreferrer"' : '') +
       ' data-label="' + item.label + '">' +
       iconTile(item.icon) +
-      '<span class="gas-label">' + item.label + '</span></a>';
+      '<span class="gas-label">' + item.label + '</span>' +
+      (item.badge ? '<span class="gas-badge" data-gas-count="' + item.badge + '" hidden></span>' : '') +
+      (item.pill ? '<span class="gas-pill">' + item.pill + '</span>' : '') +
+      '</a>';
   }
 
   function groupsHtml(page, withSupport) {
@@ -201,7 +261,9 @@
     return MENU.map(function (group) {
       var items = group.items.slice();
       if (withSupport && group.title === 'Manage') items.push(SUPPORT_ITEM);
-      return '<div class="gas-group"><div class="gas-group-title">' + group.title + '</div>' +
+      return '<div class="gas-group"><div class="gas-group-title">' +
+        (group.icon ? '<span class="gas-gt-ico">' + icon(group.icon, 16) + '</span>' : '') +
+        group.title + '</div>' +
         items.map(function (item) { return linkHtml(item, page, counter++); }).join('') +
         '</div>';
     }).join('');
@@ -296,6 +358,76 @@
       }
     } catch (e) { /* fall through */ }
     done();
+  }
+
+  /* =========================================================
+     LIVE COUNTS  (read-only)
+     ---------------------------------------------------------
+     Number badges for Leads, Customers and Orders. Only row counts
+     (select id, count exact, head) for the signed-in client. Shown
+     only when the real number is known; hidden otherwise. Cached for
+     a minute per browser tab so page changes do not flicker.
+  ========================================================= */
+  var COUNT_KEY = 'glime_nav_counts';
+  var COUNT_TTL = 60000;
+  var countsBusy = false;
+
+  function paintCounts(counts) {
+    ['leads', 'customers', 'orders'].forEach(function (key) {
+      var els = document.querySelectorAll('[data-gas-count="' + key + '"]');
+      Array.prototype.forEach.call(els, function (el) {
+        var n = counts ? counts[key] : null;
+        var ok = typeof n === 'number' && n >= 0;
+        if (ok) el.textContent = n > 99999 ? '99,999+' : n.toLocaleString('en-IN');
+        el.hidden = !ok;
+        if (el.parentNode) el.parentNode.classList.toggle('gas-has-badge', ok);
+      });
+    });
+  }
+
+  function loadCounts(force) {
+    var cached = null;
+    try {
+      var raw = sessionStorage.getItem(COUNT_KEY);
+      if (raw) cached = JSON.parse(raw);
+    } catch (e) { cached = null; }
+    if (cached && cached.v) paintCounts(cached.v);
+    if (!force && cached && Date.now() - cached.t < COUNT_TTL) return;
+    if (countsBusy) return;
+    countsBusy = true;
+
+    var tries = 0;
+    (function attempt() {
+      var client = fbClient();
+      if (!client) {
+        if (++tries < 20) { setTimeout(attempt, 400); return; }
+        countsBusy = false;
+        return;
+      }
+      client.auth.getSession().then(function (r) {
+        var session = r && r.data && r.data.session;
+        if (!session) return null;
+        return client.from('client_data').select('client_id').eq('auth_user_id', session.user.id).maybeSingle()
+          .then(function (res) {
+            var cid = res && res.data && res.data.client_id;
+            if (!cid) return null;
+            var count = function (table) {
+              return client.from(table).select('id', { count: 'exact', head: true }).eq('client_id', cid)
+                .then(function (x) {
+                  return x && !x.error && typeof x.count === 'number' ? x.count : null;
+                }, function () { return null; });
+            };
+            return Promise.all([count('leads'), count('customers'), count('orders')]).then(function (a) {
+              return { leads: a[0], customers: a[1], orders: a[2] };
+            });
+          });
+      }).then(function (v) {
+        if (!v) return;
+        paintCounts(v);
+        try { sessionStorage.setItem(COUNT_KEY, JSON.stringify({ t: Date.now(), v: v })); } catch (e) { /* ignore */ }
+      }).catch(function () { /* keep whatever is shown */ })
+        .then(function () { countsBusy = false; });
+    })();
   }
 
   /* =========================================================
@@ -612,7 +744,7 @@
     fbState.sending = on;
     var btn = document.getElementById('gfbSend');
     btn.disabled = on;
-    btn.textContent = on ? 'Sending\u2026' : 'Send feedback';
+    btn.textContent = on ? 'Sending…' : 'Send feedback';
   }
 
   function fbShowDone(title, text, reference) {
@@ -734,10 +866,11 @@
     sidebar.id = 'gasSidebar';
     sidebar.setAttribute('aria-label', 'Main navigation');
     sidebar.innerHTML =
+      GAS_DEFS +
       '<div class="gas-sb-head">' +
         '<a class="gas-brand" href="dashboard.html" aria-label="GLIME overview">' +
           '<img src="glime_logo_clean.svg" alt="GLIME">' +
-          '<small class="gas-label">AI BUSINESS<br>WORKSPACE</small>' +
+          '<small class="gas-label">AI Business<br>Workspace</small>' +
         '</a>' +
         '<button type="button" class="gas-icon-btn gas-collapse-btn" id="gasCollapse" ' +
           'aria-label="Collapse sidebar" aria-pressed="false">' + icon('chevron', 18) + '</button>' +
@@ -752,7 +885,8 @@
           '<span class="gas-acc-id" id="gasAccId"></span></span>' +
         '</div>' +
         '<button type="button" class="gas-logout" id="gasLogout">' + iconTile('logout') +
-          '<span class="gas-label">Secure Logout</span></button>' +
+          '<span class="gas-label">Secure Logout</span>' +
+          '<span class="gas-shield" aria-hidden="true">' + icon('shield', 20) + '</span></button>' +
       '</div>';
 
     var topbar = document.createElement('header');
@@ -782,6 +916,16 @@
     var links = sidebar.querySelectorAll('.gas-link');
     var collapsedPref = false;
     var lastFocus = null;
+
+    /* If the Anaya picture cannot load, fall back to the sparkle line icon. */
+    Array.prototype.forEach.call(sidebar.querySelectorAll('img.gas-anaya'), function (img) {
+      img.addEventListener('error', function () {
+        var holder = img.parentNode;
+        if (!holder) return;
+        holder.classList.remove('gas-ico-anaya');
+        holder.innerHTML = icon('assistant', 22);
+      });
+    });
 
     try { collapsedPref = localStorage.getItem(PREF_KEY) === '1'; } catch (e) { /* ignore */ }
 
@@ -879,6 +1023,13 @@
     loadPwaSystem();
     loadThemeSystem();
     initFeedback();
+
+    /* Real numbers next to Leads, Customers, Orders: now, then every 90 s while the tab is visible. */
+    loadCounts(false);
+    setInterval(function () { if (!document.hidden) loadCounts(true); }, 90000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) loadCounts(false);
+    });
   }
 
   window.GlimeAppShell = {
