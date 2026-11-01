@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Calendar | GLIME</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap">
+<style>
+:root{--bg:#060d13;--s:#0e1824;--s2:#142233;--bd:rgba(184,222,234,.12);--tx:#f4fbfd;--mu:#8fa1b0;--cy:#52e8ff;--gr:#50f5a8;--rd:#ff8291;--am:#ffc46b}
+*{box-sizing:border-box}
+body{margin:0;color:var(--tx);font:500 14px/1.5 Manrope,Arial,sans-serif;background:radial-gradient(800px 380px at 90% -8%,rgba(82,232,255,.12),transparent),radial-gradient(600px 300px at -10% 10%,rgba(80,245,168,.07),transparent),var(--bg);padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+#app{max-width:880px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 14px 0}
+h1{font-size:1.45rem;margin:0;letter-spacing:-.02em}h3{margin:0 0 10px;font-size:1rem}
+.mu{color:var(--mu);font-size:.78rem}.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.sp{justify-content:space-between}
+select,input,textarea,button{font:inherit;color:var(--tx);min-height:44px;border-radius:12px;border:1px solid var(--bd);background:var(--s2);padding:8px 12px;color-scheme:dark}
+textarea{width:100%;min-height:70px}button{cursor:pointer;font-weight:700;font-size:.8rem}
+button:hover{border-color:rgba(82,232,255,.5)}
+.p{background:linear-gradient(105deg,var(--gr),var(--cy));color:#031014!important;border:0}
+.d{color:var(--rd);border-color:rgba(255,130,145,.4)}
+:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.card{background:linear-gradient(180deg,rgba(20,34,51,.7),var(--s));border:1px solid var(--bd);border-radius:18px;padding:14px;margin-bottom:12px}
+.strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
+.day{display:flex;flex-direction:column;align-items:center;padding:7px 0;gap:0;min-height:62px;background:var(--s)}
+.day.on{background:var(--cy);color:#031014;border:0}.day small{font-size:.64rem}.day b{font-size:1.05rem}.day i{font-style:normal;font-size:.62rem;color:var(--gr);height:12px}.day.on i{color:#031014}
+.stats{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.stat{flex:1;min-width:96px;background:var(--s);border:1px solid var(--bd);border-radius:14px;padding:10px 12px}.stat b{font-size:1.35rem;display:block;line-height:1.1}
+.tl{border:1px solid var(--bd);border-radius:18px;background:var(--s);overflow:auto;max-height:66vh}
+.tg{display:grid}.ch{position:sticky;top:0;z-index:3;background:var(--s2);padding:10px;font-weight:800;font-size:.8rem;border-bottom:1px solid var(--bd);display:flex;gap:7px;align-items:center}.ch i{width:9px;height:9px;border-radius:50%}
+.gut{position:relative;color:var(--mu);font-size:.65rem}.gut span{position:absolute;left:6px;transform:translateY(-50%)}.gut span:first-child{transform:none}
+.col{position:relative;border-left:1px solid var(--bd);cursor:cell}
+.bb{position:absolute;left:4px;right:4px;text-align:left;padding:4px 8px;border-radius:10px;overflow:hidden;border:1px solid color-mix(in srgb,var(--c) 45%,transparent);border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 17%,#0e1824);cursor:pointer;min-height:0}
+.bb b{display:block;font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bb small{font-size:.66rem;color:var(--mu);font-weight:500;white-space:nowrap}
+.bb.pending{border-style:dashed}.bb.completed{opacity:.55}.bb.no_show{filter:saturate(.3)}.bb.confirmed small{color:var(--gr)}
+.now{position:absolute;left:0;right:0;height:2px;background:var(--rd);z-index:2;pointer-events:none}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--bd)}.row:first-of-type{border-top:0}
+.bd{font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:99px;border:1px solid var(--bd);white-space:nowrap}
+.bk{color:var(--cy)}.ok{color:var(--gr)}.dn{color:var(--mu)}.rd{color:var(--rd)}.am{color:var(--am)}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;gap:6px;justify-content:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:rgba(6,13,19,.88);backdrop-filter:blur(14px);border-top:1px solid var(--bd)}
+.nav button{flex:1;max-width:200px;background:transparent;border:0}.nav .on{color:var(--cy);background:rgba(82,232,255,.1)}
+.fab{position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:9;box-shadow:0 10px 30px rgba(82,232,255,.3);min-height:50px;padding:0 20px;border-radius:99px}
+.ov{position:fixed;inset:0;z-index:30;background:rgba(2,6,10,.72);display:flex;align-items:flex-end;justify-content:center}
+.sh{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--s);border:1px solid var(--bd);border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+label{display:block;margin-bottom:10px;font-size:.7rem;font-weight:800;color:var(--mu)}label input,label select{width:100%;margin-top:4px;font-weight:500;font-size:.85rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chip{min-height:36px;padding:4px 12px;border-radius:99px}.chip.on{background:var(--cy);color:#031014;border:0}
+.sw{appearance:none;width:46px;min-height:26px;height:26px;padding:0;border-radius:99px;position:relative;flex:none}.sw::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--mu);transition:left .15s}.sw:checked{background:rgba(80,245,168,.25);border-color:var(--gr)}.sw:checked::after{left:23px;background:var(--gr)}
+.seg{display:flex;gap:6px;margin-bottom:12px}.seg button{flex:1}.seg .on{border-color:var(--cy);color:var(--cy)}
+.log{font:12px/1.7 ui-monospace,Menlo,monospace;background:#040a0f;border:1px solid var(--bd);border-radius:14px;padding:12px;min-height:60px;color:var(--mu);white-space:pre-wrap}.log b{color:var(--cy)}.log em{color:var(--gr);font-style:normal}
+.msg{padding:11px 14px;border-radius:12px;margin-bottom:12px;font-size:.8rem;border:1px solid var(--bd);background:var(--s)}.msg.ok{color:var(--gr)}.msg.err{color:var(--rd)}.msg.demo{color:var(--am)}
+.sw2{width:26px;height:26px;border-radius:50%;min-height:26px;padding:0}.sw2.on{outline:2px solid var(--tx);outline-offset:2px}
+.hr{display:grid;grid-template-columns:54px 30px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}.hr input[type=checkbox]{min-height:22px;width:22px}
+.empty{text-align:center;padding:26px 10px;color:var(--mu)}
+@media(max-width:520px){.g2{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"></div>
+<script>
+(()=>{
+'use strict';
+/* With window.sb (Supabase client, as on other GLIME pages) this calls the Edge Function below.
+   Without it the page runs in DEMO mode on sample data. */
+const GATEWAY='glime-glimecal-gateway';
+const sb=window.sb||null,DEMO=!sb;
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const addD=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return ymd(d)};
+const iso=(d,t)=>new Date(d+'T'+t+':00').toISOString();
+const tm=v=>new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const hm=v=>{const d=new Date(v);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],ORDER=[1,2,3,4,5,6,0],PPH=64;
+const COLORS=['#52e8ff','#50f5a8','#ffc46b','#b69cff','#ff8fb1','#7fb2ff'];
+const ST={pending:['Needs approval','am'],booked:['Booked','bk'],confirmed:['Confirmed','ok'],completed:['Completed','dn'],cancelled:['Cancelled','rd'],no_show:['No-show','am']};
+const SRC={ai_whatsapp:'AI · WhatsApp',ai_instagram:'AI · Instagram',staff:'Staff'};
+const PRE={clinic:{n:'Clinic',b:'Appointment',r:'Doctor',c:'Patient'},salon:{n:'Salon and spa',b:'Booking',r:'Stylist',c:'Client'},fitness:{n:'Fitness and sports',b:'Session',r:'Trainer',c:'Member'},coaching:{n:'Coaching and education',b:'Session',r:'Coach',c:'Client'},repair:{n:'Repair and field service',b:'Job',r:'Technician',c:'Customer'},general:{n:'Other business',b:'Booking',r:'Resource',c:'Customer'}};
+const today=ymd(new Date()),wk=d=>addD(d,-new Date(d+'T00:00:00').getDay());
+
+/* ---------- API ---------- */
+async function call(a,b){
+  const r=await sb.auth.getSession(),s=r&&r.data&&r.data.session;
+  if(!s)throw new Error('Your session expired. Sign in again.');
+  let res;
+  try{res=await fetch(String(sb.supabaseUrl).replace(/\/$/,'')+'/functions/v1/'+GATEWAY+'?action='+encodeURIComponent(a),{method:'POST',headers:{Authorization:'Bearer '+s.access_token,apikey:sb.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify(b||{})});}
+  catch(e){throw new Error('Unable to reach GLIME. Try again.');}
+  const d=await res.json().catch(()=>null);
+  if(!res.ok)throw new Error((d&&d.error)||'Request failed. Try again.');
+  return d;
+}
+let seq=20;
+const db={set:{industry:'clinic',auto_confirm:true,agent_reschedule:true,agent_cancel:true,min_notice:2,max_days:60},
+res:[{id:'r1',name:'Dr. Sharma',color:COLORS[0]},{id:'r2',name:'Dr. Mehta',color:COLORS[1]}],
+svc:[{id:'s1',name:'Consultation',duration:15,buffer:5,price:500,agent:true,info:'First visit. Bring previous reports.'},{id:'s2',name:'Follow-up',duration:10,buffer:0,price:300,agent:true,info:''},{id:'s3',name:'Dental cleaning',duration:30,buffer:10,price:1200,agent:true,info:'Arrive 10 minutes early.'}],
+hours:[0,1,2,3,4,5,6].map(d=>({day:d,on:d!==0,start:'10:00',end:'20:00'})),
+bk:[],act:[]};
+const B=(id,r,s,n,t,status,src)=>{const sv=db.svc.find(x=>x.id===s),st=iso(today,t);db.bk.push({id,resource_id:r,service_id:s,customer:n,phone:'+91 90000 0000'+id.slice(1),start:st,end:new Date(+new Date(st)+sv.duration*6e4).toISOString(),status,source:src,notes:''});};
+B('b1','r1','s1','Rahul Verma','10:00','confirmed','ai_whatsapp');B('b2','r1','s2','Priya Singh','10:30','pending','ai_instagram');B('b3','r2','s3','Amit Joshi','11:00','confirmed','staff');B('b4','r2','s1','Neha Kapoor','16:30','confirmed','ai_whatsapp');
+db.act=[{id:'x1',type:'booked',channel:'ai_whatsapp',text:'Neha Kapoor booked Consultation',at:new Date().toISOString()},{id:'x2',type:'held',channel:'ai_instagram',text:'Priya Singh requested Follow-up, waiting for approval',at:new Date().toISOString()}];
+async function mock(a,b){
+  await new Promise(r=>setTimeout(r,90));
+  const svc=id=>db.svc.find(x=>x.id===id),log=(type,text,ch)=>db.act.unshift({id:'x'+(++seq),type,text,channel:ch||'staff',at:new Date().toISOString()});
+  if(a==='resources.list')return{items:db.res};
+  if(a==='resource.save'){if(b.id)Object.assign(db.res.find(x=>x.id===b.id),b);else db.res.push({...b,id:'r'+(++seq)});return{ok:true};}
+  if(a==='resource.delete'){if(db.bk.some(x=>x.resource_id===b.id&&x.status!=='cancelled'))throw new Error('Cancel or move its bookings first.');db.res=db.res.filter(x=>x.id!==b.id);return{ok:true};}
+  if(a==='services.list')return{items:db.svc};
+  if(a==='service.save'){if(b.id)Object.assign(svc(b.id),b);else db.svc.push({...b,id:'s'+(++seq)});return{ok:true};}
+  if(a==='service.delete'){db.svc=db.svc.filter(x=>x.id!==b.id);return{ok:true};}
+  if(a==='hours.get')return{items:db.hours};
+  if(a==='hours.save'){db.hours=b.items;return{ok:true};}
+  if(a==='settings.get')return db.set;
+  if(a==='settings.save'){Object.assign(db.set,b);return{ok:true};}
+  if(a==='activity.list')return{items:db.act.slice(0,20)};
+  if(a==='bookings.list')return{items:db.bk.filter(x=>x.start>=b.from&&x.start<b.to)};
+  if(a==='booking.status'){const x=db.bk.find(v=>v.id===b.id);x.status=b.status;log(b.status==='cancelled'?'cancelled':'updated',x.customer+' marked '+ST[b.status][0]);return{ok:true};}
+  if(a==='booking.delete'){const x=db.bk.find(v=>v.id===b.id);db.bk=db.bk.filter(v=>v.id!==b.id);log('cancelled',x.customer+' booking deleted');return{ok:true};}
+  if(a==='availability.check'){
+    const s=svc(b.service_id),h=db.hours[new Date(b.date+'T00:00:00').getDay()];
+    if(!s||!h||!h.on)return{slots:[]};
+    const ag=b.as==='agent',now=Date.now()+(ag?db.set.min_notice*36e5:0);
+    if(ag&&b.date>addD(today,db.set.max_days))return{slots:[]};
+    const busy=db.bk.filter(x=>x.resource_id===b.resource_id&&x.status!=='cancelled'&&x.id!==b.exclude_id),out=[],step=(+s.duration)+(+s.buffer||0),end=new Date(b.date+'T'+h.end+':00');
+    let t=new Date(b.date+'T'+h.start+':00');
+    while(+t+s.duration*6e4<=+end){const e=new Date(+t+s.duration*6e4);if(+t>now&&!busy.some(x=>new Date(x.start)<e&&new Date(x.end)>t))out.push(pad(t.getHours())+':'+pad(t.getMinutes()));t=new Date(+t+step*6e4);}
+    return{slots:out};
+  }
+  if(a==='booking.save'){
+    const s=svc(b.service_id),start=iso(b.date,b.time),end=new Date(+new Date(start)+s.duration*6e4).toISOString();
+    if(db.bk.some(x=>x.id!==b.id&&x.resource_id===b.resource_id&&x.status!=='cancelled'&&x.start<end&&x.end>start))throw new Error('That time overlaps another booking. Pick a free slot.');
+    const o={resource_id:b.resource_id,service_id:b.service_id,customer:b.customer,phone:b.phone,start,end,status:b.status,notes:b.notes};
+    if(b.id){Object.assign(db.bk.find(x=>x.id===b.id),o);log('updated',b.customer+' booking updated');}
+    else{db.bk.push({...o,id:'b'+(++seq),source:b.source||'staff'});log(b.status==='pending'?'held':'booked',b.customer+' booked '+s.name,b.source);}
+    return{ok:true};
+  }
+  throw new Error('Unknown action');
+}
+const api=(a,b)=>DEMO?mock(a,b||{}):call(a,b);
+
+/* ---------- State ---------- */
+const st={tab:'cal',sub:'biz',date:today,res:[],svc:[],hours:[],bk:[],act:[],set:{},sheet:null,slots:[],log:null,msg:null,loading:true,s0:9};
+const $app=document.getElementById('app');
+const L=()=>PRE[st.set.industry]||PRE.general;
+const svcName=id=>(st.svc.find(s=>s.id===id)||{}).name||'Service';
+const resOf=id=>st.res.find(r=>r.id===id)||{name:'Unassigned',color:'#8fa1b0'};
+const setMsg=(t,x)=>{st.msg={t,x};};
+async function loadWeek(){const w=wk(st.date);st.bk=(await api('bookings.list',{from:iso(w,'00:00'),to:iso(addD(w,7),'00:00')})).items||[];}
+async function loadAct(){st.act=(await api('activity.list')).items||[];}
+async function loadSlots(){
+  const d=st.sheet&&st.sheet.k==='bk'?st.sheet.d:null;st.slots=[];
+  if(!d||!d.service_id||!d.resource_id||!d.date)return;
+  st.slots=(await api('availability.check',{resource_id:d.resource_id,service_id:d.service_id,date:d.date,exclude_id:d.id||undefined})).slots||[];
+}
+async function run(fn,ok){try{await fn();if(ok)setMsg('ok',ok);else st.msg=null;}catch(e){console.error(e);setMsg('err',e.message||'Something went wrong.');}render();}
+const fail=x=>run(async()=>{throw new Error(x);});
+
+/* ---------- Views ---------- */
+function calView(){
+  const w=wk(st.date),l=L();
+  const day=st.bk.filter(x=>x.status!=='cancelled'&&ymd(new Date(x.start))===st.date);
+  const strip=[0,1,2,3,4,5,6].map(i=>{const d=addD(w,i),n=st.bk.filter(x=>x.status!=='cancelled'&&ymd(new Date(x.start))===d).length;return `<button class="day${d===st.date?' on':''}" data-act="day" data-d="${d}" aria-label="${d}"><small>${DAYS[i]}</small><b>${+d.slice(8)}</b><i>${n||''}</i></button>`;}).join('');
+  const ai=day.filter(x=>String(x.source).startsWith('ai')).length;
+  const pend=st.bk.filter(x=>x.status==='pending');
+  const pb=pend.length?`<div class="card" style="border-color:rgba(255,196,107,.4)"><h3>Needs your approval</h3>${pend.map(x=>`<div class="row"><div><b>${esc(x.customer)}</b><span class="mu">${esc(svcName(x.service_id))} · ${new Date(x.start).toLocaleDateString([],{day:'numeric',month:'short'})} ${tm(x.start)}</span></div><div class="bar"><button class="p" data-act="approve" data-id="${esc(x.id)}">Approve</button><button class="d" data-act="decline" data-id="${esc(x.id)}">Decline</button></div></div>`).join('')}</div>`:'';
+  return `<div class="bar sp"><div><h1>${new Date(st.date+'T00:00:00').toLocaleDateString([],{weekday:'long'})}</h1><span class="mu">${new Date(st.date+'T00:00:00').toLocaleDateString([],{day:'numeric',month:'long',year:'numeric'})}</span></div>
+  <div class="bar"><button data-act="wk" data-n="-7" aria-label="Previous week">&lsaquo;</button><button data-act="today">Today</button><button data-act="wk" data-n="7" aria-label="Next week">&rsaquo;</button></div></div>
+  <div class="strip">${strip}</div>
+  <div class="stats"><div class="stat"><b>${day.length}</b><span class="mu">${l.b}s this day</span></div><div class="stat"><b>${ai}</b><span class="mu">booked by your AI agent</span></div><div class="stat"><b>${pend.length}</b><span class="mu">waiting for approval</span></div></div>
+  ${pb}${tlView(day)}<button class="p fab" data-act="new">New ${esc(l.b.toLowerCase())}</button>`;
+}
+function tlView(day){
+  if(!st.res.length)return `<div class="card empty">Add your first ${esc(L().r.toLowerCase())} in Setup to start taking bookings.</div>`;
+  const h=st.hours.find(x=>x.day===new Date(st.date+'T00:00:00').getDay());
+  let s0=9,e0=19;
+  if(h&&h.on){s0=+h.start.slice(0,2);e0=Math.min(24,+h.end.slice(0,2)+(+h.end.slice(3,5)>0?1:0));}
+  day.forEach(x=>{s0=Math.min(s0,new Date(x.start).getHours());e0=Math.max(e0,Math.min(24,new Date(x.end).getHours()+1));});
+  st.s0=s0;const n=e0-s0,H=n*PPH,nowD=new Date(),nowTop=((nowD.getHours()-s0)*60+nowD.getMinutes())*PPH/60;
+  const gut=Array.from({length:n},(_,i)=>`<span style="top:${i*PPH}px">${pad(s0+i)}:00</span>`).join('');
+  const cols=st.res.map(r=>{
+    const bl=day.filter(x=>x.resource_id===r.id).map(x=>{const a=new Date(x.start),top=((a.getHours()-s0)*60+a.getMinutes())*PPH/60,ht=Math.max(32,(new Date(x.end)-a)/6e4*PPH/60-2);
+      return `<button class="bb ${esc(x.status)}" data-act="open" data-id="${esc(x.id)}" style="top:${top}px;height:${ht}px;--c:${r.color}"><b>${hm(x.start)} ${esc(x.customer)}</b><small>${esc(svcName(x.service_id))}${String(x.source).startsWith('ai')?' ✦':''}</small></button>`;}).join('');
+    return `<div class="col" data-act="slotclick" data-r="${esc(r.id)}" style="height:${H}px;background:repeating-linear-gradient(to bottom,transparent 0,transparent ${PPH-1}px,var(--bd) ${PPH-1}px,var(--bd) ${PPH}px)">${bl}${st.date===today&&nowTop>0&&nowTop<H?`<div class="now" style="top:${nowTop}px"></div>`:''}</div>`;}).join('');
+  const hd=st.res.map(r=>`<div class="ch"><i style="background:${r.color}"></i>${esc(r.name)}</div>`).join('');
+  return `<div class="tl"><div class="tg" style="grid-template-columns:46px repeat(${st.res.length},minmax(150px,1fr))"><div class="ch"></div>${hd}<div class="gut" style="height:${H}px">${gut}</div>${cols}</div></div>${h&&!h.on?'<p class="mu">Closed on this day. You can still add a booking manually.</p>':''}`;
+}
+function agentView(){
+  const s=st.set,sw=(k,t,sub)=>`<div class="row"><div><b>${t}</b><span class="mu">${sub}</span></div><input class="sw" type="checkbox" data-k="${k}"${s[k]?' checked':''} aria-label="${t}"></div>`;
+  const so=st.svc.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}</option>`).join(''),ro=st.res.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}</option>`).join('');
+  const fe=st.act.length?st.act.map(x=>{const c={booked:'ok',held:'am',updated:'bk',cancelled:'rd'}[x.type]||'dn';return `<div class="row"><div><b class="${c}" style="display:inline">${esc(x.type)}</b> · ${esc(x.text)}<span class="mu" style="display:block">${esc(SRC[x.channel]||'Staff')} · ${tm(x.at)}</span></div></div>`;}).join(''):'<div class="empty">No agent activity yet.</div>';
+  return `<h1>Agent</h1><p class="mu" style="margin:2px 0 12px">Your AI agent checks free time, books, reschedules and cancels here while it chats with customers.</p>
+  <div class="card"><h3>What the agent is allowed to do</h3><div id="rules">${sw('auto_confirm','Confirm bookings automatically','Off: agent bookings wait for your approval.')}${sw('agent_reschedule','Allow rescheduling','Customers can change their own booking in chat.')}${sw('agent_cancel','Allow cancelling','Customers can cancel their own booking in chat.')}</div>
+  <div class="g2" style="margin-top:10px"><label>Minimum notice (hours)<input type="number" min="0" max="168" data-k="min_notice" value="${esc(s.min_notice)}"></label><label>Book up to (days ahead)<input type="number" min="1" max="365" data-k="max_days" value="${esc(s.max_days)}"></label></div><button class="p" data-act="rules-save">Save rules</button></div>
+  <div class="card"><h3>Test your agent</h3><p class="mu" style="margin-top:0">Runs the same steps the agent runs in a chat and creates a test booking you can delete.</p>
+  <div class="g2"><label>Service<select id="t-s">${so}</select></label><label>${esc(L().r)}<select id="t-r">${ro}</select></label></div><label>Date<input id="t-d" type="date" value="${addD(today,1)}"></label>
+  <button class="p" data-act="test">Run test booking</button><div class="log" id="log" style="margin-top:10px">${st.log?st.log:'Waiting for a test run.'}</div></div>
+  <div class="card"><h3>Agent tools</h3><div class="bar">${['list_services','check_availability','create_booking','reschedule_booking','cancel_booking','find_customer_bookings'].map(t=>`<span class="bd bk">${t}</span>`).join('')}</div></div>
+  <div class="card"><h3>Recent activity</h3>${fe}</div>`;
+}
+function setupView(){
+  const t=(k,l)=>`<button class="${st.sub===k?'on':''}" data-act="sub" data-t="${k}">${l}</button>`,l=L();
+  let body='';
+  if(st.sub==='biz'){
+    const io=Object.keys(PRE).map(k=>`<option value="${k}"${k===st.set.industry?' selected':''}>${PRE[k].n}</option>`).join('');
+    const hr=ORDER.map(d=>{const h=st.hours.find(x=>x.day===d)||{on:false,start:'10:00',end:'18:00'};return `<div class="hr" data-hd="${d}"><b>${DAYS[d]}</b><input type="checkbox" data-h="on" aria-label="${DAYS[d]} open"${h.on?' checked':''}><input type="time" data-h="start" value="${esc(h.start)}" aria-label="${DAYS[d]} start"><input type="time" data-h="end" value="${esc(h.end)}" aria-label="${DAYS[d]} end"></div>`;}).join('');
+    body=`<div class="card"><h3>Business type</h3><select id="ind" style="width:100%">${io}</select><p class="mu">This renames things for your business, like ${esc(l.b.toLowerCase())}, ${esc(l.r.toLowerCase())} and ${esc(l.c.toLowerCase())}.</p></div><div class="card"><h3>Working hours</h3>${hr}<button class="p" data-act="hrs-save">Save hours</button></div>`;
+  }else if(st.sub==='res'){
+    body=`<div class="bar sp" style="margin-bottom:10px"><h3 style="margin:0">${esc(l.r)}s</h3><button class="p" data-act="add-res">Add ${esc(l.r.toLowerCase())}</button></div><div class="card">${st.res.length?st.res.map(r=>`<div class="row"><div><b><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${r.color};margin-right:8px"></i>${esc(r.name)}</b></div><div class="bar"><button data-act="edit-res" data-id="${esc(r.id)}">Edit</button><button class="d" data-act="del-res" data-id="${esc(r.id)}">Delete</button></div></div>`).join(''):`<div class="empty">No ${esc(l.r.toLowerCase())} yet.</div>`}</div>`;
+  }else{
+    body=`<div class="bar sp" style="margin-bottom:10px"><h3 style="margin:0">Services</h3><button class="p" data-act="add-svc">Add service</button></div><div class="card">${st.svc.length?st.svc.map(s=>`<div class="row"><div><b>${esc(s.name)}</b><span class="mu">${s.duration} min · buffer ${s.buffer||0} min · Rs ${s.price||0} · ${s.agent?'Agent can book':'Staff only'}</span></div><div class="bar"><button data-act="edit-svc" data-id="${esc(s.id)}">Edit</button><button class="d" data-act="del-svc" data-id="${esc(s.id)}">Delete</button></div></div>`).join(''):'<div class="empty">Add a service so your agent can book it.</div>'}</div>`;
+  }
+  return `<h1>Setup</h1><div class="seg" style="margin-top:12px">${t('biz','Business')}${t('res',l.r+'s')}${t('svc','Services')}</div>${body}`;
+}
+function sheet(){
+  const k=st.sheet.k,d=st.sheet.d,l=L();let b='';
+  const op=(a,v,f)=>a.map(o=>`<option value="${esc(o.id)}"${o.id===v?' selected':''}>${f(o)}</option>`).join('');
+  if(k==='bk'){
+    const chips=st.slots.length?st.slots.slice(0,14).map(t=>`<button type="button" class="chip${t===d.time?' on':''}" data-act="slot" data-t="${t}">${t}</button>`).join(' '):'<span class="mu">No free slot for this choice. You can still type a time.</span>';
+    b=`<h3>${d.id?'Edit '+esc(l.b.toLowerCase()):'New '+esc(l.b.toLowerCase())}</h3>
+    <div class="g2"><label>${esc(l.c)} name<input data-f="customer" maxlength="100" value="${esc(d.customer)}"></label><label>Phone<input data-f="phone" inputmode="tel" maxlength="20" value="${esc(d.phone)}"></label></div>
+    <div class="g2"><label>Service<select data-f="service_id" data-re>${op(st.svc,d.service_id,s=>esc(s.name)+' · '+s.duration+' min')}</select></label><label>${esc(l.r)}<select data-f="resource_id" data-re>${op(st.res,d.resource_id,r=>esc(r.name))}</select></label></div>
+    <div class="g2"><label>Date<input type="date" data-f="date" data-re value="${esc(d.date)}"></label><label>Time<input type="time" data-f="time" value="${esc(d.time)}"></label></div>
+    <p class="mu" style="margin:0 0 6px">Free times</p><div class="bar" style="margin-bottom:12px">${chips}</div>
+    <label>Status<select data-f="status">${Object.keys(ST).map(s=>`<option value="${s}"${s===d.status?' selected':''}>${ST[s][0]}</option>`).join('')}</select></label>
+    <label>Notes<textarea data-f="notes" maxlength="500">${esc(d.notes)}</textarea></label>${d.src?`<p class="mu">Created by ${esc(SRC[d.src]||'Staff')}</p>`:''}`;
+  }else if(k==='res'){
+    b=`<h3>${d.id?'Edit':'Add'} ${esc(l.r.toLowerCase())}</h3><label>Name<input data-f="name" maxlength="80" value="${esc(d.name)}"></label><p class="mu">Colour</p><div class="bar" style="margin-bottom:12px">${COLORS.map(c=>`<button type="button" class="sw2${c===d.color?' on':''}" data-act="color" data-c="${c}" style="background:${c}" aria-label="Colour ${c}"></button>`).join('')}</div>`;
+  }else{
+    b=`<h3>${d.id?'Edit':'Add'} service</h3><label>Name<input data-f="name" maxlength="80" value="${esc(d.name)}"></label>
+    <div class="g2"><label>Duration (min)<input type="number" min="5" max="480" data-f="duration" value="${esc(d.duration)}"></label><label>Buffer after (min)<input type="number" min="0" max="120" data-f="buffer" value="${esc(d.buffer)}"></label></div>
+    <label>Price (Rs)<input type="number" min="0" data-f="price" value="${esc(d.price)}"></label>
+    <label>What the agent tells customers<textarea data-f="info" maxlength="300">${esc(d.info)}</textarea></label>
+    <div class="row"><div><b>Agent can book this</b><span class="mu">Off keeps it for staff only.</span></div><input class="sw" type="checkbox" data-f="agent"${d.agent?' checked':''} aria-label="Agent can book this"></div>`;
+  }
+  return `<div class="ov" data-act="close"><div class="sh" role="dialog" aria-modal="true">${b}<div class="bar" style="margin-top:8px"><button class="p" data-act="save">Save</button><button data-act="close">Close</button>${d.id?'<button class="d" data-act="del-sheet" style="margin-left:auto">Delete</button>':''}</div></div></div>`;
+}
+function render(){
+  if(st.loading){$app.innerHTML='<div class="msg">Loading calendar…</div>';return;}
+  const demo=DEMO?'<div class="msg demo">Demo mode: sample data only. Connect the backend to save real bookings.</div>':'';
+  const m=st.msg?`<div class="msg ${st.msg.t}" role="${st.msg.t==='err'?'alert':'status'}">${esc(st.msg.x)}</div>`:'';
+  const nb=(k,l)=>`<button class="${st.tab===k?'on':''}" data-act="tab" data-t="${k}">${l}</button>`;
+  const scrollY=window.scrollY;
+  $app.innerHTML=demo+m+(st.tab==='cal'?calView():st.tab==='agent'?agentView():setupView())+(st.sheet?sheet():'')+`<nav class="nav" aria-label="Sections">${nb('cal','Calendar')}${nb('agent','Agent')}${nb('set','Setup')}</nav>`;
+  window.scrollTo(0,scrollY);
+}
+
+/* ---------- Events ---------- */
+const readF=()=>{const o={};$app.querySelectorAll('.sh [data-f]').forEach(n=>{o[n.dataset.f]=n.type==='checkbox'?n.checked:n.value;});return o;};
+const open=(k,d)=>{st.sheet={k,d};st.msg=null;return k==='bk'?run(loadSlots):render();};
+const emptyBk=(r,t)=>({id:null,customer:'',phone:'',service_id:(st.svc[0]||{}).id,resource_id:r||(st.res[0]||{}).id,date:st.date,time:t||'',status:'confirmed',notes:''});
+$app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  if(b.classList.contains('ov')&&e.target!==b)return;
+  const a=b.dataset.act,sh=st.sheet;
+  if(a==='tab'){st.tab=b.dataset.t;st.msg=null;st.sheet=null;return run(async()=>{if(st.tab==='agent')await loadAct();});}
+  if(a==='sub'){st.sub=b.dataset.t;return render();}
+  if(a==='day'){st.date=b.dataset.d;return render();}
+  if(a==='today'||a==='wk'){st.date=a==='today'?today:addD(st.date,+b.dataset.n);return run(loadWeek);}
+  if(a==='new'){if(!st.svc.length||!st.res.length)return fail('Add a '+L().r.toLowerCase()+' and a service in Setup first.');return open('bk',emptyBk());}
+  if(a==='slotclick'){if(!st.svc.length)return fail('Add a service in Setup first.');const y=e.clientY-b.getBoundingClientRect().top,mins=st.s0*60+Math.floor(y/PPH*4)*15;return open('bk',emptyBk(b.dataset.r,pad(Math.floor(mins/60))+':'+pad(mins%60)));}
+  if(a==='open'){const x=st.bk.find(v=>v.id===b.dataset.id);if(!x)return;return open('bk',{id:x.id,customer:x.customer,phone:x.phone||'',service_id:x.service_id,resource_id:x.resource_id,date:ymd(new Date(x.start)),time:hm(x.start),status:x.status,notes:x.notes||'',src:x.source});}
+  if(a==='close'){st.sheet=null;return render();}
+  if(a==='slot'){sh.d={...sh.d,...readF(),time:b.dataset.t};return render();}
+  if(a==='color'){sh.d={...sh.d,...readF(),color:b.dataset.c};return render();}
+  if(a==='approve'||a==='decline')return run(async()=>{await api('booking.status',{id:b.dataset.id,status:a==='approve'?'confirmed':'cancelled'});await loadWeek();},a==='approve'?'Booking approved.':'Booking declined.');
+  if(a==='add-res')return open('res',{id:null,name:'',color:COLORS[st.res.length%COLORS.length]});
+  if(a==='edit-res')return open('res',{...st.res.find(r=>r.id===b.dataset.id)});
+  if(a==='add-svc')return open('svc',{id:null,name:'',duration:15,buffer:0,price:0,info:'',agent:true});
+  if(a==='edit-svc')return open('svc',{info:'',agent:true,...st.svc.find(s=>s.id===b.dataset.id)});
+  if(a==='del-res'||a==='del-svc'||a==='del-sheet'){
+    const k=a==='del-sheet'?sh.k:a==='del-res'?'res':'svc',id=a==='del-sheet'?sh.d.id:b.dataset.id;
+    if(!confirm(k==='bk'?'Delete this booking? This cannot be undone.':k==='res'?'Delete this '+L().r.toLowerCase()+'?':'Delete this service? Existing bookings stay in your calendar.'))return;
+    return run(async()=>{
+      if(k==='bk'){await api('booking.delete',{id});await loadWeek();}
+      else if(k==='res'){await api('resource.delete',{id});st.res=(await api('resources.list')).items||[];}
+      else{await api('service.delete',{id});st.svc=(await api('services.list')).items||[];}
+      st.sheet=null;},'Deleted.');
+  }
+  if(a==='save'){
+    const d={...sh.d,...readF()};sh.d=d;
+    if(sh.k==='bk'){
+      if(!d.customer.trim())return fail('Enter the '+L().c.toLowerCase()+' name.');if(!d.time)return fail('Choose a time.');
+      return run(async()=>{await api('booking.save',{id:d.id||undefined,resource_id:d.resource_id,service_id:d.service_id,customer:d.customer.trim(),phone:d.phone.trim(),date:d.date,time:d.time,status:d.status,notes:d.notes.trim()});st.sheet=null;st.date=d.date;await loadWeek();},d.id?'Changes saved.':'Booking created.');
+    }
+    if(!d.name.trim())return fail('Enter a name.');
+    if(sh.k==='res')return run(async()=>{await api('resource.save',{id:d.id||undefined,name:d.name.trim(),color:d.color});st.res=(await api('resources.list')).items||[];st.sheet=null;},'Saved.');
+    const du=+d.duration;if(!(du>=5&&du<=480))return fail('Duration must be between 5 and 480 minutes.');
+    return run(async()=>{await api('service.save',{id:d.id||undefined,name:d.name.trim(),duration:du,buffer:+d.buffer||0,price:+d.price||0,info:(d.info||'').trim(),agent:!!d.agent});st.svc=(await api('services.list')).items||[];st.sheet=null;},'Saved.');
+  }
+  if(a==='hrs-save'){
+    const items=[...$app.querySelectorAll('[data-hd]')].map(r=>({day:+r.dataset.hd,on:r.querySelector('[data-h=on]').checked,start:r.querySelector('[data-h=start]').value,end:r.querySelector('[data-h=end]').value}));
+    const bad=items.find(h=>h.on&&(!h.start||!h.end||h.end<=h.start));if(bad)return fail(DAYS[bad.day]+': end time must be after start time.');
+    return run(async()=>{await api('hours.save',{items});st.hours=items;},'Working hours saved.');
+  }
+  if(a==='rules-save'){
+    const v={};$app.querySelectorAll('[data-k]').forEach(n=>{v[n.dataset.k]=n.type==='checkbox'?n.checked:+n.value;});
+    if(!(v.min_notice>=0)||!(v.max_days>=1))return fail('Enter valid notice and booking window.');
+    return run(async()=>{await api('settings.save',v);Object.assign(st.set,v);},'Agent rules saved.');
+  }
+  if(a==='test')return agentTest();
+});
+$app.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='ind')return run(async()=>{await api('settings.save',{industry:t.value});st.set.industry=t.value;},'Business type updated.');
+  if(t.matches('.sh [data-re]')&&st.sheet){st.sheet.d={...st.sheet.d,...readF()};return run(loadSlots);}
+});
+async function agentTest(){
+  const sv=$app.querySelector('#t-s').value,rs=$app.querySelector('#t-r').value,date=$app.querySelector('#t-d').value;
+  if(!sv||!rs||!date)return fail('Add a service and a '+L().r.toLowerCase()+' first.');
+  const lines=[];const out=()=>{st.log=lines.join('\n');const el=$app.querySelector('#log');if(el)el.innerHTML=st.log;};
+  try{
+    lines.push('<b>customer</b> I want to book on '+esc(date));out();
+    lines.push('<b>tool</b> check_availability');out();
+    const sl=(await api('availability.check',{resource_id:rs,service_id:sv,date,as:'agent'})).slots||[];
+    lines.push('<em>result</em> '+(sl.length?sl.length+' free times, first '+sl[0]:'no free times'));out();
+    if(!sl.length){lines.push('<b>agent</b> Sorry, nothing is free that day. Shall I check another day?');out();return;}
+    lines.push('<b>tool</b> create_booking '+sl[0]);out();
+    await api('booking.save',{resource_id:rs,service_id:sv,customer:'Agent test',phone:'',date,time:sl[0],status:st.set.auto_confirm?'confirmed':'pending',notes:'Created by test run',source:'ai_whatsapp'});
+    lines.push('<em>result</em> '+(st.set.auto_confirm?'booking confirmed':'booking held for approval'));out();
+    lines.push('<b>agent</b> You are booked for '+esc(date)+' at '+sl[0]+'.');out();
+    await Promise.all([loadWeek(),loadAct()]);st.log=lines.join('\n');setMsg('ok','Test booking created. Delete it from the Calendar when done.');render();
+  }catch(e){console.error(e);setMsg('err',e.message||'Test failed.');render();}
+}
+
+/* ---------- Init ---------- */
+(async()=>{
+  try{
+    const [r,s,h,c]=await Promise.all([api('resources.list'),api('services.list'),api('hours.get'),api('settings.get')]);
+    st.res=r.items||[];st.svc=s.items||[];st.hours=h.items||[];st.set={industry:'general',...c};await loadWeek();
+  }catch(e){console.error(e);setMsg('err',e.message||'Calendar could not be loaded.');}
+  st.loading=false;render();
+})();
+})();
+</script>
+</body>
+</html>
