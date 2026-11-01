@@ -13,6 +13,7 @@ or the Command Center skips that source.
 | `admin-data-requests-addon.js` (new) | **Data Requests** tab: data-deletion requests with the 30-day wait, purge button with typed confirmation. Uses existing RPCs only. |
 | `admin-partner-addon.js` (new) | **Partners** tab. Needs the RPCs in section 2. |
 | `admin.html` | One shared Supabase client (`window.supabaseClient`) for all addons. Safety Monitor counters now show real totals (exact counts), not the length of a 80-row list. Old Overview cards are kept but hidden once the Command Center loads. |
+| `admin-control-gap-addon.js` | The duplicate "Permanent delete" button was removed. The one in `admin-client-profile-account-secure-addon.js` (typed client id + final confirm, enforced by the `admin-permanent-delete` Edge Function) is the only one now. |
 | Removed (loaded by no page) | `admin-modules-addon.js`, `admin-payment-addon.js`, `admin-instagram-addon.js`, `voice-provider-admin-addon.js`, `voice-provider-provision-addon.js`. `account-review-decision-addon.js` is no longer loaded on admin.html (it does nothing there); the file stays because `dashboard.html` uses it. |
 
 The new tabs appear in the phone bottom-nav "More" sheet automatically.
@@ -82,5 +83,3 @@ so a second admin or a stolen password alone is never enough.
 2. **`reset-admin.html`.** It is linked from nowhere and hardcoded to `admin@glime.online`. Keep it only if you want a reset path.
    If you keep it, in the Supabase dashboard set a rate limit on reset emails, and add `{{ .Token }}` to the recovery email
    template (the page asks for a 6-digit code).
-3. **Duplicate "Permanent delete" button.** `admin-control-gap-addon.js` and `admin-client-profile-account-secure-addon.js`
-   both inject one into the Account tab. I left both untouched (this is risky code). Say the word and I remove the one in `admin-control-gap-addon.js`.
