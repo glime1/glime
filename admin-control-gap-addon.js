@@ -3,7 +3,6 @@
    - Audit Logs navigation/view
    - Client Audit tab
    - Audit logging for existing profile/account actions
-   - Permanent Delete action using the secure admin RPC
    - Read-only Billing from secure admin-billing-read Edge Function
 */
 (() => {
@@ -361,168 +360,6 @@
         </table>
       </div>
     `;
-  }
-
-  function addPermanentDeleteButton() {
-    const account = $('tab-account');
-
-    if (
-      !account ||
-      account.querySelector('#glimePermanentDeleteBtn')
-    ) {
-      return;
-    }
-
-    const wrap = document.createElement('div');
-
-    wrap.style.cssText =
-      'margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,83,102,.25)';
-
-    wrap.innerHTML = `
-      <div
-        class="notice"
-        style="
-          border-color:rgba(255,83,102,.35);
-          background:rgba(255,83,102,.06);
-          color:#ffb0ba
-        "
-      >
-        <b>Permanent Delete</b><br>
-        This is irreversible. The client must already be
-        <b>Suspended</b>.
-        It removes client-owned database data and the client’s
-        Supabase Auth account.
-      </div>
-
-      <button
-        class="btn red"
-        id="glimePermanentDeleteBtn"
-      >
-        Permanently Delete Client
-      </button>
-
-      <div
-        class="message"
-        id="glimePermanentDeleteMsg"
-      ></div>
-    `;
-
-    account.appendChild(wrap);
-
-    $('glimePermanentDeleteBtn').onclick = permanentDelete;
-  }
-
-  async function permanentDelete() {
-    const clientId = clientIdFromDetail();
-
-    if (!clientId) {
-      return;
-    }
-
-    const btn = $('glimePermanentDeleteBtn');
-    const message = $('glimePermanentDeleteMsg');
-
-    if (
-      !confirm(
-        `PERMANENT DELETE
-
-Client: ${clientId}
-
-This cannot be undone.
-The client must already be suspended.
-
-Continue?`
-      )
-    ) {
-      return;
-    }
-
-    const typed = prompt(
-      `Type the exact Client ID to confirm:
-
-${clientId}`
-    );
-
-    if (typed === null) {
-      return;
-    }
-
-    if (
-      typed.trim().toLowerCase() !==
-      clientId.trim().toLowerCase()
-    ) {
-      message.textContent =
-        'Client ID confirmation did not match. Nothing was deleted.';
-      return;
-    }
-
-    if (
-      !confirm(
-        `FINAL CONFIRMATION
-
-Permanently delete ${clientId} and all client-owned data?
-
-This action is irreversible.`
-      )
-    ) {
-      return;
-    }
-
-    btn.disabled = true;
-    message.textContent =
-      'Deleting client data securely…';
-
-    try {
-      const { data, error } =
-        await sb.functions.invoke(
-          'admin-permanent-delete',
-          {
-            body: {
-              client_id: clientId,
-              confirmation_client_id: typed.trim()
-            }
-          }
-        );
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data?.ok) {
-        throw new Error(
-          data?.error ||
-          'Permanent deletion was not confirmed by the backend.'
-        );
-      }
-
-      message.textContent =
-        'Client permanently deleted.';
-
-      alert(
-        `Client ${clientId} was permanently deleted.`
-      );
-
-      $('clientModal')?.classList.remove('open');
-
-      if (
-        typeof window.loadAll === 'function'
-      ) {
-        await window.loadAll();
-      } else {
-        location.reload();
-      }
-    } catch (e) {
-      console.error(
-        '[GLIME permanent delete]',
-        e
-      );
-
-      message.textContent =
-        e.message ||
-        'Permanent deletion failed.';
-
-      btn.disabled = false;
-    }
   }
 
   function wrapAction(name, action, entity) {
@@ -1366,7 +1203,6 @@ This action is irreversible.`
       'client_data'
     );
 
-    addPermanentDeleteButton();
   }
 
   function observeModal() {
@@ -1382,7 +1218,6 @@ This action is irreversible.`
       ) {
         addClientAuditTab();
         addClientBillingTab();
-        addPermanentDeleteButton();
       }
     }).observe(
       modal,
