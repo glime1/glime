@@ -58,6 +58,79 @@
       (PATHS[name] || '') + '</svg>';
   }
 
+  /* Sidebar icon tiles: every menu icon sits in a soft coloured tile.
+     Instagram and WhatsApp use their real brand look (brand colours + glyph). */
+  var TONES = {
+    home: '#10b981',
+    leads: '#6366f1',
+    customers: '#0ea5e9',
+    orders: '#f59e0b',
+    services: '#8b5cf6',
+    assistant: '#a855f7',
+    chart: '#14b8a6',
+    followup: '#f97316',
+    mic: '#ef4444',
+    link: '#0ea5e9',
+    card: '#22c55e',
+    box: '#d97706',
+    sliders: '#64748b',
+    feedback: '#ec4899',
+    support: '#06b6d4',
+    logout: '#ef4444'
+  };
+
+  var BRAND = {
+    instagram:
+      '<rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2" fill="none" stroke="#fff" stroke-width="1.9"/>' +
+      '<circle cx="12" cy="12" r="4.1" fill="none" stroke="#fff" stroke-width="1.9"/>' +
+      '<circle cx="17.2" cy="6.8" r="1.2" fill="#fff"/>',
+    whatsapp:
+      '<path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.6A7.5 7.5 0 1 1 20 11.5z" fill="none" stroke="#fff" stroke-width="1.9" stroke-linejoin="round"/>' +
+      '<path transform="translate(6.3 5.9) scale(.48)" fill="#fff" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'
+  };
+
+  function iconTile(name) {
+    var brand = BRAND[name];
+    var tone = TONES[name] || '#10b981';
+    return '<span class="gas-ico' + (brand ? ' gas-ico-brand gas-ico-' + name : '') +
+      '" style="--t:' + tone + '" aria-hidden="true">' +
+      (brand
+        ? '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">' + brand + '</svg>'
+        : icon(name, 20)) +
+      '</span>';
+  }
+
+  var GAS_CSS =
+    '.gas-sidebar .gas-link{transition:background .22s ease,color .22s ease,transform .22s ease}' +
+    '.gas-sidebar .gas-label{transition:transform .22s ease}' +
+    '.gas-sidebar .gas-link:hover .gas-label{transform:translateX(2px)}' +
+    '.gas-sidebar .gas-ico{position:relative;flex:0 0 auto;width:34px;height:34px;border-radius:11px;display:inline-grid;place-items:center;color:var(--t);isolation:isolate;transition:transform .28s cubic-bezier(.34,1.56,.64,1),box-shadow .28s ease,color .22s ease}' +
+    '.gas-sidebar .gas-ico::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--t);opacity:.14;z-index:-1;transition:opacity .22s ease}' +
+    '.gas-sidebar .gas-ico svg{width:19px;height:19px;display:block}' +
+    '.gas-sidebar .gas-link:hover .gas-ico,.gas-sidebar .gas-logout:hover .gas-ico{transform:translateY(-1px) scale(1.08) rotate(-4deg);box-shadow:0 6px 14px -5px var(--t)}' +
+    '.gas-sidebar .gas-link:hover .gas-ico::before,.gas-sidebar .gas-logout:hover .gas-ico::before{opacity:.24}' +
+    '.gas-sidebar .gas-link[aria-current="page"] .gas-ico{color:#fff;box-shadow:0 6px 16px -6px var(--t),inset 0 1px 0 rgba(255,255,255,.35)}' +
+    '.gas-sidebar .gas-link[aria-current="page"] .gas-ico::before{opacity:1}' +
+    '.gas-sidebar .gas-link[aria-current="page"] .gas-ico::after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid var(--t);opacity:0;animation:gasRing 2.8s ease-out infinite;pointer-events:none}' +
+    '.gas-sidebar .gas-ico.gas-ico-brand{color:#fff;box-shadow:0 4px 12px -5px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.3)}' +
+    '.gas-sidebar .gas-ico.gas-ico-brand::before{opacity:1}' +
+    '.gas-sidebar .gas-ico-instagram::before{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285aeb 90%)}' +
+    '.gas-sidebar .gas-ico-whatsapp::before{background:linear-gradient(145deg,#3ee67d 0%,#25d366 45%,#128c7e 100%)}' +
+    '.gas-sidebar .gas-link:hover .gas-ico.gas-ico-brand{box-shadow:0 8px 18px -6px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.35)}' +
+    '@keyframes gasIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}' +
+    '@keyframes gasRing{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(1.4);opacity:0}}' +
+    '@media(min-width:901px){.gas-sidebar .gas-link{animation:gasIn .45s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*35ms)}}' +
+    '@media(max-width:900px){.gas-open .gas-sidebar .gas-link{animation:gasIn .4s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*30ms + 80ms)}}' +
+    '@media(prefers-reduced-motion:reduce){.gas-sidebar .gas-link,.gas-sidebar .gas-ico,.gas-sidebar .gas-ico::after,.gas-sidebar .gas-label{animation:none!important;transition:none!important}}';
+
+  function gasEnsureStyle() {
+    if (document.getElementById('gasPremiumStyle')) return;
+    var s = document.createElement('style');
+    s.id = 'gasPremiumStyle';
+    s.textContent = GAS_CSS;
+    document.head.appendChild(s);
+  }
+
   /* Every href below is an existing page in the repository. */
   var MENU = [
     {
@@ -75,8 +148,8 @@
       items: [
         { label: 'AI Assistant', href: 'client-assistant.html', icon: 'assistant' },
         { label: 'Business Growth Intelligence', href: 'glime-intelligence-center.html', icon: 'chart' },
-        { label: 'Instagram Sales', href: 'instagram-sales-specialist.html', icon: 'instagram' },
-        { label: 'WhatsApp Sales', href: 'whatsapp-sales-specialist.html', icon: 'whatsapp' },
+        { label: 'Instagram Sales Specialist', href: 'instagram-sales-specialist.html', icon: 'instagram' },
+        { label: 'WhatsApp Sales Specialist', href: 'whatsapp-sales-specialist.html', icon: 'whatsapp' },
         { label: 'Follow-up', href: 'follow-up.html', icon: 'followup' },
         { label: 'Voice AI', href: 'voice-ai.html', icon: 'mic' }
       ]
@@ -110,24 +183,26 @@
     return seg.indexOf('.') === -1 ? seg + '.html' : seg;
   }
 
-  function linkHtml(item, page) {
+  function linkHtml(item, page, index) {
     var current = item.href.toLowerCase() === page;
     return '<a class="gas-link"' +
       (item.id ? ' id="' + item.id + '"' : '') +
       ' href="' + item.href + '"' +
+      ' style="--i:' + index + '"' +
       (current ? ' aria-current="page"' : '') +
       (item.external ? ' target="_blank" rel="noopener noreferrer"' : '') +
       ' data-label="' + item.label + '">' +
-      icon(item.icon) +
+      iconTile(item.icon) +
       '<span class="gas-label">' + item.label + '</span></a>';
   }
 
   function groupsHtml(page, withSupport) {
+    var counter = 0;
     return MENU.map(function (group) {
       var items = group.items.slice();
       if (withSupport && group.title === 'Manage') items.push(SUPPORT_ITEM);
       return '<div class="gas-group"><div class="gas-group-title">' + group.title + '</div>' +
-        items.map(function (item) { return linkHtml(item, page); }).join('') +
+        items.map(function (item) { return linkHtml(item, page, counter++); }).join('') +
         '</div>';
     }).join('');
   }
@@ -645,6 +720,8 @@
     var content = document.querySelector('[data-gas-content]');
     if (!content || !content.parentNode) return;
 
+    gasEnsureStyle();
+
     var body = document.body;
     var page = currentPage();
     var title = body.getAttribute('data-gas-title') ||
@@ -674,7 +751,7 @@
           '<span class="gas-acc-text"><span class="gas-acc-name" id="gasAccName"></span>' +
           '<span class="gas-acc-id" id="gasAccId"></span></span>' +
         '</div>' +
-        '<button type="button" class="gas-logout" id="gasLogout">' + icon('logout') +
+        '<button type="button" class="gas-logout" id="gasLogout">' + iconTile('logout') +
           '<span class="gas-label">Secure Logout</span></button>' +
       '</div>';
 
@@ -828,4 +905,3 @@
     init();
   }
 })();
-
