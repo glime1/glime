@@ -14,9 +14,11 @@
    1. the in-app Feedback form (see the FEEDBACK section). It sends
       through a single RPC, client_submit_feedback; the contract is in
       FEEDBACK_BACKEND_SPEC.md.
-   2. the live number badges next to Leads, Customers and Orders. They
-      are READ-ONLY row counts (select count, head only) for the signed-in
-      client; RLS already limits every table to the client's own rows.
+   2. the live number badges next to Leads, Customers and Orders, and the
+      green "connected" dot next to the Instagram and WhatsApp specialists.
+      They are READ-ONLY (row counts, and the channel status from
+      client_channel_connections) for the signed-in client; RLS already
+      limits every table to the client's own rows.
    Authentication is never handled here; each page keeps its own
    session handling.
    The owner photo in the account card comes from the shared photo
@@ -155,20 +157,62 @@
     '.gas-sidebar .gas-shield{flex:0 0 auto;display:inline-grid;color:var(--s-muted)}',
     '.gas-sidebar .gas-shield svg{width:20px;height:20px;display:block}',
 
+    /* connected dot (Instagram / WhatsApp): shown only when the channel is really connected */
+    '.gas-sidebar .gas-dot{flex:0 0 auto;position:relative;width:10px;height:10px;margin:0 8px 0 2px;border-radius:50%;background:#19e68c;box-shadow:0 0 0 3px rgba(25,230,140,.18),0 0 10px rgba(25,230,140,.8)}',
+    '.gas-sidebar .gas-dot[hidden]{display:none}',
+    '.gas-sidebar .gas-dot::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid #19e68c;opacity:0;animation:gasPing 2.2s ease-out infinite}',
+
+    /* Voice AI waveform */
+    '.gas-sidebar .gas-wave{flex:0 0 auto;display:inline-flex;align-items:center;gap:2px;height:22px;margin-right:2px}',
+    '.gas-sidebar .gas-wave i{display:block;width:3px;height:100%;border-radius:3px;background:linear-gradient(180deg,var(--s-g2),var(--s-g1));transform:scaleY(.3);transform-origin:center;animation:gasWave 1.15s ease-in-out infinite}',
+    '.gas-sidebar .gas-wave i:nth-child(1){animation-delay:-1.1s}.gas-sidebar .gas-wave i:nth-child(2){animation-delay:-.95s}.gas-sidebar .gas-wave i:nth-child(3){animation-delay:-.8s}.gas-sidebar .gas-wave i:nth-child(4){animation-delay:-.65s}.gas-sidebar .gas-wave i:nth-child(5){animation-delay:-.5s}.gas-sidebar .gas-wave i:nth-child(6){animation-delay:-.38s}.gas-sidebar .gas-wave i:nth-child(7){animation-delay:-.26s}.gas-sidebar .gas-wave i:nth-child(8){animation-delay:-.15s}.gas-sidebar .gas-wave i:nth-child(9){animation-delay:-.05s}',
+
+    /* Billing crown */
+    '.gas-sidebar .gas-crown{position:relative;flex:0 0 auto;width:30px;height:30px;display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 30% 25%,rgba(255,226,122,.35),rgba(245,163,0,.16));border:1px solid rgba(245,163,0,.55);box-shadow:0 0 12px -2px rgba(245,163,0,.55)}',
+    '.gas-sidebar .gas-crown svg{display:block;animation:gasCrown 2.6s ease-in-out infinite}',
+    '.gas-sidebar .gas-crown::after{content:"";position:absolute;top:-30%;bottom:-30%;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.7),transparent);transform:rotate(20deg);animation:gasShine 3.6s ease-in-out infinite}',
+
+    /* GLIME AI chip */
+    '.gas-sidebar .gas-chip{display:block;width:100%;max-width:200px;margin:10px auto 4px;pointer-events:none;user-select:none}',
+    '.gas-sidebar .gas-chip svg{display:block;width:100%;height:auto;overflow:visible}',
+    '.gas-sidebar .gas-chip-float{animation:gasChip 4.2s ease-in-out infinite}',
+    '.gas-sidebar .gas-chip-shine{animation:gasShineChip 3.8s ease-in-out infinite}',
+    '.gas-sidebar .gas-chip-pins{animation:gasPins 2.4s ease-in-out infinite}',
+    '.gas-sidebar .gas-chip-glow{transform-box:fill-box;transform-origin:center;animation:gasGlow 4.2s ease-in-out infinite}',
+    'html[data-theme="light"] .gas-sidebar .gas-chip{filter:drop-shadow(0 10px 14px rgba(0,152,200,.25))}',
+
+    /* avatar: bigger ring, sharper photo, smaller camera badge */
+    'html body.gas-body .gas-sidebar .gas-avatar{width:46px !important;height:46px !important;flex:0 0 46px !important;border-radius:50% !important;border:2px solid transparent !important;background-origin:border-box !important;background-clip:padding-box,border-box !important;box-shadow:0 0 0 2px rgba(0,255,136,.45),0 6px 16px -6px rgba(0,255,136,.6);font-size:1.05rem;image-rendering:auto;-webkit-backface-visibility:hidden;backface-visibility:hidden}',
+    'html body.gas-body .gas-sidebar .gas-avatar.gp-img{border-color:rgba(255,255,255,.9) !important}',
+    'html[data-theme="light"] body.gas-body .gas-sidebar .gas-avatar.gp-img{border-color:#fff !important}',
+    '.gas-sidebar .gas-avatar.gp-edit::after{width:18px !important;height:18px !important;min-width:0 !important;min-height:0 !important;max-width:none !important;max-height:none !important;right:-4px !important;bottom:-4px !important;border-width:2px !important}',
+    '.gas-sidebar .gas-account{gap:12px}',
+    '.gas-sidebar .gas-acc-name{font-size:.88rem}',
+
     /* collapsed desktop rail */
+    'body.gas-collapsed .gas-sidebar .gas-chip,body.gas-collapsed .gas-sidebar .gas-dot,body.gas-collapsed .gas-sidebar .gas-wave,body.gas-collapsed .gas-sidebar .gas-crown{display:none}',
     'body.gas-collapsed .gas-sidebar .gas-badge,body.gas-collapsed .gas-sidebar .gas-pill,body.gas-collapsed .gas-sidebar .gas-shield{display:none}',
+    'body.gas-collapsed .gas-sidebar .gas-avatar{width:40px !important;height:40px !important;flex-basis:40px !important}',
     'body.gas-collapsed .gas-sidebar .gas-link::after{display:none}',
 
     /* motion */
     '@keyframes gasIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}',
     '@keyframes gasFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}',
+    '@keyframes gasPing{0%{transform:scale(.8);opacity:.7}70%,100%{transform:scale(1.7);opacity:0}}',
+    '@keyframes gasWave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}',
+    '@keyframes gasCrown{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.5px) rotate(-5deg)}}',
+    '@keyframes gasShine{0%,55%{left:-60%}100%{left:140%}}',
+    '@keyframes gasChip{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}',
+    '@keyframes gasShineChip{0%,45%{transform:translateX(0) rotate(18deg)}100%{transform:translateX(150px) rotate(18deg)}}',
+    '@keyframes gasPins{0%,100%{opacity:.55}50%{opacity:1}}',
+    '@keyframes gasGlow{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.08)}}',
     '@media(min-width:901px){.gas-sidebar .gas-link{animation:gasIn .45s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*35ms)}}',
     '@media(max-width:900px){.gas-open .gas-sidebar .gas-link{animation:gasIn .4s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*30ms + 80ms)}}',
 
     /* mobile drawer: theme + download side by side */
     '@media(max-width:900px){.gas-sidebar .gas-sb-foot{display:grid;grid-template-columns:1fr 1fr;gap:8px}.gas-sidebar .gas-sb-foot>.gas-account,.gas-sidebar .gas-sb-foot>.gas-logout{grid-column:1/-1}.gas-sidebar .gas-sb-foot .gtheme-row,.gas-sidebar .gas-sb-foot .gas-download{margin:0;min-width:0;padding:8px 10px;gap:8px;font-size:.76rem;justify-content:center;border-radius:14px}}',
 
-    '@media(prefers-reduced-motion:reduce){.gas-sidebar .gas-link,.gas-sidebar .gas-ico,.gas-sidebar .gas-ico img,.gas-sidebar .gas-label{animation:none!important;transition:none!important}}'
+    '@media(prefers-reduced-motion:reduce){.gas-sidebar .gas-link,.gas-sidebar .gas-ico,.gas-sidebar .gas-ico img,.gas-sidebar .gas-label,.gas-sidebar .gas-wave i,.gas-sidebar .gas-crown svg,.gas-sidebar .gas-crown::after,.gas-sidebar .gas-chip-float,.gas-sidebar .gas-chip-glow,.gas-sidebar .gas-chip-shine,.gas-sidebar .gas-chip-pins,.gas-sidebar .gas-dot::after{animation:none!important;transition:none!important}.gas-sidebar .gas-wave i{transform:scaleY(.65)}}'
   ].join('');
 
   function gasEnsureStyle() {
@@ -184,7 +228,53 @@
     '<svg class="gas-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">' +
     '<defs><linearGradient id="gasGrad" gradientUnits="userSpaceOnUse" x1="2" y1="22" x2="22" y2="2">' +
     '<stop offset="0" style="stop-color:var(--s-g1)"/><stop offset="1" style="stop-color:var(--s-g2)"/>' +
+    '</linearGradient>' +
+    '<linearGradient id="gasGold" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5a300"/>' +
     '</linearGradient></defs></svg>';
+
+  /* Small live details: animated waveform (Voice AI), gold crown (Billing). */
+  var GAS_WAVE = '<span class="gas-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>';
+  var GAS_CROWN =
+    '<span class="gas-crown" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false">' +
+    '<path d="M3 8l4.6 4.2L12 5l4.4 7.2L21 8l-1.8 10H4.8z" fill="url(#gasGold)" stroke="#a86a00" stroke-width="1" stroke-linejoin="round"/>' +
+    '<path d="M5.2 20.4h13.6" stroke="#ffc83d" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg></span>';
+
+  /* GLIME AI chip: isometric chip drawn in GLIME green/cyan with pins, circuit lines and a moving shine; floats and glows. */
+  var GAS_CHIP =
+    '<div class="gas-chip" aria-hidden="true"><svg viewBox="0 0 240 150" focusable="false">' +
+    '<defs>' +
+    '<linearGradient id="gcTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#173a57"/><stop offset=".55" stop-color="#0b2236"/><stop offset="1" stop-color="#06131f"/></linearGradient>' +
+    '<linearGradient id="gcEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00ff88"/><stop offset="1" stop-color="#00f0ff"/></linearGradient>' +
+    '<linearGradient id="gcSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a2a3a"/><stop offset="1" stop-color="#03090f"/></linearGradient>' +
+    '<linearGradient id="gcShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+    '<radialGradient id="gcGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#00ff88" stop-opacity=".6"/><stop offset=".55" stop-color="#00f0ff" stop-opacity=".18"/><stop offset="1" stop-color="#00f0ff" stop-opacity="0"/></radialGradient>' +
+    '<clipPath id="gcClip"><rect x="-38" y="-38" width="76" height="76" rx="12"/></clipPath>' +
+    '</defs>' +
+    '<ellipse class="gas-chip-glow" cx="120" cy="112" rx="96" ry="26" fill="url(#gcGlow)"/>' +
+    '<ellipse cx="120" cy="116" rx="70" ry="15" fill="none" stroke="url(#gcEdge)" stroke-width="1.2" opacity=".5"/>' +
+    '<ellipse cx="120" cy="116" rx="92" ry="21" fill="none" stroke="#00f0ff" stroke-width="1" stroke-dasharray="3 7" opacity=".4"/>' +
+    '<g class="gas-chip-float">' +
+    '<g transform="translate(120 96) matrix(.866 .5 -.866 .5 0 0)"><rect x="-41" y="-41" width="82" height="82" rx="14" fill="url(#gcSide)" stroke="url(#gcEdge)" stroke-width="1.6" opacity=".95"/></g>' +
+    '<g transform="translate(120 82) matrix(.866 .5 -.866 .5 0 0)">' +
+    '<g class="gas-chip-pins" stroke="#00f0ff" stroke-width="3" stroke-linecap="round">' +
+    '<path d="M-26 -42v-9M-13 -42v-9M0 -42v-9M13 -42v-9M26 -42v-9"/>' +
+    '<path d="M-26 42v9M-13 42v9M0 42v9M13 42v9M26 42v9"/>' +
+    '<path d="M-42 -26h-9M-42 -13h-9M-42 0h-9M-42 13h-9M-42 26h-9"/>' +
+    '<path d="M42 -26h9M42 -13h9M42 0h9M42 13h9M42 26h9"/>' +
+    '</g>' +
+    '<rect x="-38" y="-38" width="76" height="76" rx="12" fill="url(#gcTop)" stroke="url(#gcEdge)" stroke-width="2.4"/>' +
+    '<g clip-path="url(#gcClip)">' +
+    '<g class="gas-chip-circuit" fill="none" stroke="url(#gcEdge)" stroke-width="1.1" opacity=".6">' +
+    '<path d="M-38 -22h14l6 6h12M38 22H24l-6-6h-10M-38 22h10l8-8M38 -22h-10l-8 8"/>' +
+    '<circle cx="-12" cy="-16" r="1.6" fill="#00ff88" stroke="none"/><circle cx="-8" cy="16" r="1.6" fill="#00f0ff" stroke="none"/><circle cx="12" cy="16" r="1.6" fill="#00ff88" stroke="none"/><circle cx="8" cy="-16" r="1.6" fill="#00f0ff" stroke="none"/>' +
+    '</g>' +
+    '<rect class="gas-chip-shine" x="-70" y="-60" width="26" height="130" fill="url(#gcShine)" transform="rotate(18)"/>' +
+    '</g>' +
+    '<rect x="-27" y="-27" width="54" height="54" rx="9" fill="rgba(0,10,18,.55)" stroke="url(#gcEdge)" stroke-width="1" opacity=".9"/>' +
+    '<text x="0" y="6" text-anchor="middle" font-family="Poppins,Manrope,Arial,sans-serif" font-size="25" font-weight="800" letter-spacing="1" fill="url(#gcEdge)">AI</text>' +
+    '<text x="0" y="19" text-anchor="middle" font-family="Poppins,Manrope,Arial,sans-serif" font-size="6.4" font-weight="700" letter-spacing="2.4" fill="#9fe9ff">GLIME</text>' +
+    '</g></g></svg></div>';
 
   /* Every href below is an existing page in the repository. */
   var MENU = [
@@ -204,10 +294,10 @@
       items: [
         { label: 'AI Assistant', href: 'client-assistant.html', icon: 'assistant', pill: 'AI' },
         { label: 'Business Growth Intelligence', href: 'glime-intelligence-center.html', icon: 'chart' },
-        { label: 'Instagram Sales Specialist', href: 'instagram-sales-specialist.html', icon: 'instagram' },
-        { label: 'WhatsApp Sales Specialist', href: 'whatsapp-sales-specialist.html', icon: 'whatsapp' },
+        { label: 'Instagram Sales Specialist', href: 'instagram-sales-specialist.html', icon: 'instagram', status: 'instagram' },
+        { label: 'WhatsApp Sales Specialist', href: 'whatsapp-sales-specialist.html', icon: 'whatsapp', status: 'whatsapp' },
         { label: 'Follow-up', href: 'follow-up.html', icon: 'followup' },
-        { label: 'Voice AI', href: 'voice-ai.html', icon: 'mic' }
+        { label: 'Voice AI', href: 'voice-ai.html', icon: 'mic', extra: 'wave' }
       ]
     },
     {
@@ -215,7 +305,7 @@
       icon: 'sliders',
       items: [
         { label: 'Connector', href: 'ai-connections.html', icon: 'link' },
-        { label: 'Billing &amp; Plans', href: 'billing.html', icon: 'card' },
+        { label: 'Billing &amp; Plans', href: 'billing.html', icon: 'card', extra: 'crown' },
         { label: 'Packages', href: 'packages.html', icon: 'box' },
         { label: 'Settings', href: 'settings.html', icon: 'sliders' },
         { label: 'Feedback', href: '#feedback', icon: 'feedback', id: 'gasFeedbackLink' }
@@ -253,6 +343,9 @@
       '<span class="gas-label">' + item.label + '</span>' +
       (item.badge ? '<span class="gas-badge" data-gas-count="' + item.badge + '" hidden></span>' : '') +
       (item.pill ? '<span class="gas-pill">' + item.pill + '</span>' : '') +
+      (item.status ? '<span class="gas-dot" data-gas-status="' + item.status + '" hidden></span>' : '') +
+      (item.extra === 'wave' ? GAS_WAVE : '') +
+      (item.extra === 'crown' ? GAS_CROWN : '') +
       '</a>';
   }
 
@@ -383,6 +476,15 @@
         if (el.parentNode) el.parentNode.classList.toggle('gas-has-badge', ok);
       });
     });
+    /* green dot only while the channel is really connected */
+    ['instagram', 'whatsapp'].forEach(function (ch) {
+      var dots = document.querySelectorAll('[data-gas-status="' + ch + '"]');
+      Array.prototype.forEach.call(dots, function (el) {
+        var on = !!(counts && counts[ch] === true);
+        el.hidden = !on;
+        if (el.parentNode) el.parentNode.classList.toggle('gas-has-badge', on);
+      });
+    });
   }
 
   function loadCounts(force) {
@@ -417,8 +519,22 @@
                   return x && !x.error && typeof x.count === 'number' ? x.count : null;
                 }, function () { return null; });
             };
-            return Promise.all([count('leads'), count('customers'), count('orders')]).then(function (a) {
-              return { leads: a[0], customers: a[1], orders: a[2] };
+            var channels = client.from('client_channel_connections').select('channel,status,can_send')
+              .eq('client_id', cid).in('channel', ['instagram', 'whatsapp'])
+              .then(function (x) {
+                if (!x || x.error || !Array.isArray(x.data)) return null;
+                var on = { instagram: false, whatsapp: false };
+                x.data.forEach(function (row) {
+                  if (row && row.status === 'connected' && row.can_send !== false && row.channel in on) on[row.channel] = true;
+                });
+                return on;
+              }, function () { return null; });
+            return Promise.all([count('leads'), count('customers'), count('orders'), channels]).then(function (a) {
+              return {
+                leads: a[0], customers: a[1], orders: a[2],
+                instagram: a[3] ? a[3].instagram : null,
+                whatsapp: a[3] ? a[3].whatsapp : null
+              };
             });
           });
       }).then(function (v) {
@@ -877,7 +993,7 @@
         '<button type="button" class="gas-icon-btn gas-close" id="gasClose" ' +
           'aria-label="Close navigation menu">' + icon('close', 18) + '</button>' +
       '</div>' +
-      '<nav class="gas-nav" aria-label="GLIME sections">' + groupsHtml(page, withSupport) + '</nav>' +
+      '<nav class="gas-nav" aria-label="GLIME sections">' + groupsHtml(page, withSupport) + GAS_CHIP + '</nav>' +
       '<div class="gas-sb-foot">' +
         '<div class="gas-account" id="gasAccount" hidden>' +
           '<span class="gas-avatar" id="gasAvatar" aria-hidden="true">G</span>' +
