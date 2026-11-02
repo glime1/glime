@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Calendar | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#060d13;--s:#0e1824;--s2:#142233;--bd:rgba(184,222,234,.12);--tx:#f4fbfd;--mu:#8fa1b0;--cy:#52e8ff;--gr:#50f5a8;--rd:#ff8291;--am:#ffc46b}
 *{box-sizing:border-box}
@@ -49,19 +51,25 @@ label{display:block;margin-bottom:10px;font-size:.7rem;font-weight:800;color:var
 .sw2{width:26px;height:26px;border-radius:50%;min-height:26px;padding:0}.sw2.on{outline:2px solid var(--tx);outline-offset:2px}
 .hr{display:grid;grid-template-columns:54px 30px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}.hr input[type=checkbox]{min-height:22px;width:22px}
 .empty{text-align:center;padding:26px 10px;color:var(--mu)}
+.lnk{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:12px;text-decoration:none;font-weight:700;font-size:.85rem;margin-top:12px}
 @media(max-width:520px){.g2{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Inside the GLIME app shell: keep the bottom tab bar clear of the desktop sidebar. */
+@media(min-width:901px){body.gas-body .nav{left:var(--gas-w,248px)}body.gas-body.gas-collapsed .nav{left:var(--gas-w-collapsed,72px)}}
 </style>
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
 </head>
-<body>
-<div id="app" aria-live="polite"></div>
+<body data-gas-title="Calendar">
+<div id="app" aria-live="polite" data-gas-content></div>
 <script>
 (()=>{
 'use strict';
-/* With window.sb (Supabase client, as on other GLIME pages) this calls the Edge Function below.
-   Without it the page runs in DEMO mode on sample data. */
+/* Uses the same Supabase login as the other GLIME pages and calls the Edge Function below.
+   Without the Supabase library the page runs in DEMO mode on sample data. */
 const GATEWAY='glime-glimecal-gateway';
-const sb=window.sb||null,DEMO=!sb;
+const SB_URL='https://ufoulgbiqgjriwapuopc.supabase.co',SB_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const sb=window.sb||(window.supabase&&window.supabase.createClient?window.supabase.createClient(SB_URL,SB_KEY):null),DEMO=!sb;
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -136,7 +144,7 @@ async function mock(a,b){
 const api=(a,b)=>DEMO?mock(a,b||{}):call(a,b);
 
 /* ---------- State ---------- */
-const st={tab:'cal',sub:'biz',date:today,res:[],svc:[],hours:[],bk:[],act:[],set:{},sheet:null,slots:[],log:null,msg:null,loading:true,s0:9};
+const st={tab:'cal',sub:'biz',date:today,res:[],svc:[],hours:[],bk:[],act:[],set:{},sheet:null,slots:[],log:null,msg:null,loading:true,off:false,s0:9};
 const $app=document.getElementById('app');
 const L=()=>PRE[st.set.industry]||PRE.general;
 const svcName=id=>(st.svc.find(s=>s.id===id)||{}).name||'Service';
@@ -233,6 +241,7 @@ function sheet(){
 }
 function render(){
   if(st.loading){$app.innerHTML='<div class="msg">Loading calendar…</div>';return;}
+  if(st.off){$app.innerHTML='<div class="card empty" style="margin-top:24px"><h1>Calendar is off</h1><p class="mu" style="margin:8px 0 0">Turn on the GLIME Calendar connector to use your appointment calendar and AI booking agent.</p><a class="p lnk" href="ai-connections.html">Open Connector</a></div>';return;}
   const demo=DEMO?'<div class="msg demo">Demo mode: sample data only. Connect the backend to save real bookings.</div>':'';
   const m=st.msg?`<div class="msg ${st.msg.t}" role="${st.msg.t==='err'?'alert':'status'}">${esc(st.msg.x)}</div>`:'';
   const nb=(k,l)=>`<button class="${st.tab===k?'on':''}" data-act="tab" data-t="${k}">${l}</button>`;
@@ -322,6 +331,14 @@ async function agentTest(){
 /* ---------- Init ---------- */
 (async()=>{
   try{
+    if(!DEMO){
+      /* Sign-in and the Calendar connector switch (Connector > GLIME Calendar) are checked first. */
+      const ses=await sb.auth.getSession(),user=ses&&ses.data&&ses.data.session&&ses.data.session.user;
+      if(!user){location.replace('login.html');return;}
+      let on=false;
+      try{on=localStorage.getItem('glime_cal_on_'+user.id)==='1';}catch(e){}
+      if(!on){st.off=true;st.loading=false;render();return;}
+    }
     const [r,s,h,c]=await Promise.all([api('resources.list'),api('services.list'),api('hours.get'),api('settings.get')]);
     st.res=r.items||[];st.svc=s.items||[];st.hours=h.items||[];st.set={industry:'general',...c};await loadWeek();
   }catch(e){console.error(e);setMsg('err',e.message||'Calendar could not be loaded.');}
