@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Calendar | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* All colours live on #app and follow html[data-theme] (set by glime-theme.js), so dark and light both work. */
+#app{--gc-s:#0e1824;--gc-s2:#142233;--gc-bd:rgba(184,222,234,.14);--gc-tx:#f4fbfd;--gc-mu:#93a4b3;--gc-cy:#52e8ff;--gc-gr:#50f5a8;--gc-rd:#ff8291;--gc-am:#ffc46b;--gc-nav:rgba(6,13,19,.92);--gc-ov:rgba(2,6,10,.72);--gc-log:#040a0f;--gc-sh:0 10px 30px rgba(82,232,255,.28);color-scheme:dark}
+html[data-theme="light"] #app{--gc-s:#f6f8fb;--gc-s2:#eaf0f5;--gc-bd:#dfe6ed;--gc-tx:#0b1620;--gc-mu:#526170;--gc-cy:#0a7a99;--gc-gr:#0a7a4a;--gc-rd:#c62828;--gc-am:#a05a00;--gc-nav:rgba(255,255,255,.95);--gc-ov:rgba(17,24,39,.45);--gc-log:#eef3f7;--gc-sh:0 10px 26px rgba(10,122,153,.25);color-scheme:light}
+html:not([data-theme="light"]) body{background:radial-gradient(800px 380px at 90% -8%,rgba(82,232,255,.12),transparent),radial-gradient(600px 300px at -10% 10%,rgba(80,245,168,.07),transparent),#060d13}
+*{box-sizing:border-box}
+body{margin:0;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+#app{max-width:880px;margin:0 auto;padding:14px 14px 0;font:500 14px/1.5 Manrope,Arial,sans-serif;color:var(--gc-tx)}
+#app h1,#app h3{color:var(--gc-tx);margin:0}#app h1{font-size:1.35rem;letter-spacing:-.02em}#app h3{font-size:1rem;margin-bottom:10px}
+.mu{color:var(--gc-mu);font-size:.78rem}.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.sp{justify-content:space-between}.ico{display:inline-flex;vertical-align:middle}
+#app select,#app input,#app textarea,#app button{font:inherit;color:var(--gc-tx);min-height:44px;border-radius:12px;border:1px solid var(--gc-bd);background:var(--gc-s2);padding:8px 12px}
+#app textarea{width:100%;min-height:70px}#app button{cursor:pointer;font-weight:700;font-size:.8rem}
+#app button:hover{border-color:var(--gc-cy)}
+#app .p{background:linear-gradient(105deg,#50f5a8,#52e8ff);color:#031014;border:0}
+#app .d{color:var(--gc-rd);border-color:color-mix(in srgb,var(--gc-rd) 45%,transparent)}
+#app :focus-visible{outline:2px solid var(--gc-cy);outline-offset:2px}
+.card{background:var(--gc-s);border:1px solid var(--gc-bd);border-radius:18px;padding:14px;margin-bottom:12px}
+.hd{display:flex;align-items:center;gap:8px;margin:16px 0 10px}.hd h3{margin:0;flex:1}
+.strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
+#app .day{display:flex;flex-direction:column;align-items:center;padding:7px 0;gap:0;min-height:62px;background:var(--gc-s)}
+#app .day.on{background:linear-gradient(160deg,#50f5a8,#52e8ff);color:#031014;border:0}.day small{font-size:.64rem}.day b{font-size:1.05rem}.day i{font-style:normal;font-size:.62rem;color:var(--gc-gr);height:12px}.day.on i{color:#031014}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--gc-s);border:1px solid var(--gc-bd);border-radius:16px;padding:10px;display:flex;gap:8px;align-items:center}.stat .ico{color:var(--gc-cy);flex:none}.stat b{font-size:1.3rem;line-height:1;display:block}.stat span{font-size:.68rem;color:var(--gc-mu);line-height:1.2;display:block}
+.fl{display:flex;background:var(--gc-s);border:1px solid var(--gc-bd);border-radius:16px;padding:4px;gap:2px}
+#app .fl button{flex:1;min-height:40px;border:0;background:transparent;font-size:.78rem}#app .fl .on{background:linear-gradient(105deg,#50f5a8,#52e8ff);color:#031014}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px}#app .chip{min-height:36px;padding:4px 12px;border-radius:99px;white-space:nowrap;flex:none}#app .chip.on{border-color:var(--gc-cy);color:var(--gc-cy)}.chip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.srch{position:relative;margin-top:10px}.srch .ico{position:absolute;left:12px;top:13px;color:var(--gc-mu)}#app .srch input{width:100%;padding-left:38px}
+.tr{display:grid;grid-template-columns:78px 16px 1fr;gap:6px;margin-bottom:10px;align-items:start}
+.tt{text-align:right;font-size:.7rem;font-weight:800;color:var(--gc-cy);padding-top:14px}
+.dot{position:relative;align-self:stretch}.dot::before{content:'';position:absolute;left:7px;top:0;bottom:-12px;width:2px;background:var(--gc-bd)}.dot::after{content:'';position:absolute;left:2px;top:17px;width:12px;height:12px;border-radius:50%;background:var(--gc-cy);box-shadow:0 0 0 4px color-mix(in srgb,var(--gc-cy) 20%,transparent)}.tr.free .dot::after{background:var(--gc-bd);box-shadow:none}
+.tc{position:relative;display:flex;align-items:center;gap:8px;background:var(--gc-s);border:1px solid var(--gc-bd);border-left:4px solid var(--c);border-radius:16px;padding:10px 6px 10px 10px}
+.tc.cancelled{opacity:.55}.tc.pending{border-left-style:dashed}
+#app .tmain{flex:1;min-width:0;display:flex;gap:10px;align-items:center;text-align:left;border:0;background:transparent;padding:0;min-height:48px}
+.av{width:42px;height:42px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;color:#fff}
+.tmain b{display:block;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tmain .mu{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+.bd{font-size:.66rem;font-weight:800;padding:2px 9px;border-radius:99px;border:1px solid;white-space:nowrap;display:inline-flex;gap:4px;align-items:center;background:color-mix(in srgb,currentColor 12%,transparent);border-color:color-mix(in srgb,currentColor 40%,transparent)}
+.bk{color:var(--gc-cy)}.ok{color:var(--gc-gr)}.dn{color:var(--gc-mu)}.rd{color:var(--gc-rd)}.am{color:var(--gc-am)}
+#app .kb{min-height:40px;width:36px;padding:0;border:0;background:transparent;display:flex;align-items:center;justify-content:center}
+.menu{position:absolute;right:8px;top:46px;z-index:8;min-width:200px;background:var(--gc-s);border:1px solid var(--gc-bd);border-radius:14px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.35)}
+#app .menu button{display:block;width:100%;text-align:left;border:0;background:transparent;min-height:40px}#app .menu button:hover{background:var(--gc-s2)}
+#app .gap{width:100%;text-align:left;border-style:dashed;background:transparent;color:var(--gc-mu);min-height:48px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--gc-bd)}.row:first-of-type{border-top:0}.row b{display:block}
+.prog{height:8px;border-radius:99px;background:var(--gc-s2);overflow:hidden;margin:6px 0 2px}.prog i{display:block;height:100%;background:var(--c)}
+.tl{border:1px solid var(--gc-bd);border-radius:18px;background:var(--gc-s);overflow:auto;max-height:66vh}
+.tg{display:grid}.ch{position:sticky;top:0;z-index:3;background:var(--gc-s2);padding:10px;font-weight:800;font-size:.8rem;border-bottom:1px solid var(--gc-bd);display:flex;gap:7px;align-items:center}.ch i{width:9px;height:9px;border-radius:50%}
+.gut{position:relative;color:var(--gc-mu);font-size:.65rem}.gut span{position:absolute;left:6px;transform:translateY(-50%)}.gut span:first-child{transform:none}
+.col{position:relative;border-left:1px solid var(--gc-bd);cursor:cell}
+#app .bb{position:absolute;left:4px;right:4px;text-align:left;padding:4px 8px;border-radius:10px;overflow:hidden;border:1px solid color-mix(in srgb,var(--c) 50%,transparent);border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 18%,var(--gc-s));min-height:0}
+.bb b{display:block;font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bb small{font-size:.66rem;color:var(--gc-mu);font-weight:500;white-space:nowrap}.bb.pending{border-style:dashed}.bb.completed{opacity:.55}
+.now{position:absolute;left:0;right:0;height:2px;background:var(--gc-rd);z-index:2;pointer-events:none}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;gap:6px;justify-content:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--gc-nav);backdrop-filter:blur(14px);border-top:1px solid var(--gc-bd)}
+#app .nav button{flex:1;max-width:220px;background:transparent;border:0;display:flex;gap:8px;align-items:center;justify-content:center}#app .nav .on{color:var(--gc-cy);background:color-mix(in srgb,var(--gc-cy) 12%,transparent)}
+#app .fab{position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:9;box-shadow:var(--gc-sh);min-height:50px;padding:0 20px;border-radius:99px;display:flex;gap:6px;align-items:center}
+.ov{position:fixed;inset:0;z-index:30;background:var(--gc-ov);display:flex;align-items:flex-end;justify-content:center}
+.sh{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--gc-s);border:1px solid var(--gc-bd);border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+#app label{display:block;margin-bottom:10px;font-size:.7rem;font-weight:800;color:var(--gc-mu)}#app label input,#app label select{width:100%;margin-top:4px;font-weight:500;font-size:.85rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#app .sw{appearance:none;width:46px;min-height:26px;height:26px;padding:0;border-radius:99px;position:relative;flex:none}.sw::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--gc-mu);transition:left .15s}#app .sw:checked{background:color-mix(in srgb,var(--gc-gr) 25%,transparent);border-color:var(--gc-gr)}.sw:checked::after{left:23px;background:var(--gc-gr)}
+.seg{display:flex;gap:6px;margin-bottom:12px}#app .seg button{flex:1}#app .seg .on{border-color:var(--gc-cy);color:var(--gc-cy)}
+.log{font:12px/1.7 ui-monospace,Menlo,monospace;background:var(--gc-log);border:1px solid var(--gc-bd);border-radius:14px;padding:12px;min-height:60px;color:var(--gc-mu);white-space:pre-wrap}.log b{color:var(--gc-cy)}.log em{color:var(--gc-gr);font-style:normal}
+.msg{padding:11px 14px;border-radius:12px;margin-bottom:12px;font-size:.8rem;border:1px solid var(--gc-bd);background:var(--gc-s)}.msg.ok{color:var(--gc-gr)}.msg.err{color:var(--gc-rd)}.msg.demo{color:var(--gc-am)}
+#app .sw2{width:26px;height:26px;border-radius:50%;min-height:26px;padding:0}.sw2.on{outline:2px solid var(--gc-tx);outline-offset:2px}
+.hr{display:grid;grid-template-columns:54px 30px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}#app .hr input[type=checkbox]{min-height:22px;width:22px}
+.empty{text-align:center;padding:26px 10px;color:var(--gc-mu)}
+.lnk{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:12px;text-decoration:none;font-weight:700;font-size:.85rem;margin-top:12px;color:#031014}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.tr{grid-template-columns:64px 14px 1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(min-width:901px){body.gas-body .nav{left:var(--gas-w,248px)}body.gas-body.gas-collapsed .nav{left:var(--gas-w-collapsed,72px)}}
+</style>
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
+</head>
+<body data-gas-title="Calendar">
+<div id="app" aria-live="polite" data-gas-content></div>
+<script>
+(()=>{
+'use strict';
+/* Same Supabase login as the other GLIME pages; calls the Edge Function below.
+   If the backend is not ready you can preview the page with sample data. */
+const GATEWAY='glime-glimecal-gateway';
+const SB_URL='https://ufoulgbiqgjriwapuopc.supabase.co',SB_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const sb=window.sb||(window.supabase&&window.supabase.createClient?window.supabase.createClient(SB_URL,SB_KEY):null);
+let DEMO=!sb;
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const addD=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return ymd(d)};
+const iso=(d,t)=>new Date(d+'T'+t+':00').toISOString();
+const tm=v=>new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const hm=v=>{const d=new Date(v);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const mins=v=>{const d=new Date(v);return d.getHours()*60+d.getMinutes()};
+const fm=m=>new Date(2000,0,1,Math.floor(m/60),m%60).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],ORDER=[1,2,3,4,5,6,0],PPH=64;
+const COLORS=['#52e8ff','#50f5a8','#ffc46b','#b69cff','#ff8fb1','#7fb2ff'],AVC=['#6d5bd0','#b0693c','#3f6fd1','#2f9e7a','#c0507a','#7a6a2f'];
+const ST={pending:['Needs approval','am'],booked:['Booked','bk'],confirmed:['Confirmed','ok'],completed:['Completed','dn'],cancelled:['Cancelled','rd'],no_show:['No-show','am']};
+const SRC={ai_whatsapp:'AI · WhatsApp',ai_instagram:'AI · Instagram',staff:'Staff'};
+const PRE={clinic:{n:'Clinic',b:'Appointment',r:'Doctor',c:'Patient'},salon:{n:'Salon and spa',b:'Booking',r:'Stylist',c:'Client'},fitness:{n:'Fitness and sports',b:'Session',r:'Trainer',c:'Member'},coaching:{n:'Coaching and education',b:'Session',r:'Coach',c:'Client'},repair:{n:'Repair and field service',b:'Job',r:'Technician',c:'Customer'},general:{n:'Other business',b:'Booking',r:'Resource',c:'Customer'}};
+const today=ymd(new Date()),wk=d=>addD(d,-new Date(d+'T00:00:00').getDay());
+const IC={cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>',bot:'<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 16.5h6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',chk:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M8.5 14l2.5 2.5 4.5-5"/>',cog:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',dots:'<circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/>',plus:'<path d="M12 5v14M5 12h14"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',bell:'<path d="M6 16v-5a6 6 0 0112 0v5l1.5 2h-15zM10 21h4"/>',ok:'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/>'};
+const ic=(n,s)=>`<span class="ico"><svg viewBox="0 0 24 24" width="${s||18}" height="${s||18}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg></span>`;
+
+/* ---------- API ---------- */
+async function call(a,b){
+  const r=await sb.auth.getSession(),s=r&&r.data&&r.data.session;
+  if(!s)throw new Error('Your session expired. Sign in again.');
+  let res;
+  try{res=await fetch(String(sb.supabaseUrl).replace(/\/$/,'')+'/functions/v1/'+GATEWAY+'?action='+encodeURIComponent(a),{method:'POST',headers:{Authorization:'Bearer '+s.access_token,apikey:sb.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify(b||{})});}
+  catch(e){throw new Error('Unable to reach GLIME. Try again.');}
+  const d=await res.json().catch(()=>null);
+  if(!res.ok)throw new Error((d&&d.error)||'Request failed. Try again.');
+  return d;
+}
+let seq=20;
+const db={set:{industry:'clinic',auto_confirm:true,agent_reschedule:true,agent_cancel:true,min_notice:2,max_days:60,cancel_notice:4,reminder_confirm:true,reminder_24h:true,reminder_1h:true,followup:true},
+res:[{id:'r1',name:'Dr. Sharma',color:COLORS[0]},{id:'r2',name:'Dr. Mehta',color:COLORS[1]}],
+svc:[{id:'s1',name:'Consultation',duration:15,buffer:5,price:500,agent:true,info:'First visit. Bring previous reports.'},{id:'s2',name:'Follow-up',duration:10,buffer:0,price:300,agent:true,info:''},{id:'s3',name:'Dental cleaning',duration:30,buffer:10,price:1200,agent:true,info:'Arrive 10 minutes early.'}],
+hours:[0,1,2,3,4,5,6].map(d=>({day:d,on:d!==0,start:'10:00',end:'20:00'})),bk:[],act:[]};
+const B=(id,r,s,n,t,status,src)=>{const sv=db.svc.find(x=>x.id===s),st=iso(today,t);db.bk.push({id,resource_id:r,service_id:s,customer:n,phone:'+91 90000 0000'+id.slice(1),start:st,end:new Date(+new Date(st)+sv.duration*6e4).toISOString(),status,source:src,notes:''});};
+B('b1','r1','s1','Rahul Verma','10:00','confirmed','ai_whatsapp');B('b2','r1','s2','Priya Singh','10:30','pending','ai_instagram');B('b3','r2','s3','Amit Joshi','11:00','confirmed','staff');B('b4','r2','s1','Neha Kapoor','16:30','confirmed','ai_whatsapp');B('b5','r1','s1','Sana Ali','15:00','cancelled','ai_whatsapp');
+db.act=[{id:'x1',type:'booked',channel:'ai_whatsapp',text:'Neha Kapoor booked Consultation',at:new Date().toISOString()},{id:'x2',type:'held',channel:'ai_instagram',text:'Priya Singh requested Follow-up, waiting for approval',at:new Date().toISOString()}];
+async function mock(a,b){
+  await new Promise(r=>setTimeout(r,90));
+  const svc=id=>db.svc.find(x=>x.id===id),log=(type,text,ch)=>db.act.unshift({id:'x'+(++seq),type,text,channel:ch||'staff',at:new Date().toISOString()});
+  if(a==='resources.list')return{items:db.res};
+  if(a==='resource.save'){if(b.id)Object.assign(db.res.find(x=>x.id===b.id),b);else db.res.push({...b,id:'r'+(++seq)});return{ok:true};}
+  if(a==='resource.delete'){if(db.bk.some(x=>x.resource_id===b.id&&x.status!=='cancelled'))throw new Error('Cancel or move its bookings first.');db.res=db.res.filter(x=>x.id!==b.id);return{ok:true};}
+  if(a==='services.list')return{items:db.svc};
+  if(a==='service.save'){if(b.id)Object.assign(svc(b.id),b);else db.svc.push({...b,id:'s'+(++seq)});return{ok:true};}
+  if(a==='service.delete'){db.svc=db.svc.filter(x=>x.id!==b.id);return{ok:true};}
+  if(a==='hours.get')return{items:db.hours};
+  if(a==='hours.save'){db.hours=b.items;return{ok:true};}
+  if(a==='settings.get')return db.set;
+  if(a==='settings.save'){Object.assign(db.set,b);return{ok:true};}
+  if(a==='activity.list')return{items:db.act.slice(0,20)};
+  if(a==='bookings.list')return{items:db.bk.filter(x=>x.start>=b.from&&x.start<b.to)};
+  if(a==='booking.status'){const x=db.bk.find(v=>v.id===b.id);x.status=b.status;log(b.status==='cancelled'?'cancelled':'updated',x.customer+' marked '+ST[b.status][0]);return{ok:true};}
+  if(a==='booking.remind'){const x=db.bk.find(v=>v.id===b.id);log('reminder','WhatsApp reminder sent to '+x.customer);return{ok:true};}
+  if(a==='booking.delete'){const x=db.bk.find(v=>v.id===b.id);db.bk=db.bk.filter(v=>v.id!==b.id);log('cancelled',x.customer+' booking deleted');return{ok:true};}
+  if(a==='availability.check'){
+    const s=svc(b.service_id),h=db.hours[new Date(b.date+'T00:00:00').getDay()];
+    if(!s||!h||!h.on)return{slots:[]};
+    const ag=b.as==='agent',now=Date.now()+(ag?db.set.min_notice*36e5:0);
+    if(ag&&b.date>addD(today,db.set.max_days))return{slots:[]};
+    const busy=db.bk.filter(x=>x.resource_id===b.resource_id&&x.status!=='cancelled'&&x.id!==b.exclude_id),out=[],step=(+s.duration)+(+s.buffer||0),end=new Date(b.date+'T'+h.end+':00');
+    let t=new Date(b.date+'T'+h.start+':00');
+    while(+t+s.duration*6e4<=+end){const e=new Date(+t+s.duration*6e4);if(+t>now&&!busy.some(x=>new Date(x.start)<e&&new Date(x.end)>t))out.push(pad(t.getHours())+':'+pad(t.getMinutes()));t=new Date(+t+step*6e4);}
+    return{slots:out};
+  }
+  if(a==='booking.save'){
+    const s=svc(b.service_id),start=iso(b.date,b.time),end=new Date(+new Date(start)+s.duration*6e4).toISOString();
+    if(db.bk.some(x=>x.id!==b.id&&x.resource_id===b.resource_id&&x.status!=='cancelled'&&x.start<end&&x.end>start))throw new Error('That time overlaps another booking. Pick a free slot.');
+    const o={resource_id:b.resource_id,service_id:b.service_id,customer:b.customer,phone:b.phone,start,end,status:b.status,notes:b.notes};
+    if(b.id){Object.assign(db.bk.find(x=>x.id===b.id),o);log('updated',b.customer+' booking updated');}
+    else{db.bk.push({...o,id:'b'+(++seq),source:b.source||'staff'});log(b.status==='pending'?'held':'booked',b.customer+' booked '+s.name,b.source);}
+    return{ok:true};
+  }
+  throw new Error('Unknown action');
+}
+const api=(a,b)=>DEMO?mock(a,b||{}):call(a,b);
+
+/* ---------- State ---------- */
+const st={tab:'cal',sub:'biz',view:'list',flt:'all',rf:'',q:'',menu:null,date:today,res:[],svc:[],hours:[],bk:[],act:[],set:{},sheet:null,slots:[],log:null,msg:null,loading:true,off:false,fail:null,s0:9};
+const $app=document.getElementById('app');
+const L=()=>PRE[st.set.industry]||PRE.general;
+const svcName=id=>(st.svc.find(s=>s.id===id)||{}).name||'Service';
+const resOf=id=>st.res.find(r=>r.id===id)||{name:'Unassigned',color:'#8fa1b0'};
+const setMsg=(t,x)=>{st.msg={t,x};};
+const dayOf=x=>ymd(new Date(x.start));
+async function loadWeek(){const w=wk(st.date);st.bk=(await api('bookings.list',{from:iso(w,'00:00'),to:iso(addD(w,7),'00:00')})).items||[];}
+async function loadAct(){st.act=(await api('activity.list')).items||[];}
+async function loadSlots(){
+  const d=st.sheet&&st.sheet.k==='bk'?st.sheet.d:null;st.slots=[];
+  if(!d||!d.service_id||!d.resource_id||!d.date)return;
+  st.slots=(await api('availability.check',{resource_id:d.resource_id,service_id:d.service_id,date:d.date,exclude_id:d.id||undefined})).slots||[];
+}
+async function run(fn,ok){try{await fn();if(ok)setMsg('ok',ok);else st.msg=null;}catch(e){console.error(e);setMsg('err',e.message||'Something went wrong.');}render();}
+const fail=x=>run(async()=>{throw new Error(x);});
+
+/* ---------- Smart availability ---------- */
+const minDur=()=>{const d=st.svc.filter(s=>s.agent!==false).map(s=>+s.duration).filter(Boolean);return d.length?Math.min(...d):15;};
+const toM=t=>+t.slice(0,2)*60+ +t.slice(3,5);
+function win(date){const h=st.hours.find(x=>x.day===new Date(date+'T00:00:00').getDay());return h&&h.on?[toM(h.start),toM(h.end)]:null;}
+function gaps(rid,date){
+  const w=win(date);if(!w)return[];let [a,z]=w;
+  if(date===today){const n=new Date();a=Math.max(a,Math.ceil((n.getHours()*60+n.getMinutes())/5)*5);}
+  const busy=st.bk.filter(x=>x.resource_id===rid&&x.status!=='cancelled'&&dayOf(x)===date).map(x=>[mins(x.start),mins(x.end)]).sort((p,q)=>p[0]-q[0]),md=minDur(),out=[];let c=a;
+  busy.forEach(([s,e])=>{if(s-c>=md)out.push([c,s]);c=Math.max(c,e);});
+  if(z-c>=md)out.push([c,z]);return out;
+}
+function busyPct(rid,date){const w=win(date);if(!w)return null;const tot=w[1]-w[0];let b=0;st.bk.forEach(x=>{if(x.resource_id===rid&&x.status!=='cancelled'&&dayOf(x)===date)b+=Math.max(0,Math.min(mins(x.end),w[1])-Math.max(mins(x.start),w[0]));});return Math.min(100,Math.round(b/tot*100));}
+function nextRem(){const n=Date.now();let best=null;st.bk.filter(x=>x.status==='confirmed'||x.status==='booked').forEach(x=>{[[24,'reminder_24h'],[1,'reminder_1h']].forEach(([h,k])=>{if(!st.set[k])return;const t=+new Date(x.start)-h*36e5;if(t>n&&(!best||t<best.t))best={t,x,h};});});return best;}
+
+/* ---------- Views ---------- */
+function card(x){
+  const r=resOf(x.resource_id),s=ST[x.status]||ST.booked,ai=String(x.source).startsWith('ai');
+  const ini=(x.customer||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(),col=AVC[(x.customer||'').length%AVC.length];
+  const mi=(v,t,c)=>`<button data-act="mact" data-v="${v}" data-id="${esc(x.id)}"${c?` class="${c}"`:''}>${t}</button>`;
+  const menu=st.menu===x.id?`<div class="menu" role="menu">${mi('edit','Booking details')}${mi('resched','Reschedule')}${x.status!=='confirmed'?mi('confirmed','Confirm'):''}${x.status!=='completed'?mi('completed','Mark completed'):''}${mi('remind','Send WhatsApp reminder')}${mi('no_show','Mark no-show')}${x.status!=='cancelled'?mi('cancelled','Cancel booking','d'):''}${mi('delete','Delete','d')}</div>`:'';
+  return `<div class="tr"><div class="tt">${tm(x.start)}</div><i class="dot"></i><div class="tc ${esc(x.status)}" style="--c:${r.color}"><button class="tmain" data-act="open" data-id="${esc(x.id)}"><span class="av" style="background:${col}">${esc(ini)}</span><span style="min-width:0"><b>${esc(x.customer)}</b><span class="mu">${esc(svcName(x.service_id))} · ${esc(r.name)}</span></span></button><div class="side">${ai?`<span class="bd bk">${ic('bot',12)} AI booked</span>`:''}<span class="bd ${s[1]}">${s[0]}</span></div><button class="kb" data-act="menu" data-id="${esc(x.id)}" aria-label="More actions">${ic('dots')}</button>${menu}</div></div>`;
+}
+function listHtml(){
+  const q=st.q.trim().toLowerCase(),F={all:()=>true,confirmed:x=>x.status==='confirmed'||x.status==='booked',pending:x=>x.status==='pending',cancelled:x=>x.status==='cancelled'};
+  const items=st.bk.filter(x=>dayOf(x)===st.date&&(!st.rf||x.resource_id===st.rf)&&F[st.flt](x)&&(!q||((x.customer||'')+' '+(x.phone||'')).toLowerCase().includes(q)));
+  const rows=items.map(x=>({t:mins(x.start),h:card(x)}));
+  const gr=st.rf||(st.res.length===1?st.res[0].id:'');
+  if(gr&&st.flt==='all'&&!q)gaps(gr,st.date).forEach(([a,z])=>rows.push({t:a,h:`<div class="tr free"><div class="tt" style="color:var(--gc-mu)">${fm(a)}</div><i class="dot"></i><button class="gap" data-act="gapbook" data-r="${esc(gr)}" data-t="${pad(Math.floor(a/60))+':'+pad(a%60)}">Free until ${fm(z)} · tap to book</button></div>`}));
+  rows.sort((a,b)=>a.t-b.t);
+  return rows.length?rows.map(r=>r.h).join(''):`<div class="card empty">${q?'No match for this search.':'Nothing here for this day. Your AI agent will fill this in as customers book.'}</div>`;
+}
+function calView(){
+  const w=wk(st.date),l=L();
+  if(!st.res.length)return `<div class="card empty" style="margin-top:12px"><h1>Welcome to GLIME Calendar</h1><p class="mu" style="margin:8px 0 14px">Add your first ${esc(l.r.toLowerCase())} and one service. Then your AI agent can start booking.</p><div class="bar" style="justify-content:center"><button class="p" data-act="add-res">Add ${esc(l.r.toLowerCase())}</button><button data-act="add-svc">Add service</button></div></div>`;
+  const day=st.bk.filter(x=>dayOf(x)===st.date),live=day.filter(x=>x.status!=='cancelled');
+  const strip=[0,1,2,3,4,5,6].map(i=>{const d=addD(w,i),n=st.bk.filter(x=>x.status!=='cancelled'&&dayOf(x)===d).length;return `<button class="day${d===st.date?' on':''}" data-act="day" data-d="${d}" aria-label="${d}"><small>${DAYS[i]}</small><b>${+d.slice(8)}</b><i>${n||''}</i></button>`;}).join('');
+  const ai=live.filter(x=>String(x.source).startsWith('ai')).length,pendDay=live.filter(x=>x.status==='pending').length;
+  const free=st.res.reduce((n,r)=>n+gaps(r.id,st.date).reduce((m,[a,z])=>m+Math.floor((z-a)/minDur()),0),0);
+  const pend=st.bk.filter(x=>x.status==='pending').sort((a,b)=>a.start<b.start?-1:1);
+  const approval=pend.length?`<div class="card" style="border-color:color-mix(in srgb,var(--gc-am) 50%,transparent)"><h3>Approval Center · ${pend.length}</h3>${pend.map(x=>`<div class="row"><div><b>${esc(x.customer)}</b><span class="mu">${esc(svcName(x.service_id))} · ${new Date(x.start).toLocaleDateString([],{day:'numeric',month:'short'})} ${tm(x.start)} · ${esc(SRC[x.source]||'Staff')}</span></div><div class="bar"><button class="p" data-act="approve" data-id="${esc(x.id)}">Approve</button><button class="d" data-act="decline" data-id="${esc(x.id)}">Decline</button></div></div>`).join('')}</div>`:'';
+  const fb=(k,t)=>`<button class="${st.flt===k?'on':''}" data-act="flt" data-v="${k}">${t}</button>`;
+  const rc=st.res.length>1?`<div class="chips"><button class="chip${st.rf?'':' on'}" data-act="rf" data-v="">All ${esc(l.r.toLowerCase())}s</button>${st.res.map(r=>`<button class="chip${st.rf===r.id?' on':''}" data-act="rf" data-v="${esc(r.id)}"><i style="background:${r.color}"></i>${esc(r.name)}</button>`).join('')}</div>`:'';
+  const av=st.res.map(r=>{const p=busyPct(r.id,st.date),g=gaps(r.id,st.date)[0];return `<div class="row"><div style="flex:1;min-width:140px"><b><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${r.color};margin-right:7px"></i>${esc(r.name)}</b><div class="prog" style="--c:${r.color}"><i style="width:${p==null?0:p}%"></i></div><span class="mu">${p==null?'Closed this day':p+'% busy · '+(g?'next free '+fm(g[0]):'fully booked')}</span></div>${g?`<button data-act="gapbook" data-r="${esc(r.id)}" data-t="${pad(Math.floor(g[0]/60))+':'+pad(g[0]%60)}">Book ${fm(g[0])}</button>`:''}</div>`;}).join('');
+  const rm=nextRem(),S=st.set,onoff=(k,t)=>`<span class="bd ${S[k]?'ok':'dn'}">${t} ${S[k]?'on':'off'}</span>`;
+  const act=st.act.slice(0,2).map(x=>`<div class="mu" style="margin-top:4px">${ic('ok',14)} ${esc(x.text)}</div>`).join('');
+  const dl=new Date(st.date+'T00:00:00');
+  return `<div class="bar sp"><div class="bar"><span style="color:var(--gc-cy)">${ic('cal',22)}</span><h1>${dl.toLocaleDateString([],{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</h1></div>
+  <div class="bar"><button data-act="wk" data-n="-7" aria-label="Previous week">&lsaquo;</button><button data-act="today">Today</button><button data-act="wk" data-n="7" aria-label="Next week">&rsaquo;</button></div></div>
+  <div class="strip">${strip}</div>
+  <div class="stats"><div class="stat">${ic('cal',26)}<div><b>${live.length}</b><span>Total</span></div></div><div class="stat">${ic('bot',26)}<div><b>${ai}</b><span>AI booked</span></div></div><div class="stat">${ic('clock',26)}<div><b>${pendDay}</b><span>Awaiting approval</span></div></div><div class="stat">${ic('chk',26)}<div><b>${free}</b><span>Free slots</span></div></div></div>
+  ${approval}<div class="fl">${fb('all','All')}${fb('confirmed','Confirmed')}${fb('pending','Pending')}${fb('cancelled','Cancelled')}</div>${rc}
+  <div class="srch">${ic('search',18)}<input id="q" type="search" placeholder="Search name or phone" value="${esc(st.q)}" aria-label="Search bookings"></div>
+  <div class="hd"><h3>${st.date===today?'Today’s '+esc(l.b.toLowerCase())+'s':esc(l.b)+'s on '+dl.toLocaleDateString([],{day:'numeric',month:'short'})}</h3><div class="bar"><button class="chip${st.view==='list'?' on':''}" data-act="view" data-v="list">List</button><button class="chip${st.view==='grid'?' on':''}" data-act="view" data-v="grid">By ${esc(l.r.toLowerCase())}</button></div></div>
+  <div id="lst">${st.view==='list'?listHtml():tlView(live)}</div>
+  <div class="card"><h3>Smart availability</h3>${av}</div>
+  <div class="card"><div class="bar sp"><h3 style="margin:0">${ic('spark',18)} AI agent activity</h3><button data-act="tab" data-t="agent">View activity</button></div><div style="margin-top:8px"><b>${ai}</b> <span class="mu">${esc(l.b.toLowerCase())}s booked by AI this day</span>${act}</div></div>
+  <div class="card"><div class="bar sp"><h3 style="margin:0">${ic('bell',18)} Reminders and follow-ups</h3><button data-act="tab" data-t="agent">Manage</button></div><div class="bar" style="margin:10px 0 6px">${onoff('reminder_confirm','Confirmation')}${onoff('reminder_24h','24h')}${onoff('reminder_1h','1h')}${onoff('followup','Follow-up')}</div><span class="mu">${rm?`Next: ${rm.h}h reminder to ${esc(rm.x.customer)} at ${new Date(rm.t).toLocaleString([],{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}`:'No reminders waiting.'}</span></div>
+  <button class="p fab" data-act="new">${ic('plus',18)} New ${esc(l.b.toLowerCase())}</button>`;
+}
+function tlView(day){
+  const h=st.hours.find(x=>x.day===new Date(st.date+'T00:00:00').getDay());
+  let s0=9,e0=19;
+  if(h&&h.on){s0=+h.start.slice(0,2);e0=Math.min(24,+h.end.slice(0,2)+(+h.end.slice(3,5)>0?1:0));}
+  day.forEach(x=>{s0=Math.min(s0,new Date(x.start).getHours());e0=Math.max(e0,Math.min(24,new Date(x.end).getHours()+1));});
+  st.s0=s0;const n=e0-s0,H=n*PPH,nd=new Date(),nowTop=((nd.getHours()-s0)*60+nd.getMinutes())*PPH/60;
+  const gut=Array.from({length:n},(_,i)=>`<span style="top:${i*PPH}px">${pad(s0+i)}:00</span>`).join('');
+  const cols=st.res.map(r=>{
+    const bl=day.filter(x=>x.resource_id===r.id).map(x=>{const a=new Date(x.start),top=((a.getHours()-s0)*60+a.getMinutes())*PPH/60,ht=Math.max(32,(new Date(x.end)-a)/6e4*PPH/60-2);
+      return `<button class="bb ${esc(x.status)}" data-act="open" data-id="${esc(x.id)}" style="top:${top}px;height:${ht}px;--c:${r.color}"><b>${hm(x.start)} ${esc(x.customer)}</b><small>${esc(svcName(x.service_id))}${String(x.source).startsWith('ai')?' ✦':''}</small></button>`;}).join('');
+    return `<div class="col" data-act="slotclick" data-r="${esc(r.id)}" style="height:${H}px;background:repeating-linear-gradient(to bottom,transparent 0,transparent ${PPH-1}px,var(--gc-bd) ${PPH-1}px,var(--gc-bd) ${PPH}px)">${bl}${st.date===today&&nowTop>0&&nowTop<H?`<div class="now" style="top:${nowTop}px"></div>`:''}</div>`;}).join('');
+  const hd=st.res.map(r=>`<div class="ch"><i style="background:${r.color}"></i>${esc(r.name)}</div>`).join('');
+  return `<div class="tl"><div class="tg" style="grid-template-columns:46px repeat(${st.res.length},minmax(150px,1fr))"><div class="ch"></div>${hd}<div class="gut" style="height:${H}px">${gut}</div>${cols}</div></div>${h&&!h.on?'<p class="mu">Closed on this day. You can still add a booking manually.</p>':''}`;
+}
+function agentView(){
+  const s=st.set,sw=(k,t,sub)=>`<div class="row"><div><b>${t}</b><span class="mu">${sub}</span></div><input class="sw" type="checkbox" data-k="${k}"${s[k]?' checked':''} aria-label="${t}"></div>`;
+  const so=st.svc.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}</option>`).join(''),ro=st.res.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}</option>`).join('');
+  const fe=st.act.length?st.act.map(x=>{const c={booked:'ok',held:'am',updated:'bk',cancelled:'rd',reminder:'bk'}[x.type]||'dn';return `<div class="row"><div><span class="bd ${c}">${esc(x.type)}</span> ${esc(x.text)}<span class="mu" style="display:block">${esc(SRC[x.channel]||'Staff')} · ${tm(x.at)}</span></div></div>`;}).join(''):'<div class="empty">No agent activity yet.</div>';
+  return `<h1>AI Agent</h1><p class="mu" style="margin:2px 0 12px">Your agent checks free time, books, reschedules and cancels here while it chats with customers.</p>
+  <div class="card"><h3>Agent controls</h3><div id="rules">${sw('auto_confirm','Confirm bookings automatically','Off: agent bookings wait in the Approval Center.')}${sw('agent_reschedule','Allow rescheduling','Customers can change their own booking in chat.')}${sw('agent_cancel','Allow cancelling','Customers can cancel their own booking in chat.')}</div>
+  <div class="g2" style="margin-top:10px"><label>Minimum notice to book (hours)<input type="number" min="0" max="168" data-k="min_notice" value="${esc(s.min_notice)}"></label><label>Book up to (days ahead)<input type="number" min="1" max="365" data-k="max_days" value="${esc(s.max_days)}"></label></div>
+  <label>Agent cannot cancel or reschedule within (hours)<input type="number" min="0" max="168" data-k="cancel_notice" value="${esc(s.cancel_notice)}"></label><button class="p" data-act="rules-save">Save controls</button></div>
+  <div class="card"><h3>Reminders and follow-ups</h3><div>${sw('reminder_confirm','WhatsApp confirmation','Sent as soon as a booking is confirmed.')}${sw('reminder_24h','Reminder 24 hours before','')}${sw('reminder_1h','Reminder 1 hour before','')}${sw('followup','Follow-up after the visit','Thank-you message and rebooking prompt.')}</div><button class="p" data-act="rules-save" style="margin-top:8px">Save reminders</button></div>
+  <div class="card"><h3>Test your agent</h3><p class="mu" style="margin-top:0">Runs the same steps the agent runs in a chat and creates a test booking you can delete.</p>
+  <div class="g2"><label>Service<select id="t-s">${so}</select></label><label>${esc(L().r)}<select id="t-r">${ro}</select></label></div><label>Date<input id="t-d" type="date" value="${addD(today,1)}"></label>
+  <button class="p" data-act="test">Run test booking</button><div class="log" id="log" style="margin-top:10px">${st.log?st.log:'Waiting for a test run.'}</div></div>
+  <div class="card"><h3>Agent tools</h3><div class="bar">${['list_services','check_availability','create_booking','reschedule_booking','cancel_booking','find_customer_bookings'].map(t=>`<span class="bd bk">${t}</span>`).join('')}</div></div>
+  <div class="card"><h3>Recent activity</h3>${fe}</div>`;
+}
+function setupView(){
+  const t=(k,l)=>`<button class="${st.sub===k?'on':''}" data-act="sub" data-t="${k}">${l}</button>`,l=L();
+  let body='';
+  if(st.sub==='biz'){
+    const io=Object.keys(PRE).map(k=>`<option value="${k}"${k===st.set.industry?' selected':''}>${PRE[k].n}</option>`).join('');
+    const hr=ORDER.map(d=>{const h=st.hours.find(x=>x.day===d)||{on:false,start:'10:00',end:'18:00'};return `<div class="hr" data-hd="${d}"><b>${DAYS[d]}</b><input type="checkbox" data-h="on" aria-label="${DAYS[d]} open"${h.on?' checked':''}><input type="time" data-h="start" value="${esc(h.start)}" aria-label="${DAYS[d]} start"><input type="time" data-h="end" value="${esc(h.end)}" aria-label="${DAYS[d]} end"></div>`;}).join('');
+    body=`<div class="card"><h3>Business type</h3><select id="ind" style="width:100%">${io}</select><p class="mu">This renames things for your business, like ${esc(l.b.toLowerCase())}, ${esc(l.r.toLowerCase())} and ${esc(l.c.toLowerCase())}.</p></div><div class="card"><h3>Working hours</h3>${hr}<button class="p" data-act="hrs-save">Save hours</button></div>`;
+  }else if(st.sub==='res'){
+    body=`<div class="bar sp" style="margin-bottom:10px"><h3 style="margin:0">${esc(l.r)}s</h3><button class="p" data-act="add-res">Add ${esc(l.r.toLowerCase())}</button></div><div class="card">${st.res.length?st.res.map(r=>`<div class="row"><div><b><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${r.color};margin-right:8px"></i>${esc(r.name)}</b></div><div class="bar"><button data-act="edit-res" data-id="${esc(r.id)}">Edit</button><button class="d" data-act="del-res" data-id="${esc(r.id)}">Delete</button></div></div>`).join(''):`<div class="empty">No ${esc(l.r.toLowerCase())} yet.</div>`}</div>`;
+  }else{
+    body=`<div class="bar sp" style="margin-bottom:10px"><h3 style="margin:0">Services</h3><button class="p" data-act="add-svc">Add service</button></div><div class="card">${st.svc.length?st.svc.map(s=>`<div class="row"><div><b>${esc(s.name)}</b><span class="mu">${s.duration} min · buffer ${s.buffer||0} min · Rs ${s.price||0} · ${s.agent?'Agent can book':'Staff only'}</span></div><div class="bar"><button data-act="edit-svc" data-id="${esc(s.id)}">Edit</button><button class="d" data-act="del-svc" data-id="${esc(s.id)}">Delete</button></div></div>`).join(''):'<div class="empty">Add a service so your agent can book it.</div>'}</div>`;
+  }
+  return `<h1>Setup</h1><div class="seg" style="margin-top:12px">${t('biz','Business')}${t('res',l.r+'s')}${t('svc','Services')}</div>${body}`;
+}
+function sheet(){
+  const k=st.sheet.k,d=st.sheet.d,l=L();let b='';
+  const op=(a,v,f)=>a.map(o=>`<option value="${esc(o.id)}"${o.id===v?' selected':''}>${f(o)}</option>`).join('');
+  if(k==='bk'){
+    const chips=st.slots.length?st.slots.slice(0,14).map(t=>`<button type="button" class="chip${t===d.time?' on':''}" data-act="slot" data-t="${t}">${t}</button>`).join(' '):'<span class="mu">No free slot for this choice. You can still type a time.</span>';
+    b=`<h3>${d.id?(d.mode==='resched'?'Reschedule':'Booking details'):'New '+esc(l.b.toLowerCase())}</h3>
+    <div class="g2"><label>${esc(l.c)} name<input data-f="customer" maxlength="100" value="${esc(d.customer)}"></label><label>Mobile<input data-f="phone" inputmode="tel" maxlength="20" value="${esc(d.phone)}"></label></div>
+    <div class="g2"><label>Service<select data-f="service_id" data-re>${op(st.svc,d.service_id,s=>esc(s.name)+' · '+s.duration+' min')}</select></label><label>${esc(l.r)}<select data-f="resource_id" data-re>${op(st.res,d.resource_id,r=>esc(r.name))}</select></label></div>
+    <div class="g2"><label>Date<input type="date" data-f="date" data-re value="${esc(d.date)}"></label><label>Time<input type="time" data-f="time" value="${esc(d.time)}"></label></div>
+    <p class="mu" style="margin:0 0 6px">Free times</p><div class="bar" style="margin-bottom:12px">${chips}</div>
+    <label>Status<select data-f="status">${Object.keys(ST).map(s=>`<option value="${s}"${s===d.status?' selected':''}>${ST[s][0]}</option>`).join('')}</select></label>
+    <label>Notes<textarea data-f="notes" maxlength="500">${esc(d.notes)}</textarea></label>${d.src?`<p class="mu">Booking source: ${esc(SRC[d.src]||'Staff')}</p>`:''}${d.id&&d.phone?'<button type="button" data-act="sheet-remind" style="margin-bottom:10px">Send WhatsApp reminder now</button>':''}`;
+  }else if(k==='res'){
+    b=`<h3>${d.id?'Edit':'Add'} ${esc(l.r.toLowerCase())}</h3><label>Name<input data-f="name" maxlength="80" value="${esc(d.name)}"></label><p class="mu">Colour</p><div class="bar" style="margin-bottom:12px">${COLORS.map(c=>`<button type="button" class="sw2${c===d.color?' on':''}" data-act="color" data-c="${c}" style="background:${c}" aria-label="Colour ${c}"></button>`).join('')}</div>`;
+  }else{
+    b=`<h3>${d.id?'Edit':'Add'} service</h3><label>Name<input data-f="name" maxlength="80" value="${esc(d.name)}"></label>
+    <div class="g2"><label>Duration (min)<input type="number" min="5" max="480" data-f="duration" value="${esc(d.duration)}"></label><label>Buffer after (min)<input type="number" min="0" max="120" data-f="buffer" value="${esc(d.buffer)}"></label></div>
+    <label>Price (Rs)<input type="number" min="0" data-f="price" value="${esc(d.price)}"></label>
+    <label>What the agent tells customers<textarea data-f="info" maxlength="300">${esc(d.info)}</textarea></label>
+    <div class="row"><div><b>Agent can book this</b><span class="mu">Off keeps it for staff only.</span></div><input class="sw" type="checkbox" data-f="agent"${d.agent?' checked':''} aria-label="Agent can book this"></div>`;
+  }
+  return `<div class="ov" data-act="close"><div class="sh" role="dialog" aria-modal="true">${b}<div class="bar" style="margin-top:8px"><button class="p" data-act="save">Save</button><button data-act="close">Close</button>${d.id?'<button class="d" data-act="del-sheet" style="margin-left:auto">Delete</button>':''}</div></div></div>`;
+}
+function render(){
+  if(st.loading){$app.innerHTML='<div class="msg">Loading calendar…</div>';return;}
+  if(st.off){$app.innerHTML='<div class="card empty" style="margin-top:24px"><h1>Calendar is off</h1><p class="mu" style="margin:8px 0 0">Turn on the GLIME Calendar connector to use your appointment calendar and AI booking agent.</p><a class="p lnk" href="ai-connections.html">Open Connector</a></div>';return;}
+  if(st.fail){$app.innerHTML=`<div class="card empty" style="margin-top:24px"><h1>Calendar could not load</h1><p class="mu" style="margin:8px 0 14px">${esc(st.fail)}</p><div class="bar" style="justify-content:center"><button class="p" data-act="retry">Try again</button><button data-act="demo">Preview with sample data</button></div></div>`;return;}
+  const demo=DEMO?'<div class="msg demo">Preview mode: sample data only. Nothing is saved.</div>':'';
+  const m=st.msg?`<div class="msg ${st.msg.t}" role="${st.msg.t==='err'?'alert':'status'}">${esc(st.msg.x)}</div>`:'';
+  const nb=(k,l,i)=>`<button class="${st.tab===k?'on':''}" data-act="tab" data-t="${k}">${ic(i,20)} ${l}</button>`;
+  const y=window.scrollY;
+  $app.innerHTML=demo+m+(st.tab==='cal'?calView():st.tab==='agent'?agentView():setupView())+(st.sheet?sheet():'')+`<nav class="nav" aria-label="Sections">${nb('cal','Calendar','cal')}${nb('agent','Agent','bot')}${nb('set','Setup','cog')}</nav>`;
+  window.scrollTo(0,y);
+}
+
+/* ---------- Events ---------- */
+const readF=()=>{const o={};$app.querySelectorAll('.sh [data-f]').forEach(n=>{o[n.dataset.f]=n.type==='checkbox'?n.checked:n.value;});return o;};
+const open=(k,d)=>{st.sheet={k,d};st.msg=null;st.menu=null;return k==='bk'?run(loadSlots):render();};
+const emptyBk=(r,t)=>({id:null,customer:'',phone:'',service_id:(st.svc[0]||{}).id,resource_id:r||(st.res[0]||{}).id,date:st.date,time:t||'',status:'confirmed',notes:''});
+const editBk=(x,mode)=>({id:x.id,customer:x.customer,phone:x.phone||'',service_id:x.service_id,resource_id:x.resource_id,date:dayOf(x),time:hm(x.start),status:x.status,notes:x.notes||'',src:x.source,mode});
+$app.addEventListener('click',e=>{
+  if(st.menu&&!e.target.closest('.menu')&&!e.target.closest('[data-act=menu]')){st.menu=null;if(!e.target.closest('[data-act]'))return render();}
+  const b=e.target.closest('[data-act]');if(!b)return;
+  if(b.classList.contains('ov')&&e.target!==b)return;
+  const a=b.dataset.act,sh=st.sheet;
+  if(a==='tab'){st.tab=b.dataset.t;st.msg=null;st.sheet=null;st.menu=null;return run(async()=>{if(st.tab==='agent')await loadAct();});}
+  if(a==='sub'){st.sub=b.dataset.t;return render();}
+  if(a==='retry'){st.fail=null;st.loading=true;render();return init();}
+  if(a==='demo'){DEMO=true;st.fail=null;st.loading=true;render();return init();}
+  if(a==='day'){st.date=b.dataset.d;return render();}
+  if(a==='flt'){st.flt=b.dataset.v;return render();}
+  if(a==='rf'){st.rf=b.dataset.v;return render();}
+  if(a==='view'){st.view=b.dataset.v;return render();}
+  if(a==='menu'){st.menu=st.menu===b.dataset.id?null:b.dataset.id;return render();}
+  if(a==='today'||a==='wk'){st.date=a==='today'?today:addD(st.date,+b.dataset.n);return run(loadWeek);}
+  if(a==='new'){if(!st.svc.length||!st.res.length)return fail('Add a '+L().r.toLowerCase()+' and a service in Setup first.');return open('bk',emptyBk());}
+  if(a==='gapbook'){if(!st.svc.length)return fail('Add a service in Setup first.');return open('bk',emptyBk(b.dataset.r,b.dataset.t));}
+  if(a==='slotclick'){if(!st.svc.length)return fail('Add a service in Setup first.');const y=e.clientY-b.getBoundingClientRect().top,m=st.s0*60+Math.floor(y/PPH*4)*15;return open('bk',emptyBk(b.dataset.r,pad(Math.floor(m/60))+':'+pad(m%60)));}
+  if(a==='open'){const x=st.bk.find(v=>v.id===b.dataset.id);return x?open('bk',editBk(x)):0;}
+  if(a==='mact'){
+    const x=st.bk.find(v=>v.id===b.dataset.id),v=b.dataset.v;st.menu=null;if(!x)return render();
+    if(v==='edit')return open('bk',editBk(x));if(v==='resched')return open('bk',editBk(x,'resched'));
+    if(v==='remind')return run(async()=>{await api('booking.remind',{id:x.id});await loadAct();},'WhatsApp reminder sent to '+x.customer+'.');
+    if(v==='delete'){if(!confirm('Delete this booking? This cannot be undone.'))return render();return run(async()=>{await api('booking.delete',{id:x.id});await loadWeek();},'Booking deleted.');}
+    if(v==='cancelled'&&!confirm('Cancel this booking for '+x.customer+'?'))return render();
+    return run(async()=>{await api('booking.status',{id:x.id,status:v});await loadWeek();},'Status updated.');
+  }
+  if(a==='close'){st.sheet=null;return render();}
+  if(a==='sheet-remind'){return run(async()=>{await api('booking.remind',{id:sh.d.id});},'WhatsApp reminder sent.');}
+  if(a==='slot'){sh.d={...sh.d,...readF(),time:b.dataset.t};return render();}
+  if(a==='color'){sh.d={...sh.d,...readF(),color:b.dataset.c};return render();}
+  if(a==='approve'||a==='decline')return run(async()=>{await api('booking.status',{id:b.dataset.id,status:a==='approve'?'confirmed':'cancelled'});await loadWeek();},a==='approve'?'Booking approved. The customer is notified.':'Booking declined.');
+  if(a==='add-res')return open('res',{id:null,name:'',color:COLORS[st.res.length%COLORS.length]});
+  if(a==='edit-res')return open('res',{...st.res.find(r=>r.id===b.dataset.id)});
+  if(a==='add-svc')return open('svc',{id:null,name:'',duration:15,buffer:0,price:0,info:'',agent:true});
+  if(a==='edit-svc')return open('svc',{info:'',agent:true,...st.svc.find(s=>s.id===b.dataset.id)});
+  if(a==='del-res'||a==='del-svc'||a==='del-sheet'){
+    const k=a==='del-sheet'?sh.k:a==='del-res'?'res':'svc',id=a==='del-sheet'?sh.d.id:b.dataset.id;
+    if(!confirm(k==='bk'?'Delete this booking? This cannot be undone.':k==='res'?'Delete this '+L().r.toLowerCase()+'?':'Delete this service? Existing bookings stay in your calendar.'))return;
+    return run(async()=>{
+      if(k==='bk'){await api('booking.delete',{id});await loadWeek();}
+      else if(k==='res'){await api('resource.delete',{id});st.res=(await api('resources.list')).items||[];}
+      else{await api('service.delete',{id});st.svc=(await api('services.list')).items||[];}
+      st.sheet=null;},'Deleted.');
+  }
+  if(a==='save'){
+    const d={...sh.d,...readF()};sh.d=d;
+    if(sh.k==='bk'){
+      if(!d.customer.trim())return fail('Enter the '+L().c.toLowerCase()+' name.');if(!d.time)return fail('Choose a time.');
+      const sv=st.svc.find(s=>s.id===d.service_id),s0=new Date(d.date+'T'+d.time+':00'),e0=new Date(+s0+((sv&&sv.duration)||15)*6e4);
+      const hit=d.status==='cancelled'?null:st.bk.find(x=>x.id!==d.id&&x.resource_id===d.resource_id&&x.status!=='cancelled'&&new Date(x.start)<e0&&new Date(x.end)>s0);
+      if(hit)return fail('Double booking: '+hit.customer+' already has '+tm(hit.start)+' with '+resOf(hit.resource_id).name+'. Pick a free time.');
+      return run(async()=>{await api('booking.save',{id:d.id||undefined,resource_id:d.resource_id,service_id:d.service_id,customer:d.customer.trim(),phone:d.phone.trim(),date:d.date,time:d.time,status:d.status,notes:d.notes.trim()});st.sheet=null;st.date=d.date;await loadWeek();},d.id?'Changes saved.':'Booking created.');
+    }
+    if(!d.name.trim())return fail('Enter a name.');
+    if(sh.k==='res')return run(async()=>{await api('resource.save',{id:d.id||undefined,name:d.name.trim(),color:d.color});st.res=(await api('resources.list')).items||[];st.sheet=null;},'Saved.');
+    const du=+d.duration;if(!(du>=5&&du<=480))return fail('Duration must be between 5 and 480 minutes.');
+    return run(async()=>{await api('service.save',{id:d.id||undefined,name:d.name.trim(),duration:du,buffer:+d.buffer||0,price:+d.price||0,info:(d.info||'').trim(),agent:!!d.agent});st.svc=(await api('services.list')).items||[];st.sheet=null;},'Saved.');
+  }
+  if(a==='hrs-save'){
+    const items=[...$app.querySelectorAll('[data-hd]')].map(r=>({day:+r.dataset.hd,on:r.querySelector('[data-h=on]').checked,start:r.querySelector('[data-h=start]').value,end:r.querySelector('[data-h=end]').value}));
+    const bad=items.find(h=>h.on&&(!h.start||!h.end||h.end<=h.start));if(bad)return fail(DAYS[bad.day]+': end time must be after start time.');
+    return run(async()=>{await api('hours.save',{items});st.hours=items;},'Working hours saved.');
+  }
+  if(a==='rules-save'){
+    const v={};$app.querySelectorAll('[data-k]').forEach(n=>{v[n.dataset.k]=n.type==='checkbox'?n.checked:+n.value;});
+    if(!(v.min_notice>=0)||!(v.max_days>=1)||!(v.cancel_notice>=0))return fail('Enter valid hours and days.');
+    return run(async()=>{await api('settings.save',v);Object.assign(st.set,v);},'Saved.');
+  }
+  if(a==='test')return agentTest();
+});
+$app.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='ind')return run(async()=>{await api('settings.save',{industry:t.value});st.set.industry=t.value;},'Business type updated.');
+  if(t.matches('.sh [data-re]')&&st.sheet){st.sheet.d={...st.sheet.d,...readF()};return run(loadSlots);}
+});
+$app.addEventListener('input',e=>{if(e.target.id==='q'){st.q=e.target.value;const l=$app.querySelector('#lst');if(l&&st.view==='list')l.innerHTML=listHtml();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(st.sheet||st.menu)){st.sheet=null;st.menu=null;render();}});
+async function agentTest(){
+  const sv=$app.querySelector('#t-s').value,rs=$app.querySelector('#t-r').value,date=$app.querySelector('#t-d').value;
+  if(!sv||!rs||!date)return fail('Add a service and a '+L().r.toLowerCase()+' first.');
+  const lines=[];const out=()=>{st.log=lines.join('\n');const el=$app.querySelector('#log');if(el)el.innerHTML=st.log;};
+  try{
+    lines.push('<b>customer</b> I want to book on '+esc(date));out();
+    lines.push('<b>tool</b> check_availability');out();
+    const sl=(await api('availability.check',{resource_id:rs,service_id:sv,date,as:'agent'})).slots||[];
+    lines.push('<em>result</em> '+(sl.length?sl.length+' free times, first '+sl[0]:'no free times'));out();
+    if(!sl.length){lines.push('<b>agent</b> Sorry, nothing is free that day. Shall I check another day?');out();return;}
+    lines.push('<b>tool</b> create_booking '+sl[0]);out();
+    await api('booking.save',{resource_id:rs,service_id:sv,customer:'Agent test',phone:'',date,time:sl[0],status:st.set.auto_confirm?'confirmed':'pending',notes:'Created by test run',source:'ai_whatsapp'});
+    lines.push('<em>result</em> '+(st.set.auto_confirm?'booking confirmed':'booking held for approval'));out();
+    lines.push('<b>agent</b> You are booked for '+esc(date)+' at '+sl[0]+'.');out();
+    await Promise.all([loadWeek(),loadAct()]);st.log=lines.join('\n');setMsg('ok','Test booking created. Delete it from the Calendar when done.');render();
+  }catch(e){console.error(e);setMsg('err',e.message||'Test failed.');render();}
+}
+
+/* ---------- Init ---------- */
+async function init(){
+  try{
+    if(!DEMO){
+      /* Sign-in and the Calendar connector switch (Connector > GLIME Calendar) are checked first. */
+      const ses=await sb.auth.getSession(),user=ses&&ses.data&&ses.data.session&&ses.data.session.user;
+      if(!user){location.replace('login.html');return;}
+      let on=false;
+      try{on=localStorage.getItem('glime_cal_on_'+user.id)==='1';}catch(e){}
+      if(!on){st.off=true;st.loading=false;render();return;}
+    }
+    const [r,s,h,c]=await Promise.all([api('resources.list'),api('services.list'),api('hours.get'),api('settings.get')]);
+    st.res=r.items||[];st.svc=s.items||[];st.hours=h.items||[];st.set={industry:'general',...c};
+    await loadWeek();try{await loadAct();}catch(e){}
+  }catch(e){console.error(e);st.fail=e.message||'Calendar could not be loaded.';}
+  st.loading=false;render();
+}
+init();
+})();
+</script>
+</body>
+</html>
