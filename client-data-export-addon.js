@@ -4,6 +4,8 @@
    Adds a "Download Data" button above "Secure Logout" in the
    shared app-shell sidebar. It only links to data-download.html;
    all export logic lives on that page.
+   It also loads glime-calendar-nav-addon.js, which adds the Calendar
+   link only for clients who turned the Calendar connector on.
 ========================================================= */
 (function () {
   'use strict';
@@ -44,6 +46,14 @@
   }
 
   window.GlimeDataExport = {};
+
+  /* Calendar menu item: only shown when the Calendar connector is ON. */
+  if (!window.GlimeCalendarNav && !document.querySelector('script[src*="glime-calendar-nav-addon.js"]')) {
+    var cs = document.createElement('script');
+    cs.src = 'glime-calendar-nav-addon.js?v=1';
+    cs.defer = true;
+    document.head.appendChild(cs);
+  }
 
   function boot() {
     if (addLink()) return;
