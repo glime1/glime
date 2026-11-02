@@ -11,6 +11,8 @@
    - Razorpay: client's own account via glime-razorpay-oauth.
    - Shiprocket Cargo: connector-shiprocket-addon.js (loaded on demand)
      via glime-shiprocket-cargo-gateway.
+   - GLIME Calendar (appointments): connector-calendar-addon.js (loaded on demand).
+     Its ON / OFF switch decides whether Calendar shows in the app-shell sidebar.
    - Google OAuth returns here: settings.html?connector=google-calendar&status=...#connector
    - Razorpay OAuth returns here: settings.html?connector=razorpay&status=...&reason=...#connector
    - connector-manage-addon.js (loaded on demand): permissions list + Disconnect inside connected cards.
@@ -57,6 +59,18 @@ function loadCargo(){
     const s=document.createElement('script');
     s.src='connector-shiprocket-addon.js';
     s.onload=function(){resolve(!!window.GLIME_CARGO);};
+    s.onerror=function(){resolve(false);};
+    document.head.appendChild(s);
+  });
+}
+
+/* GLIME Calendar card: also its own file, isolated the same way. */
+function loadCalendar(){
+  return new Promise(function(resolve){
+    if(window.GLIME_CALENDAR_CONNECTOR)return resolve(true);
+    const s=document.createElement('script');
+    s.src='connector-calendar-addon.js?v=1';
+    s.onload=function(){resolve(!!window.GLIME_CALENDAR_CONNECTOR);};
     s.onerror=function(){resolve(false);};
     document.head.appendChild(s);
   });
@@ -139,10 +153,12 @@ S.register({
       </div>
       <div id="gcxSettingsHub"></div>
       <div id="gcxSettingsCargo" style="margin-top:6px"></div>
+      <div id="gcxSettingsCalendar" style="margin-top:6px"></div>
       <div id="gcxSettingsPerms" style="margin-top:22px"></div>`;
 
     const hub=container.querySelector('#gcxSettingsHub');
     const cargoHost=container.querySelector('#gcxSettingsCargo');
+    const calHost=container.querySelector('#gcxSettingsCalendar');
     const perms=container.querySelector('#gcxSettingsPerms');
     const UI=window.GLIME_CONNECTOR_UI;
 
@@ -171,6 +187,12 @@ S.register({
         supabaseUrl:supabaseUrl,
         apiKey:api.supabase.supabaseKey
       });
+    });
+
+    /* GLIME Calendar ON / OFF card: decides if Calendar shows in the sidebar. */
+    loadCalendar().then(function(ok){
+      if(!ok||!calHost.isConnected||!api.supabase)return;
+      window.GLIME_CALENDAR_CONNECTOR.mount(calHost,{sb:api.supabase});
     });
 
     loadManage().then(function(ok){

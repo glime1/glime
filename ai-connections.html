@@ -38,6 +38,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   <div id="message" class="message" role="alert"></div>
   <div id="hub"></div>
   <div id="cargo" style="margin-top:6px"></div>
+  <div id="calendarcard" style="margin-top:6px"></div>
   <div id="permissions" style="margin-top:24px"></div>
 </div>
 
@@ -56,6 +57,7 @@ const sb=window.supabase.createClient(
 const UI=window.GLIME_CONNECTOR_UI;
 const hub=document.getElementById("hub");
 const cargoHost=document.getElementById("cargo");
+const calHost=document.getElementById("calendarcard");
 const perms=document.getElementById("permissions");
 const base={
   mcpEndpoint:MCP_ENDPOINT,
@@ -103,6 +105,18 @@ function loadCargo(){
   });
 }
 
+/* GLIME Calendar ON / OFF card: its own file as well. */
+function loadCalendar(){
+  return new Promise(function(resolve){
+    if(window.GLIME_CALENDAR_CONNECTOR)return resolve(true);
+    const s=document.createElement("script");
+    s.src="connector-calendar-addon.js?v=1";
+    s.onload=function(){resolve(!!window.GLIME_CALENDAR_CONNECTOR);};
+    s.onerror=function(){resolve(false);};
+    document.head.appendChild(s);
+  });
+}
+
 (async()=>{
   try{
     if(!UI)throw new Error("Connector UI could not be loaded");
@@ -119,6 +133,11 @@ function loadCargo(){
     loadCargo().then(function(ok){
       if(!ok||!cargoHost.isConnected)return;
       window.GLIME_CARGO.mount(cargoHost,{sb:sb,supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
+    });
+
+    loadCalendar().then(function(ok){
+      if(!ok||!calHost.isConnected)return;
+      window.GLIME_CALENDAR_CONNECTOR.mount(calHost,{sb:sb});
     });
 
     const res=await UI.data.loadAll(sb,{supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
