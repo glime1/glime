@@ -65,7 +65,7 @@ function handoff(lead, q) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn full'; b.textContent = 'Open WhatsApp Sales';
     b.onclick = async () => { b.disabled = true; try {
       if (await waConversation(lead, number)) location.href = `whatsapp-sales-specialist.html?lead=${encodeURIComponent(lead.id)}&phone=${encodeURIComponent(number)}`;
-      else toast('WhatsApp conversation abhi nahi hai. Pehle customer se WhatsApp par chat shuru karein.', true);
+      else toast('There is no WhatsApp conversation with this customer yet. Start the chat on WhatsApp first.', true);
     } catch (e) { toast(e.message || 'WhatsApp check failed.', true); } finally { b.disabled = false; } };
     box.appendChild(b);
   }
@@ -73,7 +73,7 @@ function handoff(lead, q) {
 }
 
 async function suggest() {
-  if (busy) return; const conv = S.sel; if (!conv) { toast('Select a conversation first.', true); return; }
+  if (busy) return; const conv = S.sel; if (!conv) { toast('Open a chat first.', true); return; }
   busy = true; $('suggest').disabled = true;
   try {
     const ctx = await catalog(), lead = G.leadOf(conv);
@@ -91,7 +91,7 @@ async function suggest() {
       'Never say a WhatsApp handoff already happened unless the system completed it.',
       'Never promise home delivery unless delivery coverage is verified; otherwise say you will confirm availability for their area.',
       'Never invent price, discount, feature, availability, guarantee, policy, delivery promise or timeline.',
-      'Match the customer language and tone. reply must contain only the customer-facing message; do not mention AI, JSON or rules.'].join('\n');
+      'Match the customer language and tone. If the customer writes Hindi in English letters, reply in English letters too and never use Devanagari script. reply must contain only the customer-facing message; do not mention AI, JSON or rules.'].join('\n');
     const r = await fetch(`${U}/functions/v1/glime-ai`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'chat', sessionToken: tok || null, message: prompt }) });
     const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'GLIME AI unavailable.');
     if (d.sessionToken) { tok = d.sessionToken; sessionStorage.setItem('glime_instagram_ai_session', tok); }
