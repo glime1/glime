@@ -6,23 +6,24 @@
 <meta name="theme-color" content="#070b10">
 <title>Instagram Sales Specialist | GLIME</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
-<link rel="stylesheet" href="instagram-sales-specialist.css?v=20261103b">
+<script src="glime-theme.js?v=20261029"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="instagram-sales-specialist.css?v=20261103c">
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
 </head>
-<body>
+<body data-gas-title="Instagram Sales">
 <div id="boot" class="boot"><img src="glime_logo_clean.svg" alt="GLIME"><span>Loading your workspace…</span></div>
 
-<div class="app">
-  <header class="top">
-    <button id="menuBtn" class="ib" aria-label="Menu">☰</button>
-    <img class="logo" src="glime_logo_clean.svg" alt="GLIME">
-    <div class="ttl"><b>GLIME</b><small>Instagram Sales Specialist</small></div>
+<div class="app" data-gas-content>
+  <div class="pg">
+    <div class="ttl"><b>Instagram Sales</b><small>Anaya, your AI sales assistant</small></div>
     <button id="moreBtn" class="ib" aria-label="More">⋮</button>
-  </header>
+  </div>
 
   <main class="body">
     <div id="off" class="note-bar hide">You are offline. Changes will not load until you reconnect.</div>
-    <div id="emg" class="note-bar warn hide">Emergency stop is on. AI replies are paused for all chats.</div>
+    <div id="emg" class="note-bar warn hide">Emergency stop is on. Anaya replies are paused for all chats.</div>
     <div class="bar">
       <span id="conn" class="conn off">● Checking…</span>
       <button id="connect" class="pill hide" type="button">Connect</button>
@@ -33,7 +34,7 @@
       <div class="st"><b id="sDm">–</b><span>Total DMs</span></div>
       <div class="st"><b id="sLeads">–</b><span>Leads</span></div>
       <div class="st"><b id="sOrders">–</b><span>Orders</span></div>
-      <div class="st"><b id="sAi">–</b><span>AI Handled</span></div>
+      <div class="st"><b id="sAi">–</b><span>Anaya Handled</span></div>
     </div>
 
     <div class="ih"><h2>Inbox</h2><button id="searchBtn" class="ib2" aria-label="Search">⌕</button></div>
@@ -41,7 +42,7 @@
     <div id="chips" class="chips">
       <button class="on" data-f="all">All</button>
       <button data-f="unread">Unread</button>
-      <button data-f="ai">AI Handling</button>
+      <button data-f="ai">Anaya Handling</button>
       <button data-f="hot">Hot Leads</button>
       <button data-f="attn">Needs Attention</button>
       <button data-f="closed">Closed</button>
@@ -56,13 +57,6 @@
     </div>
   </main>
 
-  <nav class="bn">
-    <a href="dashboard.html"><i>⌂</i>Home</a>
-    <a href="leads.html"><i>◎</i>Leads</a>
-    <a href="customer.html"><i>☺</i>Customers</a>
-    <a href="orders.html"><i>▣</i>Orders</a>
-    <button id="bnMore" type="button"><i>☰</i>More</button>
-  </nav>
 </div>
 
 <!-- Chat -->
@@ -74,16 +68,18 @@
     <button id="cMore" class="ib" aria-label="Chat options">⋮</button>
   </header>
   <div id="msgs" class="msgs"></div>
+  <div id="win" class="win hide"></div>
   <div id="appr" class="box hide">
     <p class="lbl">Pending approval</p><p id="apprText"></p>
     <div class="row"><button id="apprOk" class="btn">Approve &amp; send</button><button id="apprNo" class="btn ghost">Reject</button></div>
   </div>
   <div id="sug" class="box hide">
-    <p class="lbl">AI suggestion</p><p id="sugText"></p>
+    <p class="lbl">Anaya suggestion</p><p id="sugText"></p>
     <div class="row"><button id="sugUse" class="btn">Use</button><button id="sugRef" class="btn ghost">Ask again</button></div>
   </div>
-  <div class="cq"><button id="suggest" class="chip" type="button">✦ Ask AI</button><button id="cTpl" class="chip" type="button">Templates</button><span id="modeHint" class="chip soft">AI: Manual</span></div>
-  <div class="inp"><textarea id="input" rows="1" placeholder="Message…"></textarea><button id="send" type="button" disabled>Send</button></div>
+  <div id="qr" class="qr"></div>
+  <div class="cq"><button id="suggest" class="chip" type="button">✦ Ask Anaya</button><button id="cTpl" class="chip" type="button">Templates</button><span id="modeHint" class="chip soft">Anaya: Manual</span></div>
+  <div class="inp"><textarea id="input" rows="1" placeholder="Message…  (type / for quick replies)"></textarea><button id="send" type="button" disabled>Send</button></div>
 </section>
 
 <!-- Customer details -->
@@ -110,10 +106,10 @@
     <textarea id="dNote" rows="2" placeholder="Private note about this customer"></textarea>
     <button id="dNoteSave" class="btn full" type="button">Save note</button>
   </div>
-  <div id="dNotesWrap" class="notes hide"><small>Notes and details captured by AI</small><pre id="dNotes"></pre></div>
+  <div id="dNotesWrap" class="notes hide"><small>Notes and details captured by Anaya</small><pre id="dNotes"></pre></div>
 
-  <p class="lbl">AI for this chat</p>
-  <div class="seg" id="dAi"><button data-ai="0">Follow default</button><button data-ai="1">I will reply (pause AI)</button></div>
+  <p class="lbl">Anaya for this chat</p>
+  <div class="seg" id="dAi"><button data-ai="0">Follow default</button><button data-ai="1">I will reply (pause Anaya)</button></div>
   <div class="row"><a id="dLead" class="btn ghost" href="leads.html">Open lead</a><button id="dAdd" class="btn" type="button">＋ Add to leads</button></div>
   <div id="dWa"></div>
 </div>
@@ -129,7 +125,7 @@
 <!-- Auto reply mode -->
 <div id="mode" class="sheet">
   <div class="sh-h"><h3>Instagram auto reply</h3><button class="ib2" data-close="1">✕</button></div>
-  <p class="hint">This is the same setting as in Settings. It applies to every Instagram chat unless you pause AI for a single chat.</p>
+  <p class="hint">This is the same setting as in Settings. It applies to every Instagram chat unless you pause Anaya for a single chat.</p>
   <div id="modeList" class="modes"></div>
   <a class="btn ghost full" href="settings.html">Open Settings</a>
 </div>
@@ -140,18 +136,6 @@
   <div id="insBody"></div>
 </div>
 
-<!-- Menu drawer -->
-<aside id="dr" class="drawer">
-  <div class="dr-h"><img src="glime_logo_clean.svg" alt="GLIME"><button class="ib2" data-close="1">✕</button></div>
-  <nav>
-    <a href="dashboard.html">Dashboard</a><a href="services.html">Services</a>
-    <a class="on" href="instagram-sales-specialist.html">Instagram Sales</a>
-    <a href="whatsapp-sales-specialist.html">WhatsApp Sales</a><a href="customer.html">Customers</a>
-    <a href="follow-up.html">Follow-up</a><a href="leads.html">Leads AI</a><a href="orders.html">Orders</a>
-    <a href="billing.html">Billing</a><a href="settings.html">Settings</a>
-  </nav>
-  <div class="dr-b"><b id="bizName">Business</b><small id="clientId">Loading…</small><button id="logout" type="button">Secure logout</button></div>
-</aside>
 
 <!-- In-app dialog (replaces browser prompt / confirm) -->
 <div id="dlg" class="dlg"><div class="dlg-b">
@@ -163,8 +147,8 @@
 <div id="ov" class="ov"></div>
 <div id="pop" class="pop"></div>
 
-<script src="instagram-sales-specialist.js?v=20261103b"></script>
-<script src="instagram-sales-specialist-ai.js?v=20261103b"></script>
+<script src="instagram-sales-specialist.js?v=20261103c"></script>
+<script src="instagram-sales-specialist-ai.js?v=20261103c"></script>
 <script src="glime-connect-app.js?v=20261027"></script>
 </body>
 </html>

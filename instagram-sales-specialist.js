@@ -5,7 +5,7 @@ const K = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const MOD = 'instagram_ai_sales_agent';
 const db = window.supabase.createClient(U, K);
 const $ = id => document.getElementById(id);
-const MODES = { manual: ['Manual', 'You write and send every reply'], approval: ['Approval', 'AI drafts replies and you approve them'], automatic: ['Automatic', 'AI replies on its own'] };
+const MODES = { manual: ['Manual', 'You write and send every reply'], approval: ['Approval', 'Anaya drafts replies and you approve them'], automatic: ['Automatic', 'Anaya replies on its own'] };
 const S = { cid: null, convs: [], prev: {}, unread: {}, leads: {}, byIg: {}, ctl: {}, ai: { mode: 'manual', on: true }, stop: false, sel: null, msgs: [], f: 'all', q: '' };
 
 /* ---------- helpers ---------- */
@@ -31,7 +31,7 @@ async function fn(name, body = {}) {
 }
 const leadOf = c => S.leads[c.lead_id] || S.byIg[c.instagram_user_id] || null;
 const modeOf = c => { if (S.stop || !S.ai.on) return 'manual'; const x = c && S.ctl[c.id]; if (x && (x.human_takeover_enabled || x.ai_enabled === false)) return 'manual'; return x?.ai_mode || S.ai.mode; };
-const hint = () => { $('modeHint').textContent = 'AI: ' + MODES[modeOf(S.sel)][0]; };
+const hint = () => { $('modeHint').textContent = 'Anaya: ' + MODES[modeOf(S.sel)][0]; };
 
 /* ---------- in-app dialog (replaces browser prompt / confirm) ---------- */
 let dlgOpen = false;
@@ -48,7 +48,7 @@ function ask(o) {
 }
 
 /* ---------- navigation: phone back button closes sheets, then the chat ---------- */
-const sheets = ['det', 'tpl', 'mode', 'ins', 'dr']; let sheetOn = false;
+const sheets = ['det', 'tpl', 'mode', 'ins']; let sheetOn = false;
 function openSheet(id) { if (!sheetOn) { history.pushState({ g: 's' }, ''); sheetOn = true; }
   sheets.forEach(s => $(s).classList.toggle('on', s === id)); $('ov').classList.add('on'); $('pop').classList.remove('on'); }
 function hideSheets() { sheets.forEach(s => $(s).classList.remove('on')); $('ov').classList.remove('on'); $('pop').classList.remove('on'); sheetOn = false; }
@@ -56,7 +56,9 @@ function hideChat() { S.sel = null; $('chat').classList.remove('open'); document
 const closeSheet = () => { if (sheetOn) history.back(); };
 const closeChat = () => { if (S.sel) history.back(); };
 window.addEventListener('popstate', () => { if (dlgOpen) { history.pushState({ g: 'd' }, ''); return; } if (sheetOn) hideSheets(); else if (S.sel) hideChat(); });
-function pop(items) { const p = $('pop'); p.innerHTML = ''; items.forEach(([label, f, d]) => { const b = document.createElement('button');
+function pop(items) { const p = $('pop'); p.innerHTML = '';
+  const ev = window.event, bt = ev && ev.target && ev.target.closest && ev.target.closest('button');
+  if (bt) { const r = bt.getBoundingClientRect(); p.style.top = (r.bottom + 6) + 'px'; p.style.right = Math.max(10, innerWidth - r.right) + 'px'; } items.forEach(([label, f, d]) => { const b = document.createElement('button');
   b.textContent = label; if (d) b.className = 'd'; b.onclick = () => { p.classList.remove('on'); f(); }; p.appendChild(b); }); p.classList.add('on'); }
 
 /* ---------- data ---------- */
@@ -118,7 +120,7 @@ function render() {
   const cs = S.convs, ai = cs.filter(c => flags(c).ai).length;
   $('sDm').textContent = cs.length; $('sLeads').textContent = cs.filter(c => leadOf(c)).length;
   $('sAi').textContent = cs.length ? Math.round(ai * 100 / cs.length) + '%' : '0%';
-  const names = { all: 'All', unread: 'Unread', ai: 'AI Handling', hot: 'Hot Leads', attn: 'Needs Attention', closed: 'Closed' };
+  const names = { all: 'All', unread: 'Unread', ai: 'Anaya Handling', hot: 'Hot Leads', attn: 'Needs Attention', closed: 'Closed' };
   document.querySelectorAll('#chips button').forEach(b => { b.textContent = `${names[b.dataset.f]} (${cs.filter(c => pass(c, b.dataset.f)).length})`; b.classList.toggle('on', b.dataset.f === S.f); });
   const q = S.q.toLowerCase(), rows = cs.filter(c => pass(c, S.f) && (!q || `${c.username || ''} ${c.instagram_user_id || ''}`.toLowerCase().includes(q)));
   $('list').innerHTML = rows.map(c => {
@@ -126,7 +128,7 @@ function render() {
     const pv = p ? (p.direction === 'inbound' ? '' : 'You: ') + (p.text_body || media(p.message_type)) : '@' + (c.username || 'instagram');
     const wait = x.need && p && Date.now() - new Date(p.created_at) > 3600000 ? `<span class="b wait">Waiting ${ago(p.created_at)}</span>` : '';
     const b = [x.hot ? '<span class="b hot">🔥 Hot Lead</span>' : '', x.qual && !x.hot ? '<span class="b ok">✓ Qualified</span>' : '',
-      x.isNew && !x.hot && !x.qual ? '<span class="b new">New Lead</span>' : '', x.ai ? '<span class="b ai">🤖 AI Handling</span>' : '', wait,
+      x.isNew && !x.hot && !x.qual ? '<span class="b new">New Lead</span>' : '', x.ai ? '<span class="b ai">🤖 Anaya Handling</span>' : '', wait,
       !x.open ? '<span class="b cl">Closed</span>' : '', x.un ? `<span class="cnt">${x.un}</span>` : ''].join('');
     return `<div class="row-i${x.un ? ' un' : ''}" data-id="${esc(c.id)}"><div class="av">${esc(name[0].toUpperCase())}</div><div class="rc"><div class="rn"><b>${esc(name)}</b><small>${esc(ago(c.last_message_at || c.updated_at))}</small></div><div class="rp">${esc(pv)}</div><div class="bd">${b}</div></div></div>`;
   }).join('') || '<div class="emp">No conversations here yet.</div>';
@@ -159,8 +161,24 @@ function drawMsgs() {
     if (i === lastOut && !inn) { const s = String(m.status || '').toLowerCase(), f = s === 'failed' || s === 'error';
       h += `<div class="stt${f ? ' f' : ''}">${f ? 'Failed to send' : /read|seen/.test(s) ? 'Seen' : s === 'delivered' ? 'Delivered' : 'Sent'}</div>`; }
   });
-  $('msgs').innerHTML = h; $('msgs').scrollTop = $('msgs').scrollHeight;
+  $('msgs').innerHTML = h; $('msgs').scrollTop = $('msgs').scrollHeight; winBar();
 }
+function winBar() {
+  const el = $('win'); if (!el) return; const inb = S.msgs.filter(m => m.direction === 'inbound');
+  if (!inb.length) { el.className = 'win hide'; return; }
+  const left = new Date(inb[inb.length - 1].created_at).getTime() + 864e5 - Date.now();
+  if (left <= 0) { el.className = 'win off'; el.textContent = '24-hour reply window is closed. Instagram may not deliver new replies until the customer messages again.'; return; }
+  const h = Math.floor(left / 36e5), m = Math.floor(left % 36e5 / 6e4);
+  el.className = 'win' + (left < 108e5 ? ' warn' : ''); el.textContent = 'You can reply for ' + (h ? h + 'h ' : '') + m + 'm more (Instagram 24-hour rule).';
+}
+function qrShow() {
+  const q = $('qr'), v = $('input').value; if (!q) return;
+  if (v[0] !== '/') { q.classList.remove('on'); return; }
+  const f = v.slice(1).toLowerCase(), t = tpls().filter(x => x.toLowerCase().includes(f)).slice(0, 6);
+  q.innerHTML = t.map(x => `<button type="button" data-q="${esc(x)}">${esc(x)}</button>`).join(''); q.classList.toggle('on', t.length > 0);
+}
+$('qr').onclick = e => { const b = e.target.closest('button'); if (!b) return; const nm = (S.sel && (leadOf(S.sel)?.name || S.sel.username)) || 'there';
+  $('input').value = b.dataset.q.replace(/\{name\}/gi, nm); size(); $('input').focus(); };
 
 /* ---------- customer details + lead tools ---------- */
 function fillDetails() {
@@ -187,7 +205,7 @@ async function setTakeover(on) {
   const r = await db.from('client_conversation_controls').upsert({ client_id: S.cid, channel: 'instagram', conversation_id: c.id, human_takeover_enabled: on, ai_mode: on ? 'manual' : null, updated_at: new Date().toISOString() },
     { onConflict: 'client_id,channel,conversation_id' }).select('*').single();
   if (r.error) { toast(r.error.message, true); return; }
-  S.ctl[c.id] = r.data; fillDetails(); hint(); render(); toast(on ? 'AI is paused for this chat.' : 'This chat follows the default AI mode.');
+  S.ctl[c.id] = r.data; fillDetails(); hint(); render(); toast(on ? 'Anaya is paused for this chat.' : 'This chat follows the default Anaya mode.');
 }
 async function addLead() {
   const c = S.sel; if (!c) return;
@@ -205,7 +223,7 @@ async function send() {
   try {
     const r = await fn('instagram-action-request', { conversation_id: c.id, message: msg, mode: mode === 'automatic' ? 'auto' : mode });
     if (!r.ok) throw new Error(r.message || r.error || 'Instagram action failed.');
-    $('input').value = ''; size();
+    $('input').value = ''; $('sug').classList.add('hide'); size();
     if (mode === 'approval') toast('Reply is waiting for approval.');
     else { if (r.job_id) { const e = await fn('business-action-executor', { job_id: r.job_id }); if (e?.ok === false) throw new Error(e.message || e.error || 'Message failed.'); } toast('Sent'); }
     await loadMsgs(); await loadAll(); loadApproval();
@@ -228,7 +246,7 @@ async function loadApproval() {
   $('apprNo').onclick = async () => { const { error } = await db.rpc('reject_client_business_action', { p_action_request_id: a.id });
     if (error) toast(error.message, true); else { toast('Reply rejected.'); loadApproval(); } };
 }
-function size() { const i = $('input'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 120) + 'px'; $('send').disabled = !i.value.trim(); }
+function size() { qrShow(); const i = $('input'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 120) + 'px'; $('send').disabled = !i.value.trim(); }
 
 /* ---------- close / delete ---------- */
 const needRpc = (e, name) => /function|schema cache|not exist|404/i.test(e.message || '') ? `The backend function ${name} has not been created yet.` : e.message;
@@ -287,7 +305,6 @@ $('chips').onclick = e => { const b = e.target.closest('button'); if (b) { S.f =
 $('searchBtn').onclick = () => { $('search').classList.toggle('hide'); if (!$('search').classList.contains('hide')) $('search').focus(); };
 $('search').oninput = e => { S.q = e.target.value.trim(); render(); };
 $('back').onclick = closeChat; $('cInfo').onclick = () => openSheet('det');
-$('menuBtn').onclick = $('bnMore').onclick = () => openSheet('dr');
 $('ov').onclick = closeSheet; document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeSheet);
 $('moreBtn').onclick = e => { e.stopPropagation(); pop([['Refresh', refresh], ['Mark all as read', () => { const s = seen(); S.convs.forEach(c => { s[c.id] = Date.now(); }); localStorage.setItem('gig_seen', JSON.stringify(s)); S.unread = {}; render(); toast('All chats marked as read.'); }],
   ['Settings', () => { location.href = 'settings.html'; }], ['Secure logout', logout, true]]); };
@@ -306,7 +323,7 @@ $('dNoteSave').onclick = async () => { const t = $('dNote').value.trim(), l = S.
 $('dAi').onclick = e => { const b = e.target.closest('button'); if (b) setTakeover(b.dataset.ai === '1'); };
 $('tplBtn').onclick = $('cTpl').onclick = showTpls; $('insBtn').onclick = insights; $('modeBtn').onclick = modeSheet;
 $('modeList').onclick = async e => { const b = e.target.closest('button'); if (!b) return; const m = b.dataset.m; if (m === S.ai.mode) return;
-  if (m === 'automatic' && !(await ask({ title: 'Turn on automatic replies?', text: 'AI will reply to Instagram customers without waiting for your approval.', ok: 'Turn on' }))) return; saveMode(m); };
+  if (m === 'automatic' && !(await ask({ title: 'Turn on automatic replies?', text: 'Anaya will reply to Instagram customers without waiting for your approval.', ok: 'Turn on' }))) return; saveMode(m); };
 $('tplList').onclick = e => {
   const u = e.target.closest('[data-use]'), d = e.target.closest('[data-del]'), t = tpls();
   if (d) { t.splice(+d.dataset.del, 1); saveTpls(t); showTpls(); return; }
@@ -316,7 +333,7 @@ $('tplList').onclick = e => {
 $('tplAdd').onclick = async () => { const v = await ask({ title: 'New template', text: 'Use {name} to insert the customer\'s name.', input: true, ok: 'Save', placeholder: 'Type your reply' }); if (v) { const t = tpls(); t.push(v); saveTpls(t); showTpls(); } };
 $('send').onclick = send; $('input').addEventListener('input', size);
 $('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && matchMedia('(pointer:fine)').matches) { e.preventDefault(); send(); } });
-$('sugUse').onclick = () => { $('input').value = $('sugText').textContent.trim(); size(); $('input').focus(); };
+$('sugUse').onclick = () => { $('input').value = $('sugText').textContent.trim(); $('sug').classList.add('hide'); size(); $('input').focus(); };
 $('connect').onclick = async () => {
   try { const { data } = await db.auth.getSession();
     const r = await fetch(`${U}/functions/v1/instagram-oauth-start`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: K, Authorization: `Bearer ${data.session.access_token}` }, body: '{}' });
@@ -325,7 +342,6 @@ $('connect').onclick = async () => {
 };
 async function refresh() { try { await loadConn(); await loadAll(); if (S.sel) await loadMsgs(); toast('Refreshed'); } catch (e) { toast(e.message, true); } }
 async function logout() { await db.auth.signOut(); location.href = 'login.html'; }
-$('logout').onclick = logout;
 window.addEventListener('offline', () => $('off').classList.remove('hide')); window.addEventListener('online', () => { $('off').classList.add('hide'); refresh(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (dlgOpen) $('dlgNo').click(); else if (sheetOn) closeSheet(); else if (S.sel) closeChat(); } });
 
@@ -339,6 +355,9 @@ function live() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'client_channel_settings', filter: 'client_id=eq.' + S.cid }, go).subscribe();
 }
 
+/* ---------- shell account card ---------- */
+function pushId(n, i) { let k = 0; const t = setInterval(() => { if (window.GlimeAppShell && GlimeAppShell.setIdentity) { GlimeAppShell.setIdentity({ name: n || '', clientId: i }); clearInterval(t); } else if (++k > 50) clearInterval(t); }, 200); }
+
 /* ---------- boot ---------- */
 async function boot() {
   try {
@@ -346,7 +365,7 @@ async function boot() {
     if (!data.session) { location.href = 'login.html'; return; }
     const { data: c, error: e } = await db.from('client_data').select('client_id,business_name,name,full_name').eq('auth_user_id', data.session.user.id).maybeSingle();
     if (e) throw e; if (!c?.client_id) throw new Error('Client account not found.');
-    S.cid = c.client_id; set('bizName', c.business_name || c.name || c.full_name || 'Business'); set('clientId', c.client_id);
+    S.cid = c.client_id; pushId(c.business_name || c.name || c.full_name, c.client_id);
     if (!navigator.onLine) $('off').classList.remove('hide');
     await loadConn(); await loadAll(); live(); $('boot').remove();
   } catch (e) {
