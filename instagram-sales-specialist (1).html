@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1230">
+<title>Instagram Sales Specialist | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="stylesheet" href="instagram-sales-specialist.css?v=20261103">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="boot" class="boot"><img src="glime_logo_clean.svg" alt="GLIME"><span>Loading your workspace…</span></div>
+
+<div class="app">
+  <header class="top">
+    <button id="menuBtn" class="ib" aria-label="Menu">☰</button>
+    <img class="logo" src="glime_logo_clean.svg" alt="GLIME">
+    <div class="ttl"><b>GLIME</b><small>Instagram Sales Specialist</small></div>
+    <button id="moreBtn" class="ib" aria-label="More">⋮</button>
+  </header>
+
+  <main class="body">
+    <div class="bar">
+      <span id="conn" class="conn off">● Checking…</span>
+      <button id="connect" class="pill hide" type="button">Connect Instagram</button>
+      <a class="pill" href="settings.html">⚙ Settings</a>
+    </div>
+
+    <div class="stats">
+      <div class="st"><b id="sDm">–</b><span>Total DMs</span></div>
+      <div class="st"><b id="sLeads">–</b><span>Leads</span></div>
+      <div class="st"><b id="sOrders">–</b><span>Orders</span></div>
+      <div class="st"><b id="sAi">–</b><span>AI Handled</span></div>
+    </div>
+
+    <div class="ih"><h2>Inbox</h2><button id="searchBtn" class="ib2" aria-label="Search">⌕</button></div>
+    <input id="search" class="srch hide" type="search" placeholder="Search customers">
+    <div id="chips" class="chips">
+      <button class="on" data-f="all">All</button>
+      <button data-f="unread">Unread</button>
+      <button data-f="ai">AI Handling</button>
+      <button data-f="hot">Hot Leads</button>
+      <button data-f="attn">Needs Attention</button>
+    </div>
+    <div id="list" class="list"><div class="emp">Loading conversations…</div></div>
+
+    <div class="qa">
+      <a href="leads.html">＋ New Lead</a>
+      <button id="tplBtn" type="button">Templates</button>
+      <a href="settings.html">Auto Reply</a>
+      <a href="follow-up-analysis.html" id="insLink">Insights</a>
+    </div>
+  </main>
+
+  <nav class="bn">
+    <a href="dashboard.html"><i>⌂</i>Home</a>
+    <a href="leads.html"><i>◎</i>Leads</a>
+    <a href="customer.html"><i>☺</i>Customers</a>
+    <a href="orders.html"><i>▣</i>Orders</a>
+    <button id="bnMore" type="button"><i>☰</i>More</button>
+  </nav>
+</div>
+
+<!-- Chat -->
+<section id="chat" class="chat">
+  <header class="ch">
+    <button id="back" class="ib dk" aria-label="Back">‹</button>
+    <div id="cAv" class="av">I</div>
+    <div class="ct"><b id="cName">Customer</b><small id="cHandle"></small></div>
+    <button id="cMore" class="ib dk" aria-label="Chat options">⋮</button>
+  </header>
+  <div id="msgs" class="msgs"></div>
+  <div id="appr" class="box hide">
+    <p class="lbl">Pending approval</p><p id="apprText"></p>
+    <div class="row"><button id="apprOk" class="btn">Approve &amp; send</button><button id="apprNo" class="btn ghost">Reject</button></div>
+  </div>
+  <div id="sug" class="box hide">
+    <p class="lbl">AI suggestion</p><p id="sugText"></p>
+    <div class="row"><button id="sugUse" class="btn">Use</button><button id="sugRef" class="btn ghost">New</button></div>
+  </div>
+  <div class="cq"><button id="suggest" class="chip" type="button">✦ Suggest reply</button><button id="cTpl" class="chip" type="button">Templates</button><span id="modeHint" class="chip soft">Manual send</span></div>
+  <div class="inp"><textarea id="input" rows="1" placeholder="Message…"></textarea><button id="send" type="button" disabled>Send</button></div>
+</section>
+
+<!-- Customer details -->
+<div id="det" class="sheet">
+  <div class="sh-h"><h3 id="dTitle">Customer</h3><button class="ib2" data-close="det">✕</button></div>
+  <div class="grid">
+    <div><small>Name</small><b id="dName">—</b></div><div><small>Stage</small><b id="dStage">—</b></div>
+    <div><small>Mobile</small><b id="dMobile">—</b></div><div><small>City / area</small><b id="dCity">—</b></div>
+    <div><small>Interest</small><b id="dInterest">—</b></div><div><small>Budget</small><b id="dBudget">—</b></div>
+    <div class="wide"><small>Product</small><b id="dProduct">—</b></div>
+  </div>
+  <div id="dNotesWrap" class="notes hide"><small>Captured by AI</small><pre id="dNotes"></pre></div>
+  <p class="lbl">AI sales mode</p>
+  <div class="modes">
+    <button data-mode="auto">Auto<span>AI sends</span></button>
+    <button data-mode="approval">Approval<span>Review first</span></button>
+    <button data-mode="manual">Manual<span>You send</span></button>
+  </div>
+  <div class="row"><a id="dLead" class="btn ghost" href="leads.html">Open lead</a><button id="dAdd" class="btn" type="button">＋ Add to leads</button></div>
+  <div id="dWa"></div>
+</div>
+
+<!-- Templates -->
+<div id="tpl" class="sheet">
+  <div class="sh-h"><h3>Templates</h3><button class="ib2" data-close="tpl">✕</button></div>
+  <div id="tplList"></div>
+  <button id="tplAdd" class="btn full" type="button">＋ New template</button>
+</div>
+
+<!-- Menu drawer -->
+<aside id="dr" class="drawer">
+  <div class="dr-h"><img src="glime_logo_clean.svg" alt="GLIME"><button class="ib2" data-close="dr">✕</button></div>
+  <nav>
+    <a href="dashboard.html">Dashboard</a><a href="services.html">Services</a>
+    <a class="on" href="instagram-sales-specialist.html">Instagram Sales</a>
+    <a href="whatsapp-sales-specialist.html">WhatsApp Sales</a><a href="customer.html">Customers</a>
+    <a href="follow-up.html">Follow-up</a><a href="leads.html">Leads AI</a><a href="orders.html">Orders</a>
+    <a href="billing.html">Billing</a><a href="settings.html">Settings</a>
+  </nav>
+  <div class="dr-b"><b id="bizName">Business</b><small id="clientId">Loading…</small><button id="logout" type="button">Secure logout</button></div>
+</aside>
+
+<div id="ov" class="ov"></div>
+<div id="pop" class="pop"></div>
+
+<script src="instagram-sales-specialist.js?v=20261103"></script>
+<script src="instagram-sales-specialist-ai.js?v=20261103"></script>
+<script src="glime-connect-app.js?v=20261027"></script>
+</body>
+</html>
