@@ -27,10 +27,19 @@
       AI, and a lesson never overrides prices, published offers, business
       rules, policies or safety instructions.
 
+      The top of this part also shows a "Fixed Q&A results" card (customers
+      answered by Fixed Q&A, tokens saved) so the owner sees the saving
+      without opening the other tab.
+
    2) FIXED Q&A
       The owner writes an exact question + keywords + exact answer. When a
       customer message matches, the saved answer is sent directly BEFORE the
       AI runs: no AI call, 0 tokens charged.
+
+      Limits (enforced on this screen):
+        main question  up to 300 characters
+        keywords       up to 10 (each up to 60 characters)
+        fixed answer   up to 600 characters
 
       Data: table client_fixed_qa (RLS: owner sees and changes only their own
       client_id rows).
@@ -77,12 +86,12 @@
   const FQ_TABLE = 'client_fixed_qa';
   const FQ_COLS = 'id,question,keywords,answer,is_active,use_count,last_used_at,created_at,updated_at';
   const FQ_Q_MIN = 2;
-  const FQ_Q_MAX = 300;
+  const FQ_Q_MAX = 300; // main question: up to 300 characters
   const FQ_A_MIN = 2;
-  const FQ_A_MAX = 1000; // Instagram DM text limit is 1000 characters
+  const FQ_A_MAX = 600; // fixed answer: up to 600 characters
   const FQ_KW_MIN = 2;
   const FQ_KW_MAX_EACH = 60;
-  const FQ_KW_MAX = 20;
+  const FQ_KW_MAX = 10; // keywords: up to 10 per item
   const UPGRADE_URL = 'packages.html';
   const TAB_KEY = 'glimeTeachAiTab';
 
@@ -92,6 +101,7 @@
     filter: 'active',
     editing: null,
     tab: 'teach',
+    summary: null, // { answered, tokens, total } shown on the Teach AI tab before Fixed Q&A is opened
     fq: {
       ready: false,
       loading: false,
@@ -102,6 +112,7 @@
       usage: null, // { used, limit, plan } or null when the usage RPC is not available
       stats: null, // { answered_count, tokens_saved } or null
       filter: 'all',
+      sort: 'new', // 'new' = recently updated, 'used' = most used first
       search: '',
       editing: null,
       editKw: [],
@@ -130,6 +141,13 @@
       .toLowerCase()
       .replace(/[^\p{L}\p{N}]+/gu, ' ')
       .trim();
+
+  /* live "12/300" counter; turns red when the text is over the limit */
+  function setCount(el, len, max) {
+    if (!el) return;
+    el.textContent = len + '/' + max;
+    el.classList.toggle('over', len > max);
+  }
 
   async function withBusy(btn, label, fn) {
     const original = btn ? btn.textContent : '';
@@ -182,6 +200,7 @@
       .lr-pill{display:inline-block;font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:99px;border:1px solid rgba(255,255,255,.28);white-space:nowrap}
       .lr-pill.on{color:var(--gr);border-color:rgba(80,245,168,.4)}
       .lr-pill.wait{color:var(--cy);border-color:rgba(82,232,255,.4)}
+      .lr-pill.warn{color:var(--rd);border-color:rgba(255,130,145,.5);white-space:normal}
       .lr-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
       .lr-chip{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--bd);background:transparent;color:#fff;font-size:.72rem;font-weight:800;cursor:pointer}
       .lr-chip.active{background:#fff;color:#031014;border-color:#fff}
@@ -221,17 +240,20 @@
       .fq-kw-row{display:flex;gap:8px}
       .fq-kw-row .lr-input{flex:1;min-width:0}
       .fq-count{font-size:.66rem;color:rgba(255,255,255,.55);text-align:right;margin-top:4px}
+      .fq-count.over{color:var(--rd);font-weight:800}
       .fq-result{border-radius:14px;padding:13px;font-size:.78rem;line-height:1.55;margin-top:12px;border:1px solid var(--bd);background:var(--surf2)}
       .fq-result.hit{border-color:rgba(80,245,168,.45)}
       .fq-result b{display:block;margin-bottom:3px}
       .fq-result p{white-space:pre-wrap;word-break:break-word;color:rgba(255,255,255,.88);margin-top:4px}
       .fq-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:6px}
       .fq-toolbar .lr-input{flex:1;min-width:180px}
+      .fq-toolbar select.lr-input{flex:none;width:auto;min-width:170px}
       @media(max-width:640px){
         .lr-actions .lr-btn{flex:1}
         .lr-btn.block-m{width:100%}
         .lr-tabs{grid-template-columns:1fr}
         .fq-toolbar .lr-input{width:100%;flex:none}
+        .fq-toolbar select.lr-input{width:100%}
       }
     `;
     document.head.appendChild(style);
@@ -259,6 +281,8 @@
     if (!pane) return;
 
     pane.innerHTML = `
+      <div id="lrFixedSummary"></div>
+
       <div class="lr-card" id="lrTeach">
         <h3>Teach your AI</h3>
         <p class="lr-sub">Add a customer question and the answer your AI should follow. Your AI uses a lesson while it writes its own reply, so normal AI tokens apply. Need an exact reply with no token cost? Use <button type="button" class="lr-link" data-act="tab" data-v="fixed">Fixed Q&amp;A</button>.</p>
@@ -301,6 +325,62 @@
 
     renderChips();
     renderList();
+    renderTeachSummary();
+  }
+
+  /* ---- "Fixed Q&A results" card shown at the top of the Teach AI tab ---- */
+  function summaryValues() {
+    const F = S.fq;
+    if (F.ready && !F.unavailable && !F.error) {
+      return {
+        answered: F.stats ? F.stats.answered_count : F.items.reduce((n, i) => n + Number(i.use_count || 0), 0),
+        tokens: F.stats ? F.stats.tokens_saved : null,
+        total: F.items.length
+      };
+    }
+    return S.summary;
+  }
+
+  function renderTeachSummary() {
+    const host = q('#lrFixedSummary');
+    if (!host) return;
+
+    const v = summaryValues();
+    if (!v) {
+      host.innerHTML = '';
+      return;
+    }
+
+    host.innerHTML = `
+      <div class="lr-card">
+        <h3>Fixed Q&amp;A results</h3>
+        <p class="lr-sub">Customers who already received one of your exact saved answers, with no AI tokens used.</p>
+        <div class="fq-tiles" style="margin:0 0 12px">
+          <div class="fq-tile"><b>${fmtNum(v.answered)}</b><span>Customers answered by Fixed Q&amp;A</span></div>
+          ${v.tokens != null ? `<div class="fq-tile"><b>${fmtNum(v.tokens)}</b><span>AI tokens saved</span></div>` : ''}
+          ${v.total != null ? `<div class="fq-tile"><b>${fmtNum(v.total)}</b><span>Fixed Q&amp;A saved</span></div>` : ''}
+        </div>
+        <button type="button" class="lr-btn small" data-act="tab" data-v="fixed">Open Fixed Q&amp;A</button>
+      </div>`;
+  }
+
+  async function loadTeachSummary() {
+    try {
+      const [st, items] = await Promise.all([fetchStats(), fetchFixedItems().catch(() => null)]);
+      if (!st && !items) {
+        S.summary = null;
+      } else {
+        S.summary = {
+          answered: st ? st.answered_count : items.reduce((n, i) => n + Number(i.use_count || 0), 0),
+          tokens: st ? st.tokens_saved : null,
+          total: items ? items.length : null
+        };
+      }
+    } catch (e) {
+      console.warn('[GLIME Teach AI] summary:', e);
+      S.summary = null;
+    }
+    renderTeachSummary();
   }
 
   function renderChips() {
@@ -602,6 +682,7 @@
       // Open on Suggestions when something is waiting for approval and nothing is active yet.
       if (!count('active') && count('pending')) S.filter = 'pending';
       renderTeachPane();
+      loadTeachSummary();
     } catch (e) {
       console.error('[GLIME Teach AI] load:', e);
       S.error = errMsg(e);
@@ -697,6 +778,7 @@
     F.loading = false;
     F.ready = true;
     renderFixedPane();
+    renderTeachSummary();
   }
 
   function usageView() {
@@ -726,9 +808,15 @@
       .join('');
 
   function renderKw(scope) {
+    const arr = scope === 'new' ? S.fq.newKw : S.fq.editKw;
     const host = scope === 'new' ? q('#fqKwChips') : q('[data-kw-chips="edit"]');
-    if (!host) return;
-    host.innerHTML = chipsHtml(scope === 'new' ? S.fq.newKw : S.fq.editKw, scope);
+    if (host) host.innerHTML = chipsHtml(arr, scope);
+
+    const cnt = scope === 'new' ? q('#fqKwCount') : q('[data-kw-count="edit"]');
+    if (cnt) {
+      cnt.textContent = arr.length + '/' + FQ_KW_MAX + ' keywords';
+      cnt.classList.toggle('over', arr.length > FQ_KW_MAX);
+    }
   }
 
   function commitKw(scope) {
@@ -805,23 +893,25 @@
         <div class="lr-field">
           <label class="lr-label" for="fqQuestion">Main question</label>
           <input class="lr-input" id="fqQuestion" maxlength="${FQ_Q_MAX}" autocomplete="off" placeholder="e.g. What are your shop timings?">
+          <div class="fq-count" id="fqQuestionCount">0/${FQ_Q_MAX}</div>
         </div>
 
         <div class="lr-field">
-          <label class="lr-label" for="fqKwInput">Other words customers use <span style="font-weight:400;opacity:.7">(keywords, optional)</span></label>
+          <label class="lr-label" for="fqKwInput">Other words customers use <span style="font-weight:400;opacity:.7">(keywords, optional, up to ${FQ_KW_MAX})</span></label>
           <div class="fq-kw-row">
             <input class="lr-input" id="fqKwInput" data-kw-input="new" autocomplete="off" placeholder="e.g. timing, open time, kab khulta hai">
             <button type="button" class="lr-btn small" data-act="fq-kw-add" data-scope="new">Add</button>
           </div>
           <div class="fq-kws" id="fqKwChips"></div>
-          <span class="lr-hint">Add the different ways customers ask this, one at a time (press Enter or tap Add). Capital letters, symbols and common Hinglish spellings are handled for you. Keep keywords specific: very common words can match the wrong question.</span>
+          <div class="fq-count" id="fqKwCount">0/${FQ_KW_MAX} keywords</div>
+          <span class="lr-hint">Add the different ways customers ask this, one at a time (press Enter or tap Add). You can add up to ${FQ_KW_MAX} keywords. Capital letters, symbols and common Hinglish spellings are handled for you. Keep keywords specific: very common words can match the wrong question.</span>
         </div>
 
         <div class="lr-field">
           <label class="lr-label" for="fqAnswer">Fixed answer</label>
           <textarea class="lr-textarea" id="fqAnswer" maxlength="${FQ_A_MAX}" placeholder="e.g. We are open every day from 10 AM to 9 PM."></textarea>
           <div class="fq-count" id="fqAnswerCount">0/${FQ_A_MAX}</div>
-          <span class="lr-hint">This exact text is sent to the customer. Do not put prices that change often here, because the answer will not update by itself.</span>
+          <span class="lr-hint">This exact text is sent to the customer (up to ${FQ_A_MAX} characters). Do not put prices that change often here, because the answer will not update by itself.</span>
         </div>
 
         <button type="button" class="lr-btn primary block-m" id="fqAddBtn" data-act="fq-add">Save Fixed Q&amp;A</button>
@@ -842,6 +932,10 @@
         <p class="lr-sub">Only <b>On</b> items are matched against customer messages.</p>
         <div class="fq-toolbar">
           <input class="lr-input" id="fqSearch" type="search" autocomplete="off" placeholder="Search questions, keywords or answers" value="${esc(F.search)}">
+          <select class="lr-input" id="fqSort" aria-label="Sort Fixed Q&amp;A">
+            <option value="new" ${F.sort === 'used' ? '' : 'selected'}>Recently updated</option>
+            <option value="used" ${F.sort === 'used' ? 'selected' : ''}>Most used first</option>
+          </select>
         </div>
         <div class="lr-chips" id="fqChips"></div>
         <div id="fqList"></div>
@@ -929,11 +1023,18 @@
     applyLimitState();
     renderFixedChips();
     renderFixedList();
+    renderTeachSummary();
   }
 
   const fqOn = i => i.is_active !== false;
   const fqCount = key =>
     S.fq.items.filter(i => (key === 'all' ? true : key === 'on' ? fqOn(i) : !fqOn(i))).length;
+
+  /* an older item saved before the current limits: ask the owner to shorten it when editing */
+  const fqOver = i =>
+    String(i.question || '').length > FQ_Q_MAX ||
+    String(i.answer || '').length > FQ_A_MAX ||
+    (Array.isArray(i.keywords) ? i.keywords.length : 0) > FQ_KW_MAX;
 
   function renderFixedChips() {
     const host = q('#fqChips');
@@ -972,6 +1073,7 @@
           <span class="lr-pill">Used ${fmtNum(i.use_count)} ${Number(i.use_count) === 1 ? 'time' : 'times'}</span>
           ${i.last_used_at ? `<span class="lr-pill">Last used ${esc(fmtDate(i.last_used_at))}</span>` : ''}
           <span class="lr-pill on">0 tokens</span>
+          ${fqOver(i) ? `<span class="lr-pill warn">Over the limit (question ${FQ_Q_MAX}, keywords ${FQ_KW_MAX}, answer ${FQ_A_MAX}). Tap Edit to shorten.</span>` : ''}
         </div>
         <div class="lr-actions">
           <button type="button" class="lr-btn small" data-act="fq-edit" data-id="${esc(i.id)}">Edit</button>
@@ -982,23 +1084,29 @@
   }
 
   function fqEditorHtml(i) {
+    const qLen = String(i.question || '').length;
+    const aLen = String(i.answer || '').length;
+    const kLen = S.fq.editKw.length;
     return `
       <article class="lr-item" data-fq-editing="${esc(i.id)}">
         <div class="lr-field">
           <label class="lr-label">Main question</label>
           <input class="lr-input" data-fq-edit-q maxlength="${FQ_Q_MAX}" value="${esc(i.question)}">
+          <div class="fq-count ${qLen > FQ_Q_MAX ? 'over' : ''}" data-cnt="q">${qLen}/${FQ_Q_MAX}</div>
         </div>
         <div class="lr-field">
-          <label class="lr-label">Keywords</label>
+          <label class="lr-label">Keywords <span style="font-weight:400;opacity:.7">(up to ${FQ_KW_MAX})</span></label>
           <div class="fq-kw-row">
             <input class="lr-input" data-kw-input="edit" autocomplete="off" placeholder="Add a keyword, then press Enter">
             <button type="button" class="lr-btn small" data-act="fq-kw-add" data-scope="edit">Add</button>
           </div>
           <div class="fq-kws" data-kw-chips="edit">${chipsHtml(S.fq.editKw, 'edit')}</div>
+          <div class="fq-count ${kLen > FQ_KW_MAX ? 'over' : ''}" data-kw-count="edit">${kLen}/${FQ_KW_MAX} keywords</div>
         </div>
         <div class="lr-field">
           <label class="lr-label">Fixed answer</label>
           <textarea class="lr-textarea" data-fq-edit-a maxlength="${FQ_A_MAX}">${esc(i.answer)}</textarea>
+          <div class="fq-count ${aLen > FQ_A_MAX ? 'over' : ''}" data-cnt="a">${aLen}/${FQ_A_MAX}</div>
         </div>
         <div class="lr-actions">
           <button type="button" class="lr-btn small primary" data-act="fq-save-edit" data-id="${esc(i.id)}">Save</button>
@@ -1016,6 +1124,9 @@
     let rows = F.items.filter(i => (F.filter === 'all' ? true : F.filter === 'on' ? fqOn(i) : !fqOn(i)));
     if (needle) {
       rows = rows.filter(i => norm([i.question, ...(i.keywords || []), i.answer].join(' ')).includes(needle));
+    }
+    if (F.sort === 'used') {
+      rows.sort((a, b) => Number(b.use_count || 0) - Number(a.use_count || 0));
     }
 
     if (!rows.length) {
@@ -1053,6 +1164,16 @@
     );
   }
 
+  /* checks the three Fixed Q&A limits; returns an error message or '' when everything fits */
+  function fqLimitError(question, keywords, answer) {
+    if (question.length < FQ_Q_MIN) return 'Write the main question.';
+    if (question.length > FQ_Q_MAX) return 'Main question can be up to ' + FQ_Q_MAX + ' characters.';
+    if (keywords.length > FQ_KW_MAX) return 'You can keep up to ' + FQ_KW_MAX + ' keywords. Remove a few.';
+    if (answer.length < FQ_A_MIN) return 'Write the fixed answer.';
+    if (answer.length > FQ_A_MAX) return 'Fixed answer can be up to ' + FQ_A_MAX + ' characters.';
+    return '';
+  }
+
   function handleLimitError(e) {
     S.fq.limitHit = true; // server said no: block the form even if the usage RPC is not available
     ui.toast('Fixed Q&A limit reached. Upgrade your plan to add more.', true);
@@ -1073,8 +1194,8 @@
     const answer = (q('#fqAnswer')?.value || '').trim();
     const keywords = [...F.newKw];
 
-    if (question.length < FQ_Q_MIN) return ui.toast('Write the main question.', true);
-    if (answer.length < FQ_A_MIN) return ui.toast('Write the fixed answer.', true);
+    const problem = fqLimitError(question, keywords, answer);
+    if (problem) return ui.toast(problem, true);
 
     if (!(await confirmOverlap(question, keywords, null))) return;
 
@@ -1084,9 +1205,9 @@
           .from(FQ_TABLE)
           .insert({
             client_id: clientId(),
-            question: question.slice(0, FQ_Q_MAX),
+            question,
             keywords,
-            answer: answer.slice(0, FQ_A_MAX),
+            answer,
             is_active: true
           })
           .select(FQ_COLS)
@@ -1102,8 +1223,8 @@
           const el = q(sel);
           if (el) el.value = '';
         });
-        const cnt = q('#fqAnswerCount');
-        if (cnt) cnt.textContent = '0/' + FQ_A_MAX;
+        setCount(q('#fqQuestionCount'), 0, FQ_Q_MAX);
+        setCount(q('#fqAnswerCount'), 0, FQ_A_MAX);
         renderKw('new');
         refreshFixedTop();
         ui.toast('Fixed Q&A saved. Matching customers get this answer with 0 tokens.');
@@ -1127,8 +1248,8 @@
     const answer = (card.querySelector('[data-fq-edit-a]')?.value || '').trim();
     const keywords = [...F.editKw];
 
-    if (question.length < FQ_Q_MIN) return ui.toast('Write the main question.', true);
-    if (answer.length < FQ_A_MIN) return ui.toast('Write the fixed answer.', true);
+    const problem = fqLimitError(question, keywords, answer);
+    if (problem) return ui.toast(problem, true);
 
     if (!(await confirmOverlap(question, keywords, id))) return;
 
@@ -1137,9 +1258,9 @@
         const { data, error } = await db
           .from(FQ_TABLE)
           .update({
-            question: question.slice(0, FQ_Q_MAX),
+            question,
             keywords,
-            answer: answer.slice(0, FQ_A_MAX),
+            answer,
             updated_at: new Date().toISOString()
           })
           .eq('id', id)
@@ -1302,6 +1423,7 @@
     if (teach) teach.hidden = S.tab !== 'teach';
     if (fixed) fixed.hidden = S.tab !== 'fixed';
 
+    if (S.tab === 'teach') renderTeachSummary();
     if (S.tab === 'fixed' && !S.fq.ready && !S.fq.loading) loadFixed();
   }
 
@@ -1422,11 +1544,19 @@
     if (t.matches('#fqSearch')) {
       S.fq.search = t.value;
       renderFixedList();
+    } else if (t.matches('#fqSort')) {
+      S.fq.sort = t.value === 'used' ? 'used' : 'new';
+      renderFixedList();
     } else if (t.matches('[data-kw-input]') && /[,\n]/.test(t.value)) {
       commitKw(t.dataset.kwInput === 'edit' ? 'edit' : 'new');
+    } else if (t.matches('#fqQuestion')) {
+      setCount(q('#fqQuestionCount'), t.value.length, FQ_Q_MAX);
     } else if (t.matches('#fqAnswer')) {
-      const cnt = q('#fqAnswerCount');
-      if (cnt) cnt.textContent = t.value.length + '/' + FQ_A_MAX;
+      setCount(q('#fqAnswerCount'), t.value.length, FQ_A_MAX);
+    } else if (t.matches('[data-fq-edit-q]')) {
+      setCount(t.closest('[data-fq-editing]')?.querySelector('[data-cnt="q"]'), t.value.length, FQ_Q_MAX);
+    } else if (t.matches('[data-fq-edit-a]')) {
+      setCount(t.closest('[data-fq-editing]')?.querySelector('[data-cnt="a"]'), t.value.length, FQ_A_MAX);
     }
   }
 
@@ -1463,7 +1593,9 @@
       S.fq.editKw = [];
       S.fq.newKw = [];
       S.fq.filter = 'all';
+      S.fq.sort = 'new';
       S.fq.search = '';
+      S.summary = null;
 
       renderShell();
       setTab(saved);
