@@ -13,6 +13,8 @@
      via glime-shiprocket-cargo-gateway.
    - GLIME Calendar (appointments): connector-calendar-addon.js (loaded on demand).
      Its ON / OFF switch decides whether Calendar shows in the app-shell sidebar.
+   - Telegram (reports + alerts): connector-telegram-addon.js (loaded on demand)
+     via glime-telegram-gateway.
    - Google OAuth returns here: settings.html?connector=google-calendar&status=...#connector
    - Razorpay OAuth returns here: settings.html?connector=razorpay&status=...&reason=...#connector
    - connector-manage-addon.js (loaded on demand): permissions list + Disconnect inside connected cards.
@@ -71,6 +73,18 @@ function loadCalendar(){
     const s=document.createElement('script');
     s.src='connector-calendar-addon.js?v=1';
     s.onload=function(){resolve(!!window.GLIME_CALENDAR_CONNECTOR);};
+    s.onerror=function(){resolve(false);};
+    document.head.appendChild(s);
+  });
+}
+
+/* Telegram card: its own file as well, isolated the same way. */
+function loadTelegram(){
+  return new Promise(function(resolve){
+    if(window.GLIME_TELEGRAM)return resolve(true);
+    const s=document.createElement('script');
+    s.src='connector-telegram-addon.js?v=1';
+    s.onload=function(){resolve(!!window.GLIME_TELEGRAM);};
     s.onerror=function(){resolve(false);};
     document.head.appendChild(s);
   });
@@ -154,11 +168,13 @@ S.register({
       <div id="gcxSettingsHub"></div>
       <div id="gcxSettingsCargo" style="margin-top:6px"></div>
       <div id="gcxSettingsCalendar" style="margin-top:6px"></div>
+      <div id="gcxSettingsTelegram" style="margin-top:6px"></div>
       <div id="gcxSettingsPerms" style="margin-top:22px"></div>`;
 
     const hub=container.querySelector('#gcxSettingsHub');
     const cargoHost=container.querySelector('#gcxSettingsCargo');
     const calHost=container.querySelector('#gcxSettingsCalendar');
+    const tgHost=container.querySelector('#gcxSettingsTelegram');
     const perms=container.querySelector('#gcxSettingsPerms');
     const UI=window.GLIME_CONNECTOR_UI;
 
@@ -193,6 +209,16 @@ S.register({
     loadCalendar().then(function(ok){
       if(!ok||!calHost.isConnected||!api.supabase)return;
       window.GLIME_CALENDAR_CONNECTOR.mount(calHost,{sb:api.supabase});
+    });
+
+    /* Telegram card: reports + alerts, ON / OFF and settings. Independent of the cards above. */
+    loadTelegram().then(function(ok){
+      if(!ok||!tgHost.isConnected||!api.supabase)return;
+      window.GLIME_TELEGRAM.mount(tgHost,{
+        sb:api.supabase,
+        supabaseUrl:supabaseUrl,
+        apiKey:api.supabase.supabaseKey
+      });
     });
 
     loadManage().then(function(ok){

@@ -39,6 +39,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   <div id="hub"></div>
   <div id="cargo" style="margin-top:6px"></div>
   <div id="calendarcard" style="margin-top:6px"></div>
+  <div id="telegramcard" style="margin-top:6px"></div>
   <div id="permissions" style="margin-top:24px"></div>
 </div>
 
@@ -58,6 +59,7 @@ const UI=window.GLIME_CONNECTOR_UI;
 const hub=document.getElementById("hub");
 const cargoHost=document.getElementById("cargo");
 const calHost=document.getElementById("calendarcard");
+const tgHost=document.getElementById("telegramcard");
 const perms=document.getElementById("permissions");
 const base={
   mcpEndpoint:MCP_ENDPOINT,
@@ -117,6 +119,18 @@ function loadCalendar(){
   });
 }
 
+/* Telegram reports + alerts card: its own file as well. */
+function loadTelegram(){
+  return new Promise(function(resolve){
+    if(window.GLIME_TELEGRAM)return resolve(true);
+    const s=document.createElement("script");
+    s.src="connector-telegram-addon.js?v=1";
+    s.onload=function(){resolve(!!window.GLIME_TELEGRAM);};
+    s.onerror=function(){resolve(false);};
+    document.head.appendChild(s);
+  });
+}
+
 (async()=>{
   try{
     if(!UI)throw new Error("Connector UI could not be loaded");
@@ -138,6 +152,11 @@ function loadCalendar(){
     loadCalendar().then(function(ok){
       if(!ok||!calHost.isConnected)return;
       window.GLIME_CALENDAR_CONNECTOR.mount(calHost,{sb:sb});
+    });
+
+    loadTelegram().then(function(ok){
+      if(!ok||!tgHost.isConnected)return;
+      window.GLIME_TELEGRAM.mount(tgHost,{sb:sb,supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
     });
 
     const res=await UI.data.loadAll(sb,{supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
