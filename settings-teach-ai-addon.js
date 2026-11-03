@@ -17,6 +17,9 @@
                 'rejected' suggestion the owner declined
                 'archived' lesson the owner switched off
       source 'owner' | 'ai_suggested'
+      times_used / last_used_at: how many times a lesson was used by the AI.
+      Each lesson card shows this ("Used 5 times" or "Not used yet") and the
+      "Your lessons" card shows the total.
 
       Suggestions: the "Find suggestions" button calls the edge function
       client-ai-learn, which proposes lessons ONLY from chats where the owner
@@ -27,11 +30,7 @@
       AI, and a lesson never overrides prices, published offers, business
       rules, policies or safety instructions.
 
-      The top of this part also shows a "Fixed Q&A results" card (customers
-      answered by Fixed Q&A, tokens saved) so the owner sees the saving
-      without opening the other tab.
-
-   2) FIXED Q&A
+   2) FIXED Q&A (opens only from its own tab button)
       The owner writes an exact question + keywords + exact answer. When a
       customer message matches, the saved answer is sent directly BEFORE the
       AI runs: no AI call, 0 tokens charged.
@@ -75,7 +74,7 @@
 
   /* ---- Teach AI (lessons) ---- */
   const COLS =
-    'id,channel,source,status,customer_question,bad_reply,lesson,last_used_at,created_at,updated_at';
+    'id,channel,source,status,customer_question,bad_reply,lesson,times_used,last_used_at,created_at,updated_at';
   const Q_MIN = 2;
   const Q_MAX = 1000;
   const L_MIN = 5;
@@ -101,7 +100,6 @@
     filter: 'active',
     editing: null,
     tab: 'teach',
-    summary: null, // { answered, tokens, total } shown on the Teach AI tab before Fixed Q&A is opened
     fq: {
       ready: false,
       loading: false,
@@ -281,8 +279,6 @@
     if (!pane) return;
 
     pane.innerHTML = `
-      <div id="lrFixedSummary"></div>
-
       <div class="lr-card" id="lrTeach">
         <h3>Teach your AI</h3>
         <p class="lr-sub">Add a customer question and the answer your AI should follow. Your AI uses a lesson while it writes its own reply, so normal AI tokens apply. Need an exact reply with no token cost? Use <button type="button" class="lr-link" data-act="tab" data-v="fixed">Fixed Q&amp;A</button>.</p>
@@ -308,7 +304,7 @@
 
       <div class="lr-card">
         <h3>Your lessons</h3>
-        <p class="lr-sub">Only <b>Active</b> lessons are used by your AI.</p>
+        <p class="lr-sub">Only <b>Active</b> lessons are used by your AI. <span id="lrUsedLine"></span></p>
         <div class="lr-chips" id="lrChips"></div>
         <div id="lrList"></div>
       </div>
@@ -325,62 +321,6 @@
 
     renderChips();
     renderList();
-    renderTeachSummary();
-  }
-
-  /* ---- "Fixed Q&A results" card shown at the top of the Teach AI tab ---- */
-  function summaryValues() {
-    const F = S.fq;
-    if (F.ready && !F.unavailable && !F.error) {
-      return {
-        answered: F.stats ? F.stats.answered_count : F.items.reduce((n, i) => n + Number(i.use_count || 0), 0),
-        tokens: F.stats ? F.stats.tokens_saved : null,
-        total: F.items.length
-      };
-    }
-    return S.summary;
-  }
-
-  function renderTeachSummary() {
-    const host = q('#lrFixedSummary');
-    if (!host) return;
-
-    const v = summaryValues();
-    if (!v) {
-      host.innerHTML = '';
-      return;
-    }
-
-    host.innerHTML = `
-      <div class="lr-card">
-        <h3>Fixed Q&amp;A results</h3>
-        <p class="lr-sub">Customers who already received one of your exact saved answers, with no AI tokens used.</p>
-        <div class="fq-tiles" style="margin:0 0 12px">
-          <div class="fq-tile"><b>${fmtNum(v.answered)}</b><span>Customers answered by Fixed Q&amp;A</span></div>
-          ${v.tokens != null ? `<div class="fq-tile"><b>${fmtNum(v.tokens)}</b><span>AI tokens saved</span></div>` : ''}
-          ${v.total != null ? `<div class="fq-tile"><b>${fmtNum(v.total)}</b><span>Fixed Q&amp;A saved</span></div>` : ''}
-        </div>
-        <button type="button" class="lr-btn small" data-act="tab" data-v="fixed">Open Fixed Q&amp;A</button>
-      </div>`;
-  }
-
-  async function loadTeachSummary() {
-    try {
-      const [st, items] = await Promise.all([fetchStats(), fetchFixedItems().catch(() => null)]);
-      if (!st && !items) {
-        S.summary = null;
-      } else {
-        S.summary = {
-          answered: st ? st.answered_count : items.reduce((n, i) => n + Number(i.use_count || 0), 0),
-          tokens: st ? st.tokens_saved : null,
-          total: items ? items.length : null
-        };
-      }
-    } catch (e) {
-      console.warn('[GLIME Teach AI] summary:', e);
-      S.summary = null;
-    }
-    renderTeachSummary();
   }
 
   function renderChips() {
@@ -399,6 +339,22 @@
           `<button type="button" class="lr-chip ${S.filter === k ? 'active' : ''}" data-act="filter" data-v="${k}">${esc(l)} (${count(k)})</button>`
       )
       .join('');
+
+    /* total number of times the AI used your lessons */
+    const line = q('#lrUsedLine');
+    if (line) {
+      const total = S.items.reduce((n, i) => n + Number(i.times_used || 0), 0);
+      line.textContent = total
+        ? 'Together your lessons were used ' + fmtNum(total) + (total === 1 ? ' time' : ' times') + ' in customer chats.'
+        : '';
+    }
+  }
+
+  function usedPill(i) {
+    const n = Number(i.times_used || 0);
+    return n > 0
+      ? `<span class="lr-pill on">Used ${fmtNum(n)} ${n === 1 ? 'time' : 'times'}</span>`
+      : '<span class="lr-pill">Not used yet</span>';
   }
 
   function itemHtml(i) {
@@ -434,6 +390,7 @@
         <div class="lr-meta">
           ${statusPill}
           <span class="lr-pill">${i.source === 'ai_suggested' ? 'Suggested by AI' : 'Added by you'}</span>
+          ${b === 'pending' ? '' : usedPill(i)}
           ${i.last_used_at ? `<span class="lr-pill">Last used ${esc(fmtDate(i.last_used_at))}</span>` : ''}
         </div>
         <div class="lr-actions">${buttons}</div>
@@ -682,7 +639,6 @@
       // Open on Suggestions when something is waiting for approval and nothing is active yet.
       if (!count('active') && count('pending')) S.filter = 'pending';
       renderTeachPane();
-      loadTeachSummary();
     } catch (e) {
       console.error('[GLIME Teach AI] load:', e);
       S.error = errMsg(e);
@@ -778,7 +734,6 @@
     F.loading = false;
     F.ready = true;
     renderFixedPane();
-    renderTeachSummary();
   }
 
   function usageView() {
@@ -1023,7 +978,6 @@
     applyLimitState();
     renderFixedChips();
     renderFixedList();
-    renderTeachSummary();
   }
 
   const fqOn = i => i.is_active !== false;
@@ -1423,7 +1377,6 @@
     if (teach) teach.hidden = S.tab !== 'teach';
     if (fixed) fixed.hidden = S.tab !== 'fixed';
 
-    if (S.tab === 'teach') renderTeachSummary();
     if (S.tab === 'fixed' && !S.fq.ready && !S.fq.loading) loadFixed();
   }
 
@@ -1595,7 +1548,6 @@
       S.fq.filter = 'all';
       S.fq.sort = 'new';
       S.fq.search = '';
-      S.summary = null;
 
       renderShell();
       setTab(saved);
