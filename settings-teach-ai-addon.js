@@ -1,27 +1,52 @@
 /* =========================================================
    GLIME - SETTINGS > TEACH AI
    ---------------------------------------------------------
-   Lets the business owner teach the Client AI Brain from real
-   customer questions. Each lesson = a customer question + the answer
-   the owner wants the AI to give next time.
+   One Settings section with TWO separate parts:
 
-   Data: table client_ai_lessons (RLS: owner can only see and change
-   the lessons of their own client_id).
-     status  'active'   used by the AI (client-ai-runtime picks the few
-                        most relevant lessons for each customer message)
-             'pending'  suggested lesson waiting for the owner's approval
-             'rejected' suggestion the owner declined
-             'archived' lesson the owner switched off
-   source 'owner' | 'ai_suggested'
+   1) TEACH AI (lessons)
+      The owner teaches the Client AI Brain from real customer questions.
+      Each lesson = a customer question + the answer the owner wants the AI to
+      give next time. The AI still writes the reply itself, so normal AI
+      tokens apply.
 
-   Suggestions: the "Find suggestions" button calls the edge function
-   client-ai-learn, which proposes lessons ONLY from chats where the owner
-   replied personally after the AI. They arrive as 'pending' and are never
-   used until the owner approves them here.
+      Data: table client_ai_lessons (RLS: owner can only see and change
+      the lessons of their own client_id).
+        status  'active'   used by the AI (client-ai-runtime picks the few
+                           most relevant lessons for each customer message)
+                'pending'  suggested lesson waiting for the owner's approval
+                'rejected' suggestion the owner declined
+                'archived' lesson the owner switched off
+      source 'owner' | 'ai_suggested'
 
-   Safety (enforced in client-ai-runtime): customers can never teach the
-   AI, and a lesson never overrides prices, published offers, business
-   rules, policies or safety instructions.
+      Suggestions: the "Find suggestions" button calls the edge function
+      client-ai-learn, which proposes lessons ONLY from chats where the owner
+      replied personally after the AI. They arrive as 'pending' and are never
+      used until the owner approves them here.
+
+      Safety (enforced in client-ai-runtime): customers can never teach the
+      AI, and a lesson never overrides prices, published offers, business
+      rules, policies or safety instructions.
+
+   2) FIXED Q&A
+      The owner writes an exact question + keywords + exact answer. When a
+      customer message matches, the saved answer is sent directly BEFORE the
+      AI runs: no AI call, 0 tokens charged.
+
+      Data: table client_fixed_qa (RLS: owner sees and changes only their own
+      client_id rows).
+        id, client_id, question, keywords text[], answer,
+        is_active boolean, use_count int, last_used_at,
+        created_at, updated_at
+      RPCs used by this screen (all optional: the screen degrades safely
+      when one is missing):
+        get_my_fixed_qa_usage()          -> { used, limit, plan_name }
+        get_my_fixed_qa_stats()          -> { answered_count, tokens_saved }
+        test_my_fixed_qa(p_message text) -> { matched, qa_id, question,
+                                              answer, confidence }
+      Plan limit is enforced by the database. When it is reached the insert
+      fails with a message containing FIXED_QA_LIMIT_REACHED and this screen
+      shows the upgrade message.
+      Full backend contract: FIXED_QA_BACKEND_SPEC.md
 
    Deep link: settings.html#teach
    (The id must not start with "ai-": settings.html sends every hash that
@@ -39,6 +64,7 @@
   const db = api.supabase;
   const esc = ui.escapeHtml;
 
+  /* ---- Teach AI (lessons) ---- */
   const COLS =
     'id,channel,source,status,customer_question,bad_reply,lesson,last_used_at,created_at,updated_at';
   const Q_MIN = 2;
@@ -47,11 +73,40 @@
   const L_MAX = 1000;
   const ACTIVE_LIMIT = 80; // client-ai-runtime reads the 80 most recently updated active lessons
 
+  /* ---- Fixed Q&A ---- */
+  const FQ_TABLE = 'client_fixed_qa';
+  const FQ_COLS = 'id,question,keywords,answer,is_active,use_count,last_used_at,created_at,updated_at';
+  const FQ_Q_MIN = 2;
+  const FQ_Q_MAX = 300;
+  const FQ_A_MIN = 2;
+  const FQ_A_MAX = 1000; // Instagram DM text limit is 1000 characters
+  const FQ_KW_MIN = 2;
+  const FQ_KW_MAX_EACH = 60;
+  const FQ_KW_MAX = 20;
+  const UPGRADE_URL = 'packages.html';
+  const TAB_KEY = 'glimeTeachAiTab';
+
   const S = {
     items: [],
     error: null,
     filter: 'active',
-    editing: null
+    editing: null,
+    tab: 'teach',
+    fq: {
+      ready: false,
+      loading: false,
+      unavailable: false,
+      error: null,
+      items: [],
+      limitHit: false,
+      usage: null, // { used, limit, plan } or null when the usage RPC is not available
+      stats: null, // { answered_count, tokens_saved } or null
+      filter: 'all',
+      search: '',
+      editing: null,
+      editKw: [],
+      newKw: []
+    }
   };
 
   let ROOT = null;
@@ -59,6 +114,7 @@
   const clientId = () => state.client?.client_id || '';
   const errMsg = e => (e && (e.message || e.error_description)) || String(e || 'Unknown error');
   const q = sel => (ROOT ? ROOT.querySelector(sel) : null);
+  const fmtNum = n => Number(n || 0).toLocaleString();
 
   const fmtDate = v => {
     if (!v) return '';
@@ -67,6 +123,13 @@
       ? ''
       : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   };
+
+  /* lower-case, remove symbols, collapse spaces (used only for duplicate warnings and search) */
+  const norm = v =>
+    String(v || '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim();
 
   async function withBusy(btn, label, fn) {
     const original = btn ? btn.textContent : '';
@@ -95,6 +158,7 @@
     style.textContent = `
       .lr-root{color:#fff}
       .lr-root *{box-sizing:border-box}
+      .lr-root [hidden]{display:none!important}
       .lr-head h2{font-size:1.25rem;line-height:1.2}
       .lr-head p{font-size:.78rem;color:rgba(255,255,255,.72);margin-top:4px;max-width:600px}
       .lr-card{background:var(--surf);border:1px solid var(--bd);border-radius:18px;padding:16px;margin:14px 0}
@@ -102,16 +166,18 @@
       .lr-sub{font-size:.74rem;color:rgba(255,255,255,.72);margin-bottom:12px;line-height:1.5}
       .lr-field{margin-bottom:12px}
       .lr-label{display:block;font-size:.74rem;font-weight:800;margin-bottom:6px}
-      .lr-hint{display:block;font-size:.68rem;color:rgba(255,255,255,.62);margin-top:5px}
+      .lr-hint{display:block;font-size:.68rem;color:rgba(255,255,255,.62);margin-top:5px;line-height:1.5}
       .lr-input,.lr-textarea{width:100%;background:var(--surf2);color:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px;font-size:16px;outline:none;font-family:inherit}
       .lr-input::placeholder,.lr-textarea::placeholder{color:rgba(255,255,255,.42)}
       .lr-input:focus,.lr-textarea:focus{border-color:rgba(255,255,255,.6)}
+      .lr-input:disabled,.lr-textarea:disabled{opacity:.5}
       .lr-textarea{min-height:100px;resize:vertical;line-height:1.5}
-      .lr-btn{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:.8rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+      .lr-btn{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:.8rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none}
       .lr-btn.primary{background:linear-gradient(105deg,var(--gr),var(--cy));color:#031014;border:0}
       .lr-btn.danger{color:var(--rd);border-color:rgba(255,130,145,.5)}
       .lr-btn.small{min-height:36px;padding:0 12px;font-size:.74rem;border-radius:10px}
       .lr-btn:disabled{opacity:.5;cursor:default}
+      .lr-link{border:0;background:transparent;color:var(--cy);font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:0}
       .lr-note{font-size:.7rem;color:rgba(255,255,255,.66);margin-top:10px;line-height:1.5}
       .lr-pill{display:inline-block;font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:99px;border:1px solid rgba(255,255,255,.28);white-space:nowrap}
       .lr-pill.on{color:var(--gr);border-color:rgba(80,245,168,.4)}
@@ -131,17 +197,49 @@
       .lr-err b{display:block;margin-bottom:3px}
       .lr-loading{padding:26px 0;text-align:center;font-size:.8rem;color:rgba(255,255,255,.75)}
       .lr-safe{display:grid;gap:6px;font-size:.74rem;color:rgba(255,255,255,.82);line-height:1.5}
+
+      .lr-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+      .lr-tab{text-align:left;min-height:64px;padding:12px 14px;border-radius:14px;border:1px solid var(--bd);background:var(--surf);color:#fff;cursor:pointer}
+      .lr-tab b{display:block;font-size:.86rem}
+      .lr-tab small{display:block;font-size:.68rem;color:rgba(255,255,255,.66);margin-top:2px;line-height:1.35}
+      .lr-tab.active{border-color:var(--cy);background:rgba(82,232,255,.08)}
+
+      .fq-banner{border:1px solid rgba(80,245,168,.4);background:rgba(80,245,168,.07);border-radius:14px;padding:12px 14px;font-size:.76rem;line-height:1.55;margin:14px 0}
+      .fq-banner b{color:var(--gr)}
+      .fq-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+      .fq-tile{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:12px}
+      .fq-tile b{display:block;font-size:1.1rem;line-height:1.3}
+      .fq-tile span{display:block;font-size:.68rem;color:rgba(255,255,255,.66);margin-top:2px}
+      .fq-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.12);margin-top:9px;overflow:hidden}
+      .fq-bar i{display:block;height:100%;background:linear-gradient(105deg,var(--gr),var(--cy))}
+      .fq-bar.full i{background:var(--rd)}
+      .fq-limit{border:1px solid rgba(255,130,145,.45);background:rgba(255,130,145,.07);border-radius:14px;padding:14px;font-size:.78rem;line-height:1.55;margin:14px 0}
+      .fq-limit b{display:block;margin-bottom:3px}
+      .fq-kws{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+      .fq-kw{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;padding:4px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);word-break:break-word}
+      .fq-kw button{border:0;background:transparent;color:inherit;font-size:1rem;line-height:1;cursor:pointer;padding:0 2px;min-width:22px;min-height:22px}
+      .fq-kw-row{display:flex;gap:8px}
+      .fq-kw-row .lr-input{flex:1;min-width:0}
+      .fq-count{font-size:.66rem;color:rgba(255,255,255,.55);text-align:right;margin-top:4px}
+      .fq-result{border-radius:14px;padding:13px;font-size:.78rem;line-height:1.55;margin-top:12px;border:1px solid var(--bd);background:var(--surf2)}
+      .fq-result.hit{border-color:rgba(80,245,168,.45)}
+      .fq-result b{display:block;margin-bottom:3px}
+      .fq-result p{white-space:pre-wrap;word-break:break-word;color:rgba(255,255,255,.88);margin-top:4px}
+      .fq-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:6px}
+      .fq-toolbar .lr-input{flex:1;min-width:180px}
       @media(max-width:640px){
         .lr-actions .lr-btn{flex:1}
         .lr-btn.block-m{width:100%}
+        .lr-tabs{grid-template-columns:1fr}
+        .fq-toolbar .lr-input{width:100%;flex:none}
       }
     `;
     document.head.appendChild(style);
   }
 
-  /* ---------------------------------------------------------
-     DATA
-  --------------------------------------------------------- */
+  /* =========================================================
+     PART 1 - TEACH AI (lessons)
+  ========================================================= */
   async function fetchLessons() {
     const { data, error } = await db
       .from('client_ai_lessons')
@@ -156,21 +254,14 @@
   const bucket = i => (i.status === 'active' ? 'active' : i.status === 'pending' ? 'pending' : 'off');
   const count = key => S.items.filter(i => bucket(i) === key).length;
 
-  /* ---------------------------------------------------------
-     RENDER
-  --------------------------------------------------------- */
-  function renderAll() {
-    if (!ROOT) return;
+  function renderTeachPane() {
+    const pane = q('#paneTeach');
+    if (!pane) return;
 
-    ROOT.innerHTML = `
-      <div class="lr-head">
-        <h2>Teach AI</h2>
-        <p>Teach your AI from real customer questions. Write the answer you want once, and your AI uses it the next time a customer asks something similar.</p>
-      </div>
-
+    pane.innerHTML = `
       <div class="lr-card" id="lrTeach">
         <h3>Teach your AI</h3>
-        <p class="lr-sub">Add a customer question and the answer your AI should give.</p>
+        <p class="lr-sub">Add a customer question and the answer your AI should follow. Your AI uses a lesson while it writes its own reply, so normal AI tokens apply. Need an exact reply with no token cost? Use <button type="button" class="lr-link" data-act="tab" data-v="fixed">Fixed Q&amp;A</button>.</p>
 
         <div class="lr-field">
           <label class="lr-label" for="lrQuestion">What does the customer ask?</label>
@@ -320,18 +411,15 @@
     host.innerHTML = scanBox + warn + rows.map(itemHtml).join('');
   }
 
-  function renderError(message) {
-    if (!ROOT) return;
-    ROOT.innerHTML = `
-      <div class="lr-head"><h2>Teach AI</h2></div>
+  function renderTeachError(message) {
+    const pane = q('#paneTeach');
+    if (!pane) return;
+    pane.innerHTML = `
       <div class="lr-err"><b>Could not load Teach AI.</b>${esc(message)}
         <div style="margin-top:10px"><button type="button" class="lr-btn small" data-act="retry">Try again</button></div>
       </div>`;
   }
 
-  /* ---------------------------------------------------------
-     ACTIONS
-  --------------------------------------------------------- */
   async function addLesson(btn) {
     const question = (q('#lrQuestion')?.value || '').trim();
     const lesson = (q('#lrLesson')?.value || '').trim();
@@ -504,27 +592,730 @@
     });
   }
 
-  async function load() {
-    if (ROOT) ROOT.innerHTML = '<div class="lr-loading">Loading Teach AI…</div>';
+  async function loadTeach() {
+    const pane = q('#paneTeach');
+    if (pane) pane.innerHTML = '<div class="lr-loading">Loading Teach AI…</div>';
     try {
       S.items = await fetchLessons();
       S.error = null;
       S.editing = null;
       // Open on Suggestions when something is waiting for approval and nothing is active yet.
       if (!count('active') && count('pending')) S.filter = 'pending';
-      renderAll();
+      renderTeachPane();
     } catch (e) {
       console.error('[GLIME Teach AI] load:', e);
       S.error = errMsg(e);
-      renderError(S.error);
+      renderTeachError(S.error);
     }
+  }
+
+  /* =========================================================
+     PART 2 - FIXED Q&A
+  ========================================================= */
+  const isMissingBackend = e => {
+    const code = String((e && (e.code || e.status)) || '');
+    const msg = errMsg(e);
+    return (
+      ['42P01', '42883', 'PGRST205', 'PGRST202', '404'].includes(code) ||
+      /does not exist|schema cache|could not find the (table|function)/i.test(msg)
+    );
+  };
+
+  const isLimitError = e => /fixed_qa_limit/i.test(errMsg(e));
+
+  const firstRow = d => (Array.isArray(d) ? d[0] : d) || null;
+
+  async function fetchFixedItems() {
+    const { data, error } = await db
+      .from(FQ_TABLE)
+      .select(FQ_COLS)
+      .eq('client_id', clientId())
+      .order('updated_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function fetchUsage() {
+    try {
+      const { data, error } = await db.rpc('get_my_fixed_qa_usage');
+      if (error) throw error;
+      const r = firstRow(data);
+      if (!r) return null;
+      const limit = r.limit == null ? null : Number(r.limit);
+      return {
+        used: Number(r.used ?? S.fq.items.length),
+        limit: Number.isFinite(limit) ? limit : null,
+        plan: r.plan_name || r.plan || ''
+      };
+    } catch (e) {
+      if (!isMissingBackend(e)) console.warn('[GLIME Fixed Q&A] usage:', e);
+      return null;
+    }
+  }
+
+  async function fetchStats() {
+    try {
+      const { data, error } = await db.rpc('get_my_fixed_qa_stats');
+      if (error) throw error;
+      const r = firstRow(data);
+      if (!r) return null;
+      return {
+        answered_count: Number(r.answered_count || 0),
+        tokens_saved: r.tokens_saved == null ? null : Number(r.tokens_saved)
+      };
+    } catch (e) {
+      if (!isMissingBackend(e)) console.warn('[GLIME Fixed Q&A] stats:', e);
+      return null;
+    }
+  }
+
+  async function refreshUsageStats() {
+    const [u, st] = await Promise.all([fetchUsage(), fetchStats()]);
+    S.fq.usage = u;
+    S.fq.stats = st;
+  }
+
+  async function loadFixed() {
+    const F = S.fq;
+    F.loading = true;
+    F.error = null;
+    renderFixedPane();
+    try {
+      F.items = await fetchFixedItems();
+      F.unavailable = false;
+      await refreshUsageStats();
+    } catch (e) {
+      console.error('[GLIME Fixed Q&A] load:', e);
+      if (isMissingBackend(e)) {
+        F.unavailable = true;
+        F.items = [];
+      } else {
+        F.error = errMsg(e);
+      }
+    }
+    F.loading = false;
+    F.ready = true;
+    renderFixedPane();
+  }
+
+  function usageView() {
+    const F = S.fq;
+    const used = F.usage ? F.usage.used : F.items.length;
+    const limit = F.usage && F.usage.limit != null && F.usage.limit >= 0 ? F.usage.limit : null;
+    return { used, limit, plan: (F.usage && F.usage.plan) || '' };
+  }
+
+  const limitReached = () => {
+    const { used, limit } = usageView();
+    if (limit != null) return used >= limit;
+    return !!S.fq.limitHit;
+  };
+
+  function syncUsage() {
+    S.fq.limitHit = false; // count changed (item added or deleted): re-check from fresh numbers
+    if (S.fq.usage) S.fq.usage.used = S.fq.items.length;
+  }
+
+  const chipsHtml = (arr, scope) =>
+    arr
+      .map(
+        (k, i) =>
+          `<span class="fq-kw">${esc(k)}<button type="button" aria-label="Remove ${esc(k)}" data-act="fq-kw-del" data-scope="${scope}" data-i="${i}">×</button></span>`
+      )
+      .join('');
+
+  function renderKw(scope) {
+    const host = scope === 'new' ? q('#fqKwChips') : q('[data-kw-chips="edit"]');
+    if (!host) return;
+    host.innerHTML = chipsHtml(scope === 'new' ? S.fq.newKw : S.fq.editKw, scope);
+  }
+
+  function commitKw(scope) {
+    const input = scope === 'new' ? q('#fqKwInput') : q('[data-kw-input="edit"]');
+    if (!input) return;
+
+    const arr = scope === 'new' ? S.fq.newKw : S.fq.editKw;
+    const parts = input.value
+      .split(/[,\n]/)
+      .map(p => p.trim().replace(/\s+/g, ' '))
+      .filter(Boolean);
+
+    let tooMany = false;
+    let tooLong = false;
+    parts.forEach(p => {
+      if (p.length < FQ_KW_MIN) return;
+      if (p.length > FQ_KW_MAX_EACH) {
+        tooLong = true;
+        return;
+      }
+      if (arr.some(x => norm(x) === norm(p))) return;
+      if (arr.length >= FQ_KW_MAX) {
+        tooMany = true;
+        return;
+      }
+      arr.push(p);
+    });
+
+    input.value = '';
+    renderKw(scope);
+    if (tooMany) ui.toast('You can add up to ' + FQ_KW_MAX + ' keywords.', true);
+    else if (tooLong) ui.toast('Each keyword can be up to ' + FQ_KW_MAX_EACH + ' characters.', true);
+  }
+
+  function renderFixedPane() {
+    const pane = q('#paneFixed');
+    if (!pane) return;
+    const F = S.fq;
+
+    if (!F.ready && F.loading) {
+      pane.innerHTML = '<div class="lr-loading">Loading Fixed Q&amp;A…</div>';
+      return;
+    }
+
+    if (F.unavailable) {
+      pane.innerHTML = `
+        <div class="lr-card">
+          <h3>Fixed Q&amp;A is almost ready</h3>
+          <p class="lr-sub" style="margin-bottom:0">This feature is being switched on for your account. Please check again in a little while. Your Teach AI lessons keep working as usual.</p>
+        </div>`;
+      return;
+    }
+
+    if (F.error) {
+      pane.innerHTML = `
+        <div class="lr-err"><b>Could not load Fixed Q&amp;A.</b>${esc(F.error)}
+          <div style="margin-top:10px"><button type="button" class="lr-btn small" data-act="fq-retry">Try again</button></div>
+        </div>`;
+      return;
+    }
+
+    pane.innerHTML = `
+      <div class="fq-banner">
+        <b>0 tokens used.</b> When a customer asks one of these questions, GLIME sends your saved answer directly and your AI does not run, so no AI tokens are charged. Anything that does not clearly match goes to your AI as usual.
+      </div>
+
+      <div id="fqStats"></div>
+      <div id="fqLimit"></div>
+
+      <div class="lr-card" id="fqFormCard">
+        <h3>Add a fixed question and answer</h3>
+        <p class="lr-sub">Use this for questions that always have the same answer, like timings, address, delivery or return policy.</p>
+
+        <div class="lr-field">
+          <label class="lr-label" for="fqQuestion">Main question</label>
+          <input class="lr-input" id="fqQuestion" maxlength="${FQ_Q_MAX}" autocomplete="off" placeholder="e.g. What are your shop timings?">
+        </div>
+
+        <div class="lr-field">
+          <label class="lr-label" for="fqKwInput">Other words customers use <span style="font-weight:400;opacity:.7">(keywords, optional)</span></label>
+          <div class="fq-kw-row">
+            <input class="lr-input" id="fqKwInput" data-kw-input="new" autocomplete="off" placeholder="e.g. timing, open time, kab khulta hai">
+            <button type="button" class="lr-btn small" data-act="fq-kw-add" data-scope="new">Add</button>
+          </div>
+          <div class="fq-kws" id="fqKwChips"></div>
+          <span class="lr-hint">Add the different ways customers ask this, one at a time (press Enter or tap Add). Capital letters, symbols and common Hinglish spellings are handled for you. Keep keywords specific: very common words can match the wrong question.</span>
+        </div>
+
+        <div class="lr-field">
+          <label class="lr-label" for="fqAnswer">Fixed answer</label>
+          <textarea class="lr-textarea" id="fqAnswer" maxlength="${FQ_A_MAX}" placeholder="e.g. We are open every day from 10 AM to 9 PM."></textarea>
+          <div class="fq-count" id="fqAnswerCount">0/${FQ_A_MAX}</div>
+          <span class="lr-hint">This exact text is sent to the customer. Do not put prices that change often here, because the answer will not update by itself.</span>
+        </div>
+
+        <button type="button" class="lr-btn primary block-m" id="fqAddBtn" data-act="fq-add">Save Fixed Q&amp;A</button>
+      </div>
+
+      <div class="lr-card">
+        <h3>Test a customer message</h3>
+        <p class="lr-sub">Type a message like a customer would. You will see whether a fixed answer would be sent. Testing does not use tokens and is not counted.</p>
+        <div class="fq-kw-row">
+          <input class="lr-input" id="fqTestInput" autocomplete="off" maxlength="500" placeholder="e.g. shop kab tak khula rehta hai?">
+          <button type="button" class="lr-btn small" data-act="fq-test">Test</button>
+        </div>
+        <div id="fqTestResult"></div>
+      </div>
+
+      <div class="lr-card">
+        <h3>Your Fixed Q&amp;A</h3>
+        <p class="lr-sub">Only <b>On</b> items are matched against customer messages.</p>
+        <div class="fq-toolbar">
+          <input class="lr-input" id="fqSearch" type="search" autocomplete="off" placeholder="Search questions, keywords or answers" value="${esc(F.search)}">
+        </div>
+        <div class="lr-chips" id="fqChips"></div>
+        <div id="fqList"></div>
+      </div>
+
+      <div class="lr-card">
+        <h3>How it stays safe</h3>
+        <div class="lr-safe">
+          <span>Matching is strict. If GLIME is not sure, your normal AI replies instead of a wrong fixed answer.</span>
+          <span>Only you can add or change Fixed Q&amp;A. Customers can never change it.</span>
+          <span>If two items share the same keyword, matching can become unclear, so give each item its own keywords.</span>
+        </div>
+      </div>
+    `;
+
+    renderFixedStats();
+    renderFixedLimit();
+    renderFixedChips();
+    renderFixedList();
+    renderKw('new');
+    applyLimitState();
+  }
+
+  function renderFixedStats() {
+    const host = q('#fqStats');
+    if (!host) return;
+    const F = S.fq;
+    const { used, limit } = usageView();
+
+    const answered = F.stats ? F.stats.answered_count : F.items.reduce((n, i) => n + Number(i.use_count || 0), 0);
+    const pct = limit == null ? 0 : limit === 0 ? 100 : Math.min(100, (used / limit) * 100);
+
+    const counter =
+      limit == null
+        ? `<b>${fmtNum(used)} saved</b><span>Fixed Q&amp;A</span>`
+        : `<b>${fmtNum(used)}/${fmtNum(limit)} used</b><span>Fixed Q&amp;A${F.usage && F.usage.plan ? ' in your ' + esc(F.usage.plan) + ' plan' : ''}</span><div class="fq-bar ${limitReached() ? 'full' : ''}"><i style="width:${pct}%"></i></div>`;
+
+    const tokens =
+      F.stats && F.stats.tokens_saved != null
+        ? `<div class="fq-tile"><b>${fmtNum(F.stats.tokens_saved)}</b><span>AI tokens saved</span></div>`
+        : '';
+
+    host.innerHTML = `
+      <div class="fq-tiles">
+        <div class="fq-tile">${counter}</div>
+        <div class="fq-tile"><b>${fmtNum(answered)}</b><span>Customer questions answered by Fixed Q&amp;A</span></div>
+        ${tokens}
+      </div>`;
+  }
+
+  function renderFixedLimit() {
+    const host = q('#fqLimit');
+    if (!host) return;
+    if (!limitReached()) {
+      host.innerHTML = '';
+      return;
+    }
+    const { limit, plan } = usageView();
+    host.innerHTML = `
+      <div class="fq-limit">
+        <b>Fixed Q&amp;A limit reached</b>
+        You have used all ${limit != null ? fmtNum(limit) + ' ' : ''}Fixed Q&amp;A${plan ? ' in your ' + esc(plan) + ' plan' : ''}. Upgrade your plan to add more, or delete one you no longer need.
+        <div class="lr-actions"><a class="lr-btn small primary" href="${UPGRADE_URL}">Upgrade plan</a></div>
+      </div>`;
+  }
+
+  function applyLimitState() {
+    const blocked = limitReached();
+    ['#fqQuestion', '#fqKwInput', '#fqAnswer'].forEach(sel => {
+      const el = q(sel);
+      if (el) el.disabled = blocked;
+    });
+    const kwAdd = q('[data-act="fq-kw-add"][data-scope="new"]');
+    if (kwAdd) kwAdd.disabled = blocked;
+    const btn = q('#fqAddBtn');
+    if (btn) {
+      btn.disabled = blocked;
+      btn.textContent = blocked ? 'Limit reached' : 'Save Fixed Q&A';
+    }
+  }
+
+  function refreshFixedTop() {
+    renderFixedStats();
+    renderFixedLimit();
+    applyLimitState();
+    renderFixedChips();
+    renderFixedList();
+  }
+
+  const fqOn = i => i.is_active !== false;
+  const fqCount = key =>
+    S.fq.items.filter(i => (key === 'all' ? true : key === 'on' ? fqOn(i) : !fqOn(i))).length;
+
+  function renderFixedChips() {
+    const host = q('#fqChips');
+    if (!host) return;
+    const defs = [
+      ['all', 'All'],
+      ['on', 'On'],
+      ['off', 'Off']
+    ];
+    host.innerHTML = defs
+      .map(
+        ([k, l]) =>
+          `<button type="button" class="lr-chip ${S.fq.filter === k ? 'active' : ''}" data-act="fq-filter" data-v="${k}">${esc(l)} (${fqCount(k)})</button>`
+      )
+      .join('');
+  }
+
+  function fqItemHtml(i) {
+    if (S.fq.editing === i.id) return fqEditorHtml(i);
+
+    const on = fqOn(i);
+    const kws = Array.isArray(i.keywords) ? i.keywords : [];
+    return `
+      <article class="lr-item">
+        <div class="lr-q-label">Customer asks</div>
+        <h4>${esc(i.question)}</h4>
+        ${
+          kws.length
+            ? `<div class="fq-kws">${kws.map(k => `<span class="fq-kw">${esc(k)}</span>`).join('')}</div>`
+            : ''
+        }
+        <div class="lr-q-label" style="margin-top:10px">Fixed answer</div>
+        <p>${esc(i.answer)}</p>
+        <div class="lr-meta">
+          <span class="lr-pill ${on ? 'on' : ''}">${on ? 'On' : 'Off'}</span>
+          <span class="lr-pill">Used ${fmtNum(i.use_count)} ${Number(i.use_count) === 1 ? 'time' : 'times'}</span>
+          ${i.last_used_at ? `<span class="lr-pill">Last used ${esc(fmtDate(i.last_used_at))}</span>` : ''}
+          <span class="lr-pill on">0 tokens</span>
+        </div>
+        <div class="lr-actions">
+          <button type="button" class="lr-btn small" data-act="fq-edit" data-id="${esc(i.id)}">Edit</button>
+          <button type="button" class="lr-btn small" data-act="fq-toggle" data-id="${esc(i.id)}" data-v="${on ? 'off' : 'on'}">${on ? 'Turn off' : 'Turn on'}</button>
+          <button type="button" class="lr-btn small danger" data-act="fq-delete" data-id="${esc(i.id)}">Delete</button>
+        </div>
+      </article>`;
+  }
+
+  function fqEditorHtml(i) {
+    return `
+      <article class="lr-item" data-fq-editing="${esc(i.id)}">
+        <div class="lr-field">
+          <label class="lr-label">Main question</label>
+          <input class="lr-input" data-fq-edit-q maxlength="${FQ_Q_MAX}" value="${esc(i.question)}">
+        </div>
+        <div class="lr-field">
+          <label class="lr-label">Keywords</label>
+          <div class="fq-kw-row">
+            <input class="lr-input" data-kw-input="edit" autocomplete="off" placeholder="Add a keyword, then press Enter">
+            <button type="button" class="lr-btn small" data-act="fq-kw-add" data-scope="edit">Add</button>
+          </div>
+          <div class="fq-kws" data-kw-chips="edit">${chipsHtml(S.fq.editKw, 'edit')}</div>
+        </div>
+        <div class="lr-field">
+          <label class="lr-label">Fixed answer</label>
+          <textarea class="lr-textarea" data-fq-edit-a maxlength="${FQ_A_MAX}">${esc(i.answer)}</textarea>
+        </div>
+        <div class="lr-actions">
+          <button type="button" class="lr-btn small primary" data-act="fq-save-edit" data-id="${esc(i.id)}">Save</button>
+          <button type="button" class="lr-btn small" data-act="fq-cancel-edit">Cancel</button>
+        </div>
+      </article>`;
+  }
+
+  function renderFixedList() {
+    const host = q('#fqList');
+    if (!host) return;
+    const F = S.fq;
+
+    const needle = norm(F.search);
+    let rows = F.items.filter(i => (F.filter === 'all' ? true : F.filter === 'on' ? fqOn(i) : !fqOn(i)));
+    if (needle) {
+      rows = rows.filter(i => norm([i.question, ...(i.keywords || []), i.answer].join(' ')).includes(needle));
+    }
+
+    if (!rows.length) {
+      const text = F.items.length
+        ? needle
+          ? ['No match.', 'Try a different word.']
+          : ['Nothing here.', 'No items in this view.']
+        : ['No Fixed Q&A yet.', 'Add your first question above. Customers who ask it will get your exact answer with no AI tokens used.'];
+      host.innerHTML = `<div class="lr-empty"><b>${esc(text[0])}</b>${esc(text[1])}</div>`;
+      return;
+    }
+
+    host.innerHTML = rows.map(fqItemHtml).join('');
+  }
+
+  /* Another ON item already uses the same question or keyword: matching could become unclear. */
+  function findOverlap(question, keywords, excludeId) {
+    const mine = new Set([question, ...keywords].map(norm).filter(Boolean));
+    for (const it of S.fq.items) {
+      if (it.id === excludeId || !fqOn(it)) continue;
+      const theirs = [it.question, ...(it.keywords || [])].map(norm);
+      if (theirs.some(t => t && mine.has(t))) return it;
+    }
+    return null;
+  }
+
+  async function confirmOverlap(question, keywords, excludeId) {
+    const other = findOverlap(question, keywords, excludeId);
+    if (!other) return true;
+    return ui.confirm(
+      'Another Fixed Q&A ("' +
+        String(other.question).slice(0, 80) +
+        '") already uses the same question or keyword. When two items overlap, GLIME may not be sure which answer is right and your AI may reply instead. Save anyway?',
+      { title: 'Similar Fixed Q&A found', confirmText: 'Save anyway' }
+    );
+  }
+
+  function handleLimitError(e) {
+    S.fq.limitHit = true; // server said no: block the form even if the usage RPC is not available
+    ui.toast('Fixed Q&A limit reached. Upgrade your plan to add more.', true);
+    refreshFixedTop();
+    refreshUsageStats().then(refreshFixedTop);
+    console.warn('[GLIME Fixed Q&A] limit:', errMsg(e));
+  }
+
+  async function addFixed(btn) {
+    const F = S.fq;
+    if (limitReached()) {
+      renderFixedLimit();
+      return ui.toast('Fixed Q&A limit reached. Upgrade your plan to add more.', true);
+    }
+
+    commitKw('new');
+    const question = (q('#fqQuestion')?.value || '').trim().replace(/\s+/g, ' ');
+    const answer = (q('#fqAnswer')?.value || '').trim();
+    const keywords = [...F.newKw];
+
+    if (question.length < FQ_Q_MIN) return ui.toast('Write the main question.', true);
+    if (answer.length < FQ_A_MIN) return ui.toast('Write the fixed answer.', true);
+
+    if (!(await confirmOverlap(question, keywords, null))) return;
+
+    await withBusy(btn, 'Saving…', async () => {
+      try {
+        const { data, error } = await db
+          .from(FQ_TABLE)
+          .insert({
+            client_id: clientId(),
+            question: question.slice(0, FQ_Q_MAX),
+            keywords,
+            answer: answer.slice(0, FQ_A_MAX),
+            is_active: true
+          })
+          .select(FQ_COLS)
+          .single();
+        if (error) throw error;
+
+        F.items.unshift(data);
+        syncUsage();
+        F.newKw = [];
+        F.filter = 'all';
+        F.search = '';
+        ['#fqQuestion', '#fqKwInput', '#fqAnswer', '#fqSearch'].forEach(sel => {
+          const el = q(sel);
+          if (el) el.value = '';
+        });
+        const cnt = q('#fqAnswerCount');
+        if (cnt) cnt.textContent = '0/' + FQ_A_MAX;
+        renderKw('new');
+        refreshFixedTop();
+        ui.toast('Fixed Q&A saved. Matching customers get this answer with 0 tokens.');
+        refreshUsageStats().then(refreshFixedTop);
+      } catch (e) {
+        console.error('[GLIME Fixed Q&A] add:', e);
+        if (isLimitError(e)) handleLimitError(e);
+        else ui.toast(errMsg(e), true);
+      }
+    });
+  }
+
+  async function saveFixedEdit(btn) {
+    const F = S.fq;
+    const id = btn.dataset.id;
+    const card = btn.closest('[data-fq-editing]');
+    if (!id || !card) return;
+
+    commitKw('edit');
+    const question = (card.querySelector('[data-fq-edit-q]')?.value || '').trim().replace(/\s+/g, ' ');
+    const answer = (card.querySelector('[data-fq-edit-a]')?.value || '').trim();
+    const keywords = [...F.editKw];
+
+    if (question.length < FQ_Q_MIN) return ui.toast('Write the main question.', true);
+    if (answer.length < FQ_A_MIN) return ui.toast('Write the fixed answer.', true);
+
+    if (!(await confirmOverlap(question, keywords, id))) return;
+
+    await withBusy(btn, 'Saving…', async () => {
+      try {
+        const { data, error } = await db
+          .from(FQ_TABLE)
+          .update({
+            question: question.slice(0, FQ_Q_MAX),
+            keywords,
+            answer: answer.slice(0, FQ_A_MAX),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
+          .eq('client_id', clientId())
+          .select(FQ_COLS)
+          .single();
+        if (error) throw error;
+
+        F.items = F.items.map(i => (i.id === id ? data : i));
+        F.editing = null;
+        F.editKw = [];
+        refreshFixedTop();
+        ui.toast('Fixed Q&A updated.');
+      } catch (e) {
+        console.error('[GLIME Fixed Q&A] edit:', e);
+        ui.toast(errMsg(e), true);
+      }
+    });
+  }
+
+  async function toggleFixed(btn) {
+    const F = S.fq;
+    const id = btn.dataset.id;
+    const on = btn.dataset.v === 'on';
+    if (!id) return;
+
+    await withBusy(btn, '…', async () => {
+      try {
+        const { data, error } = await db
+          .from(FQ_TABLE)
+          .update({ is_active: on, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .eq('client_id', clientId())
+          .select(FQ_COLS)
+          .single();
+        if (error) throw error;
+
+        F.items = F.items.map(i => (i.id === id ? data : i));
+        refreshFixedTop();
+        ui.toast(on ? 'Turned on.' : 'Turned off. Customers will not get this fixed answer.');
+      } catch (e) {
+        console.error('[GLIME Fixed Q&A] toggle:', e);
+        ui.toast(errMsg(e), true);
+      }
+    });
+  }
+
+  async function deleteFixed(btn) {
+    const F = S.fq;
+    const id = btn.dataset.id;
+    if (!F.items.find(i => i.id === id)) return;
+
+    const ok = await ui.confirm('Delete this Fixed Q&A? Customers will no longer get this fixed answer.', {
+      title: 'Delete Fixed Q&A',
+      confirmText: 'Delete',
+      danger: true
+    });
+    if (!ok) return;
+
+    await withBusy(btn, 'Deleting…', async () => {
+      try {
+        const { error } = await db.from(FQ_TABLE).delete().eq('id', id).eq('client_id', clientId());
+        if (error) throw error;
+
+        F.items = F.items.filter(i => i.id !== id);
+        if (F.editing === id) F.editing = null;
+        syncUsage();
+        refreshFixedTop();
+        ui.toast('Fixed Q&A deleted.');
+      } catch (e) {
+        console.error('[GLIME Fixed Q&A] delete:', e);
+        ui.toast(errMsg(e), true);
+      }
+    });
+  }
+
+  async function testFixed(btn) {
+    const host = q('#fqTestResult');
+    const message = (q('#fqTestInput')?.value || '').trim();
+    if (message.length < 2) return ui.toast('Type a customer message to test.', true);
+
+    await withBusy(btn, 'Testing…', async () => {
+      try {
+        const { data, error } = await db.rpc('test_my_fixed_qa', { p_message: message });
+        if (error) throw error;
+        const r = firstRow(data);
+
+        if (r && r.matched === true) {
+          const item = S.fq.items.find(i => i.id === r.qa_id);
+          const qText = r.question || (item && item.question) || '';
+          const aText = r.answer || (item && item.answer) || '';
+          const conf = Number(r.confidence);
+          const confText = Number.isFinite(conf) ? ' Match confidence: ' + Math.round((conf <= 1 ? conf * 100 : conf)) + '%.' : '';
+          host.innerHTML = `
+            <div class="fq-result hit">
+              <b>Fixed answer would be sent (0 tokens).</b>
+              ${qText ? 'Matched: ' + esc(qText) + '.' : ''}${esc(confText)}
+              ${aText ? '<p>' + esc(aText) + '</p>' : ''}
+            </div>`;
+        } else {
+          host.innerHTML = `
+            <div class="fq-result">
+              <b>No fixed answer matched.</b>
+              Your AI would reply to this message as usual, and normal AI tokens would apply.
+            </div>`;
+        }
+      } catch (e) {
+        console.error('[GLIME Fixed Q&A] test:', e);
+        if (isMissingBackend(e)) {
+          host.innerHTML = '<div class="fq-result"><b>Testing is not available yet.</b>Please try again later.</div>';
+        } else {
+          ui.toast(errMsg(e), true);
+        }
+      }
+    });
+  }
+
+  /* =========================================================
+     TABS + EVENTS
+  ========================================================= */
+  function renderShell() {
+    ROOT.innerHTML = `
+      <div class="lr-head">
+        <h2>Teach AI</h2>
+        <p>Two ways to teach your business: let your AI learn from your answers, or save exact answers that are sent directly with no AI tokens.</p>
+      </div>
+
+      <div class="lr-tabs" role="tablist">
+        <button type="button" class="lr-tab" role="tab" data-act="tab" data-v="teach">
+          <b>Teach AI</b>
+          <small>Your AI learns from your lessons and writes its own reply. Normal AI tokens apply.</small>
+        </button>
+        <button type="button" class="lr-tab" role="tab" data-act="tab" data-v="fixed">
+          <b>Fixed Q&amp;A</b>
+          <small>Exact question, exact answer, sent directly. 0 tokens.</small>
+        </button>
+      </div>
+
+      <div id="paneTeach"></div>
+      <div id="paneFixed" hidden></div>
+    `;
+  }
+
+  function setTab(tab) {
+    S.tab = tab === 'fixed' ? 'fixed' : 'teach';
+    try {
+      sessionStorage.setItem(TAB_KEY, S.tab);
+    } catch (_) {
+      /* storage can be blocked */
+    }
+
+    ROOT.querySelectorAll('.lr-tab').forEach(b => {
+      const active = b.dataset.v === S.tab;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+
+    const teach = q('#paneTeach');
+    const fixed = q('#paneFixed');
+    if (teach) teach.hidden = S.tab !== 'teach';
+    if (fixed) fixed.hidden = S.tab !== 'fixed';
+
+    if (S.tab === 'fixed' && !S.fq.ready && !S.fq.loading) loadFixed();
   }
 
   function onClick(e) {
     const el = e.target.closest ? e.target.closest('[data-act]') : null;
     if (!el || !ROOT || !ROOT.contains(el)) return;
+    const F = S.fq;
 
     switch (el.dataset.act) {
+      case 'tab':
+        setTab(el.dataset.v);
+        break;
+
+      /* ---- Teach AI ---- */
       case 'add':
         addLesson(el);
         break;
@@ -555,10 +1346,87 @@
         scanChats(el);
         break;
       case 'retry':
-        load();
+        loadTeach();
+        break;
+
+      /* ---- Fixed Q&A ---- */
+      case 'fq-add':
+        addFixed(el);
+        break;
+      case 'fq-kw-add':
+        commitKw(el.dataset.scope === 'edit' ? 'edit' : 'new');
+        break;
+      case 'fq-kw-del': {
+        const scope = el.dataset.scope === 'edit' ? 'edit' : 'new';
+        const arr = scope === 'new' ? F.newKw : F.editKw;
+        arr.splice(Number(el.dataset.i), 1);
+        renderKw(scope);
+        break;
+      }
+      case 'fq-filter':
+        F.filter = el.dataset.v || 'all';
+        F.editing = null;
+        renderFixedChips();
+        renderFixedList();
+        break;
+      case 'fq-edit': {
+        const item = F.items.find(i => i.id === el.dataset.id);
+        F.editing = item ? item.id : null;
+        F.editKw = item && Array.isArray(item.keywords) ? [...item.keywords] : [];
+        renderFixedList();
+        break;
+      }
+      case 'fq-cancel-edit':
+        F.editing = null;
+        F.editKw = [];
+        renderFixedList();
+        break;
+      case 'fq-save-edit':
+        saveFixedEdit(el);
+        break;
+      case 'fq-toggle':
+        toggleFixed(el);
+        break;
+      case 'fq-delete':
+        deleteFixed(el);
+        break;
+      case 'fq-test':
+        testFixed(el);
+        break;
+      case 'fq-retry':
+        loadFixed();
         break;
       default:
         break;
+    }
+  }
+
+  function onKeydown(e) {
+    const t = e.target;
+    if (!t || !t.matches) return;
+
+    if (e.key === 'Enter' && t.matches('[data-kw-input]')) {
+      e.preventDefault();
+      commitKw(t.dataset.kwInput === 'edit' ? 'edit' : 'new');
+    } else if (e.key === 'Enter' && t.matches('#fqTestInput')) {
+      e.preventDefault();
+      const btn = q('[data-act="fq-test"]');
+      if (btn && !btn.disabled) testFixed(btn);
+    }
+  }
+
+  function onInput(e) {
+    const t = e.target;
+    if (!t || !t.matches) return;
+
+    if (t.matches('#fqSearch')) {
+      S.fq.search = t.value;
+      renderFixedList();
+    } else if (t.matches('[data-kw-input]') && /[,\n]/.test(t.value)) {
+      commitKw(t.dataset.kwInput === 'edit' ? 'edit' : 'new');
+    } else if (t.matches('#fqAnswer')) {
+      const cnt = q('#fqAnswerCount');
+      if (cnt) cnt.textContent = t.value.length + '/' + FQ_A_MAX;
     }
   }
 
@@ -578,7 +1446,28 @@
       if (!ROOT) return;
 
       ROOT.addEventListener('click', onClick);
-      await load();
+      ROOT.addEventListener('keydown', onKeydown);
+      ROOT.addEventListener('input', onInput);
+
+      let saved = 'teach';
+      try {
+        saved = sessionStorage.getItem(TAB_KEY) || 'teach';
+      } catch (_) {
+        /* storage can be blocked */
+      }
+
+      /* a new render starts fresh so counters and lists are never stale */
+      S.fq.ready = false;
+      S.fq.loading = false;
+      S.fq.editing = null;
+      S.fq.editKw = [];
+      S.fq.newKw = [];
+      S.fq.filter = 'all';
+      S.fq.search = '';
+
+      renderShell();
+      setTab(saved);
+      await loadTeach();
     }
   });
 })();
