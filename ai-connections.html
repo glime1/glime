@@ -7,6 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="connector-ui.js"></script>
+<script src="connector-addons.js"></script>
 <style>
 :root{--bg:#071016;--surf:#101b29;--surf2:#0b1520;--bd:rgba(184,222,234,.13);--tx:#f4fbfd;--mu:#9cabb9;--cy:#52e8ff;--gr:#50f5a8;--rd:#ff8291}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -37,10 +38,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
 
   <div id="message" class="message" role="alert"></div>
   <div id="hub"></div>
-  <div id="cargo" style="margin-top:6px"></div>
-  <div id="calendarcard" style="margin-top:6px"></div>
-  <div id="telegramcard" style="margin-top:6px"></div>
-  <div id="webhookcard" style="margin-top:6px"></div>
+  <div id="addons" style="margin-top:6px"></div>
   <div id="permissions" style="margin-top:24px"></div>
 </div>
 
@@ -58,10 +56,7 @@ const sb=window.supabase.createClient(
 
 const UI=window.GLIME_CONNECTOR_UI;
 const hub=document.getElementById("hub");
-const cargoHost=document.getElementById("cargo");
-const calHost=document.getElementById("calendarcard");
-const tgHost=document.getElementById("telegramcard");
-const whHost=document.getElementById("webhookcard");
+const addonsHost=document.getElementById("addons");
 const perms=document.getElementById("permissions");
 const base={
   mcpEndpoint:MCP_ENDPOINT,
@@ -97,54 +92,6 @@ function patchUpgradeButtons(){
 }
 new MutationObserver(patchUpgradeButtons).observe(hub,{childList:true,subtree:true});
 
-/* Shiprocket Cargo lives in its own file, so a problem there never breaks this page. */
-function loadCargo(){
-  return new Promise(function(resolve){
-    if(window.GLIME_CARGO)return resolve(true);
-    const s=document.createElement("script");
-    s.src="connector-shiprocket-addon.js";
-    s.onload=function(){resolve(!!window.GLIME_CARGO);};
-    s.onerror=function(){resolve(false);};
-    document.head.appendChild(s);
-  });
-}
-
-/* GLIME Calendar ON / OFF card: its own file as well. */
-function loadCalendar(){
-  return new Promise(function(resolve){
-    if(window.GLIME_CALENDAR_CONNECTOR)return resolve(true);
-    const s=document.createElement("script");
-    s.src="connector-calendar-addon.js?v=1";
-    s.onload=function(){resolve(!!window.GLIME_CALENDAR_CONNECTOR);};
-    s.onerror=function(){resolve(false);};
-    document.head.appendChild(s);
-  });
-}
-
-/* Telegram reports + alerts card: its own file as well. */
-function loadTelegram(){
-  return new Promise(function(resolve){
-    if(window.GLIME_TELEGRAM)return resolve(true);
-    const s=document.createElement("script");
-    s.src="connector-telegram-addon.js?v=1";
-    s.onload=function(){resolve(!!window.GLIME_TELEGRAM);};
-    s.onerror=function(){resolve(false);};
-    document.head.appendChild(s);
-  });
-}
-
-/* Webhook card (Zapier / Make / n8n / own server): its own file as well. */
-function loadWebhook(){
-  return new Promise(function(resolve){
-    if(window.GLIME_WEBHOOK)return resolve(true);
-    const s=document.createElement("script");
-    s.src="connector-webhook-addon.js?v=1";
-    s.onload=function(){resolve(!!window.GLIME_WEBHOOK);};
-    s.onerror=function(){resolve(false);};
-    document.head.appendChild(s);
-  });
-}
-
 (async()=>{
   try{
     if(!UI)throw new Error("Connector UI could not be loaded");
@@ -157,26 +104,12 @@ function loadWebhook(){
 
     UI.render(hub,{...base,status:"loading"});
 
-    /* Shiprocket Cargo loads and reports its own status independently. */
-    loadCargo().then(function(ok){
-      if(!ok||!cargoHost.isConnected)return;
-      window.GLIME_CARGO.mount(cargoHost,{sb:sb,supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
-    });
-
-    loadCalendar().then(function(ok){
-      if(!ok||!calHost.isConnected)return;
-      window.GLIME_CALENDAR_CONNECTOR.mount(calHost,{sb:sb});
-    });
-
-    loadTelegram().then(function(ok){
-      if(!ok||!tgHost.isConnected)return;
-      window.GLIME_TELEGRAM.mount(tgHost,{sb:sb,supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
-    });
-
-    loadWebhook().then(function(ok){
-      if(!ok||!whHost.isConnected)return;
-      window.GLIME_WEBHOOK.mount(whHost,{sb:sb,supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
-    });
+    /* Add-on cards (Cargo, Calendar, Telegram, Webhook ...): one list in connector-addons.js,
+       the same list Settings > Connector uses. Each card loads and reports its own status.
+       If that file could not load, the cards above still work. */
+    if(window.GLIME_CONNECTOR_ADDONS){
+      window.GLIME_CONNECTOR_ADDONS.mountAll(addonsHost,{sb:sb,supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
+    }
 
     const res=await UI.data.loadAll(sb,{supabaseUrl:SUPABASE_URL,apiKey:SUPABASE_KEY});
 

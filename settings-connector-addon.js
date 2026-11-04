@@ -9,12 +9,14 @@
    - Google Calendar: existing backend (glime-google-calendar-oauth +
      glime-calendar-gateway). No client ID / secret in the frontend.
    - Razorpay: client's own account via glime-razorpay-oauth.
-   - Shiprocket Cargo: connector-shiprocket-addon.js (loaded on demand)
-     via glime-shiprocket-cargo-gateway.
-   - GLIME Calendar (appointments): connector-calendar-addon.js (loaded on demand).
-     Its ON / OFF switch decides whether Calendar shows in the app-shell sidebar.
-   - Telegram (reports + alerts): connector-telegram-addon.js (loaded on demand)
-     via glime-telegram-gateway.
+   - Add-on cards (Shiprocket Cargo, GLIME Calendar, Telegram, Webhook ...):
+     ONE shared list in connector-addons.js, used by this page and by
+     ai-connections.html. To add a new connector card, add one line there.
+       - Shiprocket Cargo: glime-shiprocket-cargo-gateway
+       - GLIME Calendar (appointments): its ON / OFF switch decides whether
+         Calendar shows in the app-shell sidebar.
+       - Telegram (reports + alerts): glime-telegram-gateway
+       - Webhook (Zapier / Make / n8n): glime-webhook-gateway
    - Google OAuth returns here: settings.html?connector=google-calendar&status=...#connector
    - Razorpay OAuth returns here: settings.html?connector=razorpay&status=...&reason=...#connector
    - connector-manage-addon.js (loaded on demand): permissions list + Disconnect inside connected cards.
@@ -54,37 +56,14 @@ function patchUpgradeButtons(hub){
   });
 }
 
-/* Shiprocket Cargo card lives in its own file so a problem there never breaks this page. */
-function loadCargo(){
+/* All add-on cards (Cargo, Calendar, Telegram, Webhook ...) are listed in connector-addons.js.
+   It loads on demand and is isolated, so a problem there never breaks this page. */
+function loadAddons(){
   return new Promise(function(resolve){
-    if(window.GLIME_CARGO)return resolve(true);
+    if(window.GLIME_CONNECTOR_ADDONS)return resolve(true);
     const s=document.createElement('script');
-    s.src='connector-shiprocket-addon.js';
-    s.onload=function(){resolve(!!window.GLIME_CARGO);};
-    s.onerror=function(){resolve(false);};
-    document.head.appendChild(s);
-  });
-}
-
-/* GLIME Calendar card: also its own file, isolated the same way. */
-function loadCalendar(){
-  return new Promise(function(resolve){
-    if(window.GLIME_CALENDAR_CONNECTOR)return resolve(true);
-    const s=document.createElement('script');
-    s.src='connector-calendar-addon.js?v=1';
-    s.onload=function(){resolve(!!window.GLIME_CALENDAR_CONNECTOR);};
-    s.onerror=function(){resolve(false);};
-    document.head.appendChild(s);
-  });
-}
-
-/* Telegram card: its own file as well, isolated the same way. */
-function loadTelegram(){
-  return new Promise(function(resolve){
-    if(window.GLIME_TELEGRAM)return resolve(true);
-    const s=document.createElement('script');
-    s.src='connector-telegram-addon.js?v=1';
-    s.onload=function(){resolve(!!window.GLIME_TELEGRAM);};
+    s.src='connector-addons.js';
+    s.onload=function(){resolve(!!window.GLIME_CONNECTOR_ADDONS);};
     s.onerror=function(){resolve(false);};
     document.head.appendChild(s);
   });
@@ -166,15 +145,11 @@ S.register({
         <p>Connect GLIME with the tools your business already uses.</p>
       </div>
       <div id="gcxSettingsHub"></div>
-      <div id="gcxSettingsCargo" style="margin-top:6px"></div>
-      <div id="gcxSettingsCalendar" style="margin-top:6px"></div>
-      <div id="gcxSettingsTelegram" style="margin-top:6px"></div>
+      <div id="gcxSettingsAddons" style="margin-top:6px"></div>
       <div id="gcxSettingsPerms" style="margin-top:22px"></div>`;
 
     const hub=container.querySelector('#gcxSettingsHub');
-    const cargoHost=container.querySelector('#gcxSettingsCargo');
-    const calHost=container.querySelector('#gcxSettingsCalendar');
-    const tgHost=container.querySelector('#gcxSettingsTelegram');
+    const addonsHost=container.querySelector('#gcxSettingsAddons');
     const perms=container.querySelector('#gcxSettingsPerms');
     const UI=window.GLIME_CONNECTOR_UI;
 
@@ -195,26 +170,11 @@ S.register({
 
     UI.render(hub,{...base,status:'loading',banner:banner});
 
-    /* Shiprocket Cargo loads and reports its own status independently of the cards above. */
-    loadCargo().then(function(ok){
-      if(!ok||!cargoHost.isConnected||!api.supabase)return;
-      window.GLIME_CARGO.mount(cargoHost,{
-        sb:api.supabase,
-        supabaseUrl:supabaseUrl,
-        apiKey:api.supabase.supabaseKey
-      });
-    });
-
-    /* GLIME Calendar ON / OFF card: decides if Calendar shows in the sidebar. */
-    loadCalendar().then(function(ok){
-      if(!ok||!calHost.isConnected||!api.supabase)return;
-      window.GLIME_CALENDAR_CONNECTOR.mount(calHost,{sb:api.supabase});
-    });
-
-    /* Telegram card: reports + alerts, ON / OFF and settings. Independent of the cards above. */
-    loadTelegram().then(function(ok){
-      if(!ok||!tgHost.isConnected||!api.supabase)return;
-      window.GLIME_TELEGRAM.mount(tgHost,{
+    /* Add-on cards (Cargo, Calendar, Telegram, Webhook ...): one list in connector-addons.js.
+       Each card loads and reports its own status independently of the cards above. */
+    loadAddons().then(function(ok){
+      if(!ok||!addonsHost.isConnected||!api.supabase)return;
+      window.GLIME_CONNECTOR_ADDONS.mountAll(addonsHost,{
         sb:api.supabase,
         supabaseUrl:supabaseUrl,
         apiKey:api.supabase.supabaseKey
