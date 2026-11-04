@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Telegram | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* Colours live on #app and follow html[data-theme] (set by glime-theme.js), so dark and light both work. */
+#app{--s:#0e1824;--s2:#142233;--bd:rgba(184,222,234,.14);--tx:#f4fbfd;--mu:#93a4b3;--cy:#52e8ff;--gr:#50f5a8;--rd:#ff8291;--am:#ffc46b}
+html[data-theme="light"] #app{--s:#f6f8fb;--s2:#eaf0f5;--bd:#dfe6ed;--tx:#0b1620;--mu:#526170;--cy:#0a7a99;--gr:#0a7a4a;--rd:#c62828;--am:#a05a00}
+html:not([data-theme="light"]) body{background:radial-gradient(800px 380px at 90% -8%,rgba(82,232,255,.12),transparent),radial-gradient(600px 300px at -10% 10%,rgba(80,245,168,.08),transparent),#071016}
+*{box-sizing:border-box}
+body{margin:0;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+#app{max-width:880px;margin:0 auto;padding:14px 14px 0;font:500 14px/1.5 Manrope,Arial,sans-serif;color:var(--tx)}
+#app h1,#app h3,#app h4{color:var(--tx);margin:0}#app h1{font-size:1.35rem;letter-spacing:-.02em}#app h3{font-size:1rem}#app h4{font-size:.86rem}
+.mu{color:var(--mu);font-size:.78rem}.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.sp{justify-content:space-between}
+#app select,#app input,#app button,#app .btn{font:inherit;color:var(--tx);min-height:44px;border-radius:12px;border:1px solid var(--bd);background:var(--s2);padding:8px 12px}
+#app input,#app select{width:100%}
+#app button,#app .btn{cursor:pointer;font-weight:700;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;width:auto}
+#app button:hover,#app .btn:hover{border-color:var(--cy)}#app button:disabled{opacity:.55;cursor:default}
+#app .p{background:linear-gradient(105deg,#50f5a8,#52e8ff);color:#031014;border:0}
+#app .d{color:var(--rd);border-color:color-mix(in srgb,var(--rd) 45%,transparent)}
+#app :focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:18px;padding:14px;margin-bottom:12px}
+.card>.hd{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}.hd>div{flex:1;min-width:0}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.msg{padding:11px 13px;border-radius:12px;background:var(--s);border:1px solid var(--bd);color:var(--mu);font-size:.8rem;margin-bottom:12px}
+.msg.ok{color:var(--gr);border-color:color-mix(in srgb,var(--gr) 40%,transparent)}.msg.err{color:var(--rd);border-color:color-mix(in srgb,var(--rd) 40%,transparent)}
+.badge{font-size:.66rem;font-weight:800;padding:4px 9px;border-radius:99px;border:1px solid var(--bd);color:var(--mu);white-space:nowrap}
+.badge.on{color:var(--gr);border-color:color-mix(in srgb,var(--gr) 45%,transparent)}.badge.wait{color:var(--am);border-color:color-mix(in srgb,var(--am) 45%,transparent)}
+.people{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px}
+#app .chip{min-height:38px;padding:4px 14px;border-radius:99px;white-space:nowrap;flex:none}
+#app .chip.on{background:linear-gradient(105deg,#50f5a8,#52e8ff);color:#031014;border:0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--bd)}
+.row:first-of-type{border-top:0}.row span{min-width:0}.row small{display:block;color:var(--mu);font-size:.72rem;font-weight:500}
+#app .sw{position:relative;flex:none;width:48px;min-height:28px;height:28px;padding:0;border-radius:99px}
+#app .sw i{position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:var(--mu);transition:transform .2s,background .2s}
+#app .sw[aria-checked=true]{background:color-mix(in srgb,var(--gr) 22%,transparent);border-color:color-mix(in srgb,var(--gr) 55%,transparent)}
+#app .sw[aria-checked=true] i{transform:translateX(20px);background:var(--gr)}
+.lb{display:block;font-size:.66rem;letter-spacing:.1em;font-weight:800;color:var(--mu);text-transform:uppercase;margin:12px 0 6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+#app .day[aria-pressed=true],#app .cmd[aria-pressed=true]{background:color-mix(in srgb,var(--gr) 16%,transparent);border-color:color-mix(in srgb,var(--gr) 55%,transparent);color:var(--gr)}
+#app .day,#app .cmd{min-height:40px;border-radius:99px;padding:6px 14px}
+.times{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}.times div{display:flex;gap:8px}
+code{display:block;padding:10px;border-radius:10px;background:var(--s2);border:1px solid var(--bd);font:.72rem ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
+ol{margin:6px 0 12px;padding-left:18px;color:var(--mu);font-size:.78rem}
+.save{position:sticky;bottom:calc(14px + env(safe-area-inset-bottom));z-index:5;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:16px;background:var(--s);border:1px solid var(--bd);box-shadow:0 10px 30px -12px rgba(0,0,0,.6)}
+.empty{text-align:center;margin-top:24px}.empty p{margin:8px 0 14px}
+@media(max-width:560px){.g2{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
+</head>
+<body data-gas-title="Telegram">
+<div id="app" aria-live="polite" data-gas-content></div>
+<script>
+(()=>{
+'use strict';
+/* =========================================================
+   GLIME TELEGRAM PAGE  (frontend only; backend is built separately)
+   Opened from the sidebar once Connector > Telegram is ON.
+   Gateway: glime-telegram-gateway (verify_jwt = true, Authorization: Bearer <user jwt>)
+     GET  ?action=telegram.status
+          -> { bot_username, recipients:[ {
+                 id, is_owner, name, role, phone_masked, telegram_username,
+                 connected, enabled, connected_at, last_sent_at, last_error, settings } ] }
+          (the owner is the recipient with is_owner = true; none yet = owner not connected)
+     POST ?action=telegram.connect.start  { phone, name?, role? }  or  { recipient_id }
+          -> { recipient_id, bot_username, deep_link, code, expires_at | expires_in }
+          (deep_link = https://t.me/<bot>?start=<code>; the bot links the chat on /start.
+           Without name/role = owner. With name/role/phone = a new person. With recipient_id = new link
+           for a person who has not pressed Start yet.)
+     POST ?action=telegram.recipient.enable.set    { recipient_id, enabled }   (pause / resume)
+     POST ?action=telegram.recipient.settings.save { recipient_id, settings }  -> { settings }
+     POST ?action=telegram.recipient.remove        { recipient_id }            (owner = disconnect)
+     POST ?action=telegram.test                    { recipient_id }
+     POST ?action=telegram.report.send_now         { recipient_id }
+   Errors: non-2xx, or { ok:false, message }.
+   settings (per person; every feature below is OFF until that person turns it on) = {
+     timezone, language:'en'|'hi',
+     daily:{enabled,days:[1..7 Mon=1],times:['HH:MM'...]}, weekly:{enabled,day,time},
+     sections:{ report content flags }, alerts:{ instant alert flags },
+     quiet:{enabled,start,end},
+     commands:{enabled, list:{today,leads,orders,followups,revenue,payments}},  bot answers /today etc.
+     buttons:{enabled},                        alerts get "Open lead / View order" buttons to GLIME pages
+     followup_reminder:{enabled,hours},        "3 leads have had no reply for 24 hours"
+     min_amount:{enabled,orders,payments},     order / payment alerts only at or above these rupee amounts
+     target:{enabled,amount},                  "Today Rs 12,000 / Rs 20,000"
+     no_lead:{enabled,time},                   "No new lead today" alert at this time
+     privacy:{hide_phone}                      mask customer phone numbers in messages
+   }
+   Nothing is stored in the browser except the Connector ON flag (glime_tg_on_<user id>).
+   ========================================================= */
+const FN='glime-telegram-gateway';
+const SB_URL='https://ufoulgbiqgjriwapuopc.supabase.co',SB_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const sb=window.sb||(window.supabase&&window.supabase.createClient?window.supabase.createClient(SB_URL,SB_KEY):null);
+const $app=document.getElementById('app');
+const MAX_TIMES=4;
+const DAYS=[[1,'Mon','Monday'],[2,'Tue','Tuesday'],[3,'Wed','Wednesday'],[4,'Thu','Thursday'],[5,'Fri','Friday'],[6,'Sat','Saturday'],[7,'Sun','Sunday']];
+const SECTIONS=[['new_leads','New leads','How many came in, with names and source',1],['hot_leads','Hot leads','Leads that look ready to buy',1],['followups','Pending follow-ups','Due and overdue follow-ups',1],['orders','Orders','New, pending and delivered orders',1],['revenue','Revenue','Sales and money collected',1],['payments','Payments','Paid, pending and failed payments',1],['whatsapp','WhatsApp','Chats and messages handled by AI',1],['instagram','Instagram','DMs and comments handled by AI',1],['appointments','Appointments','Booked, changed and cancelled',1],['ai_usage','AI usage','Tokens and daily limit used',0],['ai_insights','AI insights','Highlights and what to do next',1]];
+const ALERTS=[['new_lead','New lead','Instantly when a new lead arrives',1],['hot_lead','Hot lead','When a lead is ready to buy',1],['new_order','New order','When an order is placed',1],['payment_received','Payment received','When a payment is successful',1],['payment_failed','Payment failed','When a payment fails',1],['appointment_booked','Appointment booked','When a customer books a slot',0],['appointment_cancelled','Appointment cancelled','When a booking is cancelled',0],['human_handover','Needs your attention','When AI hands a chat over to you',1],['limit_reached','Daily limit reached','When a token or message limit is hit',1],['channel_issue','Channel problem','When WhatsApp or Instagram disconnects',1]];
+const COMMANDS=[['today','/today','Today\'s summary'],['leads','/leads','New and hot leads'],['orders','/orders','Today\'s orders'],['followups','/followups','Pending follow-ups'],['revenue','/revenue','Today\'s sales'],['payments','/payments','Payments received']];
+const HOURS=[2,4,6,12,24,48];
+const ROLES=['Partner','Manager','Staff','Other'];
+
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mkErr=(m,c)=>{const e=new Error(m);e.code=c;return e;};
+const cleanMsg=e=>{if(e&&e.code==='SESSION_EXPIRED')return 'Your session has expired. Please sign in again.';const m=String((e&&e.message)||'').trim();return(m&&m.length<=320)?m:'Request failed. Please try again.';};
+const isTime=v=>/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||''));
+const detectTz=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Kolkata';}catch(e){return 'Asia/Kolkata';}};
+const fmtDT=iso=>{const d=new Date(iso);return isNaN(d)?'':d.toLocaleString(undefined,{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});};
+const gdConfirm=(m,o)=>window.GLIME_DIALOG?window.GLIME_DIALOG.confirm(m,o):Promise.resolve(window.confirm(m));
+async function copyText(t){
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(t);return true;}}catch(e){}
+  try{const a=document.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok;}catch(e){return false;}
+}
+function normPhone(raw){
+  let v=String(raw||'').replace(/[\s\-().]/g,'');
+  if(v.indexOf('00')===0)v='+'+v.slice(2);
+  if(/^\d{10}$/.test(v))v='+91'+v;
+  return /^\+\d{8,15}$/.test(v)?v:'';
+}
+const tzList=cur=>{const l=['Asia/Kolkata','Asia/Dubai','Asia/Singapore','Europe/London','America/New_York','America/Los_Angeles','Australia/Sydney'];[detectTz(),cur].forEach(z=>{if(z&&l.indexOf(z)<0)l.unshift(z);});return l;};
+
+/* ---------- settings model: every new feature starts OFF ---------- */
+function defaults(){
+  const sections={},alerts={},list={};
+  SECTIONS.forEach(s=>{sections[s[0]]=!!s[3];});
+  ALERTS.forEach(a=>{alerts[a[0]]=!!a[3];});
+  COMMANDS.forEach(c=>{list[c[0]]=true;});
+  return {
+    timezone:detectTz(),language:'en',
+    daily:{enabled:true,days:[1,2,3,4,5,6,7],times:['21:00']},
+    weekly:{enabled:false,day:7,time:'20:00'},
+    sections,alerts,
+    quiet:{enabled:false,start:'22:00',end:'07:00'},
+    commands:{enabled:false,list},
+    buttons:{enabled:false},
+    followup_reminder:{enabled:false,hours:24},
+    min_amount:{enabled:false,orders:5000,payments:5000},
+    target:{enabled:false,amount:20000},
+    no_lead:{enabled:false,time:'20:00'},
+    privacy:{hide_phone:false}
+  };
+}
+function merge(d,r){
+  if(!r||typeof r!=='object')return d;
+  Object.keys(d).forEach(k=>{
+    const dv=d[k],rv=r[k];
+    if(rv===undefined||rv===null)return;
+    if(Array.isArray(dv)){if(Array.isArray(rv))d[k]=rv.slice();}
+    else if(typeof dv==='object')d[k]=merge(dv,rv);
+    else if(typeof dv===typeof rv)d[k]=rv;
+  });
+  return d;
+}
+function normalize(raw){
+  const d=merge(defaults(),raw);
+  if(d.language!=='hi')d.language='en';
+  d.daily.days=Array.from(new Set(d.daily.days.map(Number).filter(n=>n>=1&&n<=7))).sort((a,b)=>a-b);
+  d.daily.times=Array.from(new Set(d.daily.times.filter(isTime))).slice(0,MAX_TIMES);
+  if(!d.daily.times.length)d.daily.times=['21:00'];
+  if(!(d.weekly.day>=1&&d.weekly.day<=7))d.weekly.day=7;
+  if(HOURS.indexOf(d.followup_reminder.hours)<0)d.followup_reminder.hours=24;
+  return d;
+}
+function tidy(d){
+  const o=JSON.parse(JSON.stringify(d));
+  o.daily.days=Array.from(new Set(o.daily.days)).sort((a,b)=>a-b);
+  o.daily.times=Array.from(new Set(o.daily.times)).sort();
+  return o;
+}
+function validate(d){
+  if(d.daily.enabled){
+    if(!d.daily.days.length)return 'Choose at least one day for the daily report.';
+    if(!d.daily.times.length||!d.daily.times.every(isTime))return 'Set a valid time for every daily report.';
+    if(new Set(d.daily.times).size!==d.daily.times.length)return 'Two daily reports have the same time.';
+  }
+  if(d.weekly.enabled&&!isTime(d.weekly.time))return 'Set a valid time for the weekly summary.';
+  if((d.daily.enabled||d.weekly.enabled)&&!Object.keys(d.sections).some(k=>d.sections[k]))return 'Choose at least one thing to include in the reports.';
+  if(d.commands.enabled&&!Object.keys(d.commands.list).some(k=>d.commands.list[k]))return 'Choose at least one bot command.';
+  if(d.min_amount.enabled&&!(d.min_amount.orders>0&&d.min_amount.payments>0))return 'Enter a minimum amount above 0 for orders and payments.';
+  if(d.target.enabled&&!(d.target.amount>0))return 'Enter a daily target amount above 0.';
+  if(d.no_lead.enabled&&!isTime(d.no_lead.time))return 'Set a valid time for the no-new-lead alert.';
+  if(d.quiet.enabled){
+    if(!isTime(d.quiet.start)||!isTime(d.quiet.end))return 'Set both quiet hours times.';
+    if(d.quiet.start===d.quiet.end)return 'Quiet hours start and end cannot be the same.';
+  }
+  return '';
+}
+function getPath(o,p){return p.split('.').reduce((a,k)=>a==null?a:a[k],o);}
+function setPath(o,p,v){const a=p.split('.');let x=o;for(let i=0;i<a.length-1;i++){if(!x[a[i]]||typeof x[a[i]]!=='object')return;x=x[a[i]];}x[a[a.length-1]]=v;}
+
+/* ---------- api ---------- */
+async function call(action,o){
+  o=o||{};
+  const r=await sb.auth.getSession(),s=r&&r.data&&r.data.session;
+  if(!s)throw mkErr('Your session has expired. Please sign in again.','SESSION_EXPIRED');
+  const headers={Authorization:'Bearer '+s.access_token};
+  if(SB_KEY)headers.apikey=SB_KEY;
+  const method=o.method||'POST',init={method,headers};
+  if(method!=='GET'){headers['Content-Type']='application/json';init.body=JSON.stringify(o.body||{});}
+  let res;
+  try{res=await fetch(SB_URL+'/functions/v1/'+FN+'?action='+encodeURIComponent(action),init);}
+  catch(e){throw mkErr('Unable to reach GLIME right now. Please try again.','NETWORK');}
+  const data=await res.json().catch(()=>null);
+  if(!res.ok||(data&&data.ok===false)){
+    const em=data&&(data.message||(typeof data.error==='string'?data.error:(data.error&&data.error.message)));
+    throw mkErr(em||'Telegram request failed.',(data&&data.error)||res.status);
+  }
+  return data||{};
+}
+const api={
+  status:()=>call('telegram.status',{method:'GET'}),
+  connect:b=>call('telegram.connect.start',{body:b}),
+  enable:(id,enabled)=>call('telegram.recipient.enable.set',{body:{recipient_id:id,enabled}}),
+  save:(id,settings)=>call('telegram.recipient.settings.save',{body:{recipient_id:id,settings}}),
+  remove:id=>call('telegram.recipient.remove',{body:{recipient_id:id}}),
+  test:id=>call('telegram.test',{body:{recipient_id:id}}),
+  sendNow:id=>call('telegram.report.send_now',{body:{recipient_id:id}})
+};
+
+/* ---------- state ---------- */
+const st={loading:true,off:false,fail:'',bot:'',people:[],sel:null,drafts:{},saved:{},busy:'',msg:null,banner:null,
+  add:{open:false,name:'',role:'Partner',phone:''},ownerPhone:'',link:null};
+let timer=null,polling=false;
+const owner=()=>st.people.find(p=>p.is_owner)||null;
+const cur=()=>st.people.find(p=>p.id===st.sel)||null;
+const dirty=id=>!!st.drafts[id]&&JSON.stringify(st.drafts[id])!==st.saved[id];
+
+function applyStatus(r,keep){
+  st.bot=(r&&r.bot_username)?String(r.bot_username).replace(/^@/,''):st.bot;
+  st.people=(r&&Array.isArray(r.recipients))?r.recipients:[];
+  st.people.forEach(p=>{
+    if(p.connected&&!(keep&&dirty(p.id))){st.drafts[p.id]=normalize(p.settings);st.saved[p.id]=JSON.stringify(st.drafts[p.id]);}
+  });
+  if(!st.people.some(p=>p.id===st.sel)){const o=owner();st.sel=o?o.id:(st.people[0]&&st.people[0].id)||null;}
+}
+async function reload(keep){applyStatus(await api.status(),keep);}
+async function run(kind,fn){
+  if(st.busy)return;
+  st.busy=kind;st.msg=null;st.banner=null;render();
+  try{await fn();}catch(e){console.error('GLIME Telegram '+kind+':',e);st.msg={type:'err',text:cleanMsg(e)};}
+  st.busy='';render();
+}
+function stopPoll(){if(timer){clearInterval(timer);timer=null;}}
+function startPoll(){
+  stopPoll();
+  timer=setInterval(async()=>{
+    if(!st.link){stopPoll();return;}
+    if(st.link.expiresAt&&Date.now()>st.link.expiresAt){stopPoll();st.link.expired=true;render();return;}
+    if(polling)return;polling=true;
+    try{await checkLinked();}catch(e){}
+    polling=false;
+  },3000);
+}
+async function checkLinked(){
+  const r=await api.status();
+  const l=st.link;if(!l)return false;
+  const ps=Array.isArray(r.recipients)?r.recipients:[];
+  const hit=ps.find(p=>(l.rid?p.id===l.rid:p.is_owner)&&p.connected);
+  if(!hit)return false;
+  stopPoll();applyStatus(r,true);
+  st.sel=hit.id;st.link=null;st.add={open:false,name:'',role:'Partner',phone:''};st.ownerPhone='';
+  st.banner={type:'ok',text:(hit.is_owner?'Your Telegram':hit.name||'Telegram')+' connected successfully.'};
+  render();return true;
+}
+
+/* ---------- views ---------- */
+const sw=(p,label,desc,on)=>`<div class="row"><span><b>${esc(label)}</b>${desc?`<small>${esc(desc)}</small>`:''}</span><button type="button" class="sw" role="switch" aria-checked="${on?'true':'false'}" aria-label="${esc(label)}" data-act="sw" data-p="${esc(p)}"><i></i></button></div>`;
+const msgBox=m=>m?`<div class="msg ${m.type==='ok'?'ok':'err'}" role="${m.type==='ok'?'status':'alert'}">${esc(m.text)}</div>`:'';
+
+function linkCard(){
+  const l=st.link,dis=st.busy?'disabled':'';
+  return `<div class="card"><h3>Open Telegram and press Start</h3>
+  <ol><li>Tap Open Telegram. It opens the GLIME bot${l.bot?' (@'+esc(l.bot)+')':''}${l.who?' on '+esc(l.who)+'\'s phone':''}.</li><li>Press Start. If the bot asks to share the number, tap Share.</li><li>This page connects by itself.</li></ol>
+  ${l.expired?'<div class="msg err" role="alert">This link has expired. Get a new one.</div>':'<div class="msg" role="status">Waiting for Start in Telegram…</div>'}
+  <div class="bar">${l.expired?`<button class="p" data-act="newlink" ${dis}>Get a new link</button>`:`<a class="btn p" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">Open Telegram</a><button data-act="check" ${dis}>${st.busy==='check'?'Checking…':'I pressed Start'}</button><button data-act="copylink" data-v="${esc(l.url)}">Copy link</button>`}<button data-act="linkback" ${dis}>Back</button></div>
+  ${l.code?`<span class="lb">Link not opening? Send this to the bot</span><code>/start ${esc(l.code)}</code>`:''}</div>`;
+}
+function ownerConnect(){
+  const dis=st.busy?'disabled':'';
+  return `<div class="card"><h3>Connect your Telegram</h3>
+  <p class="mu" style="margin:6px 0 0">Get your reports and alerts on Telegram, and ask the GLIME bot for your numbers. Telegram does not charge per message.</p>
+  <ol><li>Enter the mobile number you use on Telegram, with country code.</li><li>Open the GLIME bot and press Start.</li><li>Choose what you want to receive.</li></ol>
+  ${msgBox(st.msg)}
+  <label class="lb" for="oPhone">Telegram mobile number</label><input id="oPhone" data-f="ownerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" maxlength="24" value="${esc(st.ownerPhone)}" ${dis}>
+  <div class="bar" style="margin-top:12px"><button class="p" data-act="connect-owner" ${dis}>${st.busy==='connect'?'Please wait…':'Connect Telegram'}</button></div>
+  <p class="mu" style="margin:10px 0 0">A 10 digit number is treated as an Indian number (+91).</p></div>`;
+}
+function addCard(){
+  const a=st.add,dis=st.busy?'disabled':'';
+  return `<div class="card"><h3>Add a person</h3>
+  <p class="mu" style="margin:6px 0 0">A partner or staff member gets their own reports and alerts, with their own settings.</p>
+  ${msgBox(st.msg)}
+  <div class="g2"><div><label class="lb" for="aName">Name</label><input id="aName" data-f="add.name" maxlength="60" value="${esc(a.name)}" ${dis}></div>
+  <div><label class="lb" for="aRole">Role</label><select id="aRole" data-f="add.role" ${dis}>${ROLES.map(r=>`<option ${r===a.role?'selected':''}>${r}</option>`).join('')}</select></div></div>
+  <label class="lb" for="aPhone">Their Telegram mobile number</label><input id="aPhone" data-f="add.phone" type="tel" inputmode="tel" placeholder="+91 98765 43210" maxlength="24" value="${esc(a.phone)}" ${dis}>
+  <div class="bar" style="margin-top:12px"><button class="p" data-act="add-go" ${dis}>${st.busy==='add'?'Please wait…':'Get invite link'}</button><button data-act="add-close" ${dis}>Cancel</button></div></div>`;
+}
+function peopleBar(){
+  return `<div class="people" role="tablist" aria-label="People who receive Telegram messages">${st.people.map(p=>`<button class="chip ${p.id===st.sel&&!st.add.open?'on':''}" role="tab" aria-selected="${p.id===st.sel&&!st.add.open}" data-act="pick" data-id="${esc(p.id)}">${p.is_owner?'You':esc(p.name||'Person')}${p.connected?'':' ·'}</button>`).join('')}<button class="chip ${st.add.open?'on':''}" data-act="add-open">+ Add person</button></div>`;
+}
+function personHead(p){
+  const dis=st.busy?'disabled':'';
+  const bt=!p.connected?['Waiting for Start','wait']:(p.enabled===false?['Paused','']:['Active','on']);
+  const who=[p.telegram_username?'@'+String(p.telegram_username).replace(/^@/,''):'',p.phone_masked||'',p.role&&!p.is_owner?p.role:''].filter(Boolean).map(esc).join(' · ');
+  return `<div class="card"><div class="hd"><div><h3>${p.is_owner?'Your Telegram':esc(p.name||'Person')}</h3><p class="mu" style="margin:2px 0 0">${who||'&nbsp;'}</p>${p.connected&&p.last_sent_at?`<p class="mu" style="margin:2px 0 0">Last message ${esc(fmtDT(p.last_sent_at))}</p>`:''}</div><span class="badge ${bt[1]}">${bt[0]}</span></div>
+  ${p.last_error?'<div class="msg err" role="alert" style="margin:8px 0 0">The last message could not be delivered. Send a test message, or connect again.</div>':''}
+  ${msgBox(st.msg)}
+  <div class="bar" style="margin-top:10px">${p.connected?`<button data-act="pause" ${dis}>${st.busy==='pause'?'Please wait…':(p.enabled===false?'Resume messages':'Pause messages')}</button><button data-act="test" ${dis}>${st.busy==='test'?'Sending…':'Send test message'}</button><button data-act="sendnow" ${dis}>${st.busy==='now'?'Sending…':'Send report now'}</button>`:`<button class="p" data-act="newlink" ${dis}>Get a new link</button>`}<button class="d" data-act="remove" ${dis}>${p.is_owner?'Disconnect':'Remove'}</button></div></div>`;
+}
+function settingsCards(p){
+  const d=st.drafts[p.id];if(!d)return '';
+  const t=(path,v,al)=>`<input type="time" data-p="${path}" value="${esc(v)}" aria-label="${al}">`;
+  const days=DAYS.map(x=>`<button type="button" class="day" aria-pressed="${d.daily.days.indexOf(x[0])>=0}" aria-label="${x[2]}" data-act="day" data-d="${x[0]}">${x[1]}</button>`).join('');
+  const times=d.daily.times.map((v,i)=>`<div><input type="time" data-i="${i}" data-act-change="time" value="${esc(v)}" aria-label="Daily report time ${i+1}">${d.daily.times.length>1?`<button type="button" data-act="time-del" data-i="${i}" aria-label="Remove time ${i+1}">Remove</button>`:''}</div>`).join('');
+  const cmds=COMMANDS.map(c=>`<button type="button" class="cmd" aria-pressed="${!!d.commands.list[c[0]]}" data-act="cmd" data-k="${c[0]}" title="${esc(c[2])}">${esc(c[1])}</button>`).join('');
+  return `
+  <div class="card"><h3>Quick answers in Telegram</h3><p class="mu" style="margin:4px 0 0">Type a command in the GLIME bot and get the answer at once, without opening GLIME.</p>
+    ${sw('commands.enabled','Bot commands','Answer /today, /leads, /orders and more',d.commands.enabled)}
+    ${d.commands.enabled?`<span class="lb">Commands to allow</span><div class="chips">${cmds}</div><p class="mu" style="margin:10px 0 0">${COMMANDS.filter(c=>d.commands.list[c[0]]).map(c=>esc(c[1]+' – '+c[2])).join('<br>')}</p>`:''}
+    ${sw('buttons.enabled','Action buttons on alerts','Adds buttons like Open lead or View order that open the right GLIME page',d.buttons.enabled)}</div>
+
+  <div class="card"><h3>Daily business report</h3>
+    ${sw('daily.enabled','Send a daily report','A summary of how the business did',d.daily.enabled)}
+    ${d.daily.enabled?`<span class="lb">Days</span><div class="chips">${days}<button type="button" class="day" aria-pressed="false" data-act="days-all">Every day</button><button type="button" class="day" aria-pressed="false" data-act="days-wk">Mon to Fri</button></div>
+    <span class="lb">Send at</span><div class="times">${times}</div>${d.daily.times.length<MAX_TIMES?'<button type="button" data-act="time-add">Add another time</button>':''}
+    <p class="mu" style="margin:10px 0 0">Times use the timezone chosen below. Add a morning and an evening report if you like.</p>`:''}</div>
+
+  <div class="card"><h3>Weekly summary</h3>
+    ${sw('weekly.enabled','Send a weekly summary','Week-on-week growth, best days and top results',d.weekly.enabled)}
+    ${d.weekly.enabled?`<div class="g2"><div><span class="lb">Day</span><select data-p="weekly.day" data-num aria-label="Weekly summary day">${DAYS.map(x=>`<option value="${x[0]}" ${d.weekly.day===x[0]?'selected':''}>${x[2]}</option>`).join('')}</select></div><div><span class="lb">Time</span>${t('weekly.time',d.weekly.time,'Weekly summary time')}</div></div>`:''}</div>
+
+  <div class="card"><h3>What to include in reports</h3>${SECTIONS.map(s=>sw('sections.'+s[0],s[1],s[2],d.sections[s[0]])).join('')}</div>
+
+  <div class="card"><h3>Instant alerts</h3>${ALERTS.map(a=>sw('alerts.'+a[0],a[1],a[2],d.alerts[a[0]])).join('')}</div>
+
+  <div class="card"><h3>Smart alerts</h3>
+    ${sw('followup_reminder.enabled','Follow-up reminder','Example: 3 leads have had no reply for 24 hours',d.followup_reminder.enabled)}
+    ${d.followup_reminder.enabled?`<span class="lb">Remind me when a lead has had no reply for</span><select data-p="followup_reminder.hours" data-num aria-label="Follow-up reminder hours">${HOURS.map(h=>`<option value="${h}" ${d.followup_reminder.hours===h?'selected':''}>${h} hours</option>`).join('')}</select>`:''}
+    ${sw('min_amount.enabled','Minimum amount for alerts','Alert only for orders and payments at or above an amount',d.min_amount.enabled)}
+    ${d.min_amount.enabled?`<div class="g2"><div><span class="lb">Orders from (₹)</span><input type="number" inputmode="numeric" min="1" step="100" data-p="min_amount.orders" data-num value="${esc(d.min_amount.orders)}"></div><div><span class="lb">Payments from (₹)</span><input type="number" inputmode="numeric" min="1" step="100" data-p="min_amount.payments" data-num value="${esc(d.min_amount.payments)}"></div></div>`:''}
+    ${sw('target.enabled','Daily sales target','Shows progress, like Today ₹12,000 / ₹20,000',d.target.enabled)}
+    ${d.target.enabled?`<span class="lb">Target per day (₹)</span><input type="number" inputmode="numeric" min="1" step="500" data-p="target.amount" data-num value="${esc(d.target.amount)}">`:''}
+    ${sw('no_lead.enabled','No new lead alert','Tells you if not a single new lead came in today',d.no_lead.enabled)}
+    ${d.no_lead.enabled?`<span class="lb">Check at</span>${t('no_lead.time',d.no_lead.time,'No new lead check time')}`:''}</div>
+
+  <div class="card"><h3>Privacy and quiet hours</h3>
+    ${sw('privacy.hide_phone','Hide customer phone numbers','Show numbers masked in alerts and reports, like 98•••••21',d.privacy.hide_phone)}
+    ${sw('quiet.enabled','Quiet hours','No instant alerts in this time. Reports still arrive on schedule.',d.quiet.enabled)}
+    ${d.quiet.enabled?`<div class="g2"><div><span class="lb">From</span>${t('quiet.start',d.quiet.start,'Quiet hours start')}</div><div><span class="lb">Until</span>${t('quiet.end',d.quiet.end,'Quiet hours end')}</div></div>`:''}</div>
+
+  <div class="card"><h3>Language and timezone</h3><div class="g2">
+    <div><span class="lb">Report language</span><select data-p="language" aria-label="Report language"><option value="en" ${d.language==='en'?'selected':''}>English</option><option value="hi" ${d.language==='hi'?'selected':''}>Hindi</option></select></div>
+    <div><span class="lb">Timezone</span><select data-p="timezone" aria-label="Timezone">${tzList(d.timezone).map(z=>`<option value="${esc(z)}" ${z===d.timezone?'selected':''}>${esc(z)}</option>`).join('')}</select></div></div></div>
+
+  <div class="save"><button class="p" data-act="save" ${(!dirty(p.id)||st.busy)?'disabled':''}>${st.busy==='save'?'Saving…':'Save settings'}</button>${dirty(p.id)?'<button data-act="discard">Discard changes</button><span class="mu">You have unsaved changes.</span>':'<span class="mu">All changes saved.</span>'}</div>`;
+}
+
+function render(){
+  const top=`<div class="top"><div><h1>Telegram</h1><p class="mu" style="margin:2px 0 0">Reports, alerts and quick answers on Telegram. Free, no per-message charge.</p></div><a class="btn" href="ai-connections.html">Connector</a></div>`;
+  if(st.loading){$app.innerHTML='<div class="msg">Loading Telegram…</div>';return;}
+  if(st.off){$app.innerHTML='<div class="card empty"><h1>Telegram is off</h1><p class="mu">Turn on the Telegram connector to get reports and alerts on Telegram.</p><a class="btn p" href="ai-connections.html">Open Connector</a></div>';return;}
+  if(st.fail){$app.innerHTML=`<div class="card empty"><h1>Telegram could not load</h1><p class="mu">${esc(st.fail)}</p><button class="p" data-act="retry">Try again</button></div>`;return;}
+  const banner=st.banner?msgBox(st.banner):'';
+  const o=owner();let body;
+  if(!o||!o.connected){body=st.link?linkCard():ownerConnect();}
+  else if(st.link){body=linkCard();}
+  else{
+    const p=cur()||o;
+    body=peopleBar()+(st.add.open?addCard():(personHead(p)+(p.connected?settingsCards(p):'')));
+  }
+  $app.innerHTML=top+banner+body;
+}
+
+/* ---------- events ---------- */
+$app.addEventListener('input',e=>{
+  const f=e.target&&e.target.dataset&&e.target.dataset.f;if(!f)return;
+  if(f==='ownerPhone')st.ownerPhone=e.target.value;
+  else if(f.indexOf('add.')===0)st.add[f.slice(4)]=e.target.value;
+});
+$app.addEventListener('change',e=>{
+  const t=e.target,p=cur();if(!t||!t.dataset)return;
+  if(t.dataset.f&&t.dataset.f.indexOf('add.')===0){st.add[t.dataset.f.slice(4)]=t.value;return;}
+  if(!p||!st.drafts[p.id])return;
+  const d=st.drafts[p.id];
+  if(t.dataset.actChange==='time'){const i=Number(t.dataset.i);if(i>=0&&i<d.daily.times.length)d.daily.times[i]=t.value;st.msg=null;render();return;}
+  if(t.dataset.p){
+    let v=t.value;
+    if(t.hasAttribute('data-num'))v=Math.max(0,Math.round(Number(v)||0));
+    setPath(d,t.dataset.p,v);st.msg=null;render();
+  }
+});
+$app.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]');if(!b||!$app.contains(b))return;
+  const act=b.dataset.act,p=cur(),d=p&&st.drafts[p.id];
+  const bump=()=>{st.msg=null;render();};
+
+  if(act==='retry'){init();return;}
+  if(act==='sw'&&d){setPath(d,b.dataset.p,!getPath(d,b.dataset.p));bump();return;}
+  if(act==='day'&&d){const n=Number(b.dataset.d),a=d.daily.days,i=a.indexOf(n);if(i>=0)a.splice(i,1);else a.push(n);a.sort((x,y)=>x-y);bump();return;}
+  if(act==='days-all'&&d){d.daily.days=[1,2,3,4,5,6,7];bump();return;}
+  if(act==='days-wk'&&d){d.daily.days=[1,2,3,4,5];bump();return;}
+  if(act==='time-add'&&d){if(d.daily.times.length<MAX_TIMES){d.daily.times.push('09:00');bump();}return;}
+  if(act==='time-del'&&d){if(d.daily.times.length>1){d.daily.times.splice(Number(b.dataset.i),1);bump();}return;}
+  if(act==='cmd'&&d){d.commands.list[b.dataset.k]=!d.commands.list[b.dataset.k];bump();return;}
+  if(act==='discard'&&p){st.drafts[p.id]=JSON.parse(st.saved[p.id]);bump();return;}
+  if(act==='pick'){st.sel=b.dataset.id;st.add.open=false;st.msg=null;st.banner=null;render();return;}
+  if(act==='add-open'){st.add.open=true;st.msg=null;st.banner=null;render();return;}
+  if(act==='add-close'){st.add.open=false;st.msg=null;render();return;}
+  if(act==='copylink'){const ok=await copyText(b.dataset.v||'');const o=b.textContent;b.textContent=ok?'Copied':'Copy failed';setTimeout(()=>{if(b.isConnected)b.textContent=o;},1600);return;}
+  if(act==='linkback'){stopPoll();st.link=null;st.msg=null;render();return;}
+
+  const begin=async body=>{
+    const r=await api.connect(body);
+    const url=String(r&&r.deep_link||'');
+    if(!/^https:\/\/(t|telegram)\.me\//i.test(url))throw mkErr('Telegram link could not be created. Please try again.','LINK');
+    let exp=r&&r.expires_at?Date.parse(r.expires_at):NaN;
+    if(isNaN(exp))exp=Date.now()+((Number(r&&r.expires_in)||600)*1000);
+    st.link={rid:r.recipient_id||body.recipient_id||null,url,code:r.code?String(r.code):'',bot:r.bot_username?String(r.bot_username).replace(/^@/,''):st.bot,who:body.name||'',expired:false,expiresAt:exp,body};
+    startPoll();
+  };
+  if(act==='connect-owner'){
+    const phone=normPhone(st.ownerPhone);
+    if(!phone){st.msg={type:'err',text:'Enter a valid mobile number with country code, like +91 98765 43210.'};render();return;}
+    await run('connect',()=>begin({phone}));return;
+  }
+  if(act==='add-go'){
+    const a=st.add,phone=normPhone(a.phone);
+    if(!a.name.trim()){st.msg={type:'err',text:'Enter the person\'s name.'};render();return;}
+    if(!phone){st.msg={type:'err',text:'Enter a valid mobile number with country code, like +91 98765 43210.'};render();return;}
+    await run('add',async()=>{await begin({phone,name:a.name.trim(),role:a.role});await reload(true);});return;
+  }
+  if(act==='newlink'){
+    const body=st.link&&st.link.body?st.link.body:(p?{recipient_id:p.id}:{});
+    await run('connect',()=>begin(body));return;
+  }
+  if(act==='check'){
+    await run('check',async()=>{if(!(await checkLinked()))st.msg={type:'err',text:'Telegram is not linked yet. Press Start in the GLIME bot, then try again.'};});return;
+  }
+  if(!p)return;
+  if(act==='pause'){
+    const want=p.enabled===false;
+    await run('pause',async()=>{await api.enable(p.id,want);p.enabled=want;st.banner={type:'ok',text:want?'Messages resumed.':'Messages paused. Nothing will be sent until you resume.'};});return;
+  }
+  if(act==='save'){
+    const problem=validate(d);
+    if(problem){st.msg={type:'err',text:problem};render();return;}
+    await run('save',async()=>{
+      const r=await api.save(p.id,tidy(d));
+      st.drafts[p.id]=normalize((r&&r.settings)||tidy(d));st.saved[p.id]=JSON.stringify(st.drafts[p.id]);
+      st.msg={type:'ok',text:'Settings saved.'};
+    });return;
+  }
+  if(act==='test'){await run('test',async()=>{await api.test(p.id);st.msg={type:'ok',text:'Test message sent. Check Telegram.'};});return;}
+  if(act==='sendnow'){await run('now',async()=>{await api.sendNow(p.id);st.msg={type:'ok',text:'Report sent. Check Telegram.'};});return;}
+  if(act==='remove'){
+    const own=!!p.is_owner;
+    if(!(await gdConfirm(own?'Disconnect your Telegram? GLIME will stop sending you messages.':'Remove '+(p.name||'this person')+'? They will stop receiving Telegram messages.',{title:own?'Disconnect Telegram':'Remove person',confirmText:own?'Disconnect':'Remove',danger:true})))return;
+    await run('remove',async()=>{
+      await api.remove(p.id);
+      delete st.drafts[p.id];delete st.saved[p.id];
+      await reload(true);st.sel=null;const o=owner();st.sel=o?o.id:null;
+      st.banner={type:'ok',text:own?'Telegram disconnected.':'Person removed.'};
+    });return;
+  }
+});
+window.addEventListener('pageshow',e=>{if(e.persisted&&!st.loading&&!st.off&&!st.busy)reload(true).then(render).catch(()=>{});});
+
+async function init(){
+  st.loading=true;st.fail='';render();
+  try{
+    if(!sb)throw new Error('GLIME could not load. Please refresh the page.');
+    const ses=await sb.auth.getSession(),user=ses&&ses.data&&ses.data.session&&ses.data.session.user;
+    if(!user){location.replace('login.html');return;}
+    let on=false;
+    try{on=localStorage.getItem('glime_tg_on_'+user.id)==='1';}catch(e){}
+    if(!on){st.off=true;st.loading=false;render();return;}
+    await reload(false);
+  }catch(e){console.error(e);st.fail=cleanMsg(e);}
+  st.loading=false;render();
+}
+init();
+})();
+</script>
+</body>
+</html>
