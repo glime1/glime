@@ -27,6 +27,59 @@
     <loc>https://glime.online/signup.html</loc>
   </url>
 
+  <!-- Industries (SEO landing pages) -->
+  <url>
+    <loc>https://glime.online/industries.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-fashion-stores.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-home-decor-stores.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-salons.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-restaurants.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-coaching-institutes.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-real-estate.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-clinics.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-travel-agencies.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-jewellery-stores.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-gyms.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-electronics-retail.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/ai-whatsapp-automation-for-agencies.html</loc>
+  </url>
+
   <!-- About GLIME and the founder -->
   <url>
     <loc>https://glime.online/about.html</loc>
@@ -50,13 +103,25 @@
     <loc>https://glime.online/GLIME_Official_Integration_Guide.html</loc>
   </url>
 
-  <!-- Partner Program -->
+  <url>
+    <loc>https://glime.online/documentation.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/help.html</loc>
+  </url>
+
+  <!-- Partner Program and Agency -->
   <url>
     <loc>https://glime.online/partner.html</loc>
   </url>
 
   <url>
     <loc>https://glime.online/partner-docs.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/agency.html</loc>
   </url>
 
   <!-- Proof and contact -->
@@ -79,6 +144,14 @@
 
   <url>
     <loc>https://glime.online/terms.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/acceptable-use.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/security.html</loc>
   </url>
 
   <url>

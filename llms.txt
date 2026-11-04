@@ -25,6 +25,22 @@ GLIME connects to third-party accounts using OAuth, so clients never share their
 - [Free trial sign-up](https://glime.online/signup.html): create an account
 - [Integration Guide](https://glime.online/GLIME_Official_Integration_Guide.html): how to connect WhatsApp Business, Instagram, Razorpay and other tools securely
 
+## Industries
+
+- [All industries](https://glime.online/industries.html): GLIME by industry
+- [Fashion and apparel](https://glime.online/ai-whatsapp-automation-for-fashion-stores.html)
+- [Home decor and furnishing](https://glime.online/ai-whatsapp-automation-for-home-decor-stores.html)
+- [Beauty and salons](https://glime.online/ai-whatsapp-automation-for-salons.html)
+- [Food and restaurants](https://glime.online/ai-whatsapp-automation-for-restaurants.html)
+- [Coaching and education](https://glime.online/ai-whatsapp-automation-for-coaching-institutes.html)
+- [Real estate](https://glime.online/ai-whatsapp-automation-for-real-estate.html)
+- [Clinics and wellness](https://glime.online/ai-whatsapp-automation-for-clinics.html)
+- [Travel and tours](https://glime.online/ai-whatsapp-automation-for-travel-agencies.html)
+- [Jewellery and gifts](https://glime.online/ai-whatsapp-automation-for-jewellery-stores.html)
+- [Gyms and fitness](https://glime.online/ai-whatsapp-automation-for-gyms.html)
+- [Electronics and retail](https://glime.online/ai-whatsapp-automation-for-electronics-retail.html)
+- [Agencies and freelancers](https://glime.online/ai-whatsapp-automation-for-agencies.html)
+
 ## About
 
 - [About GLIME](https://glime.online/about.html)
@@ -38,6 +54,7 @@ GLIME connects to third-party accounts using OAuth, so clients never share their
 
 - [Partner Program](https://glime.online/partner.html)
 - [Partner Guide](https://glime.online/partner-docs.html)
+- [Agency Partner](https://glime.online/agency.html)
 
 ## Contact and policies
 
