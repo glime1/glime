@@ -4,8 +4,9 @@
    Adds a "Download Data" button above "Secure Logout" in the
    shared app-shell sidebar. It only links to data-download.html;
    all export logic lives on that page.
-   It also loads glime-calendar-nav-addon.js, which adds the Calendar
-   link only for clients who turned the Calendar connector on.
+   It also loads glime-calendar-nav-addon.js and glime-telegram-nav-addon.js,
+   which add the Calendar / Telegram links only for clients who turned
+   that connector on.
 ========================================================= */
 (function () {
   'use strict';
@@ -53,6 +54,14 @@
     cs.src = 'glime-calendar-nav-addon.js?v=1';
     cs.defer = true;
     document.head.appendChild(cs);
+  }
+
+  /* Telegram menu item: only shown when the Telegram connector is ON. */
+  if (!window.GlimeTelegramNav && !document.querySelector('script[src*="glime-telegram-nav-addon.js"]')) {
+    var ts = document.createElement('script');
+    ts.src = 'glime-telegram-nav-addon.js?v=1';
+    ts.defer = true;
+    document.head.appendChild(ts);
   }
 
   function boot() {
