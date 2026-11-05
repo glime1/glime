@@ -94,7 +94,7 @@ async function suggest() {
     $('sugText').textContent = reply; $('sug').classList.remove('hide');
     await extract(conv, true);
     G.fill(); handoff(G.leadOf(conv), {});
-  } catch (e) { console.error('[GLIME IG AI]', e); toast(e.message || 'Suggestion failed.', true); }
+  } catch (e) { console.error('[GLIME IG AI]', e); toast(/failed to fetch|networkerror|load failed/i.test(e.message || '') ? 'Ask AI is blocked by the server (CORS). One backend change is still needed.' : (e.message || 'Suggestion failed.'), true); }
   finally { busy = false; $('suggest').disabled = false; }
 }
 
@@ -106,6 +106,24 @@ async function catNames() {
   try { const ctx = await catalog(); catCache = (ctx.catalog || []).map(x => c(x.name || x.title || x.product_name || x.service_name || x.offer_name)).filter(x => x.length > 1); }
   catch { catCache = []; }
   return catCache;
+}
+const CITY_ALIAS = { ahemdabad: 'Ahmedabad', ahmadabad: 'Ahmedabad', ahmedabad: 'Ahmedabad', amdavad: 'Ahmedabad', bombay: 'Mumbai', baroda: 'Vadodara', bangalore: 'Bengaluru', bengaluru: 'Bengaluru', calcutta: 'Kolkata' };
+const titleCase = s => s.replace(/\b([a-z])/gi, (m, ch) => ch.toUpperCase()).replace(/\B([A-Z]+)/g, x => x.toLowerCase());
+function cityFrom(msgs) {
+  const NOT = /^(the|my|a|an|here|home|india|office|shop|work|college|school|town|city|area)$/i;
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const t = String(msgs[i] || '').replace(/[,.]/g, ' ').replace(/\s+/g, ' ').trim();
+    let m = t.match(/(?:^|\s)(?:me|main|mai|mein|hum|i am|i'm)?\s*([a-z]{3,}(?: [a-z]{3,})?) se (?:hu|hun|hoon|hai|hain)\b\s*(.{0,40})/i)
+      || t.match(/(?:i am from|i'm from|i live in|living in|from)\s+([a-z]{3,}(?: [a-z]{3,})?)()/i)
+      || t.match(/([a-z]{3,}) (?:mein|me) (?:rehta|rehti|rahta|rahti|rehte)\b()/i)
+      || t.match(/(?:city|location|area|address)\s*(?:is|:|-)\s*([a-z]{3,}(?: [a-z]{3,})?)()/i);
+    if (!m) continue;
+    const words = m[1].trim().split(' ').filter(w => !NOT.test(w)); if (!words.length) continue;
+    const first = words[0].toLowerCase(), city = CITY_ALIAS[first] || titleCase(words.join(' '));
+    const rest = String(m[2] || '').trim().split(' ').slice(0, 4).join(' ').replace(/[^A-Za-z0-9 ]/g, '').trim();
+    return rest && !/^(hai|hu|hun|hoon|aur|and|ok)$/i.test(rest) ? city + ', ' + titleCase(rest) : city;
+  }
+  return '';
 }
 function rulesExtract(msgs, names) {
   const txt = m => c(m.text_body), inn = msgs.filter(m => m.direction === 'inbound').map(txt).filter(Boolean), all = msgs.map(txt).filter(Boolean);
@@ -126,7 +144,7 @@ function rulesExtract(msgs, names) {
   const raw = inn.join(' \n '), mob = raw.replace(/[\s-]/g, '').match(/(?<!\d)(?:\+?91)?([6-9]\d{9})(?!\d)/); if (mob) q.mobile = '+91' + mob[1];
   const nm = raw.match(/(?:my name is|mera naam|mera name|name is)\s+([A-Za-z][A-Za-z.]{1,20}(?:\s[A-Za-z][A-Za-z.]{1,20})?)/i);
   if (nm) q.customer_name = nm[1].replace(/\s+(hai|he|hu|hoon|h|and|aur)$/i, '').replace(/\b\w/g, x => x.toUpperCase());
-  const ct = raw.match(/(?:city|location|area)\s*(?:is|:|-)\s*([A-Za-z][A-Za-z ]{1,25})/i); if (ct) q.city_area = ct[1].trim();
+  const city = cityFrom(inn); if (city) q.city_area = city;
   const bd = t.match(/budget[^0-9]{0,15}(\d[\d,]*)/); if (bd) q.budget = bd[1].replace(/,/g, '');
   return q;
 }
