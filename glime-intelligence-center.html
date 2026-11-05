@@ -11,7 +11,7 @@
   </style>
   <link rel="stylesheet" href="glime-app-shell.css">
   <link rel="stylesheet" href="glime-growth-intelligence.css">
-  <link rel="stylesheet" href="glime-growth-intelligence-live.css">
+  <link rel="stylesheet" href="gi.css">
   <script src="glime-app-shell.js" defer></script>
 </head>
 <body data-gas-title="Business Growth Intelligence">
@@ -19,6 +19,23 @@
     <div class="gi" id="giRoot"></div>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="glime-growth-intelligence.js"></script>
+  <script src="glime-dialog.js"></script>
+  <!-- core first: every section module registers itself with it -->
+  <script src="gi-core.js"></script>
+  <script src="gi-briefing.js"></script>
+  <script src="gi-pulse.js"></script>
+  <script src="gi-impact.js"></script>
+  <script src="gi-evidence.js"></script>
+  <script src="gi-decisions.js"></script>
+  <script src="gi-leads.js"></script>
+  <script src="gi-channels.js"></script>
+  <script src="gi-products.js"></script>
+  <script src="gi-health.js"></script>
+  <script src="gi-besttime.js"></script>
+  <script src="gi-market.js"></script>
+  <script src="gi-competitors.js"></script>
+  <script src="gi-forecast.js"></script>
+  <script src="gi-anaya.js"></script>
+  <script src="deep-analysis-addon.js"></script>
 </body>
 </html>
