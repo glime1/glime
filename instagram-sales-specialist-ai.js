@@ -29,7 +29,7 @@ async function sync(q, conv, fillOnly) {
   const interest = c(q.interest) || c(q.occasion) || c(q.purpose); if (interest) f.interest = interest;
   const prod = c(q.product) || c(q.product_service); if (prod) f.product_service = prod;
   if (Number.isFinite(bud)) { f.budget = bud; f.budget_currency = c(q.budget_currency) || 'INR'; }
-  const notes = [['Occasion / purpose', interest], ['For whom', q.for_whom], ['Quantity', q.quantity], ['Preferred date', q.preferred_date], ['City / area', q.city_area],
+  const notes = [['Interest / purpose', interest], ['For whom', q.for_whom], ['Quantity', q.quantity], ['Preferred date', q.preferred_date], ['City / area', q.city_area],
     ['Delivery needed', q.delivery_needed ? 'yes' : ''], ['Address', q.address], ['WhatsApp requested', q.wants_whatsapp ? 'yes' : '']]
     .filter(x => c(x[1])).map(x => `${x[0]}: ${c(x[1])}`).join('\n');
   if (notes && !(lead && c(lead.notes).includes(notes))) f.notes = ((c(lead?.notes) ? c(lead.notes) + '\n\n' : '') + `[Instagram Sales ${new Date().toLocaleString()}]\n` + notes).slice(-12000);
@@ -79,57 +79,63 @@ function handoff(lead, q) {
 
 async function suggest() {
   if (busy) return; const conv = S.sel; if (!conv) { toast('Open a chat first.', true); return; }
+  const last = [...S.msgs].reverse().find(m => m.direction === 'inbound' && c(m.text_body));
+  if (!last) { toast('There is no customer message to reply to yet.', true); return; }
   busy = true; $('suggest').disabled = true;
   try {
-    const ctx = await catalog(), lead = G.leadOf(conv);
-    const recent = S.msgs.slice(-16).map(m => `${m.direction === 'inbound' ? 'Customer' : 'Business'}: ${c(m.text_body)}`).filter(x => x.length > 12).join('\n');
-    const prompt = ['You are GLIME Instagram Sales Specialist. Your role is natural sales qualification, not just answering prices.', '',
-      'Business:', JSON.stringify(ctx.business || {}), '', 'Verified business knowledge:', JSON.stringify((ctx.knowledge || []).slice(0, 20)), '',
-      'Verified offer catalog:', JSON.stringify((ctx.catalog || []).slice(0, 20)), '', 'Existing lead:', JSON.stringify(lead || {}), '',
-      'Recent conversation:', recent || 'No messages available.', '', 'Return JSON only in this shape:',
-      '{"reply":"...","qualification":{"customer_name":"","interest":"","occasion":"","purpose":"","for_whom":"","product":"","product_service":"","quantity":"","preferred_date":"","city_area":"","mobile":"","whatsapp":"","address":"","budget":"","budget_currency":"","delivery_needed":false,"wants_whatsapp":false}}', '', 'Rules:',
-      'Only capture customer-stated facts or already verified lead facts. Never infer.',
-      'Do not ask again for details already known. Be warm and human; ask only the next one or two useful questions.',
-      'Discover what the customer needs, who it is for, occasion/purpose, product/service, quantity and timing.',
-      'Do not ask for a full address at the start. Ask city/area first when delivery matters; ask the detailed address only at genuine order/delivery stage.',
-      'When the customer shows real purchase interest, offer continuing on WhatsApp and ask for the WhatsApp number naturally.',
-      'Never say a WhatsApp handoff already happened unless the system completed it.',
-      'Never promise home delivery unless delivery coverage is verified; otherwise say you will confirm availability for their area.',
-      'Never invent price, discount, feature, availability, guarantee, policy, delivery promise or timeline.',
-      'Match the customer language and tone. If the customer writes Hindi in English letters, reply in English letters too and never use Devanagari script. reply must contain only the customer-facing message; do not mention AI, JSON or rules.'].join('\n');
-    const r = await fetch(`${U}/functions/v1/glime-ai`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'chat', sessionToken: tok || null, message: prompt }) });
-    const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'GLIME AI unavailable.');
-    if (d.sessionToken) { tok = d.sessionToken; sessionStorage.setItem('glime_instagram_ai_session', tok); }
-    const raw = d.reply || d.message || d.output || d.content || '', p = parse(raw) || {};
-    const reply = c(p.reply || raw), q = p.qualification && typeof p.qualification === 'object' ? p.qualification : {};
-    if (!reply) throw new Error('No sales reply returned.');
-    let saved = lead; const h = JSON.stringify(q);
-    if (h !== lastHash) { saved = (await sync(q, conv, true)) || lead; lastHash = h; }
+    /* Same AI brain, knowledge and offers that answer your customers automatically. */
+    const { data } = await db.auth.getSession(); if (!data.session) throw new Error('Please log in again.');
+    const r = await fetch(`${U}/functions/v1/client-ai-runtime`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: K, Authorization: 'Bearer ' + data.session.access_token },
+      body: JSON.stringify({ channel: 'instagram', conversation_id: conv.id, message: c(last.text_body) }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || d.code || 'AI is unavailable right now.');
+    const reply = c(d.reply); if (!reply) throw new Error('AI did not return a reply.');
     $('sugText').textContent = reply; $('sug').classList.remove('hide');
-    G.fill(); if (q.wants_whatsapp || q.whatsapp || q.mobile) handoff(saved, q); G.reload();
+    await extract(conv, true);
+    G.fill(); handoff(G.leadOf(conv), {});
   } catch (e) { console.error('[GLIME IG AI]', e); toast(e.message || 'Suggestion failed.', true); }
   finally { busy = false; $('suggest').disabled = false; }
 }
 
-
-/* Read the chat and fill empty customer details (never overwrites what you typed). */
+/* Read the chat and fill empty customer details (never overwrites what you typed).
+   Rule based: no AI call, no cost, works every time. */
+let catCache = null;
+async function catNames() {
+  if (catCache) return catCache;
+  try { const ctx = await catalog(); catCache = (ctx.catalog || []).map(x => c(x.name || x.title || x.product_name || x.service_name || x.offer_name)).filter(x => x.length > 1); }
+  catch { catCache = []; }
+  return catCache;
+}
+function rulesExtract(msgs, names) {
+  const txt = m => c(m.text_body), inn = msgs.filter(m => m.direction === 'inbound').map(txt).filter(Boolean), all = msgs.map(txt).filter(Boolean);
+  // product: catalog names or *bold* names the business used, most mentioned (latest wins a tie)
+  const score = {}; const add = (n, i) => { const k = n.toLowerCase(); (score[k] = score[k] || { n, s: 0, at: 0 }); score[k].s++; score[k].at = i; };
+  all.forEach((t, i) => { const low = t.toLowerCase(); (names || []).forEach(n => { if (low.includes(n.toLowerCase())) add(n, i); });
+    if (msgs[i] && msgs[i].direction !== 'inbound') for (const m of t.matchAll(/\*([^*\n]{2,40})\*/g)) add(c(m[1]), i); });
+  const best = Object.values(score).sort((x, y) => y.s - x.s || y.at - x.at)[0], product = best ? best.n : '';
+  // interest from what the customer said
+  const t = inn.join(' \n ').toLowerCase(); let act = '';
+  if (/kharid|khareed|buy|purchase|order|lena hai|lene hai|book|खरीद|ऑर्डर/.test(t)) act = 'Wants to buy';
+  else if (/price|cost|rate|kitna|kitne|charge|fees|कीमत|प्राइस|कितना/.test(t)) act = 'Asked the price';
+  else if (/demo|trial/.test(t)) act = 'Wants a demo';
+  else if (/detail|info|jaankari|जानकारी/.test(t)) act = 'Asked for details';
+  else if (/deliver/.test(t)) act = 'Asked about delivery';
+  const interest = act ? act + (product ? (act === 'Asked the price' ? ' of ' : ' ') + product : '') : '';
+  const q = { interest, product };
+  const raw = inn.join(' \n '), mob = raw.replace(/[\s-]/g, '').match(/(?<!\d)(?:\+?91)?([6-9]\d{9})(?!\d)/); if (mob) q.mobile = '+91' + mob[1];
+  const nm = raw.match(/(?:my name is|mera naam|mera name|name is)\s+([A-Za-z][A-Za-z.]{1,20}(?:\s[A-Za-z][A-Za-z.]{1,20})?)/i);
+  if (nm) q.customer_name = nm[1].replace(/\s+(hai|he|hu|hoon|h|and|aur)$/i, '').replace(/\b\w/g, x => x.toUpperCase());
+  const ct = raw.match(/(?:city|location|area)\s*(?:is|:|-)\s*([A-Za-z][A-Za-z ]{1,25})/i); if (ct) q.city_area = ct[1].trim();
+  const bd = t.match(/budget[^0-9]{0,15}(\d[\d,]*)/); if (bd) q.budget = bd[1].replace(/,/g, '');
+  return q;
+}
 async function extract(conv, silent) {
   if (!conv) return; if (!silent) toast('Reading this chat…');
   try {
-    const lead = G.leadOf(conv);
-    const chat = S.msgs.slice(-30).map(m => `${m.direction === 'inbound' ? 'Customer' : 'Business'}: ${c(m.text_body)}`).filter(x => x.length > 12).join('\n');
-    if (!chat) { if (!silent) toast('No messages to read yet.', true); return; }
-    const prompt = ['Read this Instagram sales chat and extract the customer details. Return JSON only:',
-      '{"customer_name":"","interest":"","product":"","city_area":"","mobile":"","budget":"","budget_currency":"","preferred_date":"","quantity":"","wants_whatsapp":false}', '',
-      'Rules:', 'Use only facts present in the chat. Never guess a name, number or place. Leave a field empty if unknown.',
-      'interest = one short phrase on what the customer wants, for example "Wants to buy GLIME Growth plan" or "Asked the price".',
-      'product = the product or plan the conversation is about, even if the Business named it and the Customer asked its price or said they want to buy.',
-      'mobile = only a phone number the customer wrote. budget = a number only. Write values in English.', '',
-      'Existing lead:', JSON.stringify(lead || {}), '', 'Chat:', chat].join('\n');
-    const r = await fetch(`${U}/functions/v1/glime-ai`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'chat', sessionToken: null, message: prompt }) });
-    const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'GLIME AI unavailable.');
-    const q = parse(d.reply || d.message || d.output || d.content || '') || {};
-    const saved = await sync(q, conv, true);
+    if (!S.msgs.length) { if (!silent) toast('No messages to read yet.', true); return; }
+    const q = rulesExtract(S.msgs, await catNames());
+    const saved = Object.values(q).some(v => c(v)) ? await sync(q, conv, true) : null;
     G.fill(); G.reload();
     if (!silent) toast(saved ? 'Details filled from the chat.' : 'Nothing new found in this chat.');
   } catch (e) { console.error('[GLIME IG fill]', e); if (!silent) toast(e.message || 'Could not read the chat.', true); }
