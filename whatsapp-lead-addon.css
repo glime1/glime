@@ -1,0 +1,55 @@
+/* GLIME — WhatsApp Sales add-on styles (lead tools, window timer, tags, pin, templates) */
+.gwa-win{margin-bottom:7px;padding:9px 12px;border-radius:12px;font-size:12.5px;line-height:1.45;color:#7fd6ff;background:rgba(0,168,255,.1);border:1px solid rgba(0,168,255,.25)}
+.gwa-win.warn{color:#ffd98a;background:rgba(255,207,107,.08);border-color:rgba(255,207,107,.35)}
+.gwa-win.off{color:#ff9aa5;background:rgba(255,100,114,.08);border-color:rgba(255,100,114,.3)}
+#winChip{display:none!important}
+
+/* inbox: pinned + tag filter bar and row badges */
+.gwa-bar{display:flex;gap:6px;overflow-x:auto;padding:0 14px 8px;scrollbar-width:none}
+.gwa-bar::-webkit-scrollbar{display:none}
+.gwa-bar button{flex:0 0 auto;min-height:32px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);border-radius:999px;padding:4px 14px;font-size:12px;font-weight:600}
+.gwa-bar button.on{color:var(--green);background:rgba(0,255,136,.09);border-color:rgba(0,255,136,.25)}
+.gwa-bd{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.gwa-tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid transparent}
+.gwa-tag.t0{color:#7fd6ff;background:rgba(0,168,255,.12);border-color:rgba(0,168,255,.25)}
+.gwa-tag.t1{color:#ffd98a;background:rgba(255,207,107,.1);border-color:rgba(255,207,107,.3)}
+.gwa-tag.t2{color:#ff9aa5;background:rgba(255,100,114,.1);border-color:rgba(255,100,114,.3)}
+.gwa-tag.t3{color:#c9a6ff;background:rgba(160,110,255,.12);border-color:rgba(160,110,255,.3)}
+.gwa-tag.t4{color:#00ff88;background:rgba(0,255,136,.08);border-color:rgba(0,255,136,.25)}
+
+/* slash quick replies */
+.gwa-qr{display:none;flex-direction:column;gap:4px;margin-bottom:6px;max-height:30dvh;overflow:auto}
+.gwa-qr.on{display:flex}
+.gwa-qr button{text-align:left;border:1px solid var(--wa-line);background:var(--wa-head);color:var(--wa-text);border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.35}
+
+/* lead tools card */
+.gwa-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gwa-actions .secondary-btn{min-height:44px;font-size:12.5px}
+.gwa-ai{color:var(--cyan)!important;border-color:rgba(0,240,255,.3)!important}
+.gwa-edit{margin-top:10px;display:grid;gap:8px}
+.gwa-edit label,.gwa-lead label{display:block;font-size:11px;color:var(--muted)}
+.gwa-in{display:block;width:100%;margin-top:4px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:#fff;font-size:14px}
+textarea.gwa-in{padding:10px 12px;min-height:72px;resize:vertical;font-family:inherit}
+select.gwa-in option{background:#101b28;color:#fff}
+.gwa-edit-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.gwa-lead{margin-top:12px;display:grid;gap:10px}
+.gwa-hot{display:flex!important;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:14px!important;color:#fff!important}
+.gwa-hot input{appearance:none;width:44px;height:26px;border-radius:999px;background:rgba(255,255,255,.15);position:relative;transition:background .15s;flex:0 0 44px;margin:0}
+.gwa-hot input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+.gwa-hot input:checked{background:var(--wa-accent)}
+.gwa-hot input:checked::after{transform:translateX(18px)}
+.gwa-fu{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.gwa-fu button{min-height:40px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;border-radius:10px;font-size:12px;font-weight:600}
+.gwa-fu-txt{display:block;margin-top:4px;font-size:11.5px;color:var(--cyan)}
+.gwa-notes{white-space:pre-wrap;font-size:12px;color:var(--muted);line-height:1.5;max-height:120px;overflow:auto;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04)}
+
+/* tags + templates sheet */
+#gwaSheet .modal-card h2{margin-right:44px}
+.gwa-chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.gwa-chips button{min-height:38px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;border-radius:999px;padding:6px 16px;font-size:13px;font-weight:600}
+.gwa-chips button.on{color:var(--green);background:rgba(0,255,136,.1);border-color:rgba(0,255,136,.3)}
+.gwa-addrow{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
+.gwa-addrow .gwa-in{margin-top:0}
+.gwa-tpl{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)}
+.gwa-tpl span{flex:1;min-width:0;font-size:13px;line-height:1.45;cursor:pointer;word-break:break-word}
+.gwa-tpl button{flex:0 0 36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--muted);font-size:16px}
