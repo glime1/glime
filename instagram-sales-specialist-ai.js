@@ -19,20 +19,25 @@ async function catalog() {
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'catalog-context ' + r.status); return j;
 }
 
-async function sync(q, conv) {
-  const keys = ['customer_name', 'occasion', 'purpose', 'for_whom', 'product', 'product_service', 'quantity', 'preferred_date', 'city_area', 'mobile', 'whatsapp', 'address', 'budget'];
+async function sync(q, conv, fillOnly) {
+  const keys = ['customer_name', 'interest', 'occasion', 'purpose', 'for_whom', 'product', 'product_service', 'quantity', 'preferred_date', 'city_area', 'mobile', 'whatsapp', 'address', 'budget'];
   if (!keys.some(k => c(q[k]))) return null;
   let lead = G.leadOf(conv);
   const mob = phone(q.mobile), wa = phone(q.whatsapp) || mob, bud = c(q.budget) ? Number(String(q.budget).replace(/,/g, '')) : NaN, f = {};
   if (c(q.customer_name)) f.name = c(q.customer_name);
   if (mob) f.mobile = mob; if (wa) f.whatsapp = wa; if (c(q.city_area)) f.city_area = c(q.city_area);
-  const interest = c(q.occasion) || c(q.purpose); if (interest) f.interest = interest;
+  const interest = c(q.interest) || c(q.occasion) || c(q.purpose); if (interest) f.interest = interest;
   const prod = c(q.product) || c(q.product_service); if (prod) f.product_service = prod;
   if (Number.isFinite(bud)) { f.budget = bud; f.budget_currency = c(q.budget_currency) || 'INR'; }
   const notes = [['Occasion / purpose', interest], ['For whom', q.for_whom], ['Quantity', q.quantity], ['Preferred date', q.preferred_date], ['City / area', q.city_area],
     ['Delivery needed', q.delivery_needed ? 'yes' : ''], ['Address', q.address], ['WhatsApp requested', q.wants_whatsapp ? 'yes' : '']]
     .filter(x => c(x[1])).map(x => `${x[0]}: ${c(x[1])}`).join('\n');
-  if (notes) f.notes = ((c(lead?.notes) ? c(lead.notes) + '\n\n' : '') + `[Instagram Sales ${new Date().toLocaleString()}]\n` + notes).slice(-12000);
+  if (notes && !(lead && c(lead.notes).includes(notes))) f.notes = ((c(lead?.notes) ? c(lead.notes) + '\n\n' : '') + `[Instagram Sales ${new Date().toLocaleString()}]\n` + notes).slice(-12000);
+  if (fillOnly && lead) {
+    const empty = k => lead[k] == null || c(lead[k]) === '' || (k === 'name' && c(lead[k]) === c(conv.username));
+    ['name', 'mobile', 'whatsapp', 'city_area', 'interest', 'product_service'].forEach(k => { if (!empty(k)) delete f[k]; });
+    if (lead.budget != null) { delete f.budget; delete f.budget_currency; }
+  }
   f.updated_at = new Date().toISOString();
   if (!lead) {
     const r = await db.from('leads').insert({ client_id: S.cid, name: f.name || conv.username || 'Instagram ' + conv.instagram_user_id, source: 'instagram',
@@ -82,7 +87,7 @@ async function suggest() {
       'Business:', JSON.stringify(ctx.business || {}), '', 'Verified business knowledge:', JSON.stringify((ctx.knowledge || []).slice(0, 20)), '',
       'Verified offer catalog:', JSON.stringify((ctx.catalog || []).slice(0, 20)), '', 'Existing lead:', JSON.stringify(lead || {}), '',
       'Recent conversation:', recent || 'No messages available.', '', 'Return JSON only in this shape:',
-      '{"reply":"...","qualification":{"customer_name":"","occasion":"","purpose":"","for_whom":"","product":"","product_service":"","quantity":"","preferred_date":"","city_area":"","mobile":"","whatsapp":"","address":"","budget":"","budget_currency":"","delivery_needed":false,"wants_whatsapp":false}}', '', 'Rules:',
+      '{"reply":"...","qualification":{"customer_name":"","interest":"","occasion":"","purpose":"","for_whom":"","product":"","product_service":"","quantity":"","preferred_date":"","city_area":"","mobile":"","whatsapp":"","address":"","budget":"","budget_currency":"","delivery_needed":false,"wants_whatsapp":false}}', '', 'Rules:',
       'Only capture customer-stated facts or already verified lead facts. Never infer.',
       'Do not ask again for details already known. Be warm and human; ask only the next one or two useful questions.',
       'Discover what the customer needs, who it is for, occasion/purpose, product/service, quantity and timing.',
@@ -99,12 +104,43 @@ async function suggest() {
     const reply = c(p.reply || raw), q = p.qualification && typeof p.qualification === 'object' ? p.qualification : {};
     if (!reply) throw new Error('No sales reply returned.');
     let saved = lead; const h = JSON.stringify(q);
-    if (h !== lastHash) { saved = (await sync(q, conv)) || lead; lastHash = h; }
+    if (h !== lastHash) { saved = (await sync(q, conv, true)) || lead; lastHash = h; }
     $('sugText').textContent = reply; $('sug').classList.remove('hide');
     G.fill(); if (q.wants_whatsapp || q.whatsapp || q.mobile) handoff(saved, q); G.reload();
   } catch (e) { console.error('[GLIME IG AI]', e); toast(e.message || 'Suggestion failed.', true); }
   finally { busy = false; $('suggest').disabled = false; }
 }
+
+
+/* Read the chat and fill empty customer details (never overwrites what you typed). */
+async function extract(conv, silent) {
+  if (!conv) return; if (!silent) toast('Reading this chat…');
+  try {
+    const lead = G.leadOf(conv);
+    const chat = S.msgs.slice(-30).map(m => `${m.direction === 'inbound' ? 'Customer' : 'Business'}: ${c(m.text_body)}`).filter(x => x.length > 12).join('\n');
+    if (!chat) { if (!silent) toast('No messages to read yet.', true); return; }
+    const prompt = ['Read this Instagram sales chat and extract the customer details. Return JSON only:',
+      '{"customer_name":"","interest":"","product":"","city_area":"","mobile":"","budget":"","budget_currency":"","preferred_date":"","quantity":"","wants_whatsapp":false}', '',
+      'Rules:', 'Use only facts present in the chat. Never guess a name, number or place. Leave a field empty if unknown.',
+      'interest = one short phrase on what the customer wants, for example "Wants to buy GLIME Growth plan" or "Asked the price".',
+      'product = the product or plan the conversation is about, even if the Business named it and the Customer asked its price or said they want to buy.',
+      'mobile = only a phone number the customer wrote. budget = a number only. Write values in English.', '',
+      'Existing lead:', JSON.stringify(lead || {}), '', 'Chat:', chat].join('\n');
+    const r = await fetch(`${U}/functions/v1/glime-ai`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'chat', sessionToken: null, message: prompt }) });
+    const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'GLIME AI unavailable.');
+    const q = parse(d.reply || d.message || d.output || d.content || '') || {};
+    const saved = await sync(q, conv, true);
+    G.fill(); G.reload();
+    if (!silent) toast(saved ? 'Details filled from the chat.' : 'Nothing new found in this chat.');
+  } catch (e) { console.error('[GLIME IG fill]', e); if (!silent) toast(e.message || 'Could not read the chat.', true); }
+}
+G.autoFill = () => {
+  const conv = S.sel; if (!conv || busy || !S.msgs.some(m => m.direction === 'inbound')) return;
+  const key = 'gig_ex_' + conv.id, sig = String(S.msgs.length);
+  try { if (sessionStorage.getItem(key) === sig) return; sessionStorage.setItem(key, sig); } catch {}
+  const l = G.leadOf(conv); if (l && c(l.interest) && c(l.product_service)) return; extract(conv, true);
+};
+$('dFill').onclick = () => extract(S.sel, false);
 
 $('suggest').onclick = suggest; $('sugRef').onclick = suggest;
 document.addEventListener('click', e => { if (e.target.closest('.row-i')) { lastHash = ''; $('dWa').innerHTML = ''; } });

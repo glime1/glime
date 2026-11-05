@@ -144,6 +144,7 @@ async function openChat(c) {
   $('cHandle').textContent = `@${c.username || 'instagram'} · ${c.status === 'closed' ? 'Closed' : 'Open'}`;
   $('sug').classList.add('hide'); $('dWa').innerHTML = ''; $('msgs').innerHTML = '<div class="emp">Loading…</div>'; hint();
   await loadMsgs(); fillDetails(); loadApproval();
+  if (window.GIG && GIG.autoFill) GIG.autoFill();
 }
 async function loadMsgs() {
   if (!S.sel) return;
@@ -383,6 +384,26 @@ async function setChatMode(m) {
 $('cmList').onclick = async e => { const b = e.target.closest('button'); if (!b) return; const m = b.dataset.m;
   if (m === 'automatic' && !(await ask({ title: 'Turn on automatic replies for this chat?', text: 'AI will reply to this customer without waiting for your approval.', ok: 'Turn on' }))) return; setChatMode(m); };
 $('modeHint').onclick = chatModeSheet;
+
+/* ---------- edit customer details by hand ---------- */
+$('dEditBtn').onclick = () => { const c = S.sel; if (!c) return; const l = leadOf(c) || {};
+  $('eName').value = l.name || c.username || ''; $('eMobile').value = l.mobile || ''; $('eCity').value = l.city_area || '';
+  $('eBudget').value = l.budget != null ? l.budget : ''; $('eInterest').value = l.interest || ''; $('eProduct').value = l.product_service || '';
+  $('dEdit').classList.toggle('hide'); };
+$('dEditCancel').onclick = () => $('dEdit').classList.add('hide');
+$('dEditSave').onclick = async () => {
+  const c = S.sel; if (!c) return; const bud = $('eBudget').value.replace(/[^0-9.]/g, ''); let mob = $('eMobile').value.trim();
+  const dg = mob.replace(/\D/g, ''); if (dg.length === 10) mob = '+91' + dg;
+  const patch = { name: $('eName').value.trim() || c.username || 'Instagram customer', mobile: mob || null, city_area: $('eCity').value.trim() || null,
+    interest: $('eInterest').value.trim() || null, product_service: $('eProduct').value.trim() || null, budget: bud !== '' ? Number(bud) : null };
+  if (bud !== '') patch.budget_currency = 'INR';
+  let ok;
+  if (leadOf(c)) ok = await upLead(patch, 'Details saved');
+  else { const { data, error } = await db.from('leads').insert({ client_id: S.cid, source: 'instagram', source_ref: c.instagram_user_id, instagram_user_id: c.instagram_user_id,
+      instagram_thread_id: c.instagram_thread_id, status: 'new', priority: 'normal', ...patch }).select('*').single();
+    if (error) { toast(error.message, true); return; } S.leads[data.id] = data; S.byIg[c.instagram_user_id] = data; fillDetails(); render(); toast('Details saved'); ok = true; }
+  if (ok) $('dEdit').classList.add('hide');
+};
 
 /* ---------- link this Instagram customer to their WhatsApp number ---------- */
 const waVariants = v => { const d = String(v || '').replace(/\D/g, ''); if (d.length === 10) return ['+91' + d, '91' + d, d]; if (d.length === 12 && d.startsWith('91')) return ['+' + d, d, d.slice(2)]; return d.length >= 8 ? [d, '+' + d] : []; };
