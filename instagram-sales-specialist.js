@@ -5,8 +5,8 @@ const K = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const MOD = 'instagram_ai_sales_agent';
 const db = window.supabase.createClient(U, K);
 const $ = id => document.getElementById(id);
-const MODES = { manual: ['Manual', 'You write and send every reply'], approval: ['Approval', 'Anaya drafts replies and you approve them'], automatic: ['Automatic', 'Anaya replies on its own'] };
-const S = { cid: null, convs: [], prev: {}, unread: {}, leads: {}, byIg: {}, ctl: {}, ai: { mode: 'manual', on: true }, stop: false, sel: null, msgs: [], f: 'all', q: '' };
+const MODES = { manual: ['Manual', 'You write and send every reply'], approval: ['Approval', 'AI drafts replies and you approve them'], automatic: ['Automatic', 'AI replies on its own'] };
+const S = { meta: {}, cloudMeta: false, tpl: [], cloudTpl: false, tg: '', cid: null, convs: [], prev: {}, unread: {}, leads: {}, byIg: {}, ctl: {}, ai: { mode: 'manual', on: true }, stop: false, sel: null, msgs: [], f: 'all', q: '' };
 
 /* ---------- helpers ---------- */
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
@@ -31,7 +31,7 @@ async function fn(name, body = {}) {
 }
 const leadOf = c => S.leads[c.lead_id] || S.byIg[c.instagram_user_id] || null;
 const modeOf = c => { if (S.stop || !S.ai.on) return 'manual'; const x = c && S.ctl[c.id]; if (x && (x.human_takeover_enabled || x.ai_enabled === false)) return 'manual'; return x?.ai_mode || S.ai.mode; };
-const hint = () => { $('modeHint').textContent = 'Anaya: ' + MODES[modeOf(S.sel)][0]; };
+const hint = () => { $('modeHint').textContent = 'AI: ' + MODES[modeOf(S.sel)][0] + ' ▾'; };
 
 /* ---------- in-app dialog (replaces browser prompt / confirm) ---------- */
 let dlgOpen = false;
@@ -48,7 +48,7 @@ function ask(o) {
 }
 
 /* ---------- navigation: phone back button closes sheets, then the chat ---------- */
-const sheets = ['det', 'tpl', 'mode', 'ins']; let sheetOn = false;
+const sheets = ['det', 'tpl', 'mode', 'ins', 'tgs', 'cmode']; let sheetOn = false;
 function openSheet(id) { if (!sheetOn) { history.pushState({ g: 's' }, ''); sheetOn = true; }
   sheets.forEach(s => $(s).classList.toggle('on', s === id)); $('ov').classList.add('on'); $('pop').classList.remove('on'); }
 function hideSheets() { sheets.forEach(s => $(s).classList.remove('on')); $('ov').classList.remove('on'); $('pop').classList.remove('on'); sheetOn = false; }
@@ -114,23 +114,24 @@ function flags(c) {
   return { hot: /high|urgent/.test(l?.priority || ''), qual: st === 'qualified', isNew: !l || st === 'new', ai: open && modeOf(c) !== 'manual',
     need: open && p?.direction === 'inbound', un: S.unread[c.id] || 0, open };
 }
-const pass = (c, f) => { const x = flags(c); return f === 'all' || (f === 'unread' && x.un > 0) || (f === 'ai' && x.ai) || (f === 'hot' && x.hot) || (f === 'attn' && x.need) || (f === 'closed' && !x.open); };
+const pass = (c, f) => { const x = flags(c); return f === 'all' || (f === 'unread' && x.un > 0) || (f === 'ai' && x.ai) || (f === 'hot' && x.hot) || (f === 'attn' && x.need) || (f === 'closed' && !x.open) || (f === 'pin' && !!S.meta[c.id]?.pinned); };
 
 function render() {
   const cs = S.convs, ai = cs.filter(c => flags(c).ai).length;
   $('sDm').textContent = cs.length; $('sLeads').textContent = cs.filter(c => leadOf(c)).length;
   $('sAi').textContent = cs.length ? Math.round(ai * 100 / cs.length) + '%' : '0%';
-  const names = { all: 'All', unread: 'Unread', ai: 'Anaya Handling', hot: 'Hot Leads', attn: 'Needs Attention', closed: 'Closed' };
+  const names = { pin: 'Pinned', all: 'All', unread: 'Unread', ai: 'AI Handling', hot: 'Hot Leads', attn: 'Needs Attention', closed: 'Closed' };
   document.querySelectorAll('#chips button').forEach(b => { b.textContent = `${names[b.dataset.f]} (${cs.filter(c => pass(c, b.dataset.f)).length})`; b.classList.toggle('on', b.dataset.f === S.f); });
-  const q = S.q.toLowerCase(), rows = cs.filter(c => pass(c, S.f) && (!q || `${c.username || ''} ${c.instagram_user_id || ''}`.toLowerCase().includes(q)));
+  const q = S.q.toLowerCase(), rows = cs.filter(c => pass(c, S.f) && (!S.tg || (S.meta[c.id]?.tags || []).includes(S.tg)) && (!q || `${c.username || ''} ${c.instagram_user_id || ''}`.toLowerCase().includes(q)));
+  rows.sort((a, b) => (S.meta[b.id]?.pinned ? 1 : 0) - (S.meta[a.id]?.pinned ? 1 : 0)); tagBar();
   $('list').innerHTML = rows.map(c => {
     const x = flags(c), p = S.prev[c.id], name = c.username || c.instagram_user_id || 'Instagram customer';
     const pv = p ? (p.direction === 'inbound' ? '' : 'You: ') + (p.text_body || media(p.message_type)) : '@' + (c.username || 'instagram');
     const wait = x.need && p && Date.now() - new Date(p.created_at) > 3600000 ? `<span class="b wait">Waiting ${ago(p.created_at)}</span>` : '';
-    const b = [x.hot ? '<span class="b hot">🔥 Hot Lead</span>' : '', x.qual && !x.hot ? '<span class="b ok">✓ Qualified</span>' : '',
-      x.isNew && !x.hot && !x.qual ? '<span class="b new">New Lead</span>' : '', x.ai ? '<span class="b ai">🤖 Anaya Handling</span>' : '', wait,
+    const mt = S.meta[c.id] || {}, b = [...(mt.tags || []).map(t => `<span class="b tg t${tagCol(t)}">${esc(t)}</span>`), ...(leadOf(c)?.whatsapp ? ['<span class="b wa">🔗 WhatsApp linked</span>'] : []), x.hot ? '<span class="b hot">🔥 Hot Lead</span>' : '', x.qual && !x.hot ? '<span class="b ok">✓ Qualified</span>' : '',
+      x.isNew && !x.hot && !x.qual ? '<span class="b new">New Lead</span>' : '', x.ai ? '<span class="b ai">🤖 AI Handling</span>' : '', wait,
       !x.open ? '<span class="b cl">Closed</span>' : '', x.un ? `<span class="cnt">${x.un}</span>` : ''].join('');
-    return `<div class="row-i${x.un ? ' un' : ''}" data-id="${esc(c.id)}"><div class="av">${esc(name[0].toUpperCase())}</div><div class="rc"><div class="rn"><b>${esc(name)}</b><small>${esc(ago(c.last_message_at || c.updated_at))}</small></div><div class="rp">${esc(pv)}</div><div class="bd">${b}</div></div></div>`;
+    return `<div class="row-i${x.un ? ' un' : ''}" data-id="${esc(c.id)}"><div class="av">${esc(name[0].toUpperCase())}</div><div class="rc"><div class="rn"><b>${mt.pinned ? '📌 ' : ''}${esc(name)}</b><small>${esc(ago(c.last_message_at || c.updated_at))}</small></div><div class="rp">${esc(pv)}</div><div class="bd">${b}</div></div></div>`;
   }).join('') || '<div class="emp">No conversations here yet.</div>';
 }
 
@@ -193,6 +194,7 @@ function fillDetails() {
   $('dCall').classList.toggle('hide', !num); $('dCall').href = 'tel:+' + num; $('dWaLink').classList.toggle('hide', !num); $('dWaLink').href = 'https://wa.me/' + num;
   const paused = !!S.ctl[c.id]?.human_takeover_enabled;
   document.querySelectorAll('#dAi button').forEach(b => b.classList.toggle('on', (b.dataset.ai === '1') === paused));
+  linkStatus();
 }
 async function upLead(patch, msg) {
   const l = S.sel && leadOf(S.sel); if (!l) return false;
@@ -205,7 +207,7 @@ async function setTakeover(on) {
   const r = await db.from('client_conversation_controls').upsert({ client_id: S.cid, channel: 'instagram', conversation_id: c.id, human_takeover_enabled: on, ai_mode: on ? 'manual' : null, updated_at: new Date().toISOString() },
     { onConflict: 'client_id,channel,conversation_id' }).select('*').single();
   if (r.error) { toast(r.error.message, true); return; }
-  S.ctl[c.id] = r.data; fillDetails(); hint(); render(); toast(on ? 'Anaya is paused for this chat.' : 'This chat follows the default Anaya mode.');
+  S.ctl[c.id] = r.data; fillDetails(); hint(); render(); toast(on ? 'AI is paused for this chat.' : 'This chat follows the default AI mode.');
 }
 async function addLead() {
   const c = S.sel; if (!c) return;
@@ -294,10 +296,128 @@ async function insights() {
 
 /* ---------- templates (saved on this device) ---------- */
 const DEF = ['Hi {name}! Thanks for messaging us 😊 How can I help you?', 'Could you please share your name and mobile number so we can help you better?', 'Sure {name}, let me check and get back to you in a minute 🙏'];
-const tpls = () => { try { const t = JSON.parse(localStorage.getItem('gig_tpl') || 'null'); return Array.isArray(t) ? t : DEF.slice(); } catch { return DEF.slice(); } };
-const saveTpls = t => localStorage.setItem('gig_tpl', JSON.stringify(t));
-function showTpls() { const t = tpls();
-  $('tplList').innerHTML = t.map((x, i) => `<div class="tp"><span data-use="${i}">${esc(x)}</span><button class="x" data-del="${i}" aria-label="Delete template">✕</button></div>`).join('') || '<div class="emp">No templates yet.</div>'; openSheet('tpl'); }
+const localTpl = () => { try { const t = JSON.parse(localStorage.getItem('gig_tpl') || 'null'); return Array.isArray(t) ? t : DEF.slice(); } catch { return DEF.slice(); } };
+const tpls = () => (S.tpl || []).map(x => x.body);
+const saveLocalTpl = () => { try { localStorage.setItem('gig_tpl', JSON.stringify(tpls())); } catch {} };
+async function loadTpls() {
+  const loc = localTpl(); S.tpl = loc.map(b => ({ id: null, body: b })); S.cloudTpl = false;
+  try {
+    const r = await db.from('instagram_templates').select('id,body').eq('client_id', S.cid).order('created_at', { ascending: true });
+    if (r.error) return; S.cloudTpl = true;
+    if (r.data.length) { S.tpl = r.data; saveLocalTpl(); return; }
+    const flag = 'gig_tpl_seeded_' + S.cid; if (localStorage.getItem(flag)) { S.tpl = []; return; }
+    const ins = await db.from('instagram_templates').insert(loc.map(b => ({ client_id: S.cid, body: b }))).select('id,body');
+    if (!ins.error) { S.tpl = ins.data; localStorage.setItem(flag, '1'); }
+  } catch {}
+}
+async function addTpl(v) {
+  if (S.cloudTpl) { const r = await db.from('instagram_templates').insert({ client_id: S.cid, body: v.slice(0, 1000) }).select('id,body').single();
+    if (r.error) { toast(r.error.message, true); return; } S.tpl.push(r.data); }
+  else S.tpl.push({ id: null, body: v });
+  saveLocalTpl(); showTpls();
+}
+async function delTpl(i) {
+  const t = S.tpl[i]; if (!t) return;
+  if (S.cloudTpl && t.id) { const r = await db.from('instagram_templates').delete().eq('id', t.id).eq('client_id', S.cid); if (r.error) { toast(r.error.message, true); return; } }
+  S.tpl.splice(i, 1); saveLocalTpl(); showTpls();
+}
+function showTpls() {
+  $('tplList').innerHTML = (S.tpl || []).map((x, i) => `<div class="tp"><span data-use="${i}">${esc(x.body)}</span><button class="x" data-del="${i}" aria-label="Delete template">✕</button></div>`).join('') || '<div class="emp">No templates yet.</div>'; openSheet('tpl'); }
+
+/* ---------- pin + tags (cloud when the table exists, else this phone) ---------- */
+const DEFTAGS = ['Price asked', 'Delivery', 'Complaint', 'Order', 'Follow-up', 'VIP'];
+const tagCol = t => { let h = 0; for (const ch of String(t)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h % 5; };
+const metaLocal = () => { try { return JSON.parse(localStorage.getItem('gig_meta') || '{}'); } catch { return {}; } };
+async function loadMeta() {
+  const loc = metaLocal(); S.meta = loc; S.cloudMeta = false;
+  try {
+    const r = await db.from('instagram_chat_meta').select('conversation_id,pinned,tags').eq('client_id', S.cid);
+    if (r.error) return; S.cloudMeta = true;
+    const m = {}; (r.data || []).forEach(x => { m[x.conversation_id] = { pinned: !!x.pinned, tags: x.tags || [] }; });
+    const up = Object.keys(loc).filter(id => !m[id] && (loc[id].pinned || (loc[id].tags || []).length));
+    if (up.length) { await db.from('instagram_chat_meta').upsert(up.map(id => ({ client_id: S.cid, conversation_id: id, pinned: !!loc[id].pinned, tags: loc[id].tags || [] })), { onConflict: 'client_id,conversation_id' }); up.forEach(id => { m[id] = loc[id]; }); }
+    S.meta = m;
+  } catch {}
+}
+async function saveMeta(id) {
+  const m = S.meta[id] || { pinned: false, tags: [] };
+  try { const l = metaLocal(); l[id] = m; localStorage.setItem('gig_meta', JSON.stringify(l)); } catch {}
+  if (!S.cloudMeta) return;
+  const r = await db.from('instagram_chat_meta').upsert({ client_id: S.cid, conversation_id: id, pinned: !!m.pinned, tags: m.tags || [], updated_at: new Date().toISOString() }, { onConflict: 'client_id,conversation_id' });
+  if (r.error) toast('Saved on this phone only: ' + r.error.message, true);
+}
+function metaOf(id) { return S.meta[id] || (S.meta[id] = { pinned: false, tags: [] }); }
+function togglePin() { const c = S.sel; if (!c) return; const m = metaOf(c.id); m.pinned = !m.pinned; saveMeta(c.id); render(); toast(m.pinned ? 'Chat pinned to the top.' : 'Chat unpinned.'); }
+const allTags = () => { const s = new Set(DEFTAGS); Object.values(S.meta).forEach(m => (m.tags || []).forEach(t => s.add(t))); return [...s]; };
+function drawTags() { const c = S.sel; if (!c) return; const have = metaOf(c.id).tags;
+  $('tgList').innerHTML = allTags().map(t => `<button type="button" data-t="${esc(t)}" class="${have.includes(t) ? 'on' : ''}">${esc(t)}</button>`).join(''); }
+function tagSheet() { if (!S.sel) return; drawTags(); openSheet('tgs'); }
+function toggleTag(t) { const c = S.sel; if (!c) return; const m = metaOf(c.id), i = m.tags.indexOf(t); if (i >= 0) m.tags.splice(i, 1); else m.tags.push(t); saveMeta(c.id); drawTags(); render(); }
+function tagBar() {
+  const used = [...new Set(Object.values(S.meta).flatMap(m => m.tags || []))], el = $('tagChips');
+  if (S.tg && !used.includes(S.tg)) S.tg = '';
+  el.classList.toggle('hide', !used.length);
+  el.innerHTML = used.map(t => `<button type="button" data-t="${esc(t)}" class="${S.tg === t ? 'on' : ''}">${esc(t)}</button>`).join('');
+}
+$('tagChips').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.tg = S.tg === b.dataset.t ? '' : b.dataset.t; render(); };
+$('tgList').onclick = e => { const b = e.target.closest('button'); if (b) toggleTag(b.dataset.t); };
+$('tgAdd').onclick = async () => { const v = await ask({ title: 'New tag', text: 'Short name, for example "Wholesale".', input: true, ok: 'Add', placeholder: 'Tag name' }); if (v) toggleTagNew(v.slice(0, 24)); };
+function toggleTagNew(t) { const c = S.sel; if (!c) return; const m = metaOf(c.id); if (!m.tags.includes(t)) m.tags.push(t); saveMeta(c.id); drawTags(); render(); }
+
+/* ---------- AI mode for the open chat ---------- */
+function chatModeSheet() {
+  const c = S.sel; if (!c) return; const x = S.ctl[c.id];
+  const cur = x && (x.human_takeover_enabled || x.ai_enabled === false) ? 'manual' : (x?.ai_mode || 'default');
+  const items = [['default', 'Follow default', 'Same as the setting for all chats (' + MODES[S.ai.mode][0] + ')'], ...Object.entries(MODES).map(([k, v]) => [k, v[0], v[1]])];
+  $('cmList').innerHTML = items.map(([k, t, d]) => `<button data-m="${k}" class="${cur === k ? 'on' : ''}">${t}<span>${d}</span></button>`).join('');
+  $('cmHint').textContent = S.stop || !S.ai.on ? 'AI is switched off for all chats right now (emergency stop or Settings), so every chat stays Manual.' : 'This changes only this chat.';
+  openSheet('cmode');
+}
+async function setChatMode(m) {
+  const c = S.sel; if (!c) return;
+  const r = await db.from('client_conversation_controls').upsert({ client_id: S.cid, channel: 'instagram', conversation_id: c.id, human_takeover_enabled: false, ai_enabled: true, ai_mode: m === 'default' ? null : m, updated_at: new Date().toISOString() },
+    { onConflict: 'client_id,channel,conversation_id' }).select('*').single();
+  if (r.error) { toast(r.error.message, true); return; }
+  S.ctl[c.id] = r.data; fillDetails(); hint(); render(); chatModeSheet(); toast(m === 'default' ? 'This chat follows the default AI mode.' : 'AI mode for this chat: ' + MODES[m][0]);
+}
+$('cmList').onclick = async e => { const b = e.target.closest('button'); if (!b) return; const m = b.dataset.m;
+  if (m === 'automatic' && !(await ask({ title: 'Turn on automatic replies for this chat?', text: 'AI will reply to this customer without waiting for your approval.', ok: 'Turn on' }))) return; setChatMode(m); };
+$('modeHint').onclick = chatModeSheet;
+
+/* ---------- link this Instagram customer to their WhatsApp number ---------- */
+const waVariants = v => { const d = String(v || '').replace(/\D/g, ''); if (d.length === 10) return ['+91' + d, '91' + d, d]; if (d.length === 12 && d.startsWith('91')) return ['+' + d, d, d.slice(2)]; return d.length >= 8 ? [d, '+' + d] : []; };
+async function linkStatus() {
+  const c = S.sel, st = $('dLinkSt'); if (!c || !st) return; const l = leadOf(c), num = l && (l.whatsapp || l.mobile);
+  st.textContent = num ? 'Number saved: ' + num : 'No WhatsApp number linked yet.';
+  const v = num ? waVariants(num) : []; if (!l || !v.length) return;
+  try {
+    const [a, b] = await Promise.all([
+      db.from('whatsapp_conversations').select('id').eq('client_id', S.cid).eq('lead_id', l.id).limit(1),
+      db.from('whatsapp_conversations').select('id').eq('client_id', S.cid).in('customer_phone', v).limit(1)]);
+    if (S.sel !== c) return;
+    st.textContent = 'Number saved: ' + num + ((a.data?.length || b.data?.length) ? ' · ✓ WhatsApp chat found for this customer' : ' · No WhatsApp chat yet');
+  } catch {}
+}
+async function linkWa() {
+  const c = S.sel; if (!c) return; const d = $('dLinkIn').value.replace(/\D/g, '');
+  if (!(d.length === 10 || (d.length === 12 && d.startsWith('91')))) { toast('Enter a valid 10-digit mobile number.', true); return; }
+  const num = d.length === 10 ? '+91' + d : '+' + d, v = waVariants(num), btn = $('dLinkBtn'); btn.disabled = true;
+  try {
+    let l = leadOf(c);
+    if (!l) { const ins = await db.from('leads').insert({ client_id: S.cid, name: c.username || `Instagram ${c.instagram_user_id}`, source: 'instagram', source_ref: c.instagram_user_id,
+        instagram_user_id: c.instagram_user_id, instagram_thread_id: c.instagram_thread_id, status: 'new', priority: 'normal' }).select('*').single();
+      if (ins.error) throw ins.error; l = ins.data; S.leads[l.id] = l; S.byIg[c.instagram_user_id] = l; }
+    const cr = await db.from('whatsapp_conversations').select('id,lead_id').eq('client_id', S.cid).in('customer_phone', v); if (cr.error) throw cr.error;
+    if ((cr.data || []).some(x => x.lead_id && x.lead_id !== l.id) && !(await ask({ title: 'Link to this customer?', text: 'A WhatsApp chat with this number already belongs to another lead. It will be linked to this Instagram customer instead.', ok: 'Link' }))) return;
+    const patch = { whatsapp: num, updated_at: new Date().toISOString() }; if (!l.mobile) patch.mobile = num;
+    const up = await db.from('leads').update(patch).eq('id', l.id).eq('client_id', S.cid).select('*').single(); if (up.error) throw up.error; Object.assign(l, up.data);
+    if ((cr.data || []).length) { const w = await db.from('whatsapp_conversations').update({ lead_id: l.id }).eq('client_id', S.cid).in('id', cr.data.map(x => x.id)); if (w.error) throw w.error; }
+    try { await db.from('instagram_conversations').update({ lead_id: l.id }).eq('id', c.id).eq('client_id', S.cid); c.lead_id = l.id; } catch {}
+    try { await db.from('lead_timeline').insert({ client_id: S.cid, lead_id: l.id, event_type: 'channel_linked', title: 'Instagram linked to WhatsApp number', description: num, source: 'instagram_sales_specialist', metadata: { instagram_user_id: c.instagram_user_id, whatsapp: num } }); } catch {}
+    $('dLinkIn').value = ''; toast((cr.data || []).length ? 'Linked. The WhatsApp chat now belongs to this customer.' : 'Number linked. When this customer messages on WhatsApp, both chats will show as one customer.'); fillDetails(); render();
+  } catch (e) { toast(e.message || 'Linking failed.', true); } finally { btn.disabled = false; }
+}
+$('dLinkBtn').onclick = linkWa; $('dLinkIn').addEventListener('keydown', e => { if (e.key === 'Enter') linkWa(); });
 
 /* ---------- wiring ---------- */
 $('list').onclick = e => { const r = e.target.closest('.row-i'); const c = r && S.convs.find(x => x.id === r.dataset.id); if (c) openChat(c); };
@@ -309,7 +429,7 @@ $('ov').onclick = closeSheet; document.querySelectorAll('[data-close]').forEach(
 $('moreBtn').onclick = e => { e.stopPropagation(); pop([['Refresh', refresh], ['Mark all as read', () => { const s = seen(); S.convs.forEach(c => { s[c.id] = Date.now(); }); localStorage.setItem('gig_seen', JSON.stringify(s)); S.unread = {}; render(); toast('All chats marked as read.'); }],
   ['Settings', () => { location.href = 'settings.html'; }], ['Secure logout', logout, true]]); };
 $('cMore').onclick = e => { e.stopPropagation(); const closed = S.sel?.status === 'closed';
-  pop([['Customer details', () => openSheet('det')], [closed ? 'Reopen chat' : 'Close chat', () => setStatus(closed ? 'open' : 'closed')], ['Delete chat', del, true]]); };
+  pop([[S.meta[S.sel?.id]?.pinned ? 'Unpin chat' : 'Pin chat', togglePin], ['Tags', tagSheet], ['AI mode', chatModeSheet], ['Customer details', () => openSheet('det')], [closed ? 'Reopen chat' : 'Close chat', () => setStatus(closed ? 'open' : 'closed')], ['Delete chat', del, true]]); };
 document.addEventListener('click', e => { if (!e.target.closest('#pop')) $('pop').classList.remove('on'); });
 $('dAdd').onclick = addLead;
 $('dStage').onchange = e => upLead({ status: e.target.value }, 'Stage updated');
@@ -323,14 +443,14 @@ $('dNoteSave').onclick = async () => { const t = $('dNote').value.trim(), l = S.
 $('dAi').onclick = e => { const b = e.target.closest('button'); if (b) setTakeover(b.dataset.ai === '1'); };
 $('tplBtn').onclick = $('cTpl').onclick = showTpls; $('insBtn').onclick = insights; $('modeBtn').onclick = modeSheet;
 $('modeList').onclick = async e => { const b = e.target.closest('button'); if (!b) return; const m = b.dataset.m; if (m === S.ai.mode) return;
-  if (m === 'automatic' && !(await ask({ title: 'Turn on automatic replies?', text: 'Anaya will reply to Instagram customers without waiting for your approval.', ok: 'Turn on' }))) return; saveMode(m); };
+  if (m === 'automatic' && !(await ask({ title: 'Turn on automatic replies?', text: 'AI will reply to Instagram customers without waiting for your approval.', ok: 'Turn on' }))) return; saveMode(m); };
 $('tplList').onclick = e => {
-  const u = e.target.closest('[data-use]'), d = e.target.closest('[data-del]'), t = tpls();
-  if (d) { t.splice(+d.dataset.del, 1); saveTpls(t); showTpls(); return; }
-  if (u) { const text = t[+u.dataset.use].replace(/\{name\}/gi, (S.sel && (leadOf(S.sel)?.name || S.sel.username)) || 'there'); closeSheet();
+  const u = e.target.closest('[data-use]'), d = e.target.closest('[data-del]');
+  if (d) { delTpl(+d.dataset.del); return; }
+  if (u) { const text = S.tpl[+u.dataset.use].body.replace(/\{name\}/gi, (S.sel && (leadOf(S.sel)?.name || S.sel.username)) || 'there'); closeSheet();
     if (S.sel) { $('input').value = text; size(); $('input').focus(); } else { navigator.clipboard?.writeText(text); toast('Template copied.'); } }
 };
-$('tplAdd').onclick = async () => { const v = await ask({ title: 'New template', text: 'Use {name} to insert the customer\'s name.', input: true, ok: 'Save', placeholder: 'Type your reply' }); if (v) { const t = tpls(); t.push(v); saveTpls(t); showTpls(); } };
+$('tplAdd').onclick = async () => { const v = await ask({ title: 'New template', text: 'Use {name} to insert the customer\'s name.', input: true, ok: 'Save', placeholder: 'Type your reply' }); if (v) addTpl(v); };
 $('send').onclick = send; $('input').addEventListener('input', size);
 $('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && matchMedia('(pointer:fine)').matches) { e.preventDefault(); send(); } });
 $('sugUse').onclick = () => { $('input').value = $('sugText').textContent.trim(); $('sug').classList.add('hide'); size(); $('input').focus(); };
@@ -367,7 +487,7 @@ async function boot() {
     if (e) throw e; if (!c?.client_id) throw new Error('Client account not found.');
     S.cid = c.client_id; pushId(c.business_name || c.name || c.full_name, c.client_id);
     if (!navigator.onLine) $('off').classList.remove('hide');
-    await loadConn(); await loadAll(); live(); $('boot').remove();
+    await loadConn(); await Promise.all([loadMeta(), loadTpls()]); await loadAll(); live(); $('boot').remove();
   } catch (e) {
     $('boot').innerHTML = `<span>${esc(e.message || 'Unable to load.')}</span><button class="btn" style="flex:0;min-width:140px" onclick="location.reload()">Retry</button>`;
   }
