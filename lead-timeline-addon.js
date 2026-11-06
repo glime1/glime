@@ -1,12 +1,8 @@
 /* =========================================================
    GLIME — Lead Timeline & Source History Add-on
-   Phase 5
    ---------------------------------------------------------
-   Purpose:
-   - Enhanced lead activity timeline
+   - Compact lead timeline: only Interest and Order events
    - Source history
-   - Event type + source badges
-   - Metadata/details
    - Works alongside leads.js and lead-ai-addon.js
    - Does NOT modify leads.js
    ========================================================= */
@@ -16,8 +12,8 @@
 
   const SUPABASE_URL = "https://ufoulgbiqgjriwapuopc.supabase.co";
 
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+  const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
 
   if (!window.supabase) {
     console.error("[GLIME Lead Timeline] Supabase client not loaded.");
@@ -28,6 +24,19 @@ const SUPABASE_PUBLISHABLE_KEY =
     SUPABASE_URL,
     SUPABASE_PUBLISHABLE_KEY
   );
+
+  /* Small style additions: timeline chips + light mode text colour */
+  try {
+    const style = document.createElement("style");
+    style.textContent = `
+      .lead-timeline-chip{display:inline-block;font-size:.65rem;font-weight:600;padding:2px 9px;border-radius:999px}
+      .lead-timeline-chip.interest{background:rgba(0,240,255,.14);color:#0891b2}
+      .lead-timeline-chip.order{background:rgba(0,255,136,.16);color:#059669}
+      .lead-timeline-ago{margin-left:6px;opacity:.7;font-size:.68rem}
+      html[data-theme="light"] .ai-item ul{color:#374151 !important}
+    `;
+    document.head.appendChild(style);
+  } catch (e) {}
 
   let activeLeadId = null;
   let clientIdCache = null;
@@ -64,6 +73,18 @@ const SUPABASE_PUBLISHABLE_KEY =
     }).format(date);
   }
 
+  function timeAgo(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + "h ago";
+    const days = Math.floor(hours / 24);
+    return days < 30 ? days + "d ago" : "";
+  }
+
   function isEmptyObject(value) {
     return (
       !value ||
@@ -94,28 +115,6 @@ const SUPABASE_PUBLISHABLE_KEY =
     };
 
     return map[String(source || "").toLowerCase()] || source || "Unknown";
-  }
-
-  function eventLabel(eventType) {
-    const map = {
-      lead_created: "Lead Created",
-      lead_updated: "Lead Updated",
-      status_changed: "Status Changed",
-      voice_call: "Voice AI Call",
-      source_added: "Source Added",
-      note_added: "Note Added",
-      follow_up: "Follow-up",
-      contact_attempt: "Contact Attempt",
-      message_received: "Message Received",
-      message_sent: "Message Sent"
-    };
-
-    return (
-      map[String(eventType || "").toLowerCase()] ||
-      String(eventType || "Activity")
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase())
-    );
   }
 
   function sourceClass(source) {
@@ -207,7 +206,11 @@ const SUPABASE_PUBLISHABLE_KEY =
           )
           .eq("lead_id", leadId)
           .eq("client_id", clientId)
+          .or(
+            "event_type.in.(enquiry,sales_qualification),event_type.ilike.%order%,event_type.ilike.%interest%"
+          )
           .order("created_at", { ascending: false })
+          .limit(30)
       ]);
 
     if (leadResult.error) {
@@ -361,78 +364,68 @@ const SUPABASE_PUBLISHABLE_KEY =
   }
 
   /* ---------------------------------------------------------
-     Timeline UI
+     Timeline UI — only Interest and Order events
      --------------------------------------------------------- */
 
+  function isOrderEvent(event) {
+    return /order/i.test(String(event?.event_type || ""));
+  }
+
+  function isInterestEvent(event) {
+    const type = String(event?.event_type || "").toLowerCase();
+    return (
+      type === "enquiry" ||
+      type === "sales_qualification" ||
+      /interest/.test(type)
+    );
+  }
+
   function renderTimeline(timeline) {
-    if (!timeline.length) {
+    const items = (timeline || []).filter(
+      (event) => isOrderEvent(event) || isInterestEvent(event)
+    );
+
+    if (!items.length) {
       return `
         <div class="lead-phase5-empty lead-phase5-timeline-empty">
-          <strong>No activity recorded yet.</strong>
-          <span>Lead activity will automatically appear here.</span>
+          <strong>No interest or order yet.</strong>
         </div>
       `;
     }
 
     return `
       <div class="lead-phase5-timeline">
-        ${timeline
+        ${items
           .map((event) => {
-            const eventType = eventLabel(event.event_type);
-            const source = sourceLabel(event.source);
-            const sourceCls = sourceClass(event.source);
-
-            const metadata =
-              !isEmptyObject(event.metadata) && event.metadata
-                ? `
-                  <details class="lead-phase5-details timeline-details">
-                    <summary>Event details</summary>
-                    <pre>${escapeHtml(
-                      prettyJson(event.metadata)
-                    )}</pre>
-                  </details>
-                `
-                : "";
+            const order = isOrderEvent(event);
+            const label = order ? "Order" : "Interest";
+            const text = order
+              ? event.description || event.title || ""
+              : String(event.description || event.title || "").replace(
+                  /^interest\s*\/\s*purpose:\s*/i,
+                  ""
+                );
+            const ago = timeAgo(event.created_at);
 
             return `
               <article class="lead-timeline-event">
                 <div class="lead-timeline-marker"></div>
-
                 <div class="lead-timeline-event-body">
                   <div class="lead-timeline-event-header">
-
                     <div class="lead-timeline-title-wrap">
-                      <strong>
-                        ${escapeHtml(event.title || eventType)}
-                      </strong>
-
-                      <span class="lead-phase5-event-type">
-                        ${escapeHtml(eventType)}
-                      </span>
+                      <span class="lead-timeline-chip ${order ? "order" : "interest"}">${label}</span>
                     </div>
-
-                    <time>
-                      ${escapeHtml(formatDate(event.created_at))}
-                    </time>
+                    <time>${escapeHtml(formatDate(event.created_at))}${
+                      ago
+                        ? `<span class="lead-timeline-ago">· ${escapeHtml(ago)}</span>`
+                        : ""
+                    }</time>
                   </div>
-
-                  <div class="lead-timeline-event-meta">
-                    <span class="lead-phase5-source-badge source-${sourceCls}">
-                      ${escapeHtml(source)}
-                    </span>
-                  </div>
-
                   ${
-                    event.description
-                      ? `
-                        <p class="lead-timeline-description">
-                          ${escapeHtml(event.description)}
-                        </p>
-                      `
+                    text
+                      ? `<p class="lead-timeline-description">${escapeHtml(text)}</p>`
                       : ""
                   }
-
-                  ${metadata}
                 </div>
               </article>
             `;
@@ -443,7 +436,7 @@ const SUPABASE_PUBLISHABLE_KEY =
   }
 
   /* ---------------------------------------------------------
-     Replace existing timeline with Phase 5 timeline
+     Replace existing timeline with compact timeline
      --------------------------------------------------------- */
 
   function injectTimeline(timeline) {
@@ -459,7 +452,7 @@ const SUPABASE_PUBLISHABLE_KEY =
       timelineHeading &&
       timelineHeading.tagName === "H3"
     ) {
-      timelineHeading.textContent = "Activity Timeline";
+      timelineHeading.textContent = "Timeline";
     }
 
     timelineBox.innerHTML = renderTimeline(timeline);
@@ -674,8 +667,4 @@ const SUPABASE_PUBLISHABLE_KEY =
   };
 
   startObserver();
-
-  console.log(
-    "[GLIME Lead Timeline] Phase 5 addon loaded."
-  );
 })();
