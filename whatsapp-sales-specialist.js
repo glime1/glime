@@ -133,6 +133,8 @@ function friendly(e) {
   return String((e && e.message) || e || 'Something went wrong').replace(/^[A-Z][A-Z_]{3,}:\s*/, '');
 }
 function icon(id, cls = 'ni') { return `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`; }
+/* lets whatsapp-lead-addon.js react to page events without touching this file's internals */
+function emit(name, detail) { try { document.dispatchEvent(new CustomEvent('gwa:' + name, { detail })); } catch (_) {} }
 
 let toastTimer;
 function toast(msg, error = false) {
@@ -302,6 +304,7 @@ function renderList() {
       </div>
     </div>`;
   }).join('');
+  emit('list');
 }
 
 /* ---------------- open / close chat pane ---------------- */
@@ -368,6 +371,7 @@ function paintHeader() {
 
   paintRetention();
   updateComposerState();
+  emit('header');
 }
 
 /* ---------------- composer state / notices ---------------- */
@@ -422,6 +426,7 @@ async function loadMessages(id) {
   // never resurrect a message the user has already deleted
   st.msgs = (data || []).reverse().filter(m => !st.deleted.has(m.id));
   renderMessages(true);
+  emit('messages');
 }
 
 function mtype(m) {
@@ -684,6 +689,7 @@ function paintContext(conv, customer, lead, timeline, fu, orders) {
     '</div></div>';
 
   $('ctxDynamic').innerHTML = h;
+  emit('context', { conv, customer, lead });
 }
 
 function setSheet(open) {
@@ -1482,7 +1488,13 @@ function bind() {
   $('toggleStatus').onclick = toggleStatus;
   $('infoBtn').onclick = () => setSheet(true);
   $('ctxClose').onclick = () => setSheet(false);
-  $('callBtn').onclick = () => toast('Voice calls aren’t available: GLIME’s WhatsApp integration doesn’t support placing calls yet.');
+  /* opens the phone's dialer directly (normal phone call; WhatsApp voice calls aren't supported by the API) */
+  $('callBtn').onclick = () => {
+    let n = normPhone(st.sel && st.sel.customer_phone);
+    if (n.length === 10) n = '91' + n;
+    if (!n) return toast('No phone number found for this customer.', true);
+    location.href = 'tel:+' + n;
+  };
 
   /* chat menu */
   $('moreBtn').onclick = e => { e.stopPropagation(); openMenu($('chatMenu'), $('moreBtn'), 'right'); };
@@ -1611,12 +1623,16 @@ async function boot() {
     $('boot').remove();
     st.booted = true;
     updateComposerState();
+    emit('ready');
     await handoff();
   } catch (e) {
     console.error(e);
     $('boot').innerHTML = `<div style="color:#ff6472;max-width:320px">${esc(friendly(e))}</div><button class="primary-btn" onclick="location.reload()">Retry</button>`;
   }
 }
+
+/* shared handles for whatsapp-lead-addon.js */
+window.GWA = { sb, st, $, esc, toast, fn, friendly, normPhone, loadContext, loadConversations };
 
 boot();
 })();
