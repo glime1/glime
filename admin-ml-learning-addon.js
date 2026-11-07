@@ -25,7 +25,7 @@
     auto: "Auto - answers by itself when very sure"
   };
 
-  let sb = null, clients = [], rows = [], total = 0, stats = null, loaded = false, editing = null, timer = null, testRes = null, testText = "", testBusy = false;
+  let sb = null, clients = [], rows = [], total = 0, stats = null, loaded = false, editing = null, timer = null, testRes = null, testText = "", testBusy = false, replayRes = null, replayBusy = false, replayN = 15, replayOffset = 0, replayDone = {};
   const f = { client: "", label: "pending", channel: "", q: "", offset: 0 };
 
   const $ = (id) => document.getElementById(id);
@@ -194,6 +194,83 @@ Examples ready: ${r.ready_examples} (need ${r.min_examples}) · Suggest from ${r
     testBusy = false;
     if ($("mlTest")) $("mlTest").innerHTML = testHtml();
   }
+  const DEC_TXT = { auto: "would answer by itself", suggest: "would suggest", none: "no answer" };
+  function replayItem(x) {
+    const b = x.best, done = replayDone[x.example_id];
+    let sys;
+    if (b) {
+      sys = `<div class="ml-box ml-c"><small>System would reply · score ${b.score.toFixed(2)} · ${esc(DEC_TXT[x.by_score] || x.by_score)}${x.sensitive ? " · sensitive words" : ""}</small>${esc(b.reply)}\n\n<span style="color:#7b8797;font-size:.72rem">Matched example: ${esc(b.customer_text)}</span></div>`;
+    } else {
+      sys = `<div class="ml-box ml-q"><small>System would reply</small>Nothing. No similar approved example, so the old AI would answer.</div>`;
+    }
+    const verdict = b
+      ? (done
+        ? `<span class="ml-chip ${done === "good" ? "approved" : "rejected"}">${done === "good" ? "Marked: system was right" : "Marked: system was wrong"}</span>`
+        : `<button class="go" data-act="rv-good" data-ex="${esc(x.example_id)}" data-m="${esc(b.id)}" data-score="${b.score}" data-sim="${b.similarity}">System was right</button><button class="no" data-act="rv-bad" data-ex="${esc(x.example_id)}" data-m="${esc(b.id)}" data-score="${b.score}" data-sim="${b.similarity}">System was wrong</button>`)
+      : "";
+    return `<div class="ml-card"><div class="ml-meta">${esc(when(x.created_at))} · ${esc(CH[x.channel] || x.channel)}</div>
+      <div class="ml-box ml-q"><small>Customer asked</small>${esc(x.customer_text)}</div>
+      <div class="ml-box ml-a"><small>Reply that was actually sent</small>${esc(x.old_reply)}</div>${sys}
+      ${verdict ? `<div class="ml-act">${verdict}</div>` : ""}</div>`;
+  }
+  function replayHtml() {
+    const c = curClient();
+    let out = "";
+    if (!c) {
+      out = `<p>Pick one client above. This shows real past customer questions next to what the system would have answered.</p>`;
+    } else {
+      out = `<p>Takes real past questions of <b>${esc(c.business_name)}</b> that are still pending, and puts the reply that was actually sent next to what the system would answer now. Nothing is sent and nothing changes, except the right/wrong marks you give.</p>
+        <div class="ml-row"><label>How many (max 30)<input id="mlRepN" type="number" min="1" max="30" value="${replayN}"></label>
+        <button class="ml-btn go" data-act="run-replay"${replayBusy ? " disabled" : ""}>${replayBusy ? "Running..." : replayRes && replayRes.ok ? "Run again from the start" : "Run replay"}</button></div>`;
+      if (replayRes && replayRes.ok) {
+        const r = replayRes;
+        const pct = r.checked ? Math.round((r.answered * 100) / r.checked) : 0;
+        out += `<div class="ml-box ml-a" style="margin-top:12px"><small>Summary</small>Checked ${r.checked} past questions. The system had an answer for ${r.answered} (${pct}%), and ${r.would_auto} of them are sure enough to answer by itself.
+Examples ready: ${r.ready_examples} (need ${r.min_examples}) · Suggest from ${r.thresholds.suggest} · Auto from ${r.thresholds.auto}</div>`;
+        if (r.awaiting_embedding) out += `<p style="color:#ffd98a">${r.awaiting_embedding} approved example(s) are still being processed (up to 15 minutes) and are not included yet.</p>`;
+        if (r.ready_examples === 0) out += `<p style="color:#ffd98a">This client has no approved examples yet, so the system cannot answer anything. Approve some WhatsApp or Instagram examples first.</p>`;
+        out += r.items.length ? r.items.map(replayItem).join("") : `<div class="ml-empty">No more pending customer questions for this client.</div>`;
+        if (r.items.length) out += `<div class="ml-pager"><button class="ml-btn" data-act="replay-more">Check the next ${replayN}</button></div>`;
+      } else if (replayRes && replayRes.error) {
+        out += `<div class="ml-note bad" style="display:block;margin-top:12px">${esc(replayRes.error)}</div>`;
+      }
+    }
+    return `<div class="ml-set" style="border-color:rgba(255,200,87,.35);background:rgba(255,200,87,.04)"><h4>Replay on past chats (shadow check)</h4>${out}</div>`;
+  }
+  async function callTestFn(body) {
+    const r = await client().functions.invoke("ml-admin-test", { body });
+    if (r.error) {
+      let m = String(r.error.message || r.error);
+      try { if (r.error.context && r.error.context.json) { const j = await r.error.context.json(); if (j && j.error) m = j.error === "forbidden" ? "Admin login required." : j.error; } } catch (e2) { /* keep m */ }
+      throw new Error(m);
+    }
+    if (r.data && r.data.ok === false) throw new Error(String(r.data.error || "Failed"));
+    return r.data;
+  }
+  async function runReplay(more) {
+    const c = curClient(); if (!c) return;
+    const nEl = $("mlRepN"); if (nEl) replayN = Math.min(30, Math.max(1, parseInt(nEl.value, 10) || 15));
+    const prev = more && replayRes && replayRes.ok ? replayRes : null;
+    if (!more) { replayOffset = 0; replayDone = {}; }
+    replayBusy = true; $("mlReplay").innerHTML = replayHtml();
+    try {
+      const d = await callTestFn({ action: "replay", client_id: c.client_id, n: replayN, offset: replayOffset });
+      replayOffset = d.next_offset;
+      if (prev) { d.items = prev.items.concat(d.items); d.checked += prev.checked; d.answered += prev.answered; d.would_auto += prev.would_auto; }
+      replayRes = d;
+    } catch (e) { replayRes = { error: "Replay failed: " + String((e && e.message) || e) }; }
+    replayBusy = false;
+    if ($("mlReplay")) $("mlReplay").innerHTML = replayHtml();
+  }
+  async function verdict(b, outcome) {
+    b.disabled = true;
+    try {
+      const r = await rpc("ml_admin_replay_verdict", { p_example_id: b.dataset.ex, p_matched_id: b.dataset.m, p_score: parseFloat(b.dataset.score), p_similarity: parseFloat(b.dataset.sim), p_outcome: outcome });
+      if (r && r.ok === false && r.error !== "already_recorded") throw new Error(r.error);
+      replayDone[b.dataset.ex] = outcome;
+      $("mlReplay").innerHTML = replayHtml();
+    } catch (e) { say("Could not save: " + String((e && e.message) || e), true); b.disabled = false; }
+  }
   function card(r) {
     const final = r.corrected_reply;
     return `<div class="ml-card" data-id="${esc(r.id)}">
@@ -235,6 +312,7 @@ Examples ready: ${r.ready_examples} (need ${r.min_examples}) · Suggest from ${r
         <button class="ml-btn" data-act="refresh" type="button">&#8635; Refresh</button></div>
       <div id="mlSettings">${settingsHtml()}</div>
       <div id="mlTest">${testHtml()}</div>
+      <div id="mlReplay">${replayHtml()}</div>
       <div id="mlList"></div></div>`;
     renderList();
     $("mlSearch").addEventListener("input", (e) => {
@@ -287,6 +365,10 @@ Examples ready: ${r.ready_examples} (need ${r.min_examples}) · Suggest from ${r
     if (act === "refresh") { loadAll(); return; }
     if (act === "save-settings") return saveSettings(b);
     if (act === "run-test") return runTest(b);
+    if (act === "run-replay") return runReplay(false);
+    if (act === "replay-more") return runReplay(true);
+    if (act === "rv-good") return verdict(b, "good");
+    if (act === "rv-bad") return verdict(b, "bad");
     if (act === "bulk") return bulk(b);
     if (act === "approve") return review(id, "approved", null, b);
     if (act === "reject") return review(id, "rejected", null, b);
@@ -297,7 +379,7 @@ Examples ready: ${r.ready_examples} (need ${r.min_examples}) · Suggest from ${r
   }
   function onChange(e) {
     const id = e.target.id;
-    if (id === "mlClient") { f.client = e.target.value; f.offset = 0; editing = null; $("mlSettings").innerHTML = settingsHtml(); testRes = null; testText = ""; $("mlTest").innerHTML = testHtml(); reloadList(); }
+    if (id === "mlClient") { f.client = e.target.value; f.offset = 0; editing = null; $("mlSettings").innerHTML = settingsHtml(); testRes = null; testText = ""; $("mlTest").innerHTML = testHtml(); replayRes = null; replayOffset = 0; replayDone = {}; $("mlReplay").innerHTML = replayHtml(); reloadList(); }
     else if (id === "mlLabel") { f.label = e.target.value; f.offset = 0; reloadList(); }
     else if (id === "mlChannel") { f.channel = e.target.value; f.offset = 0; reloadList(); }
   }
