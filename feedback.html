@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#05080c">
+<title>Feedback | Glime AI Automation</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#05080c;--card:#0f1a26;--text:#f2f7fb;--muted:#9db0c0;--soft:#7f93a5;--label:#cfdce8;--line:rgba(255,255,255,.13);--field:#0b141d;--chip:rgba(255,255,255,.04);--star:#4a5b6b;--ref:rgba(255,255,255,.07);--green:#00ff88;--cyan:#00f0ff}
+*{box-sizing:border-box;font-family:Poppins,Manrope,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}
+.main-content{flex:1;min-width:0;padding:36px;max-width:780px}
+.eyebrow{font-size:.72rem;letter-spacing:1.8px;color:var(--cyan);font-weight:700;margin-bottom:7px}
+h1{margin:0;font-size:1.7rem}
+.lead{color:var(--muted);margin:8px 0 0;line-height:1.6;font-size:.9rem}
+.card{margin-top:22px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:20px;padding:22px 20px}
+.label{display:block;margin:16px 0 8px;font-size:.78rem;font-weight:600;color:var(--label)}
+.label:first-child{margin-top:0}
+.label span{font-weight:400;color:var(--soft);margin-left:6px}
+.types{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:0 15px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--text);font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
+.chip[aria-checked="true"]{background:linear-gradient(105deg,#00ff88,#00f0ff);border-color:transparent;color:#061016}
+.stars{display:flex;gap:4px}
+.star{width:44px;height:44px;border:0;background:transparent;color:var(--star);cursor:pointer;display:grid;place-items:center;transition:color .12s,transform .12s}
+.star svg{width:30px;height:30px;fill:currentColor}
+.star.on{color:#ffc83d}.star:active{transform:scale(.9)}
+.ta{width:100%;min-height:140px;resize:vertical;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--field);color:var(--text);font:inherit;font-size:16px;line-height:1.55;outline:0;transition:border-color .15s,box-shadow .15s}
+.ta:focus{border-color:rgba(0,255,136,.55);box-shadow:0 0 0 3px rgba(0,255,136,.12)}
+.meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:.74rem;color:var(--soft)}
+.check{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:.84rem;color:var(--label);cursor:pointer}
+.check input{width:20px;height:20px;accent-color:#00e68a}
+.err{margin-top:14px;padding:11px 13px;border-radius:12px;border:1px solid rgba(255,93,115,.4);background:rgba(255,93,115,.09);color:#ff9aa8;font-size:.82rem;line-height:1.5}
+[hidden]{display:none !important}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{min-height:48px;padding:0 22px;border-radius:13px;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--text);display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.btn.send{border:0;background:linear-gradient(105deg,#00ff88,#00f0ff);color:#061016}
+.btn:disabled{opacity:.55;cursor:default}
+.done{text-align:center;padding:14px 4px 4px}
+.tick{width:64px;height:64px;margin:6px auto 14px;border-radius:50%;display:grid;place-items:center;background:rgba(0,255,136,.13);border:1px solid rgba(0,255,136,.45);color:#00ff88}
+.tick svg{width:30px;height:30px}
+.done h3{margin:0 0 6px;font-size:1.1rem}
+.done p{margin:0 0 6px;color:var(--muted);font-size:.86rem;line-height:1.6}
+.ref{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:var(--ref);font-size:.78rem;font-weight:600;color:var(--label)}
+.done .actions{justify-content:center}
+
+/* ---------- Light theme ---------- */
+html[data-theme="light"]{--bg:#f4f7fa;--card:#ffffff;--text:#0f172a;--muted:#475569;--soft:#64748b;--label:#1e293b;--line:rgba(15,23,42,.16);--field:#f8fafc;--chip:#f1f5f9;--star:#cbd5e1;--ref:#eef2f6}
+html[data-theme="light"] body{background:#f4f7fa !important;color:#0f172a !important}
+html[data-theme="light"] .eyebrow{color:#0e7490 !important}
+html[data-theme="light"] h1{color:#0f172a !important}
+html[data-theme="light"] .lead,html[data-theme="light"] .done p{color:#475569 !important}
+html[data-theme="light"] .card{background:#ffffff !important;border-color:rgba(15,23,42,.14) !important;box-shadow:0 6px 24px rgba(15,23,42,.06)}
+html[data-theme="light"] .label,html[data-theme="light"] .check,html[data-theme="light"] .ref{color:#1e293b !important}
+html[data-theme="light"] .label span,html[data-theme="light"] .meta{color:#64748b !important}
+html[data-theme="light"] .chip{background:#f1f5f9 !important;color:#0f172a !important;border-color:rgba(15,23,42,.16) !important}
+html[data-theme="light"] .chip[aria-checked="true"]{background:linear-gradient(105deg,#00ff88,#00f0ff) !important;color:#061016 !important;border-color:transparent !important}
+html[data-theme="light"] .star{color:#cbd5e1 !important}
+html[data-theme="light"] .star.on{color:#f59e0b !important}
+html[data-theme="light"] .ta{background:#f8fafc !important;color:#0f172a !important;border-color:rgba(15,23,42,.18) !important}
+html[data-theme="light"] .ta::placeholder{color:#94a3b8}
+html[data-theme="light"] .err{background:#fef2f2 !important;border-color:rgba(220,38,38,.4) !important;color:#b91c1c !important}
+html[data-theme="light"] .btn{color:#0f172a !important;border-color:rgba(15,23,42,.22) !important}
+html[data-theme="light"] .btn.send{color:#061016 !important}
+html[data-theme="light"] .done h3{color:#0f172a !important}
+html[data-theme="light"] .tick{color:#047857 !important;background:rgba(5,150,105,.12) !important;border-color:rgba(5,150,105,.45) !important}
+
+@media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}}
+@media(max-width:520px){.card{padding:18px 14px}.actions{flex-direction:column-reverse}.btn{width:100%}}
+</style>
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
+</head>
+<body data-gas-title="Feedback">
+<main class="main-content" data-gas-content>
+  <div class="eyebrow">FEEDBACK</div>
+  <h1>Send feedback</h1>
+  <p class="lead">Tell us what is working, what is not, or what you would like GLIME to do. Our team reads every message.</p>
+
+  <section class="card" aria-labelledby="fbHeading">
+    <form id="fbForm" novalidate>
+      <div class="label" id="fbHeading">What is this about?</div>
+      <div class="types" id="fbTypes" role="radiogroup" aria-labelledby="fbHeading"></div>
+
+      <div class="label" id="fbRateLbl">How is your experience so far?<span>optional</span></div>
+      <div class="stars" id="fbStars" role="radiogroup" aria-labelledby="fbRateLbl"></div>
+
+      <label class="label" for="fbMsg">Your message</label>
+      <textarea id="fbMsg" class="ta" rows="6"></textarea>
+      <div class="meta"><span id="fbAbout"></span><span id="fbCount"></span></div>
+
+      <label class="check"><input type="checkbox" id="fbContact" checked> You can contact me about this</label>
+      <div class="err" id="fbErr" role="alert" hidden></div>
+
+      <div class="actions">
+        <a class="btn" href="dashboard.html">Cancel</a>
+        <button type="submit" class="btn send" id="fbSend">Send feedback</button>
+      </div>
+    </form>
+
+    <div class="done" id="fbDone" hidden>
+      <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h3 id="fbDoneTitle">Thank you!</h3>
+      <p id="fbDoneText"></p>
+      <span class="ref" id="fbRef" hidden></span>
+      <div class="actions">
+        <button type="button" class="btn" id="fbAgain">Send another</button>
+        <a class="btn send" href="dashboard.html">Back to dashboard</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var SB_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+  var SB_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+  var sb = window.supabase.createClient(SB_URL, SB_KEY);
+  window.supabaseClient = sb;
+
+  var FB = {
+    RPC: 'client_submit_feedback',
+    VERSION: '2026-11-07',
+    MIN: 10,
+    MAX: 2000,
+    COOLDOWN_MS: 30000,
+    DRAFT: 'glime_feedback_draft',
+    PENDING: 'glime_feedback_pending',
+    LAST: 'glime_feedback_last'
+  };
+  var TYPES = [
+    { key: 'bug', label: 'Problem', hint: 'What happened, and what did you expect to happen?' },
+    { key: 'idea', label: 'Idea', hint: 'What would you like GLIME to do, or do better?' },
+    { key: 'question', label: 'Question', hint: 'What would you like to know?' },
+    { key: 'praise', label: 'Praise', hint: 'What is working well for you?' },
+    { key: 'other', label: 'Other', hint: 'Tell us anything on your mind.' }
+  ];
+  var st = { type: 'idea', rating: 0, sending: false };
+
+  function $(id) { return document.getElementById(id); }
+  function store(key, value) {
+    try {
+      if (value === undefined) return localStorage.getItem(key);
+      if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value);
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+  function uuid() {
+    try { if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID(); } catch (e) { /* fall through */ }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+    });
+  }
+
+  /* The page the client came from (sidebar adds ?from=Orders). Display text only. */
+  function fromPage() {
+    var v = '';
+    try { v = new URLSearchParams(location.search).get('from') || ''; } catch (e) { /* ignore */ }
+    v = v.replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 120);
+    return v;
+  }
+  function fromUrl() {
+    try {
+      var r = document.referrer ? new URL(document.referrer) : null;
+      if (r && r.origin === location.origin) return (r.origin + r.pathname).slice(0, 500);
+    } catch (e) { /* ignore */ }
+    return location.href.split('#')[0].split('?')[0].slice(0, 500);
+  }
+
+  function payload(message) {
+    var theme = '';
+    try { theme = document.documentElement.getAttribute('data-theme') || ''; } catch (e) { /* ignore */ }
+    return {
+      client_request_id: uuid(),
+      type: st.type,
+      rating: st.rating || null,
+      message: message,
+      page: fromPage() || 'Feedback',
+      page_url: fromUrl(),
+      can_contact: !!$('fbContact').checked,
+      metadata: {
+        app_version: FB.VERSION,
+        viewport: window.innerWidth + 'x' + window.innerHeight,
+        language: navigator.language || '',
+        theme: theme,
+        user_agent: (navigator.userAgent || '').slice(0, 300),
+        queued: false
+      }
+    };
+  }
+
+  /* Sends one payload. Resolves { ok, id, reference, error, queue, auth }. Never rejects. */
+  function send(p) {
+    return sb.auth.getSession().then(function (r) {
+      if (!r || !r.data || !r.data.session) return { ok: false, auth: true, error: 'Your session has expired. Please sign in again.' };
+      return sb.rpc(FB.RPC, { p_payload: p }).then(function (res) {
+        if (res.error) {
+          var msg = String(res.error.message || '');
+          var missing = res.error.code === 'PGRST202' || /could not find the function|schema cache/i.test(msg);
+          var offline = /failed to fetch|network|load failed/i.test(msg);
+          return { ok: false, queue: missing || offline, error: missing ? 'Feedback is being set up on our side.' : (offline ? 'No internet connection.' : (msg || 'Feedback could not be sent.')) };
+        }
+        var d = res.data || {};
+        if (d.ok === false) return { ok: false, error: d.error || 'Feedback could not be sent.' };
+        return { ok: true, id: d.id || null, reference: d.reference || null };
+      });
+    }).catch(function () { return { ok: false, queue: true, error: 'No internet connection.' }; });
+  }
+
+  function pendingList() { try { return JSON.parse(store(FB.PENDING) || '[]') || []; } catch (e) { return []; } }
+  function queue(p) {
+    var list = pendingList(); p.metadata.queued = true; list.push(p);
+    store(FB.PENDING, JSON.stringify(list.slice(-5)));
+  }
+  function flushPending() {
+    var list = pendingList();
+    if (!list.length) return;
+    var step = function (i) {
+      if (i >= list.length) { store(FB.PENDING, null); return; }
+      send(list[i]).then(function (res) {
+        if (res.ok) { step(i + 1); return; }
+        store(FB.PENDING, JSON.stringify(list.slice(i)));
+      });
+    };
+    step(0);
+  }
+
+  function starSvg() { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.7 6.3.9-4.6 4.4 1.1 6.2L12 17l-5.6 3 1.1-6.2L2.9 9.4l6.3-.9z"/></svg>'; }
+
+  function build() {
+    $('fbTypes').innerHTML = TYPES.map(function (t) {
+      return '<button type="button" class="chip" role="radio" data-type="' + t.key + '" aria-checked="false">' + t.label + '</button>';
+    }).join('');
+    var s = '';
+    for (var i = 1; i <= 5; i++) s += '<button type="button" class="star" role="radio" data-rate="' + i + '" aria-checked="false" aria-label="' + i + ' out of 5">' + starSvg() + '</button>';
+    $('fbStars').innerHTML = s;
+    $('fbMsg').maxLength = FB.MAX;
+  }
+
+  function setType(key) {
+    var t = TYPES.filter(function (x) { return x.key === key; })[0] || TYPES[1];
+    st.type = t.key;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-type]'), function (b) {
+      b.setAttribute('aria-checked', String(b.getAttribute('data-type') === t.key));
+    });
+    $('fbMsg').placeholder = t.hint;
+  }
+  function setRating(n) {
+    st.rating = n;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rate]'), function (b) {
+      var v = Number(b.getAttribute('data-rate'));
+      b.classList.toggle('on', v <= n);
+      b.setAttribute('aria-checked', String(v === n));
+    });
+  }
+  function showError(t) { var el = $('fbErr'); el.textContent = t || ''; el.hidden = !t; }
+  function setSending(on) {
+    st.sending = on;
+    $('fbSend').disabled = on;
+    $('fbSend').textContent = on ? 'Sending…' : 'Send feedback';
+  }
+  function showDone(title, text, reference) {
+    $('fbForm').hidden = true;
+    $('fbDoneTitle').textContent = title;
+    $('fbDoneText').textContent = text;
+    var ref = $('fbRef'); ref.hidden = !reference; ref.textContent = reference ? 'Reference: ' + reference : '';
+    $('fbDone').hidden = false;
+    try { $('fbAgain').focus(); } catch (e) { /* ignore */ }
+  }
+  function resetForm() {
+    $('fbDone').hidden = true; $('fbForm').hidden = false;
+    $('fbMsg').value = ''; $('fbCount').textContent = '0 / ' + FB.MAX;
+    showError(''); setSending(false); setType('idea'); setRating(0);
+    try { $('fbMsg').focus(); } catch (e) { /* ignore */ }
+  }
+
+  function submit() {
+    if (st.sending) return;
+    var message = $('fbMsg').value.trim();
+    if (message.length < FB.MIN) {
+      showError('Please write at least ' + FB.MIN + ' characters so we can understand your feedback.');
+      $('fbMsg').focus();
+      return;
+    }
+    var last = Number(store(FB.LAST) || 0);
+    if (Date.now() - last < FB.COOLDOWN_MS) { showError('Please wait a few seconds before sending another message.'); return; }
+    showError(''); setSending(true);
+    var p = payload(message);
+    send(p).then(function (res) {
+      setSending(false);
+      if (res.ok) {
+        store(FB.LAST, String(Date.now())); store(FB.DRAFT, null);
+        showDone('Thank you!', 'Your feedback has been sent to the GLIME team.', res.reference);
+        return;
+      }
+      if (res.auth) { showError(res.error); setTimeout(function () { location.replace('login.html'); }, 1800); return; }
+      if (res.queue) {
+        queue(p); store(FB.LAST, String(Date.now())); store(FB.DRAFT, null);
+        showDone('Saved on this device', res.error + ' Your feedback is saved and will be sent automatically the next time you open GLIME.', null);
+        return;
+      }
+      showError(res.error || 'Feedback could not be sent. Please try again.');
+    });
+  }
+
+  build();
+  setType('idea'); setRating(0);
+  var ta = $('fbMsg');
+  ta.value = store(FB.DRAFT) || '';
+  $('fbCount').textContent = ta.value.length + ' / ' + FB.MAX;
+  var about = fromPage();
+  $('fbAbout').textContent = about ? 'About: ' + about : '';
+
+  $('fbTypes').addEventListener('click', function (e) { var c = e.target.closest('[data-type]'); if (c) setType(c.getAttribute('data-type')); });
+  $('fbStars').addEventListener('click', function (e) {
+    var s = e.target.closest('[data-rate]'); if (!s) return;
+    var n = Number(s.getAttribute('data-rate')); setRating(st.rating === n ? 0 : n);
+  });
+  ta.addEventListener('input', function () {
+    $('fbCount').textContent = ta.value.length + ' / ' + FB.MAX;
+    showError('');
+    store(FB.DRAFT, ta.value ? ta.value : null);
+  });
+  $('fbForm').addEventListener('submit', function (e) { e.preventDefault(); submit(); });
+  $('fbAgain').addEventListener('click', resetForm);
+
+  /* Only signed-in clients can use this page. */
+  sb.auth.getSession().then(function (r) {
+    var sess = r && r.data && r.data.session;
+    if (!sess || !sess.user) { location.replace('login.html'); return; }
+    setTimeout(flushPending, 3000);
+  }).catch(function () { /* stay on page; sending will report the problem */ });
+  sb.auth.onAuthStateChange(function (ev, s) { if (ev === 'SIGNED_OUT' || !s) location.replace('login.html'); });
+})();
+</script>
+</body>
+</html>
