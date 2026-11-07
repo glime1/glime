@@ -10,6 +10,7 @@
    - Everything else (chats, products, services, knowledge base,
      other leads/customers/orders) is removed.
    - Data contact: admin@glime.online
+   - Works in dark and light theme (html[data-theme="light"]).
    Uses the page's own Supabase client (sb), verify() and
    state from data-download.html. Backend: RPCs
    client_get_data_deletion_status / client_request_data_deletion /
@@ -46,7 +47,29 @@
     '#delOv input[type=text]{margin-top:10px}' +
     '.del-ack{display:flex;gap:10px;align-items:flex-start;margin:8px 0;font-size:.8rem;line-height:1.5;color:#e5e7eb;cursor:pointer}' +
     '.del-ack input{width:18px;height:18px;margin:2px 0 0;accent-color:#ff4757;flex:0 0 auto}' +
-    '@media(max-width:640px){.del-cols{grid-template-columns:1fr}}';
+    '@media(max-width:640px){.del-cols{grid-template-columns:1fr}}' +
+    /* ---- light theme: dark readable text on light surfaces ---- */
+    'html[data-theme="light"] .del{background:#fff5f5 !important;border-color:rgba(220,38,38,.35) !important}' +
+    'html[data-theme="light"] .del h2{color:#b91c1c !important}' +
+    'html[data-theme="light"] .del p,html[data-theme="light"] .del ul,html[data-theme="light"] .del li{color:#1f2937 !important}' +
+    'html[data-theme="light"] .del .keep{color:#4b5563 !important}' +
+    'html[data-theme="light"] .del strong{color:#111827 !important}' +
+    'html[data-theme="light"] .del a{color:#0369a1 !important}' +
+    'html[data-theme="light"] .del-col{background:#ffffff !important;border-color:rgba(15,23,42,.14) !important}' +
+    'html[data-theme="light"] .del-col.rm h3{color:#b91c1c !important}' +
+    'html[data-theme="light"] .del-col.kp h3{color:#047857 !important}' +
+    'html[data-theme="light"] .del-why{background:#ecfeff !important;border-color:rgba(8,145,178,.4) !important;color:#164e63 !important}' +
+    'html[data-theme="light"] .del-why strong{color:#0e7490 !important}' +
+    'html[data-theme="light"] .del-btn{background:#fee2e2 !important;border-color:#dc2626 !important;color:#b91c1c !important}' +
+    'html[data-theme="light"] .del-pending{background:#fffbeb !important;border-color:#f59e0b !important;color:#92400e !important}' +
+    'html[data-theme="light"] .del-msg{color:#4b5563 !important}' +
+    'html[data-theme="light"] .del-msg.err{color:#b91c1c !important}' +
+    'html[data-theme="light"] .del-msg.ok{color:#047857 !important}' +
+    'html[data-theme="light"] #delOv ul,html[data-theme="light"] #delOv li{color:#374151 !important}' +
+    'html[data-theme="light"] #delOv .del-ack{color:#111827 !important}' +
+    'html[data-theme="light"] #delOv .modal h2{color:#111827 !important}' +
+    'html[data-theme="light"] #delOv .modal p{color:#374151 !important}' +
+    'html[data-theme="light"] #delOv .modal strong{color:#111827 !important}';
   document.head.appendChild(css);
 
   mount.innerHTML =
