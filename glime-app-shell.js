@@ -57,7 +57,8 @@
     shield: '<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="M9 12l2 2 4-4"/>',
     chevron: '<path d="M15 6l-6 6 6 6"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-    close: '<path d="M6 6l12 12M18 6L6 18"/>'
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    rocket: '<path d="M12 3c3.2 2.1 5 5.2 5 9l-2.4 3.2H9.4L7 12c0-3.8 1.8-6.9 5-9z"/><circle cx="12" cy="10" r="1.7"/><path d="M9.2 15.2 6.5 18.6M14.8 15.2l2.7 3.4M12 17.2V21"/>'
   };
 
   function icon(name, size) {
@@ -197,6 +198,19 @@
     'body.gas-collapsed .gas-sidebar .gas-avatar{width:40px !important;height:40px !important;flex-basis:40px !important}',
     'body.gas-collapsed .gas-sidebar .gas-link::after{display:none}',
 
+    /* Launchpad (client onboarding): gold, so it stands out at the top */
+    '.gas-sidebar .gas-link.gas-gold{background:linear-gradient(100deg,rgba(255,200,61,.14),rgba(245,163,0,.05));box-shadow:inset 0 0 0 1px rgba(245,163,0,.4)}',
+    '.gas-sidebar .gas-link.gas-gold .gas-label{color:#ffd978;font-weight:800;letter-spacing:.01em}',
+    '.gas-sidebar .gas-link.gas-gold .gas-ico svg{stroke:#f5b82e;stroke-width:1.8}',
+    '.gas-sidebar .gas-link.gas-gold .gas-pill{background:linear-gradient(105deg,#ffe27a,#f5a300);color:#2a1a00}',
+    'html body.gas-body .gas-sidebar .gas-link.gas-gold:hover{background:linear-gradient(100deg,rgba(255,200,61,.26),rgba(245,163,0,.11)) !important}',
+    '.gas-sidebar .gas-link.gas-gold:hover .gas-ico{filter:drop-shadow(0 0 7px rgba(245,163,0,.65))}',
+    'html body.gas-body .gas-sidebar .gas-link.gas-gold[aria-current="page"]{background:linear-gradient(100deg,rgba(255,200,61,.28),rgba(245,163,0,.13)) !important;box-shadow:0 0 0 1px rgba(245,163,0,.75),0 10px 26px -12px rgba(245,163,0,.65) !important}',
+    '.gas-sidebar .gas-link.gas-gold[aria-current="page"]:not(.gas-has-badge)::after{display:none}',
+    'html[data-theme="light"] .gas-sidebar .gas-link.gas-gold .gas-label{color:#8a5a00 !important}',
+    'html[data-theme="light"] .gas-sidebar .gas-link.gas-gold .gas-ico svg{stroke:#c98a00}',
+    'html[data-theme="light"] .gas-sidebar .gas-link.gas-gold{background:linear-gradient(100deg,rgba(255,200,61,.22),rgba(245,163,0,.08));box-shadow:inset 0 0 0 1px rgba(201,138,0,.45)}',
+
     /* motion */
     '@keyframes gasIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}',
     '@keyframes gasFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}',
@@ -281,6 +295,13 @@
   /* Every href below is an existing page in the repository. */
   var MENU = [
     {
+      title: 'Start here',
+      icon: 'rocket',
+      items: [
+        { label: 'Launchpad', href: 'client-onboarding.html', icon: 'rocket', pill: 'SETUP', gold: true }
+      ]
+    },
+    {
       title: 'Workspace',
       items: [
         { label: 'Overview', href: 'dashboard.html', icon: 'home' },
@@ -310,7 +331,7 @@
         { label: 'Billing &amp; Plans', href: 'billing.html', icon: 'card', extra: 'crown' },
         { label: 'Packages', href: 'packages.html', icon: 'box' },
         { label: 'Settings', href: 'settings.html', icon: 'sliders' },
-        { label: 'Feedback', href: '#feedback', icon: 'feedback', id: 'gasFeedbackLink' }
+        { label: 'Feedback', href: 'feedback.html', icon: 'feedback', id: 'gasFeedbackLink' }
       ]
     }
   ];
@@ -334,7 +355,7 @@
 
   function linkHtml(item, page, index) {
     var current = item.href.toLowerCase() === page;
-    return '<a class="gas-link"' +
+    return '<a class="gas-link' + (item.gold ? ' gas-gold' : '') + '"' +
       (item.id ? ' id="' + item.id + '"' : '') +
       ' href="' + item.href + '"' +
       ' style="--i:' + index + '"' +
@@ -964,14 +985,20 @@
   }
 
   function initFeedback() {
+    /* Feedback now has its own page (feedback.html). The sidebar link opens it and
+       tells it which page the client came from. Unsent feedback saved earlier is
+       still sent from here. */
     var link = document.getElementById('gasFeedbackLink');
     if (link) {
       link.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
         e.preventDefault();
-        fbOpen();
+        var from = '';
+        if (currentPage() !== 'feedback.html') from = fbPageName();
+        location.href = 'feedback.html' + (from ? '?from=' + encodeURIComponent(from) : '');
       });
     }
-    if (location.hash === '#feedback') fbOpen();
+    if (location.hash === '#feedback') location.replace('feedback.html');
     setTimeout(fbFlushPending, 5000);
   }
 
