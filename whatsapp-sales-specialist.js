@@ -136,6 +136,12 @@ function icon(id, cls = 'ni') { return `<svg class="${cls}" aria-hidden="true"><
 /* lets whatsapp-lead-addon.js react to page events without touching this file's internals */
 function emit(name, detail) { try { document.dispatchEvent(new CustomEvent('gwa:' + name, { detail })); } catch (_) {} }
 
+/* WhatsApp (Meta) sometimes delivers a message it cannot read: type "unsupported", error 131051.
+   The content is not available to GLIME at all, so show a clear note instead of the raw word. */
+const TYPE_NOTE = { location: '📍 Location shared', contacts: '👤 Contact shared', reaction: '😊 Reaction', order: '🛒 Order message', system: 'ℹ️ System message' };
+function isUnsupportedType(t) { t = String(t || '').trim().toLowerCase(); return t === 'unsupported' || t === 'unknown'; }
+function previewText(p) { return isUnsupportedType(p) ? '⚠️ Message couldn’t be received' : p; }
+
 let toastTimer;
 function toast(msg, error = false) {
   let x = document.querySelector('.toast');
@@ -294,7 +300,7 @@ function renderList() {
 
   box.innerHTML = rows.map(c => {
     const un = isUnread(c);
-    const prev = c.last_message_preview || c.customer_phone || '';
+    const prev = previewText(c.last_message_preview) || c.customer_phone || '';
     const you = c.last_message_direction === 'outbound' ? '<span class="you">You: </span>' : '';
     return `<div class="conv ${st.sel?.id === c.id ? 'active' : ''} ${un ? 'unread' : ''}" data-id="${esc(c.id)}" role="button" tabindex="0" aria-label="${esc(convTitle(c))}${un ? ', unread' : ''}${c.status === 'closed' ? ', closed' : ''}">
       <div class="avatar">${esc(initial(c))}</div>
@@ -474,7 +480,14 @@ function mdoc(m) {
 function bodyHtml(m) {
   const type = mtype(m), cap = m.text_body || '';
   const capHtml = cap ? `<div class="cap">${linkify(esc(cap))}</div>` : '';
-  if (!type) return linkify(esc(cap || m.message_type || ''));
+  if (!type) {
+    const mt = String(m.message_type || '').toLowerCase();
+    if (!cap && isUnsupportedType(mt)) {
+      return '<div class="wa-unavail">⚠️ Message couldn’t be received<small>WhatsApp could not deliver this content to GLIME (for example a poll, a view-once item or a newer message type). Ask the customer to send it again as text, a photo or a voice note.</small></div>';
+    }
+    if (!cap && TYPE_NOTE[mt]) return `<div class="wa-unavail">${TYPE_NOTE[mt]}<small>Details are not available in this chat</small></div>`;
+    return linkify(esc(cap || m.message_type || ''));
+  }
   if (!mstorage(m)) {
     const lbl = { image: '📷 Photo', video: '🎥 Video', audio: '🎵 Audio', document: '📄 Document', sticker: '🙂 Sticker' }[type];
     return `<div class="wa-unavail">${lbl}<small>Media preview unavailable</small></div>${capHtml}`;
