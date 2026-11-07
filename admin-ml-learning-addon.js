@@ -25,7 +25,7 @@
     auto: "Auto - answers by itself when very sure"
   };
 
-  let sb = null, clients = [], rows = [], total = 0, stats = null, loaded = false, editing = null, timer = null;
+  let sb = null, clients = [], rows = [], total = 0, stats = null, loaded = false, editing = null, timer = null, testRes = null, testText = "", testBusy = false;
   const f = { client: "", label: "pending", channel: "", q: "", offset: 0 };
 
   const $ = (id) => document.getElementById(id);
@@ -139,6 +139,61 @@
         <label>Approve all pending with quality at least<input id="mlBulkQ" type="number" step="0.05" min="0" max="1" value="0.8"></label>
         <button class="ml-btn" data-act="bulk">Approve in bulk (max 100)</button></div></div>`;
   }
+  const LIVE_TXT = {
+    auto: "AUTO - the system would send this reply to the customer by itself",
+    suggest: "SUGGEST - the reply would be shown as a suggestion",
+    shadow: "SHADOW - the reply would only be logged, nothing is sent",
+    blocked: "BLOCKED - sensitive words found (refund / complaint / legal), so it will not answer by itself",
+    none: "NO ANSWER - the old AI would answer instead"
+  };
+  const WHY_TXT = {
+    mode_off: "This client's mode is Off.",
+    not_enough_examples: "Not enough approved examples yet.",
+    low_confidence: "No example is similar enough."
+  };
+  function testHtml() {
+    const c = curClient();
+    let out = "";
+    if (!c) {
+      out = `<p>Pick one client above, then type a customer question to see what the system would answer.</p>`;
+    } else {
+      out = `<p>Type a question a customer might send to <b>${esc(c.business_name)}</b>. Nothing is saved and nothing is sent to anyone.</p>
+        <textarea id="mlTestText" maxlength="500" placeholder="Example: delivery kitne din mein hogi?">${esc(testText)}</textarea>
+        <div class="ml-row" style="margin-top:8px"><button class="ml-btn go" data-act="run-test"${testBusy ? " disabled" : ""}>${testBusy ? "Checking..." : "Test this question"}</button></div>`;
+      if (testRes && testRes.ok) {
+        const r = testRes, best = r.matches && r.matches[0];
+        const note = r.awaiting_embedding ? `<p style="color:#ffd98a">${r.awaiting_embedding} approved example(s) are still being processed (up to 15 minutes). They are not included in this test yet.</p>` : "";
+        out += `<div class="ml-box ml-a" style="margin-top:12px"><small>Result for this client's current mode (${esc(r.mode)})</small>${esc(LIVE_TXT[r.live] || r.live)}${r.why ? "\n" + esc(WHY_TXT[r.why] || r.why) : ""}
+Examples ready: ${r.ready_examples} (need ${r.min_examples}) · Suggest from ${r.thresholds.suggest} · Auto from ${r.thresholds.auto}${r.sensitive ? "\nSensitive words found in this question." : ""}${best ? "\nIf mode were Auto, this score would give: " + r.by_score.toUpperCase() : ""}</div>${note}`;
+        out += r.matches && r.matches.length
+          ? r.matches.map((m, i) => `<div class="ml-box ${i === 0 ? "ml-c" : "ml-q"}"><small>${i === 0 ? "Best match" : "Match " + (i + 1)} · score ${m.score.toFixed(2)} · ${esc(m.label)}</small>Customer had asked: ${esc(m.customer_text)}\n\nReply it would give:\n${esc(m.reply)}</div>`).join("")
+          : `<div class="ml-empty">No similar approved example found for this client.</div>`;
+      } else if (testRes && testRes.error) {
+        out += `<div class="ml-note bad" style="display:block;margin-top:12px">${esc(testRes.error)}</div>`;
+      }
+    }
+    return `<div class="ml-set" style="border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.04)"><h4>Test the system</h4>${out}</div>`;
+  }
+  async function runTest(btn) {
+    const c = curClient(), t = $("mlTestText");
+    if (!c || !t) return;
+    testText = t.value.trim();
+    if (testText.length < 2) { testRes = { error: "Please type a question first." }; $("mlTest").innerHTML = testHtml(); return; }
+    testBusy = true; testRes = null; $("mlTest").innerHTML = testHtml();
+    try {
+      const cl = client();
+      const r = await cl.functions.invoke("ml-admin-test", { body: { client_id: c.client_id, text: testText } });
+      if (r.error) {
+        let m = String(r.error.message || r.error);
+        try { if (r.error.context && r.error.context.json) { const j = await r.error.context.json(); if (j && j.error) m = j.error === "forbidden" ? "Admin login required." : j.error; } } catch (e2) { /* keep m */ }
+        throw new Error(m);
+      }
+      testRes = r.data;
+      if (testRes && testRes.ok === false) testRes = { error: String(testRes.error || "Test failed") };
+    } catch (e) { testRes = { error: "Test failed: " + String((e && e.message) || e) }; }
+    testBusy = false;
+    if ($("mlTest")) $("mlTest").innerHTML = testHtml();
+  }
   function card(r) {
     const final = r.corrected_reply;
     return `<div class="ml-card" data-id="${esc(r.id)}">
@@ -179,6 +234,7 @@
         <input id="mlSearch" type="search" placeholder="Search text" value="${esc(f.q)}">
         <button class="ml-btn" data-act="refresh" type="button">&#8635; Refresh</button></div>
       <div id="mlSettings">${settingsHtml()}</div>
+      <div id="mlTest">${testHtml()}</div>
       <div id="mlList"></div></div>`;
     renderList();
     $("mlSearch").addEventListener("input", (e) => {
@@ -230,6 +286,7 @@
     const act = b.dataset.act, cardEl = b.closest(".ml-card"), id = cardEl && cardEl.dataset.id;
     if (act === "refresh") { loadAll(); return; }
     if (act === "save-settings") return saveSettings(b);
+    if (act === "run-test") return runTest(b);
     if (act === "bulk") return bulk(b);
     if (act === "approve") return review(id, "approved", null, b);
     if (act === "reject") return review(id, "rejected", null, b);
@@ -240,7 +297,7 @@
   }
   function onChange(e) {
     const id = e.target.id;
-    if (id === "mlClient") { f.client = e.target.value; f.offset = 0; editing = null; $("mlSettings").innerHTML = settingsHtml(); reloadList(); }
+    if (id === "mlClient") { f.client = e.target.value; f.offset = 0; editing = null; $("mlSettings").innerHTML = settingsHtml(); testRes = null; testText = ""; $("mlTest").innerHTML = testHtml(); reloadList(); }
     else if (id === "mlLabel") { f.label = e.target.value; f.offset = 0; reloadList(); }
     else if (id === "mlChannel") { f.channel = e.target.value; f.offset = 0; reloadList(); }
   }
