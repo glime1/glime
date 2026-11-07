@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Get started | GLIME</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="glime_logo_clean.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glime-app-shell.css">
+<style>
+html body{background:#050a10;margin:0}
+html[data-theme="light"] body{background:#f3fbf8}
+
+.ob{
+  --ob-g1:#00ff88;--ob-g2:#00f0ff;--ob-ink:#eaf3f8;--ob-mut:#9fb0bf;
+  --ob-line:rgba(255,255,255,.11);--ob-surf:rgba(255,255,255,.045);--ob-on:#04110a;
+  max-width:1120px;margin:0 auto;padding:clamp(16px,3vw,36px) clamp(16px,3vw,32px) 64px;
+  color:var(--ob-ink);font-family:'Manrope','Noto Sans Devanagari','Poppins',system-ui,-apple-system,'Segoe UI',sans-serif;
+  line-height:1.6;-webkit-text-size-adjust:100%
+}
+html[data-theme="light"] .ob{
+  --ob-g1:#00b86e;--ob-g2:#0098c8;--ob-ink:#0b1a24;--ob-mut:#4b5b68;
+  --ob-line:#dfe7ee;--ob-surf:#ffffff;--ob-on:#03140c
+}
+.ob[lang="hi"]{font-family:'Noto Sans Devanagari','Manrope','Poppins',system-ui,sans-serif;line-height:1.75}
+.ob *,.ob *::before,.ob *::after{box-sizing:border-box}
+.ob :focus-visible{outline:2px solid var(--ob-g2);outline-offset:3px;border-radius:8px}
+
+/* top row: language toggle */
+.ob-top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px 16px;margin-bottom:clamp(8px,2vw,20px)}
+.ob-lang{display:inline-flex;padding:3px;border:1px solid var(--ob-line);border-radius:999px;background:var(--ob-surf)}
+.ob-lang button{min-height:38px;padding:0 16px;border:0;border-radius:999px;background:transparent;color:var(--ob-mut);font:inherit;font-size:.84rem;font-weight:700;cursor:pointer;transition:background .18s,color .18s}
+.ob-lang button[aria-checked="true"]{background:linear-gradient(105deg,var(--ob-g1),var(--ob-g2));color:var(--ob-on)}
+
+/* hero */
+.ob-hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,4vw,44px);align-items:center;padding-bottom:30px;border-bottom:1px solid var(--ob-line)}
+.ob-ringwrap{position:relative;width:176px;height:176px;flex:0 0 auto}
+.ob-ring{display:block;width:100%;height:100%;overflow:visible}
+.ob-track{fill:none;stroke:var(--ob-line);stroke-width:7}
+.ob-arc{fill:none;stroke:url(#obGrad);stroke-width:7;stroke-linecap:round;stroke-dasharray:339.292;stroke-dashoffset:339.292;transition:stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1)}
+.ob-ringtxt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 26px}
+.ob-ringtxt strong{font-size:2.5rem;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.ob-ringtxt span{margin-top:6px;font-size:.72rem;font-weight:600;color:var(--ob-mut);line-height:1.35}
+.ob-ringwrap::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--ob-g1);opacity:0;pointer-events:none}
+.ob-celebrate .ob-ringwrap::after{animation:obPulse 1.7s ease-out 1}
+@keyframes obPulse{0%{transform:scale(.92);opacity:.85}100%{transform:scale(1.4);opacity:0}}
+
+.ob-h1{margin:0 0 8px;font-size:clamp(1.55rem,3.6vw,2.3rem);font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.ob[lang="hi"] .ob-h1{letter-spacing:0;line-height:1.35}
+.ob-sub{margin:0 0 18px;max-width:54ch;color:var(--ob-mut);font-size:.98rem}
+.ob-stat{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px;margin:0 0 4px}
+.ob-stat strong{font-size:1rem;font-weight:800}
+.ob-stat span{color:var(--ob-mut);font-size:.9rem}
+.ob-refresh{margin-top:8px;min-height:40px;padding:0;border:0;background:none;color:var(--ob-mut);font:inherit;font-size:.84rem;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ob-refresh:disabled{opacity:.55;cursor:default}
+
+.ob-note{margin:18px 0 0;padding:12px 14px;border:1px solid rgba(255,200,61,.45);border-radius:12px;background:rgba(255,200,61,.08);font-size:.88rem}
+.ob-note[hidden]{display:none}
+.ob-note a{color:inherit;font-weight:700}
+
+/* completion */
+.ob-done{margin:26px 0 0;padding:20px 22px;border:1px solid var(--ob-g1);border-radius:16px;background:linear-gradient(100deg,rgba(0,255,136,.12),rgba(0,240,255,.08));display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between}
+.ob-done[hidden]{display:none}
+.ob-done h2{margin:0 0 4px;font-size:1.15rem;font-weight:800}
+.ob-done p{margin:0;color:var(--ob-mut);font-size:.9rem;max-width:56ch}
+
+/* layout */
+.ob-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:44px;margin-top:34px}
+@media(min-width:1000px){.ob-grid{grid-template-columns:minmax(0,1fr) 340px;gap:56px}.ob-aside{position:sticky;top:24px;align-self:start}}
+
+/* steps */
+.ob-phase{margin:0 0 34px}
+.ob-phase:last-child{margin-bottom:0}
+.ob-phead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 6px}
+.ob-phead h2{margin:0;font-size:1.05rem;font-weight:800;letter-spacing:-.01em}
+.ob-phead span{color:var(--ob-mut);font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums}
+.ob-steps{list-style:none;margin:0;padding:0}
+.ob-step{position:relative;padding-left:50px}
+.ob-step::before{content:"";position:absolute;left:15px;top:46px;bottom:-6px;width:2px;background:var(--ob-line)}
+.ob-step:last-child::before{display:none}
+.ob-sh{margin:0}
+.ob-trig{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 0 10px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.ob-node{position:absolute;left:0;top:12px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--ob-line);background:var(--ob-surf);font-size:.84rem;font-weight:800;color:var(--ob-mut);font-variant-numeric:tabular-nums}
+.ob-node svg{width:16px;height:16px;display:block}
+.ob-step[data-st="done"] .ob-node{border-color:transparent;background:linear-gradient(135deg,var(--ob-g1),var(--ob-g2));color:var(--ob-on)}
+.ob-step[data-st="skipped"] .ob-node{border-style:dashed}
+.ob-step[data-open="true"][data-st="todo"] .ob-node{border-color:var(--ob-g2);color:var(--ob-ink)}
+.ob-title{display:block;font-size:1rem;font-weight:700;line-height:1.35}
+.ob-step[data-st="done"] .ob-title,.ob-step[data-st="skipped"] .ob-title{color:var(--ob-mut)}
+.ob-meta{display:flex;flex-wrap:wrap;gap:2px 14px;margin-top:2px;font-size:.78rem;font-weight:600;color:var(--ob-mut)}
+.ob-step[data-st="done"] .ob-meta .ob-s{color:var(--ob-g1)}
+html[data-theme="light"] .ob-step[data-st="done"] .ob-meta .ob-s{color:#008a52}
+.ob-chev{display:grid;place-items:center;width:28px;height:28px;color:var(--ob-mut);transition:transform .2s}
+.ob-chev svg{width:18px;height:18px;display:block}
+.ob-step[data-open="true"] .ob-chev{transform:rotate(180deg)}
+.ob-panel{padding:0 0 22px;max-width:62ch}
+.ob-panel[hidden]{display:none}
+.ob-panel p{margin:0 0 10px;font-size:.92rem}
+.ob-why{color:var(--ob-mut)}
+.ob-warn{padding:9px 12px;border-radius:10px;background:var(--ob-surf);border:1px dashed var(--ob-line);color:var(--ob-mut);font-size:.82rem !important}
+.ob-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:14px}
+.ob-btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:12px;border:1px solid var(--ob-line);background:transparent;color:var(--ob-ink);font:inherit;font-size:.88rem;font-weight:700;text-decoration:none;cursor:pointer}
+.ob-pri{border:0;background:linear-gradient(105deg,var(--ob-g1),var(--ob-g2));color:var(--ob-on)}
+.ob-link{min-height:44px;padding:0 4px;border:0;background:none;color:var(--ob-mut);font:inherit;font-size:.84rem;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* aside */
+.ob-block{padding:0 0 28px;margin:0 0 28px;border-bottom:1px solid var(--ob-line)}
+.ob-block:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.ob-block h2{margin:0 0 6px;font-size:1.02rem;font-weight:800}
+.ob-block>p{margin:0 0 14px;color:var(--ob-mut);font-size:.88rem}
+.ob-tpl{list-style:none;margin:0 0 16px;padding:0}
+.ob-tpl li{padding:9px 0;border-top:1px solid var(--ob-line);font-size:.86rem}
+.ob-tpl li:first-child{border-top:0}
+.ob-tpl strong{display:block;font-weight:700}
+.ob-tpl span{display:block;color:var(--ob-mut);font-size:.8rem}
+.ob-reset{margin:30px 0 0;text-align:center}
+
+.ob-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);padding:11px 18px;border-radius:999px;background:#0f1a26;color:#f2f7fb;border:1px solid rgba(255,255,255,.18);font-size:.86rem;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:2147481000}
+.ob-toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:560px){
+  .ob-hero{grid-template-columns:minmax(0,1fr);justify-items:start}
+  .ob-ringwrap{width:140px;height:140px}
+  .ob-ringtxt strong{font-size:2rem}
+  .ob-btn{flex:1 1 100%}
+}
+@media(prefers-reduced-motion:reduce){
+  .ob *,.ob *::before,.ob *::after,.ob-toast{transition:none !important;animation:none !important}
+}
+.ob [hidden]{display:none !important}
+.ob-tabs{display:flex;gap:4px;border-bottom:1px solid var(--ob-line)}
+.ob-tabs button{min-height:44px;padding:0 16px;margin-bottom:-1px;border:0;border-bottom:3px solid transparent;background:none;color:var(--ob-mut);font:inherit;font-size:.92rem;font-weight:700;cursor:pointer}
+.ob-tabs button[aria-selected="true"]{color:var(--ob-ink);border-bottom-color:var(--ob-g2)}
+.ob-hero-act{display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px;margin-top:10px}
+.ob-hero-act .ob-refresh{margin-top:0}
+.ob-det{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:6px 8px}
+.ob-det li{padding:4px 11px;border:1px solid var(--ob-line);border-radius:999px;font-size:.78rem;font-weight:600;color:var(--ob-mut)}
+.ob-det li[data-ok="true"]{border-color:var(--ob-g1);color:var(--ob-ink)}
+.ob-det li[data-ok="true"]::before{content:"\2713\00a0";color:var(--ob-g1)}
+
+/* reports */
+.rp-head{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;padding-bottom:20px}
+.rp-insight{margin:0 0 26px;max-width:68ch;font-size:1.08rem;font-weight:600;line-height:1.6}
+.ob[lang="hi"] .rp-insight{line-height:1.8}
+.rp-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border-top:1px solid var(--ob-line);border-left:1px solid var(--ob-line)}
+.rp-k{padding:18px 18px 16px;border-right:1px solid var(--ob-line);border-bottom:1px solid var(--ob-line)}
+.rp-k b{display:block;font-size:1.95rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums}
+.rp-k span{display:block;margin-top:2px;color:var(--ob-mut);font-size:.82rem;font-weight:600}
+.rp-k.rp-load b{width:58%;border-radius:6px;background:var(--ob-line);color:transparent}
+.rp-d{display:inline-block;margin-top:8px;padding:2px 9px;border:1px solid var(--ob-line);border-radius:999px;font-size:.74rem;font-style:normal;font-weight:700;color:var(--ob-mut)}
+.rp-d[data-dir="up"]{border-color:var(--ob-g1);color:var(--ob-g1)}
+html[data-theme="light"] .rp-d[data-dir="up"]{color:#008a52}
+.rp-d[data-dir="down"]{border-color:#ff9a5c;color:#ff9a5c}
+html[data-theme="light"] .rp-d[data-dir="down"]{color:#b4540a;border-color:#b4540a}
+.rp-note{margin:12px 0 0;color:var(--ob-mut);font-size:.8rem}
+.rp-cols{display:grid;grid-template-columns:minmax(0,1fr);gap:0 48px;margin-top:30px}
+@media(min-width:900px){.rp-cols{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}}
+.rp-bars{display:flex;align-items:flex-end;gap:3px;height:150px;padding-top:8px}
+.rp-bar{flex:1 1 0;min-width:2px;min-height:2px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--ob-g2),var(--ob-g1))}
+.rp-bar[data-n="0"]{background:var(--ob-line)}
+.rp-axis{display:flex;gap:3px;margin-top:6px;color:var(--ob-mut);font-size:.68rem}
+.rp-axis span{flex:1 1 0;overflow:hidden;white-space:nowrap;text-align:center}
+.rp-src{list-style:none;margin:0;padding:0}
+.rp-src li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:8px 0;font-size:.86rem}
+.rp-src li.rp-empty{display:block;color:var(--ob-mut)}
+.rp-src i{display:block;grid-column:1/-1;height:6px;border-radius:99px;background:var(--ob-line);overflow:hidden}
+.rp-src i::after{content:"";display:block;height:100%;width:var(--w);background:linear-gradient(90deg,var(--ob-g1),var(--ob-g2))}
+.rp-tg{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;margin-top:34px;padding:20px 22px;border:1px solid var(--ob-g2);border-radius:16px;background:linear-gradient(100deg,rgba(0,240,255,.10),rgba(0,255,136,.07))}
+.rp-tg h2{margin:0 0 4px;font-size:1.05rem;font-weight:800}
+.rp-tg p{margin:0;max-width:58ch;color:var(--ob-mut);font-size:.88rem}
+.rp-free{display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;background:linear-gradient(105deg,var(--ob-g1),var(--ob-g2));color:var(--ob-on);font-size:.72rem;font-weight:800;vertical-align:middle}
+.rp-tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:26px}
+
+@media print{
+  .gas-sidebar,.gas-topbar,.gas-backdrop,.ob-top,.rp-tools,.rp-tg,.ob-toast,.rp-per{display:none !important}
+  html body,html[data-theme="light"] body{background:#fff !important}
+  .ob{--ob-ink:#000;--ob-mut:#444;--ob-line:#ccc;--ob-g1:#00855a;--ob-g2:#007aa3;max-width:none;padding:0;color:#000}
+}
+</style>
+</head>
+<body data-gas-title="Get started">
+
+<main class="ob" id="ob" lang="en" data-gas-content>
+
+  <div class="ob-top">
+    <div class="ob-tabs" role="tablist" aria-label="Sections">
+      <button type="button" role="tab" id="tabSetup" data-tab="setup" aria-selected="true" aria-controls="viewSetup" data-i18n="tabSetup">Get started</button>
+      <button type="button" role="tab" id="tabReport" data-tab="report" aria-selected="false" aria-controls="viewReport" data-i18n="tabReport">Reports</button>
+    </div>
+    <div class="ob-lang" role="radiogroup" aria-label="Language / भाषा">
+      <button type="button" role="radio" data-lang="en" aria-checked="true">English</button>
+      <button type="button" role="radio" data-lang="hi" aria-checked="false">हिन्दी</button>
+    </div>
+  </div>
+
+  <div id="viewSetup" role="tabpanel" aria-labelledby="tabSetup">
+  <section class="ob-hero" aria-labelledby="obH1">
+    <div class="ob-ringwrap" id="obRingWrap">
+      <svg class="ob-ring" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="obGrad" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" style="stop-color:var(--ob-g1)"/>
+            <stop offset="1" style="stop-color:var(--ob-g2)"/>
+          </linearGradient>
+        </defs>
+        <circle class="ob-track" cx="60" cy="60" r="54"/>
+        <circle class="ob-arc" id="obArc" cx="60" cy="60" r="54" transform="rotate(-90 60 60)"/>
+      </svg>
+      <div class="ob-ringtxt"><strong id="obPct">0%</strong><span id="obLevel"></span></div>
+    </div>
+    <div>
+      <h1 class="ob-h1" id="obH1" data-i18n="heroTitle">Get GLIME ready for your customers</h1>
+      <p class="ob-sub" data-i18n="heroSub">Finish these steps and your AI will answer like someone who knows your business.</p>
+      <p class="ob-stat" role="status" aria-live="polite"><strong id="obProgress"></strong><span id="obTime"></span></p>
+      <div class="ob-hero-act">
+        <a class="ob-btn ob-pri" id="obNext" href="#" hidden></a>
+        <button type="button" class="ob-refresh" id="obRefresh" data-i18n="refresh">Refresh status</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="ob-note" id="obSignin" hidden><span data-i18n="signinNote">Sign in to see your live progress.</span> <a href="login.html" data-i18n="signinLink">Sign in</a></p>
+
+  <section class="ob-done" id="obComplete" hidden aria-live="polite">
+    <div>
+      <h2 data-i18n="completeTitle">GLIME is ready for your customers</h2>
+      <p data-i18n="completeText">Every step is done. You can improve your AI knowledge any time from Settings.</p>
+    </div>
+    <a class="ob-btn ob-pri" href="dashboard.html" data-i18n="completeCta">Go to Overview</a>
+  </section>
+
+  <div class="ob-grid">
+    <div id="obSteps"></div>
+
+    <aside class="ob-aside" aria-label="Help">
+      <section class="ob-block">
+        <h2 data-i18n="tplTitle">AI knowledge starter template</h2>
+        <p data-i18n="tplSub">Cover these points to help your AI answer the questions customers ask first. Write as if you were briefing a new team member.</p>
+        <ol class="ob-tpl" id="obTpl"></ol>
+        <button type="button" class="ob-btn" id="obCopy" data-i18n="tplCopy">Copy template</button>
+      </section>
+      <section class="ob-block">
+        <h2 data-i18n="helpTitle">Stuck on a step?</h2>
+        <p data-i18n="helpText">Tell us where you are stuck. A real person reads every message.</p>
+        <button type="button" class="ob-btn" id="obHelp" data-i18n="helpBtn">Ask for help</button>
+      </section>
+    </aside>
+  </div>
+
+  <p class="ob-reset"><button type="button" class="ob-link" id="obReset" data-i18n="reset">Reset checklist</button></p>
+
+  </div>
+
+  <div id="viewReport" role="tabpanel" aria-labelledby="tabReport" hidden>
+    <section class="rp-head">
+      <div>
+        <h1 class="ob-h1" data-i18n="rpTitle">What GLIME did for you</h1>
+        <p class="ob-sub" id="rpRange" style="margin:0"></p>
+      </div>
+      <div class="ob-lang rp-per" role="radiogroup" aria-label="Report period">
+        <button type="button" role="radio" data-per="week" aria-checked="true" data-i18n="perWeek">Weekly</button>
+        <button type="button" role="radio" data-per="month" aria-checked="false" data-i18n="perMonth">Monthly</button>
+      </div>
+    </section>
+    <p class="rp-insight" id="rpInsight" aria-live="polite"></p>
+    <div class="rp-kpis" id="rpKpis"></div>
+    <p class="rp-note" id="rpNote"></p>
+
+    <div class="rp-cols">
+      <section class="ob-block">
+        <h2 data-i18n="rpChartTitle">New leads per day</h2>
+        <div class="rp-bars" id="rpBars" role="img"></div>
+        <div class="rp-axis" id="rpAxis" aria-hidden="true"></div>
+      </section>
+      <section class="ob-block">
+        <h2 data-i18n="rpSrcTitle">Where your leads came from</h2>
+        <ul class="rp-src" id="rpSources"></ul>
+      </section>
+    </div>
+
+    <section class="rp-tg">
+      <div>
+        <h2><span data-i18n="tgTitle">Get this report on Telegram every day</span> <span class="rp-free" data-i18n="tgFree">Free</span></h2>
+        <p data-i18n="tgText">Connect Telegram once and your daily report reaches your chat, so you never need to open GLIME to check. Set it up from the Connector page.</p>
+      </div>
+      <a class="ob-btn ob-pri" href="ai-connections.html" data-i18n="tgCta">Open Connector</a>
+    </section>
+
+    <div class="rp-tools">
+      <button type="button" class="ob-btn" id="rpCopy" data-i18n="rpCopy">Copy summary</button>
+      <button type="button" class="ob-btn" id="rpPrint" data-i18n="rpPrint">Print or save as PDF</button>
+      <button type="button" class="ob-link" id="rpRefresh" data-i18n="refresh">Refresh status</button>
+    </div>
+  </div>
+
+  <noscript><p class="ob-note">Please turn on JavaScript to use this page. कृपया इस पेज के लिए JavaScript चालू करें।</p></noscript>
+</main>
+
+<div class="ob-toast" id="obToast" role="status" aria-live="polite"></div>
+
+<script src="glime-app-shell.js" defer></script>
+<script src="client-onboarding.js?v=1" defer></script>
+</body>
+</html>
