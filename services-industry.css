@@ -1,0 +1,71 @@
+/* =========================================================
+   GLIME — SERVICES INDUSTRY DETAILS (styles)
+   Mobile first. Uses the variables from services.css.
+========================================================= */
+
+.sd-card{border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:14px;padding:14px;margin-top:16px;min-width:0}
+.sd-head h4{margin:0;font-size:.95rem}
+.sd-head p{margin:4px 0 0;color:var(--muted);font-size:.78rem;line-height:1.5}
+.sd-grid{margin-top:14px}
+.sd-hint{margin:0 0 12px;color:var(--muted);font-size:.78rem;line-height:1.5}
+.sd-empty{margin:0;padding:14px;border:1px dashed rgba(255,255,255,.18);border-radius:12px;color:var(--muted);font-size:.8rem;text-align:center}
+
+/* Collapsible extras */
+.sd-fold{padding:0}
+.sd-fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:var(--tap);padding:12px 14px;font-weight:600;font-size:.9rem}
+.sd-fold>summary::-webkit-details-marker{display:none}
+.sd-fold>summary::after{content:"＋";color:var(--cyan);font-size:1.1rem}
+.sd-fold[open]>summary::after{content:"－"}
+.sd-fold>summary small{margin-left:auto;margin-right:8px;color:var(--muted);font-weight:500;font-size:.72rem}
+.sd-fold>.sd-body{padding:2px 14px 14px}
+
+.sd-rows{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.sd-row{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.02)}
+.sd-row .remove-row{justify-self:end}
+
+/* Variant rows */
+.sd-vrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.02)}
+.variant-list .sd-vrow+.sd-vrow{margin-top:0}
+.sd-vf{display:block;min-width:0}
+.sd-vf>span{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:5px}
+.sd-vf input{width:100%;min-height:var(--tap);background:#0e1925;border:1px solid var(--border);color:#fff;padding:10px;border-radius:10px;min-width:0;outline:0}
+.sd-vf input:focus{border-color:rgba(0,240,255,.55)}
+.sd-wide{grid-column:1/-1}
+.sd-vdel{grid-column:1/-1;justify-self:end}
+
+/* Review: what the AI will know */
+.sd-ai{margin-top:16px;border:1px solid rgba(0,255,136,.2);background:linear-gradient(135deg,rgba(0,255,136,.06),rgba(0,240,255,.03));border-radius:14px;padding:15px}
+.sd-ai-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.sd-ai-head>span{color:var(--green);font-size:1.1rem}
+.sd-ai-head strong{display:block;font-size:.92rem}
+.sd-ai-head small{display:block;color:var(--muted);font-size:.74rem;margin-top:2px}
+.sd-ai ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.sd-ai li{font-size:.8rem;line-height:1.45;padding:8px 10px;border-radius:9px;background:rgba(5,8,12,.45);border:1px solid var(--border);word-break:break-word}
+.sd-ai li.sd-more{color:var(--muted);text-align:center}
+.sd-miss{margin-top:12px;padding:11px 12px;border-radius:10px;border:1px solid rgba(255,200,87,.3);background:rgba(255,200,87,.06)}
+.sd-miss strong{font-size:.8rem}
+.sd-miss p{margin:3px 0 0;font-size:.76rem;color:var(--text);line-height:1.5}
+
+.sd-check-sep{margin:12px 0 2px;padding-top:12px;border-top:1px solid var(--border);color:var(--muted);font-size:.72rem;letter-spacing:.5px;font-weight:600}
+.check-row.warn .check-icon{background:rgba(255,200,87,.1);border-color:rgba(255,200,87,.3);color:#ffc857}
+
+/* Service cards */
+.sd-pricebox{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;min-width:0}
+.sd-mrp{color:var(--muted);font-size:.78rem}
+.sd-off{color:var(--green);font-size:.74rem;font-weight:700}
+.sd-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.sd-chip{display:inline-block;padding:4px 9px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);font-size:.68rem;font-weight:600;color:#fff}
+.sd-chip.warn{border-color:rgba(255,200,87,.35);color:#ffc857}
+.sd-chip.bad{border-color:rgba(255,100,114,.4);color:var(--danger)}
+
+#fProfileHint{margin-top:5px}
+
+@media (min-width:720px){
+  .sd-card{padding:16px}
+  .sd-row{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;align-items:end}
+  .sd-row .remove-row{justify-self:auto}
+  .sd-vrow{grid-template-columns:repeat(6,minmax(0,1fr));align-items:end}
+  .sd-wide{grid-column:span 2}
+  .sd-vdel{grid-column:auto;justify-self:auto}
+  .sd-ai ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
