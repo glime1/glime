@@ -25,7 +25,14 @@
      trigger_qa_id uuid null   client_fixed_qa.id. When that Fixed Q&A
                                matches, this menu is sent instead of
                                the plain fixed answer. null = the menu
-                               opens only from another menu's button.
+                               opens only from another menu's button
+                               (or as the welcome menu, see is_welcome).
+     is_welcome boolean        WELCOME MENU. Sent automatically on the
+                               customer's first message, and on the first
+                               message after 24 hours of silence, when no
+                               Fixed Q&A matched. Only one active welcome
+                               menu per client. A welcome menu has no
+                               trigger_qa_id.
      menu_type text            'buttons' | 'list' | 'cta'
      header_text, body_text, footer_text text
      list_button_text text     list menus only
@@ -67,7 +74,7 @@
 
   const TABLE = 'client_quick_menus';
   const COLS =
-    'id,name,trigger_qa_id,menu_type,header_text,body_text,footer_text,list_button_text,items,is_active,use_count,last_used_at,created_at,updated_at';
+    'id,name,trigger_qa_id,is_welcome,menu_type,header_text,body_text,footer_text,list_button_text,items,is_active,use_count,last_used_at,created_at,updated_at';
   const UPGRADE_URL = 'packages.html';
 
   /* WhatsApp limits */
@@ -179,7 +186,7 @@
       .qb-input,.qb-textarea,.qb-select{width:100%;background:var(--surf2);color:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px;font-size:16px;outline:none;font-family:inherit}
       .qb-input::placeholder,.qb-textarea::placeholder{color:rgba(255,255,255,.42)}
       .qb-input:focus,.qb-textarea:focus,.qb-select:focus{border-color:rgba(255,255,255,.6)}
-      .qb-input:disabled,.qb-textarea:disabled{opacity:.5}
+      .qb-input:disabled,.qb-textarea:disabled,.qb-select:disabled{opacity:.5}
       .qb-textarea{min-height:90px;resize:vertical;line-height:1.5}
       .qb-select option{color:#000}
       .qb-count{font-size:.66rem;color:rgba(255,255,255,.55);text-align:right;margin-top:4px}
@@ -309,6 +316,7 @@
     id: null,
     name: '',
     trigger_qa_id: '',
+    is_welcome: false,
     menu_type: 'buttons',
     header_text: '',
     body_text: '',
@@ -322,6 +330,7 @@
     id: r.id,
     name: r.name || '',
     trigger_qa_id: r.trigger_qa_id || '',
+    is_welcome: !!r.is_welcome,
     menu_type: TYPES[r.menu_type] ? r.menu_type : 'buttons',
     header_text: r.header_text || '',
     body_text: r.body_text || '',
@@ -422,6 +431,13 @@
 
     if (sections.size > L.maxSections) return 'A list can have up to ' + L.maxSections + ' sections.';
 
+    if (d.is_welcome && d.trigger_qa_id) return 'A welcome menu cannot also open from a Fixed Q&A. Choose one.';
+
+    if (d.is_welcome && d.is_active) {
+      const w = S.items.find(m => m.id !== d.id && m.is_active !== false && m.is_welcome);
+      if (w) return 'Another active menu ("' + w.name + '") is already your welcome menu. Turn that one off first.';
+    }
+
     if (d.trigger_qa_id && d.is_active) {
       const clash = S.items.find(m => m.id !== d.id && m.is_active !== false && m.trigger_qa_id === d.trigger_qa_id);
       if (clash) return 'Another active menu ("' + clash.name + '") already opens for this Fixed Q&A. Turn that one off or choose a different Fixed Q&A.';
@@ -433,7 +449,8 @@
     const t = d.menu_type;
     return {
       name: d.name.trim(),
-      trigger_qa_id: d.trigger_qa_id || null,
+      trigger_qa_id: d.is_welcome ? null : d.trigger_qa_id || null,
+      is_welcome: !!d.is_welcome,
       menu_type: t,
       header_text: d.header_text.trim() || null,
       body_text: d.body_text.trim(),
@@ -542,7 +559,7 @@
     host.innerHTML = `
       <div class="qb-card">
         <h3>Your menus</h3>
-        <p class="qb-sub">Only <b>On</b> menus are sent to customers. A menu can open when a Fixed Q&amp;A matches, or when a customer taps a button in another menu.</p>
+        <p class="qb-sub">Only <b>On</b> menus are sent to customers. A menu can open as your <b>Welcome menu</b> (when a customer writes first), when a Fixed Q&amp;A matches, or when a customer taps a button in another menu.</p>
         <div class="qb-toolbar">
           <input class="qb-input" id="qbSearch" type="search" autocomplete="off" placeholder="Search menus" value="${esc(S.search)}">
           <button type="button" class="qb-btn primary small" data-act="new" ${S.limitHit ? 'disabled' : ''}>+ New menu</button>
@@ -557,6 +574,7 @@
           <span>Only you can create or change menus. Customers can never change them.</span>
           <span>WhatsApp limits are checked for you before saving: 3 reply buttons, 10 list options, 20 characters on a button.</span>
           <span>If a customer types something that is not a button tap, your normal Fixed Q&amp;A and AI work as usual.</span>
+          <span>Your Welcome menu is sent only on a customer's first message, and on the first message after 24 hours of silence. It is never repeated in the middle of a chat.</span>
         </div>
       </div>`;
     renderChips();
@@ -596,9 +614,11 @@
   function menuCard(m) {
     const on = isOn(m);
     const items = Array.isArray(m.items) ? m.items : [];
-    const trig = m.trigger_qa_id
-      ? 'Opens when Fixed Q&A matches: ' + (faqName(m.trigger_qa_id) || 'a Fixed Q&A')
-      : 'Opens only from a button in another menu';
+    const trig = m.is_welcome
+      ? 'Welcome menu: sent when a customer writes first (and after 24 hours of silence)'
+      : m.trigger_qa_id
+        ? 'Opens when Fixed Q&A matches: ' + (faqName(m.trigger_qa_id) || 'a Fixed Q&A')
+        : 'Opens only from a button in another menu';
     return `
       <article class="qb-item">
         <h4>${esc(m.name)}</h4>
@@ -606,6 +626,7 @@
         <p>${esc(m.body_text)}</p>
         <div class="qb-meta">
           <span class="qb-pill ${on ? 'on' : ''}">${on ? 'On' : 'Off'}</span>
+          ${m.is_welcome ? '<span class="qb-pill wait">Welcome menu</span>' : ''}
           <span class="qb-pill wait">${esc((TYPES[m.menu_type] || TYPES.buttons).label)}</span>
           <span class="qb-pill">${items.length} ${items.length === 1 ? 'item' : 'items'}</span>
           <span class="qb-pill">Used ${fmtNum(m.use_count)} ${Number(m.use_count) === 1 ? 'time' : 'times'}</span>
@@ -761,13 +782,22 @@
           </div>
           <div class="qb-field">
             <label class="qb-label" for="qbTrigger">Opens when</label>
-            <select class="qb-select" id="qbTrigger" data-f="trigger_qa_id" data-change="1">
+            <select class="qb-select" id="qbTrigger" data-f="trigger_qa_id" data-change="1" ${d.is_welcome ? 'disabled' : ''}>
               <option value="">Only from a button in another menu</option>
               ${S.faqs.map(f => `<option value="${esc(f.id)}" ${d.trigger_qa_id === f.id ? 'selected' : ''}>Fixed Q&amp;A: ${esc(String(f.question).slice(0, 70))}</option>`).join('')}
             </select>
           </div>
         </div>
         ${d.trigger_qa_id ? '<span class="qb-hint" style="margin:-4px 0 12px">When this Fixed Q&amp;A matches, customers get this menu instead of the plain fixed answer. Put the answer text in the message below.</span>' : ''}
+
+        <div class="qb-field">
+          <label class="qb-label" for="qbWelcome">Welcome menu</label>
+          <select class="qb-select" id="qbWelcome" data-f="is_welcome" data-change="1">
+            <option value="no" ${d.is_welcome ? '' : 'selected'}>No</option>
+            <option value="yes" ${d.is_welcome ? 'selected' : ''}>Yes, send this when a customer writes first</option>
+          </select>
+          <span class="qb-hint">A welcome menu is sent on a customer's first message, and on the first message after 24 hours of silence, with 0 tokens. You can have one active welcome menu. If the message matches a Fixed Q&amp;A, that answer is used instead.</span>
+        </div>
 
         <div class="qb-field">
           <label class="qb-label" for="qbHeader">Header <span>(optional, text only)</span></label>
@@ -899,6 +929,11 @@
     if (on && row.trigger_qa_id) {
       const clash = S.items.find(m => m.id !== id && isOn(m) && m.trigger_qa_id === row.trigger_qa_id);
       if (clash) return ui.toast('Another active menu ("' + clash.name + '") already opens for this Fixed Q&A. Turn that one off first.', true);
+    }
+
+    if (on && row.is_welcome) {
+      const clash = S.items.find(m => m.id !== id && isOn(m) && m.is_welcome);
+      if (clash) return ui.toast('Another active menu ("' + clash.name + '") is already your welcome menu. Turn that one off first.', true);
     }
 
     await withBusy(btn, '…', async () => {
@@ -1057,6 +1092,9 @@
 
     if (t.dataset.i !== undefined) {
       d.items[Number(t.dataset.i)][f] = t.value;
+    } else if (f === 'is_welcome') {
+      d.is_welcome = t.value === 'yes';
+      if (d.is_welcome) d.trigger_qa_id = '';
     } else {
       d[f] = t.value;
       if (f === 'menu_type') {
