@@ -10,6 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="services.css">
   <link rel="stylesheet" href="services-premium.css?v=20261027">
+  <link rel="stylesheet" href="services-industry.css?v=20261108">
 </head>
 <body>
   <div id="bootScreen" class="boot-screen">
@@ -164,7 +165,7 @@
         <i></i>
         <button data-step="2" class="step"><span>2</span><b>Pricing</b></button>
         <i></i>
-        <button data-step="3" class="step"><span>3</span><b>Availability</b></button>
+        <button data-step="3" class="step"><span>3</span><b>Details</b></button>
         <i></i>
         <button data-step="4" class="step"><span>4</span><b>Media</b></button>
         <i></i>
@@ -202,6 +203,12 @@
               <select id="fCategory"></select>
             </label>
 
+            <label class="field full">
+              <span>Kind of business for this item</span>
+              <select id="fProfile"></select>
+              <small id="fProfileHint"></small>
+            </label>
+
             <label class="field full ai-field">
               <span>Short description</span>
               <button type="button" class="ai-field-btn" data-ai-target="fShort">✦ Generate with GLIME AI</button>
@@ -224,7 +231,7 @@
           <div class="panel-title">
             <div>
               <span class="step-label">STEP 02</span>
-              <h3>Pricing & Variants</h3>
+              <h3>Pricing & Options</h3>
               <p>Configure the commercial details customers and agents can rely on.</p>
             </div>
           </div>
@@ -244,6 +251,11 @@
               <span>Price type</span>
               <select id="fPriceType"><option value="fixed">Fixed</option><option value="starting_from">Starting from</option><option value="range">Range</option></select>
             </label>
+            <label class="field hidden" id="fPriceMaxField">
+              <span>Maximum price <em>*</em></span>
+              <div class="input-prefix"><b>₹</b><input id="fPriceMax" type="number" min="0" step="0.01" inputmode="decimal" placeholder="25000"></div>
+              <small>The price above is the starting price of the range.</small>
+            </label>
             <label class="field">
               <span>Billing period</span>
               <select id="fBilling"><option value="">One-time</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select>
@@ -254,10 +266,13 @@
             </label>
           </div>
 
+          <div id="offerBlocks"></div>
+
           <div class="subsection-head">
             <div>
               <span class="step-label">OPTIONAL</span>
-              <h4>Variants</h4>
+              <h4 id="variantTitle">Variants</h4>
+              <p id="variantHint" class="sd-hint"></p>
             </div>
             <button class="secondary-btn" id="addVariantBtn">＋ Add variant</button>
           </div>
@@ -269,8 +284,17 @@
           <div class="panel-title">
             <div>
               <span class="step-label">STEP 03</span>
-              <h3>Availability</h3>
-              <p>Define when this service can be offered or booked.</p>
+              <h3>Details & Availability</h3>
+              <p>Share what customers ask about most. Only the details that fit this kind of business are shown.</p>
+            </div>
+          </div>
+
+          <div id="detailBlocks"></div>
+
+          <div id="availHead" class="subsection-head">
+            <div>
+              <span class="step-label">AVAILABILITY</span>
+              <h4>When can it be offered or booked?</h4>
             </div>
           </div>
 
@@ -323,6 +347,8 @@
             <span class="knowledge-badge">✦ CLIENT KNOWLEDGE</span>
           </div>
 
+          <div id="aiPreview"></div>
+
           <div id="knowledgeBaseHost"></div>
 
           <div class="review-layout">
@@ -362,6 +388,7 @@
   <script src="glime-dialog.js?v=20261027"></script>
   <script src="services.js"></script>
   <script src="services-premium-addon.js?v=20261027"></script>
+  <script src="services-industry-addon.js?v=20261108"></script>
   <script src="services-media-persistence-addon.js"></script>
   <script src="services-knowledge-base-addon.js"></script>
 </body>
