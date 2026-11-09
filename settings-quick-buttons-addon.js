@@ -1,10 +1,12 @@
 /* =========================================================
    GLIME - SETTINGS > QUICK BUTTONS
    ---------------------------------------------------------
-   The owner builds WhatsApp tap-menus (reply buttons, list menus
-   and link buttons) from Settings. When a customer taps a button,
-   the saved reply is sent directly BEFORE the AI runs: no AI call,
-   0 tokens charged.
+   The owner builds tap-menus from Settings for TWO channels, each in
+   its own tab with its own menu list, editor and preview:
+     WhatsApp   reply buttons, list menus and link buttons
+     Instagram  Quick replies and a link (CTA) button
+   When a customer taps a button, the saved reply is sent directly
+   BEFORE the AI runs: no AI call, 0 tokens charged.
 
    WhatsApp limits enforced on this screen (Meta Cloud API):
      Reply buttons   1 to 3 buttons, title up to 20 characters,
@@ -18,9 +20,18 @@
                      only), footer up to 60
    Characters are counted as WhatsApp counts them (an emoji = 1).
 
+   Instagram rules enforced on this screen:
+     Quick replies   type 'buttons', 1 to 13, title up to 20
+     Link button     type 'cta', exactly 1 link button, text up to 20
+     No list menu, no header, no footer, no list button text
+     (header_text, footer_text and list_button_text are sent as null)
+     Message text up to 1000, reply_text up to 1000
+
    Data: table client_quick_menus (RLS: owner sees and changes only
    their own client_id rows).
      id uuid, client_id text,
+     channel text              'whatsapp' | 'instagram'. Sent on INSERT
+                               only, never on update.
      name text                 internal name, only the owner sees it
      trigger_qa_id uuid null   client_fixed_qa.id. When that Fixed Q&A
                                matches, this menu is sent instead of
@@ -31,29 +42,32 @@
                                customer's first message, and on the first
                                message after 24 hours of silence, when no
                                Fixed Q&A matched. Only one active welcome
-                               menu per client. A welcome menu has no
-                               trigger_qa_id.
+                               menu per client PER CHANNEL. A welcome menu
+                               has no trigger_qa_id.
      menu_type text            'buttons' | 'list' | 'cta'
      header_text, body_text, footer_text text
-     list_button_text text     list menus only
+     list_button_text text     WhatsApp list menus only
      items jsonb               array of
        { key, title, description, section, action,
          target_menu_id, reply_text, url }
        action: 'text'  send reply_text
-               'menu'  open the menu target_menu_id
+               'menu'  open the menu target_menu_id (same channel only)
                'human' hand the chat to the team (reply_text optional)
                'url'   link button only
      is_active boolean, use_count int, last_used_at,
      created_at, updated_at
 
-   Button id sent to WhatsApp (for whatsapp-webhook):
+   Button id sent to the channel (for the webhooks):
      qm:<menu id>:<item key>     (well under the 256 / 200 limits)
-   The webhook reads button_reply.id or list_reply.id, finds the menu
-   and the item, and runs the action with no AI call.
+   The webhook reads the tapped id, finds the menu and the item, and
+   runs the action with no AI call.
 
-   Plan limit is enforced by the database. When it is reached the
-   insert fails with a message containing QUICK_MENU_LIMIT_REACHED and
-   this screen shows the upgrade message.
+   Errors from the database:
+     QUICK_MENU_LIMIT_REACHED  30 menus per channel; the screen shows
+                               the upgrade message.
+     QUICK_MENU_INVALID: <text> the text after the prefix is shown as is.
+     23505 (unique)            there is already an active menu or welcome
+                               menu for that channel.
    The screen degrades safely when the table does not exist yet.
 
    Deep link: settings.html#quick-buttons
@@ -74,32 +88,61 @@
 
   const TABLE = 'client_quick_menus';
   const COLS =
-    'id,name,trigger_qa_id,is_welcome,menu_type,header_text,body_text,footer_text,list_button_text,items,is_active,use_count,last_used_at,created_at,updated_at';
+    'id,channel,name,trigger_qa_id,is_welcome,menu_type,header_text,body_text,footer_text,list_button_text,items,is_active,use_count,last_used_at,created_at,updated_at';
   const UPGRADE_URL = 'packages.html';
+  const MAX_MENUS = 30; // per channel, enforced by the database too
 
-  /* WhatsApp limits */
+  /* Shared limits */
   const L = {
     name: 60,
-    body: 1024,
-    header: 60,
-    footer: 60,
-    listBtn: 20,
-    btnTitle: 20,
-    rowTitle: 24,
-    rowDesc: 72,
-    section: 24,
-    reply: 1024,
-    url: 2000,
-    maxButtons: 3,
-    maxRows: 10,
-    maxSections: 10
+    url: 2000
   };
 
-  const TYPES = {
-    buttons: { label: 'Reply buttons', hint: 'Up to 3 buttons under your message.' },
-    list: { label: 'List menu', hint: 'One "open list" button with up to 10 options.' },
-    cta: { label: 'Link button', hint: 'One button that opens a website link.' }
+  /* Per-channel rules */
+  const CH = {
+    whatsapp: {
+      label: 'WhatsApp',
+      customerWord: 'WhatsApp',
+      types: ['buttons', 'list', 'cta'],
+      typeInfo: {
+        buttons: { label: 'Reply buttons', hint: 'Up to 3 buttons under your message.' },
+        list: { label: 'List menu', hint: 'One "open list" button with up to 10 options.' },
+        cta: { label: 'Link button', hint: 'One button that opens a website link.' }
+      },
+      lim: {
+        body: 1024,
+        header: 60,
+        footer: 60,
+        listBtn: 20,
+        btnTitle: 20,
+        rowTitle: 24,
+        rowDesc: 72,
+        section: 24,
+        reply: 1024,
+        maxButtons: 3,
+        maxRows: 10,
+        maxSections: 10
+      },
+      hasHeaderFooter: true
+    },
+    instagram: {
+      label: 'Instagram',
+      customerWord: 'Instagram',
+      types: ['buttons', 'cta'],
+      typeInfo: {
+        buttons: { label: 'Quick replies', hint: 'Up to 13 quick reply chips under your message.' },
+        cta: { label: 'Link button', hint: 'One button that opens a website link.' }
+      },
+      lim: {
+        body: 1000,
+        btnTitle: 20,
+        reply: 1000,
+        maxButtons: 13
+      },
+      hasHeaderFooter: false
+    }
   };
+  const CHANNELS = ['whatsapp', 'instagram'];
 
   const S = {
     ready: false,
@@ -108,10 +151,11 @@
     error: null,
     items: [],
     faqs: [],
+    channel: 'whatsapp',
     filter: 'all',
     search: '',
     draft: null, // menu being edited or created; null = list view
-    limitHit: false
+    limitHit: { whatsapp: false, instagram: false }
   };
 
   let ROOT = null;
@@ -128,14 +172,26 @@
       .replace(/[^\p{L}\p{N}]+/gu, ' ')
       .trim();
 
+  const chOf = m => (m && m.channel === 'instagram' ? 'instagram' : 'whatsapp');
+  const itemsOf = ch => S.items.filter(m => chOf(m) === ch);
+  const limitReached = ch => S.limitHit[ch] || itemsOf(ch).length >= MAX_MENUS;
+
   const isMissingBackend = e => {
     const code = String((e && (e.code || e.status)) || '');
     return (
-      ['42P01', '42883', 'PGRST205', 'PGRST202', '404'].includes(code) ||
-      /does not exist|schema cache|could not find the (table|function)/i.test(errMsg(e))
+      ['42P01', '42883', '42703', 'PGRST205', 'PGRST202', '404'].includes(code) ||
+      /does not exist|schema cache|could not find the (table|function|column)/i.test(errMsg(e))
     );
   };
   const isLimitError = e => /quick_menu_limit/i.test(errMsg(e));
+
+  /* text after the QUICK_MENU_INVALID: prefix, shown as is; '' when not that error */
+  const invalidText = e => {
+    const m = errMsg(e).match(/QUICK_MENU_INVALID:\s*([\s\S]*)/);
+    return m && m[1].trim() ? m[1].trim() : '';
+  };
+  const isUniqueError = e =>
+    String((e && e.code) || '') === '23505' || /23505|duplicate key value/i.test(errMsg(e));
 
   const fmtDate = v => {
     if (!v) return '';
@@ -161,6 +217,26 @@
     }
   }
 
+  /* Turns a database error into a message for the owner.
+     Returns { limit: true } when the plan limit was hit. */
+  function describeError(e, ch) {
+    if (isLimitError(e)) {
+      return {
+        limit: true,
+        text: 'You have reached the limit of ' + MAX_MENUS + ' ' + CH[ch].label + ' menus. Upgrade your plan to add more.'
+      };
+    }
+    const inv = invalidText(e);
+    if (inv) return { limit: false, text: inv };
+    if (isUniqueError(e)) {
+      return {
+        limit: false,
+        text: 'There is already an active menu or welcome menu for ' + CH[ch].label + '. Turn that one off first, or choose a different Fixed Q&A.'
+      };
+    }
+    return { limit: false, text: errMsg(e) };
+  }
+
   /* ---------------------------------------------------------
      STYLES
   --------------------------------------------------------- */
@@ -176,6 +252,12 @@
       .qb-head p{font-size:.78rem;color:rgba(255,255,255,.72);margin-top:4px;max-width:620px}
       .qb-banner{border:1px solid rgba(80,245,168,.4);background:rgba(80,245,168,.07);border-radius:14px;padding:12px 14px;font-size:.76rem;line-height:1.55;margin:14px 0}
       .qb-banner b{color:var(--gr)}
+      .qb-tabs{display:flex;gap:8px;margin:14px 0 0}
+      .qb-tab{flex:1;min-height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--bd);background:var(--surf);color:#fff;font-size:.84rem;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+      .qb-tab .qb-tab-n{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:99px;border:1px solid rgba(255,255,255,.28)}
+      .qb-tab.active[data-v="whatsapp"]{background:linear-gradient(105deg,#25d366,#128c7e);color:#031014;border-color:transparent}
+      .qb-tab.active[data-v="instagram"]{background:linear-gradient(105deg,#feda75,#d62976 55%,#962fbf);color:#fff;border-color:transparent}
+      .qb-tab.active .qb-tab-n{border-color:rgba(255,255,255,.55)}
       .qb-card{background:var(--surf);border:1px solid var(--bd);border-radius:18px;padding:16px;margin:14px 0}
       .qb-card h3{font-size:.98rem;margin-bottom:3px}
       .qb-sub{font-size:.74rem;color:rgba(255,255,255,.72);margin-bottom:12px;line-height:1.5}
@@ -189,6 +271,11 @@
       .qb-input:disabled,.qb-textarea:disabled,.qb-select:disabled{opacity:.5}
       .qb-textarea{min-height:90px;resize:vertical;line-height:1.5}
       .qb-select option{color:#000}
+      .qb-check{display:flex;gap:10px;align-items:flex-start;background:var(--surf2);border:1px solid var(--bd);border-radius:12px;padding:12px;cursor:pointer}
+      .qb-check input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:#50f5a8}
+      .qb-check b{display:block;font-size:.78rem}
+      .qb-check span{display:block;font-size:.68rem;color:rgba(255,255,255,.62);margin-top:3px;line-height:1.5}
+      .qb-check.off{opacity:.5;cursor:default}
       .qb-count{font-size:.66rem;color:rgba(255,255,255,.55);text-align:right;margin-top:4px}
       .qb-count.over{color:var(--rd);font-weight:800}
       .qb-btn{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:.8rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none}
@@ -199,6 +286,7 @@
       .qb-pill{display:inline-block;font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:99px;border:1px solid rgba(255,255,255,.28);white-space:nowrap}
       .qb-pill.on{color:var(--gr);border-color:rgba(80,245,168,.4)}
       .qb-pill.wait{color:var(--cy);border-color:rgba(82,232,255,.4)}
+      .qb-pill.ig{color:#f58ac0;border-color:rgba(214,41,118,.5)}
       .qb-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
       .qb-chip{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--bd);background:transparent;color:#fff;font-size:.72rem;font-weight:800;cursor:pointer}
       .qb-chip.active{background:#fff;color:#031014;border-color:#fff}
@@ -230,6 +318,11 @@
       .qb-ph-opt{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:.76rem}
       .qb-ph-opt:last-child{border-bottom:0}
       .qb-ph-opt small{display:block;color:rgba(255,255,255,.55);font-size:.68rem}
+      .qb-phone.ig{background:#000;border-color:rgba(255,255,255,.14)}
+      .qb-ig-bub{background:#262626;border-radius:20px 20px 20px 6px;padding:10px 14px;font-size:.8rem;line-height:1.5;word-break:break-word;white-space:pre-wrap;max-width:92%}
+      .qb-ig-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+      .qb-ig-chip{border:1px solid #8e5cff;color:#c4a8ff;border-radius:99px;padding:7px 14px;font-size:.76rem;font-weight:800;word-break:break-word}
+      .qb-ig-cta{margin-top:8px;background:#363636;border-radius:12px;color:#fff;text-align:center;font-weight:800;font-size:.78rem;padding:10px;max-width:92%;word-break:break-word}
       .qb-note{font-size:.7rem;color:rgba(255,255,255,.66);margin-top:10px;line-height:1.5}
       .qb-safe{display:grid;gap:6px;font-size:.74rem;color:rgba(255,255,255,.82);line-height:1.5}
       @media(max-width:640px){
@@ -251,7 +344,7 @@
       .select(COLS)
       .eq('client_id', clientId())
       .order('updated_at', { ascending: false })
-      .limit(200);
+      .limit(300);
     if (error) throw error;
     return data || [];
   }
@@ -312,8 +405,9 @@
     url: ''
   });
 
-  const emptyDraft = () => ({
+  const emptyDraft = ch => ({
     id: null,
+    channel: ch,
     name: '',
     trigger_qa_id: '',
     is_welcome: false,
@@ -326,86 +420,101 @@
     is_active: true
   });
 
-  const fromRow = r => ({
-    id: r.id,
-    name: r.name || '',
-    trigger_qa_id: r.trigger_qa_id || '',
-    is_welcome: !!r.is_welcome,
-    menu_type: TYPES[r.menu_type] ? r.menu_type : 'buttons',
-    header_text: r.header_text || '',
-    body_text: r.body_text || '',
-    footer_text: r.footer_text || '',
-    list_button_text: r.list_button_text || 'Choose option',
-    items: (Array.isArray(r.items) ? r.items : []).map(i => ({
-      key: i.key || uid(),
-      title: i.title || '',
-      description: i.description || '',
-      section: i.section || '',
-      action: i.action || 'text',
-      target_menu_id: i.target_menu_id || '',
-      reply_text: i.reply_text || '',
-      url: i.url || ''
-    })),
-    is_active: r.is_active !== false
-  });
+  const fromRow = r => {
+    const ch = chOf(r);
+    return {
+      id: r.id,
+      channel: ch,
+      name: r.name || '',
+      trigger_qa_id: r.trigger_qa_id || '',
+      is_welcome: !!r.is_welcome,
+      menu_type: CH[ch].typeInfo[r.menu_type] ? r.menu_type : 'buttons',
+      header_text: r.header_text || '',
+      body_text: r.body_text || '',
+      footer_text: r.footer_text || '',
+      list_button_text: r.list_button_text || 'Choose option',
+      items: (Array.isArray(r.items) ? r.items : []).map(i => ({
+        key: i.key || uid(),
+        title: i.title || '',
+        description: i.description || '',
+        section: i.section || '',
+        action: i.action || 'text',
+        target_menu_id: i.target_menu_id || '',
+        reply_text: i.reply_text || '',
+        url: i.url || ''
+      })),
+      is_active: r.is_active !== false
+    };
+  };
 
-  const maxItems = type => (type === 'buttons' ? L.maxButtons : type === 'cta' ? 1 : L.maxRows);
-  const itemTitleMax = type => (type === 'list' ? L.rowTitle : L.btnTitle);
-  const itemWord = type => (type === 'list' ? 'option' : 'button');
+  const maxItems = (ch, type) =>
+    type === 'cta' ? 1 : type === 'buttons' ? CH[ch].lim.maxButtons : CH[ch].lim.maxRows;
+  const itemTitleMax = (ch, type) => (type === 'list' ? CH[ch].lim.rowTitle : CH[ch].lim.btnTitle);
+  const itemWord = (ch, type) => (type === 'list' ? 'option' : ch === 'instagram' && type === 'buttons' ? 'quick reply' : 'button');
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-  /* returns an error message, or '' when everything fits WhatsApp's rules */
+  /* returns an error message, or '' when everything fits the channel's rules */
   function validate(d) {
+    const ch = d.channel;
+    const C = CH[ch];
+    const lim = C.lim;
     const t = d.menu_type;
     const name = d.name.trim();
     if (len(name) < 2) return 'Give this menu a name (only you will see it).';
     if (len(name) > L.name) return 'Menu name can be up to ' + L.name + ' characters.';
+    if (!C.typeInfo[t]) return 'This menu type is not available for ' + C.label + '.';
 
     const body = d.body_text.trim();
     if (!body) return 'Write the message text customers will see.';
-    if (len(body) > L.body) return 'Message text can be up to ' + L.body + ' characters.';
-    if (len(d.header_text.trim()) > L.header) return 'Header can be up to ' + L.header + ' characters.';
-    if (len(d.footer_text.trim()) > L.footer) return 'Footer can be up to ' + L.footer + ' characters.';
+    if (len(body) > lim.body) return 'Message text can be up to ' + lim.body + ' characters.';
+    if (C.hasHeaderFooter) {
+      if (len(d.header_text.trim()) > lim.header) return 'Header can be up to ' + lim.header + ' characters.';
+      if (len(d.footer_text.trim()) > lim.footer) return 'Footer can be up to ' + lim.footer + ' characters.';
+    }
 
     const items = d.items;
-    const word = itemWord(t);
+    const word = itemWord(ch, t);
     if (!items.length) return 'Add at least one ' + word + '.';
-    if (items.length > maxItems(t)) {
+    if (items.length > maxItems(ch, t)) {
       return t === 'buttons'
-        ? 'Reply buttons allow up to ' + L.maxButtons + ' buttons. Remove extra buttons or switch to a List menu.'
+        ? ch === 'instagram'
+          ? 'Quick replies allow up to ' + lim.maxButtons + '. Remove the extra ones.'
+          : 'Reply buttons allow up to ' + lim.maxButtons + ' buttons. Remove extra buttons or switch to a List menu.'
         : t === 'cta'
           ? 'A link button menu has exactly 1 button.'
-          : 'A list menu allows up to ' + L.maxRows + ' options in total.';
+          : 'A list menu allows up to ' + lim.maxRows + ' options in total.';
     }
 
     if (t === 'list') {
       const lb = d.list_button_text.trim();
       if (!lb) return 'Write the text of the button that opens the list.';
-      if (len(lb) > L.listBtn) return 'The list button text can be up to ' + L.listBtn + ' characters.';
+      if (len(lb) > lim.listBtn) return 'The list button text can be up to ' + lim.listBtn + ' characters.';
     }
 
     const sections = new Set();
     const titles = new Set();
     const anySection = t === 'list' && items.some(i => i.section.trim());
+    const sameChannelIds = new Set(itemsOf(ch).map(m => m.id));
 
     for (let n = 0; n < items.length; n++) {
       const i = items[n];
       const label = word + ' ' + (n + 1);
       const title = i.title.trim();
       if (!title) return 'Write the text for ' + label + '.';
-      if (len(title) > itemTitleMax(t)) return 'The text of ' + label + ' can be up to ' + itemTitleMax(t) + ' characters.';
+      if (len(title) > itemTitleMax(ch, t)) return 'The text of ' + label + ' can be up to ' + itemTitleMax(ch, t) + ' characters.';
 
-      if (t === 'buttons') {
+      if (ch === 'whatsapp' && t === 'buttons') {
         const k = title.toLowerCase();
         if (titles.has(k)) return 'Two buttons have the same text ("' + title + '"). WhatsApp needs different text on each button.';
         titles.add(k);
       }
 
       if (t === 'list') {
-        if (len(i.description.trim()) > L.rowDesc) return 'The description of ' + label + ' can be up to ' + L.rowDesc + ' characters.';
+        if (len(i.description.trim()) > lim.rowDesc) return 'The description of ' + label + ' can be up to ' + lim.rowDesc + ' characters.';
         if (anySection) {
           const sec = i.section.trim();
           if (!sec) return 'When you use sections, every option needs a section name (' + label + ' has none).';
-          if (len(sec) > L.section) return 'A section name can be up to ' + L.section + ' characters.';
+          if (len(sec) > lim.section) return 'A section name can be up to ' + lim.section + ' characters.';
           sections.add(sec.toLowerCase());
         }
       }
@@ -415,13 +524,13 @@
       if (i.action === 'text') {
         const r = i.reply_text.trim();
         if (!r) return 'Write the reply that ' + label + ' should send.';
-        if (len(r) > L.reply) return 'The reply of ' + label + ' can be up to ' + L.reply + ' characters.';
+        if (len(r) > lim.reply) return 'The reply of ' + label + ' can be up to ' + lim.reply + ' characters.';
       } else if (i.action === 'human') {
-        if (len(i.reply_text.trim()) > L.reply) return 'The message of ' + label + ' can be up to ' + L.reply + ' characters.';
+        if (len(i.reply_text.trim()) > lim.reply) return 'The message of ' + label + ' can be up to ' + lim.reply + ' characters.';
       } else if (i.action === 'menu') {
         if (!i.target_menu_id) return 'Choose which menu ' + label + ' should open.';
         if (d.id && i.target_menu_id === d.id) return 'A menu cannot open itself (' + label + ').';
-        if (!S.items.some(m => m.id === i.target_menu_id)) return 'The menu chosen for ' + label + ' no longer exists.';
+        if (!sameChannelIds.has(i.target_menu_id)) return 'A ' + C.label + ' button can only open a ' + C.label + ' menu. Choose another menu for ' + label + '.';
       } else if (i.action === 'url') {
         const u = i.url.trim();
         if (!/^https:\/\/[^\s]+\.[^\s]+$/i.test(u)) return 'Enter a full link starting with https:// for ' + label + '.';
@@ -429,33 +538,35 @@
       }
     }
 
-    if (sections.size > L.maxSections) return 'A list can have up to ' + L.maxSections + ' sections.';
+    if (sections.size > lim.maxSections) return 'A list can have up to ' + lim.maxSections + ' sections.';
 
     if (d.is_welcome && d.trigger_qa_id) return 'A welcome menu cannot also open from a Fixed Q&A. Choose one.';
 
     if (d.is_welcome && d.is_active) {
-      const w = S.items.find(m => m.id !== d.id && m.is_active !== false && m.is_welcome);
-      if (w) return 'Another active menu ("' + w.name + '") is already your welcome menu. Turn that one off first.';
+      const w = itemsOf(ch).find(m => m.id !== d.id && m.is_active !== false && m.is_welcome);
+      if (w) return 'Another active ' + C.label + ' menu ("' + w.name + '") is already your welcome menu. Turn that one off first.';
     }
 
     if (d.trigger_qa_id && d.is_active) {
-      const clash = S.items.find(m => m.id !== d.id && m.is_active !== false && m.trigger_qa_id === d.trigger_qa_id);
-      if (clash) return 'Another active menu ("' + clash.name + '") already opens for this Fixed Q&A. Turn that one off or choose a different Fixed Q&A.';
+      const clash = itemsOf(ch).find(m => m.id !== d.id && m.is_active !== false && m.trigger_qa_id === d.trigger_qa_id);
+      if (clash) return 'Another active ' + C.label + ' menu ("' + clash.name + '") already opens for this Fixed Q&A. Turn that one off or choose a different Fixed Q&A.';
     }
     return '';
   }
 
+  /* channel is NOT part of the row: it is added on insert only */
   function toRow(d) {
     const t = d.menu_type;
+    const wa = d.channel === 'whatsapp';
     return {
       name: d.name.trim(),
       trigger_qa_id: d.is_welcome ? null : d.trigger_qa_id || null,
       is_welcome: !!d.is_welcome,
       menu_type: t,
-      header_text: d.header_text.trim() || null,
+      header_text: wa ? d.header_text.trim() || null : null,
       body_text: d.body_text.trim(),
-      footer_text: d.footer_text.trim() || null,
-      list_button_text: t === 'list' ? d.list_button_text.trim() : null,
+      footer_text: wa ? d.footer_text.trim() || null : null,
+      list_button_text: wa && t === 'list' ? d.list_button_text.trim() : null,
       is_active: d.is_active,
       items: d.items.map(i => {
         const o = { key: i.key, title: i.title.trim(), action: i.action };
@@ -474,11 +585,23 @@
   }
 
   /* ---------------------------------------------------------
-     PREVIEW (looks like the customer's WhatsApp)
+     PREVIEW (looks like the customer's chat)
   --------------------------------------------------------- */
   function previewHtml(d) {
     const t = d.menu_type;
     const items = d.items || [];
+
+    if (d.channel === 'instagram') {
+      const body = esc(d.body_text.trim() || 'Your message text appears here.');
+      let extra = '';
+      if (t === 'cta') {
+        extra = `<div class="qb-ig-cta">↗ ${esc((items[0] && items[0].title.trim()) || 'Open link')}</div>`;
+      } else {
+        extra = `<div class="qb-ig-chips">${items.map(i => `<span class="qb-ig-chip">${esc(i.title.trim() || 'Quick reply')}</span>`).join('')}</div>`;
+      }
+      return `<div class="qb-phone ig"><div class="qb-ig-bub">${body}</div>${extra}</div>`;
+    }
+
     const head = d.header_text.trim() ? `<div class="qb-ph-h">${esc(d.header_text.trim())}</div>` : '';
     const body = `<div class="qb-ph-b">${esc(d.body_text.trim() || 'Your message text appears here.')}</div>`;
     const foot = d.footer_text.trim() ? `<div class="qb-ph-f">${esc(d.footer_text.trim())}</div>` : '';
@@ -519,11 +642,18 @@
     return `
       <div class="qb-head">
         <h2>Quick Buttons</h2>
-        <p>Build tap-menus for WhatsApp, like "Book appointment: Facial, Hair, Makeup". Customers tap instead of typing.</p>
+        <p>Build tap-menus for WhatsApp and Instagram, like "Book appointment: Facial, Hair, Makeup". Customers tap instead of typing. Each channel has its own menus.</p>
       </div>
       <div class="qb-banner"><b>0 tokens used.</b> When a customer taps a button, GLIME sends your saved reply directly and your AI does not run, so no AI tokens are charged.</div>
       <div id="qbBody"></div>
     `;
+  }
+
+  function tabsHtml() {
+    return `<div class="qb-tabs" role="tablist">${CHANNELS.map(
+      c =>
+        `<button type="button" role="tab" class="qb-tab ${S.channel === c ? 'active' : ''}" data-act="tab" data-v="${c}" aria-selected="${S.channel === c}">${esc(CH[c].label)} <span class="qb-tab-n">${itemsOf(c).length}/${MAX_MENUS}</span></button>`
+    ).join('')}</div>`;
   }
 
   function renderBody() {
@@ -556,15 +686,19 @@
       return;
     }
 
+    const ch = S.channel;
+    const C = CH[ch];
+    const reached = limitReached(ch);
     host.innerHTML = `
+      ${tabsHtml()}
       <div class="qb-card">
-        <h3>Your menus</h3>
-        <p class="qb-sub">Only <b>On</b> menus are sent to customers. A menu can open as your <b>Welcome menu</b> (when a customer writes first), when a Fixed Q&amp;A matches, or when a customer taps a button in another menu.</p>
+        <h3>Your ${esc(C.label)} menus</h3>
+        <p class="qb-sub">Only <b>On</b> menus are sent to ${esc(C.customerWord)} customers. A menu can open as your <b>Welcome menu</b> (when a customer writes first), when a Fixed Q&amp;A matches, or when a customer taps a button in another ${esc(C.label)} menu.</p>
         <div class="qb-toolbar">
-          <input class="qb-input" id="qbSearch" type="search" autocomplete="off" placeholder="Search menus" value="${esc(S.search)}">
-          <button type="button" class="qb-btn primary small" data-act="new" ${S.limitHit ? 'disabled' : ''}>+ New menu</button>
+          <input class="qb-input" id="qbSearch" type="search" autocomplete="off" placeholder="Search ${esc(C.label)} menus" value="${esc(S.search)}">
+          <button type="button" class="qb-btn primary small" data-act="new" ${reached ? 'disabled' : ''}>+ New ${esc(C.label)} menu</button>
         </div>
-        ${S.limitHit ? limitHtml() : ''}
+        ${reached ? limitHtml(ch) : ''}
         <div class="qb-chips" id="qbChips"></div>
         <div id="qbList"></div>
       </div>
@@ -572,24 +706,29 @@
         <h3>How it stays safe</h3>
         <div class="qb-safe">
           <span>Only you can create or change menus. Customers can never change them.</span>
-          <span>WhatsApp limits are checked for you before saving: 3 reply buttons, 10 list options, 20 characters on a button.</span>
+          ${
+            ch === 'instagram'
+              ? '<span>Instagram limits are checked for you before saving: up to 13 quick replies, 20 characters on a button, 1000 characters in a message.</span>'
+              : '<span>WhatsApp limits are checked for you before saving: 3 reply buttons, 10 list options, 20 characters on a button.</span>'
+          }
           <span>If a customer types something that is not a button tap, your normal Fixed Q&amp;A and AI work as usual.</span>
-          <span>Your Welcome menu is sent only on a customer's first message, and on the first message after 24 hours of silence. It is never repeated in the middle of a chat.</span>
+          <span>Your Welcome menu is sent only on a customer's first message, and on the first message after 24 hours of silence. It is never repeated in the middle of a chat. You can have one active welcome menu for each channel.</span>
         </div>
       </div>`;
     renderChips();
     renderList();
   }
 
-  function limitHtml() {
+  function limitHtml(ch) {
     return `
-      <div class="qb-err"><b>Menu limit reached</b>You have used all the menus in your plan. Upgrade to add more, or delete one you no longer need.
+      <div class="qb-err"><b>${esc(CH[ch].label)} menu limit reached</b>You have used all ${MAX_MENUS} ${esc(CH[ch].label)} menus in your plan. Upgrade to add more, or delete one you no longer need.
         <div class="qb-actions"><a class="qb-btn small primary" href="${UPGRADE_URL}">Upgrade plan</a></div>
       </div>`;
   }
 
   const isOn = m => m.is_active !== false;
-  const countOf = key => S.items.filter(m => (key === 'all' ? true : key === 'on' ? isOn(m) : !isOn(m))).length;
+  const countOf = key =>
+    itemsOf(S.channel).filter(m => (key === 'all' ? true : key === 'on' ? isOn(m) : !isOn(m))).length;
 
   function renderChips() {
     const host = q('#qbChips');
@@ -612,6 +751,7 @@
   };
 
   function menuCard(m) {
+    const ch = chOf(m);
     const on = isOn(m);
     const items = Array.isArray(m.items) ? m.items : [];
     const trig = m.is_welcome
@@ -627,7 +767,7 @@
         <div class="qb-meta">
           <span class="qb-pill ${on ? 'on' : ''}">${on ? 'On' : 'Off'}</span>
           ${m.is_welcome ? '<span class="qb-pill wait">Welcome menu</span>' : ''}
-          <span class="qb-pill wait">${esc((TYPES[m.menu_type] || TYPES.buttons).label)}</span>
+          <span class="qb-pill ${ch === 'instagram' ? 'ig' : 'wait'}">${esc((CH[ch].typeInfo[m.menu_type] || CH[ch].typeInfo.buttons).label)}</span>
           <span class="qb-pill">${items.length} ${items.length === 1 ? 'item' : 'items'}</span>
           <span class="qb-pill">Used ${fmtNum(m.use_count)} ${Number(m.use_count) === 1 ? 'time' : 'times'}</span>
           ${m.last_used_at ? `<span class="qb-pill">Last used ${esc(fmtDate(m.last_used_at))}</span>` : ''}
@@ -645,18 +785,24 @@
     const host = q('#qbList');
     if (!host) return;
     const needle = norm(S.search);
-    let rows = S.items.filter(m => (S.filter === 'all' ? true : S.filter === 'on' ? isOn(m) : !isOn(m)));
+    let rows = itemsOf(S.channel).filter(m => (S.filter === 'all' ? true : S.filter === 'on' ? isOn(m) : !isOn(m)));
     if (needle) {
       rows = rows.filter(m =>
         norm([m.name, m.body_text, ...(m.items || []).map(i => i.title)].join(' ')).includes(needle)
       );
     }
     if (!rows.length) {
-      const text = S.items.length
+      const hasAny = itemsOf(S.channel).length > 0;
+      const text = hasAny
         ? needle
           ? ['No match.', 'Try a different word.']
           : ['Nothing here.', 'No menus in this view.']
-        : ['No menus yet.', 'Tap + New menu to build your first one, for example "Book appointment" with buttons for your services.'];
+        : [
+            'No ' + CH[S.channel].label + ' menus yet.',
+            S.channel === 'instagram'
+              ? 'Tap + New Instagram menu to build your first one, for example "Book appointment" with quick replies for your services.'
+              : 'Tap + New WhatsApp menu to build your first one, for example "Book appointment" with buttons for your services.'
+          ];
       host.innerHTML = `<div class="qb-empty"><b>${esc(text[0])}</b>${esc(text[1])}</div>`;
       return;
     }
@@ -674,13 +820,16 @@
   }
 
   function itemHtml(d, i, n) {
+    const ch = d.channel;
+    const lim = CH[ch].lim;
     const t = d.menu_type;
-    const tMax = itemTitleMax(t);
+    const tMax = itemTitleMax(ch, t);
     const total = d.items.length;
-    const word = itemWord(t);
+    const word = itemWord(ch, t);
     const acts = allowedActions(t);
 
-    const otherMenus = S.items.filter(m => m.id !== d.id);
+    /* a menu can only open menus of the same channel */
+    const otherMenus = itemsOf(ch).filter(m => m.id !== d.id);
     const action = acts.includes(i.action) ? i.action : acts[0];
 
     let extra = '';
@@ -688,18 +837,18 @@
       extra = `
         <div class="qb-field">
           <label class="qb-label">${action === 'text' ? 'Reply sent when tapped' : 'Message to the customer <span>(optional)</span>'}</label>
-          <textarea class="qb-textarea" style="min-height:70px" data-f="reply_text" data-i="${n}" data-max="${L.reply}" placeholder="${action === 'text' ? 'e.g. Facial is Rs 999 and takes 45 minutes. Which day suits you?' : 'e.g. Our team will reply to you shortly.'}">${esc(i.reply_text)}</textarea>
-          ${counter(i.reply_text, L.reply)}
+          <textarea class="qb-textarea" style="min-height:70px" data-f="reply_text" data-i="${n}" data-max="${lim.reply}" placeholder="${action === 'text' ? 'e.g. Facial is Rs 999 and takes 45 minutes. Which day suits you?' : 'e.g. Our team will reply to you shortly.'}">${esc(i.reply_text)}</textarea>
+          ${counter(i.reply_text, lim.reply)}
         </div>`;
     } else if (action === 'menu') {
       extra = `
         <div class="qb-field">
-          <label class="qb-label">Menu to open</label>
+          <label class="qb-label">Menu to open <span>(${esc(CH[ch].label)} menus only)</span></label>
           <select class="qb-select" data-f="target_menu_id" data-i="${n}" data-change="1">
             <option value="">Choose a menu</option>
             ${otherMenus.map(m => `<option value="${esc(m.id)}" ${i.target_menu_id === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
           </select>
-          ${otherMenus.length ? '' : '<span class="qb-hint">You have no other menu yet. Save this one, create the next menu, then come back and choose it here.</span>'}
+          ${otherMenus.length ? '' : '<span class="qb-hint">You have no other ' + esc(CH[ch].label) + ' menu yet. Save this one, create the next menu, then come back and choose it here.</span>'}
         </div>`;
     } else if (action === 'url') {
       extra = `
@@ -715,13 +864,13 @@
         <div class="qb-grid">
           <div class="qb-field">
             <label class="qb-label">Description <span>(optional)</span></label>
-            <input class="qb-input" data-f="description" data-i="${n}" data-max="${L.rowDesc}" autocomplete="off" placeholder="e.g. 45 minutes" value="${esc(i.description)}">
-            ${counter(i.description, L.rowDesc)}
+            <input class="qb-input" data-f="description" data-i="${n}" data-max="${lim.rowDesc}" autocomplete="off" placeholder="e.g. 45 minutes" value="${esc(i.description)}">
+            ${counter(i.description, lim.rowDesc)}
           </div>
           <div class="qb-field">
             <label class="qb-label">Section <span>(optional)</span></label>
-            <input class="qb-input" data-f="section" data-i="${n}" data-max="${L.section}" autocomplete="off" placeholder="e.g. Skin care" value="${esc(i.section)}">
-            ${counter(i.section, L.section)}
+            <input class="qb-input" data-f="section" data-i="${n}" data-max="${lim.section}" autocomplete="off" placeholder="e.g. Skin care" value="${esc(i.section)}">
+            ${counter(i.section, lim.section)}
           </div>
         </div>`
         : '';
@@ -729,7 +878,7 @@
     return `
       <div class="qb-row" data-row="${n}">
         <div class="qb-row-top">
-          <b>${esc(word.charAt(0).toUpperCase() + word.slice(1))} ${n + 1}</b>
+          <b>${esc(cap(word))} ${n + 1}</b>
           <div class="qb-row-tools">
             <button type="button" class="qb-btn small" aria-label="Move up" data-act="up" data-i="${n}" ${n === 0 ? 'disabled' : ''}>▲</button>
             <button type="button" class="qb-btn small" aria-label="Move down" data-act="down" data-i="${n}" ${n === total - 1 ? 'disabled' : ''}>▼</button>
@@ -737,8 +886,8 @@
           </div>
         </div>
         <div class="qb-field">
-          <label class="qb-label">${t === 'cta' ? 'Button text' : word === 'option' ? 'Option title' : 'Button text'}</label>
-          <input class="qb-input" data-f="title" data-i="${n}" data-max="${tMax}" autocomplete="off" placeholder="${t === 'list' ? 'e.g. Facial' : 'e.g. Facial'}" value="${esc(i.title)}">
+          <label class="qb-label">${t === 'list' ? 'Option title' : ch === 'instagram' && t === 'buttons' ? 'Quick reply text' : 'Button text'}</label>
+          <input class="qb-input" data-f="title" data-i="${n}" data-max="${tMax}" autocomplete="off" placeholder="e.g. Facial" value="${esc(i.title)}">
           ${counter(i.title, tMax)}
         </div>
         ${listFields}
@@ -758,14 +907,29 @@
 
   function editorHtml() {
     const d = S.draft;
+    const ch = d.channel;
+    const C = CH[ch];
+    const lim = C.lim;
     const t = d.menu_type;
-    const word = itemWord(t);
-    const canAdd = d.items.length < maxItems(t);
+    const word = itemWord(ch, t);
+    const canAdd = d.items.length < maxItems(ch, t);
+    const triggerLocked = d.is_welcome;
+    const welcomeLocked = !!d.trigger_qa_id;
+    const itemsTitle =
+      t === 'list' ? 'Options' : t === 'cta' ? 'Button' : ch === 'instagram' ? 'Quick replies' : 'Buttons';
+    const itemsHelp =
+      t === 'buttons'
+        ? ch === 'instagram'
+          ? 'Instagram allows up to 13 quick replies, with up to 20 characters each.'
+          : 'WhatsApp allows up to 3 buttons, with up to 20 characters each.'
+        : t === 'list'
+          ? 'WhatsApp allows up to 10 options in total. Use sections to group them (all options then need a section).'
+          : C.label + ' allows exactly 1 link button, with up to 20 characters.';
 
     return `
       <div class="qb-card" id="qbEditor">
-        <h3>${d.id ? 'Edit menu' : 'New menu'}</h3>
-        <p class="qb-sub">${esc(TYPES[t].hint)} WhatsApp limits are checked when you save.</p>
+        <h3>${d.id ? 'Edit' : 'New'} ${esc(C.label)} menu</h3>
+        <p class="qb-sub">${esc(C.typeInfo[t].hint)} ${esc(C.label)} limits are checked when you save.</p>
 
         <div class="qb-field">
           <label class="qb-label" for="qbName">Menu name <span>(only you see this)</span></label>
@@ -777,12 +941,12 @@
           <div class="qb-field">
             <label class="qb-label" for="qbType">Menu type</label>
             <select class="qb-select" id="qbType" data-f="menu_type" data-change="1">
-              ${Object.keys(TYPES).map(k => `<option value="${k}" ${t === k ? 'selected' : ''}>${esc(TYPES[k].label)}</option>`).join('')}
+              ${C.types.map(k => `<option value="${k}" ${t === k ? 'selected' : ''}>${esc(C.typeInfo[k].label)}</option>`).join('')}
             </select>
           </div>
           <div class="qb-field">
             <label class="qb-label" for="qbTrigger">Opens when</label>
-            <select class="qb-select" id="qbTrigger" data-f="trigger_qa_id" data-change="1" ${d.is_welcome ? 'disabled' : ''}>
+            <select class="qb-select" id="qbTrigger" data-f="trigger_qa_id" data-change="1" ${triggerLocked ? 'disabled' : ''}>
               <option value="">Only from a button in another menu</option>
               ${S.faqs.map(f => `<option value="${esc(f.id)}" ${d.trigger_qa_id === f.id ? 'selected' : ''}>Fixed Q&amp;A: ${esc(String(f.question).slice(0, 70))}</option>`).join('')}
             </select>
@@ -791,55 +955,58 @@
         ${d.trigger_qa_id ? '<span class="qb-hint" style="margin:-4px 0 12px">When this Fixed Q&amp;A matches, customers get this menu instead of the plain fixed answer. Put the answer text in the message below.</span>' : ''}
 
         <div class="qb-field">
-          <label class="qb-label" for="qbWelcome">Welcome menu</label>
-          <select class="qb-select" id="qbWelcome" data-f="is_welcome" data-change="1">
-            <option value="no" ${d.is_welcome ? '' : 'selected'}>No</option>
-            <option value="yes" ${d.is_welcome ? 'selected' : ''}>Yes, send this when a customer writes first</option>
-          </select>
-          <span class="qb-hint">A welcome menu is sent on a customer's first message, and on the first message after 24 hours of silence, with 0 tokens. You can have one active welcome menu. If the message matches a Fixed Q&amp;A, that answer is used instead.</span>
+          <label class="qb-check ${welcomeLocked ? 'off' : ''}" for="qbWelcome">
+            <input type="checkbox" id="qbWelcome" data-f="is_welcome" data-change="1" ${d.is_welcome ? 'checked' : ''} ${welcomeLocked ? 'disabled' : ''}>
+            <div>
+              <b>Welcome menu</b>
+              <span>Send this when a customer writes first, and on the first message after 24 hours of silence, with 0 tokens. You can have one active welcome menu for ${esc(C.label)}. It cannot be combined with a Fixed Q&amp;A${welcomeLocked ? ' (clear the Fixed Q&amp;A above to use it)' : ''}.</span>
+            </div>
+          </label>
         </div>
 
-        <div class="qb-field">
+        ${
+          C.hasHeaderFooter
+            ? `<div class="qb-field">
           <label class="qb-label" for="qbHeader">Header <span>(optional, text only)</span></label>
-          <input class="qb-input" id="qbHeader" data-f="header_text" data-max="${L.header}" autocomplete="off" placeholder="e.g. Glow Studio" value="${esc(d.header_text)}">
-          ${counter(d.header_text, L.header)}
-        </div>
+          <input class="qb-input" id="qbHeader" data-f="header_text" data-max="${lim.header}" autocomplete="off" placeholder="e.g. Glow Studio" value="${esc(d.header_text)}">
+          ${counter(d.header_text, lim.header)}
+        </div>`
+            : ''
+        }
 
         <div class="qb-field">
           <label class="qb-label" for="qbBody">Message text</label>
-          <textarea class="qb-textarea" id="qbBody" data-f="body_text" data-max="${L.body}" placeholder="e.g. Sure! Which service would you like to book?">${esc(d.body_text)}</textarea>
-          ${counter(d.body_text, L.body)}
+          <textarea class="qb-textarea" id="qbBody" data-f="body_text" data-max="${lim.body}" placeholder="e.g. Sure! Which service would you like to book?">${esc(d.body_text)}</textarea>
+          ${counter(d.body_text, lim.body)}
         </div>
 
-        <div class="qb-field">
+        ${
+          C.hasHeaderFooter
+            ? `<div class="qb-field">
           <label class="qb-label" for="qbFooter">Footer <span>(optional)</span></label>
-          <input class="qb-input" id="qbFooter" data-f="footer_text" data-max="${L.footer}" autocomplete="off" placeholder="e.g. Tap an option below" value="${esc(d.footer_text)}">
-          ${counter(d.footer_text, L.footer)}
-        </div>
+          <input class="qb-input" id="qbFooter" data-f="footer_text" data-max="${lim.footer}" autocomplete="off" placeholder="e.g. Tap an option below" value="${esc(d.footer_text)}">
+          ${counter(d.footer_text, lim.footer)}
+        </div>`
+            : ''
+        }
 
         ${
           t === 'list'
             ? `<div class="qb-field">
           <label class="qb-label" for="qbListBtn">Text on the button that opens the list</label>
-          <input class="qb-input" id="qbListBtn" data-f="list_button_text" data-max="${L.listBtn}" autocomplete="off" placeholder="e.g. Choose service" value="${esc(d.list_button_text)}">
-          ${counter(d.list_button_text, L.listBtn)}
+          <input class="qb-input" id="qbListBtn" data-f="list_button_text" data-max="${lim.listBtn}" autocomplete="off" placeholder="e.g. Choose service" value="${esc(d.list_button_text)}">
+          ${counter(d.list_button_text, lim.listBtn)}
         </div>`
             : ''
         }
 
-        <h3 style="margin-top:18px">${t === 'list' ? 'Options' : t === 'cta' ? 'Button' : 'Buttons'} <span class="qb-pill" id="qbItemCount">${d.items.length}/${maxItems(t)}</span></h3>
-        <p class="qb-sub">${
-          t === 'buttons'
-            ? 'WhatsApp allows up to 3 buttons, with up to 20 characters each.'
-            : t === 'list'
-              ? 'WhatsApp allows up to 10 options in total. Use sections to group them (all options then need a section).'
-              : 'WhatsApp allows exactly 1 link button, with up to 20 characters.'
-        }</p>
+        <h3 style="margin-top:18px">${esc(itemsTitle)} <span class="qb-pill" id="qbItemCount">${d.items.length}/${maxItems(ch, t)}</span></h3>
+        <p class="qb-sub">${esc(itemsHelp)}</p>
         <div id="qbItems">${d.items.map((i, n) => itemHtml(d, i, n)).join('')}</div>
         ${t === 'cta' ? '' : `<button type="button" class="qb-btn small" data-act="add-item" ${canAdd ? '' : 'disabled'}>+ Add ${esc(word)}</button>`}
 
         <h3 style="margin-top:18px">Preview</h3>
-        <p class="qb-sub">This is how it looks on the customer's WhatsApp.</p>
+        <p class="qb-sub">This is how it looks on the customer's ${esc(C.customerWord)}.</p>
         <div id="qbPreview">${previewHtml(d)}</div>
 
         <div class="qb-actions" style="margin-top:16px">
@@ -858,13 +1025,15 @@
      ACTIONS
   --------------------------------------------------------- */
   function openNew() {
-    S.draft = emptyDraft();
+    if (limitReached(S.channel)) return;
+    S.draft = emptyDraft(S.channel);
     renderBody();
   }
 
   function openEdit(id) {
     const row = S.items.find(m => m.id === id);
     if (!row) return;
+    S.channel = chOf(row);
     S.draft = fromRow(row);
     renderBody();
   }
@@ -880,6 +1049,7 @@
         const row = toRow(d);
         let saved;
         if (d.id) {
+          /* update: channel is never sent */
           const { data, error } = await db
             .from(TABLE)
             .update({ ...row, updated_at: new Date().toISOString() })
@@ -891,16 +1061,18 @@
           saved = data;
           S.items = S.items.map(m => (m.id === d.id ? saved : m));
         } else {
+          /* insert: channel is sent here only */
           const { data, error } = await db
             .from(TABLE)
-            .insert({ client_id: clientId(), ...row })
+            .insert({ client_id: clientId(), channel: d.channel, ...row })
             .select(COLS)
             .single();
           if (error) throw error;
           saved = data;
           S.items.unshift(saved);
-          S.limitHit = false;
+          S.limitHit[d.channel] = false;
         }
+        S.channel = d.channel;
         S.draft = null;
         S.filter = 'all';
         S.search = '';
@@ -908,14 +1080,14 @@
         ui.toast('Menu saved. Taps on it send your reply with 0 tokens.');
       } catch (e) {
         console.error('[GLIME Quick Buttons] save:', e);
-        if (isLimitError(e)) {
-          S.limitHit = true;
+        const info = describeError(e, d.channel);
+        if (info.limit) {
+          S.limitHit[d.channel] = true;
+          S.channel = d.channel;
           S.draft = null;
           renderBody();
-          ui.toast('Menu limit reached. Upgrade your plan to add more.', true);
-        } else {
-          ui.toast(errMsg(e), true);
         }
+        ui.toast(info.text, true);
       }
     });
   }
@@ -925,15 +1097,17 @@
     const on = btn.dataset.v === 'on';
     const row = S.items.find(m => m.id === id);
     if (!row) return;
+    const ch = chOf(row);
+    const peers = itemsOf(ch);
 
     if (on && row.trigger_qa_id) {
-      const clash = S.items.find(m => m.id !== id && isOn(m) && m.trigger_qa_id === row.trigger_qa_id);
+      const clash = peers.find(m => m.id !== id && isOn(m) && m.trigger_qa_id === row.trigger_qa_id);
       if (clash) return ui.toast('Another active menu ("' + clash.name + '") already opens for this Fixed Q&A. Turn that one off first.', true);
     }
 
     if (on && row.is_welcome) {
-      const clash = S.items.find(m => m.id !== id && isOn(m) && m.is_welcome);
-      if (clash) return ui.toast('Another active menu ("' + clash.name + '") is already your welcome menu. Turn that one off first.', true);
+      const clash = peers.find(m => m.id !== id && isOn(m) && m.is_welcome);
+      if (clash) return ui.toast('Another active menu ("' + clash.name + '") is already your ' + CH[ch].label + ' welcome menu. Turn that one off first.', true);
     }
 
     await withBusy(btn, '…', async () => {
@@ -952,7 +1126,7 @@
         ui.toast(on ? 'Turned on.' : 'Turned off. Customers will not get this menu.');
       } catch (e) {
         console.error('[GLIME Quick Buttons] toggle:', e);
-        ui.toast(errMsg(e), true);
+        ui.toast(describeError(e, ch).text, true);
       }
     });
   }
@@ -961,8 +1135,9 @@
     const id = btn.dataset.id;
     const row = S.items.find(m => m.id === id);
     if (!row) return;
+    const ch = chOf(row);
 
-    const users = S.items.filter(
+    const users = itemsOf(ch).filter(
       m => m.id !== id && (m.items || []).some(i => i.action === 'menu' && i.target_menu_id === id)
     );
     const warn = users.length
@@ -981,12 +1156,12 @@
         const { error } = await db.from(TABLE).delete().eq('id', id).eq('client_id', clientId());
         if (error) throw error;
         S.items = S.items.filter(m => m.id !== id);
-        S.limitHit = false;
+        S.limitHit[ch] = false;
         renderBody();
         ui.toast('Menu deleted.');
       } catch (e) {
         console.error('[GLIME Quick Buttons] delete:', e);
-        ui.toast(errMsg(e), true);
+        ui.toast(describeError(e, ch).text, true);
       }
     });
   }
@@ -1008,6 +1183,14 @@
     const d = S.draft;
 
     switch (el.dataset.act) {
+      case 'tab':
+        if (!d && CH[el.dataset.v]) {
+          S.channel = el.dataset.v;
+          S.filter = 'all';
+          S.search = '';
+          renderBody();
+        }
+        break;
       case 'new':
         openNew();
         break;
@@ -1036,7 +1219,7 @@
         load();
         break;
       case 'add-item':
-        if (d && d.items.length < maxItems(d.menu_type)) {
+        if (d && d.items.length < maxItems(d.channel, d.menu_type)) {
           d.items.push(newItem(d.menu_type));
           renderBody();
         }
@@ -1083,7 +1266,7 @@
     refreshPreview();
   }
 
-  /* dropdowns change the shape of the form, so redraw it */
+  /* dropdowns and the welcome checkbox change the shape of the form, so redraw it */
   function onChange(e) {
     const t = e.target;
     if (!S.draft || !t || !t.dataset || !t.dataset.change) return;
@@ -1093,7 +1276,7 @@
     if (t.dataset.i !== undefined) {
       d.items[Number(t.dataset.i)][f] = t.value;
     } else if (f === 'is_welcome') {
-      d.is_welcome = t.value === 'yes';
+      d.is_welcome = !!t.checked;
       if (d.is_welcome) d.trigger_qa_id = '';
     } else {
       d[f] = t.value;
@@ -1102,12 +1285,15 @@
         d.items.forEach(i => {
           if (!acts.includes(i.action)) i.action = acts[0];
         });
+        const max = maxItems(d.channel, d.menu_type);
         if (d.menu_type === 'cta' && d.items.length > 1) {
           ui.toast('A link button menu has 1 button. Extra buttons were not kept.');
           d.items = d.items.slice(0, 1);
-        }
-        if (d.menu_type === 'buttons' && d.items.length > L.maxButtons) {
-          ui.toast('Reply buttons allow up to 3. Remove ' + (d.items.length - L.maxButtons) + ' before saving.', true);
+        } else if (d.menu_type === 'buttons' && d.items.length > max) {
+          ui.toast(
+            (d.channel === 'instagram' ? 'Quick replies' : 'Reply buttons') + ' allow up to ' + max + '. Remove ' + (d.items.length - max) + ' before saving.',
+            true
+          );
         }
       }
     }
@@ -1139,8 +1325,10 @@
       S.unavailable = false;
       S.error = null;
       S.draft = null;
+      S.channel = 'whatsapp';
       S.filter = 'all';
       S.search = '';
+      S.limitHit = { whatsapp: false, instagram: false };
 
       ROOT.innerHTML = shellHtml();
       await load();
