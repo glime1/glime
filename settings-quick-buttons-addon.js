@@ -2,11 +2,19 @@
    GLIME - SETTINGS > QUICK BUTTONS
    ---------------------------------------------------------
    The owner builds tap-menus from Settings for TWO channels, each in
-   its own tab with its own menu list, editor and preview:
+   its own tab with its own menu list and editor:
      WhatsApp   reply buttons, list menus and link buttons
      Instagram  Quick replies and a link (CTA) button
    When a customer taps a button, the saved reply is sent directly
    BEFORE the AI runs: no AI call, 0 tokens charged.
+
+   EDITOR = PREVIEW. The menu is built directly inside a phone that
+   looks like the customer's chat: the owner types the message, the
+   button names (and list options) right in the phone. Tapping a
+   button in the phone selects it, and below it the chat continues:
+   "customer taps X" and the reply bubble the customer will receive,
+   which the owner also types in place. Only the menu settings (name,
+   type, Fixed Q&A, welcome) sit in a small form above the phone.
 
    WhatsApp limits enforced on this screen (Meta Cloud API):
      Reply buttons   1 to 3 buttons, title up to 20 characters,
@@ -155,6 +163,8 @@
     filter: 'all',
     search: '',
     draft: null, // menu being edited or created; null = list view
+    sel: 0, // index of the button/option selected inside the phone
+    scrollEditor: false,
     limitHit: { whatsapp: false, instagram: false }
   };
 
@@ -276,7 +286,7 @@
       .qb-check b{display:block;font-size:.78rem}
       .qb-check span{display:block;font-size:.68rem;color:rgba(255,255,255,.62);margin-top:3px;line-height:1.5}
       .qb-check.off{opacity:.5;cursor:default}
-      .qb-count{font-size:.66rem;color:rgba(255,255,255,.55);text-align:right;margin-top:4px}
+      .qb-count{font-size:.62rem;color:rgba(255,255,255,.5);text-align:right;margin-top:2px}
       .qb-count.over{color:var(--rd);font-weight:800}
       .qb-btn{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:.8rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none}
       .qb-btn.primary{background:linear-gradient(105deg,var(--gr),var(--cy));color:#031014;border:0}
@@ -302,27 +312,54 @@
       .qb-loading{padding:26px 0;text-align:center;font-size:.8rem;color:rgba(255,255,255,.75)}
       .qb-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
       .qb-toolbar .qb-input{flex:1;min-width:180px}
-      .qb-row{border:1px solid var(--bd);background:var(--surf2);border-radius:14px;padding:12px;margin-bottom:10px}
-      .qb-row-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
-      .qb-row-top b{font-size:.78rem}
       .qb-row-tools{display:flex;gap:6px}
       .qb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .qb-phone{background:#0b141a;border:1px solid var(--bd);border-radius:18px;padding:14px;max-width:340px}
-      .qb-ph-bub{background:#1f2c34;border-radius:12px 12px 12px 4px;padding:10px 12px;font-size:.8rem;line-height:1.5;word-break:break-word}
-      .qb-ph-h{font-weight:800;margin-bottom:4px}
-      .qb-ph-b{white-space:pre-wrap}
-      .qb-ph-f{font-size:.68rem;color:rgba(255,255,255,.55);margin-top:6px}
-      .qb-ph-btn{background:#1f2c34;border-radius:10px;color:#53bdeb;text-align:center;font-weight:800;font-size:.78rem;padding:10px;margin-top:6px;word-break:break-word}
-      .qb-ph-list{background:#1f2c34;border-radius:12px;margin-top:8px;padding:8px 12px}
-      .qb-ph-sec{font-size:.68rem;font-weight:800;color:#25d366;margin:8px 0 2px}
-      .qb-ph-opt{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:.76rem}
-      .qb-ph-opt:last-child{border-bottom:0}
-      .qb-ph-opt small{display:block;color:rgba(255,255,255,.55);font-size:.68rem}
+
+      /* the phone = the editor */
+      .qb-phone{background:#0b141a;border:1px solid var(--bd);border-radius:22px;padding:14px;width:100%;max-width:400px}
       .qb-phone.ig{background:#000;border-color:rgba(255,255,255,.14)}
-      .qb-ig-bub{background:#262626;border-radius:20px 20px 20px 6px;padding:10px 14px;font-size:.8rem;line-height:1.5;word-break:break-word;white-space:pre-wrap;max-width:92%}
-      .qb-ig-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-      .qb-ig-chip{border:1px solid #8e5cff;color:#c4a8ff;border-radius:99px;padding:7px 14px;font-size:.76rem;font-weight:800;word-break:break-word}
-      .qb-ig-cta{margin-top:8px;background:#363636;border-radius:12px;color:#fff;text-align:center;font-weight:800;font-size:.78rem;padding:10px;max-width:92%;word-break:break-word}
+      .qb-ph-cap{font-size:.64rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.5);margin:0 0 6px}
+      .qb-ph-bub{background:#1f2c34;border-radius:12px 12px 12px 4px;padding:8px;max-width:96%}
+      .qb-phone.ig .qb-ph-bub{background:#262626;border-radius:20px 20px 20px 6px}
+      .qb-fld{position:relative}
+      .qb-ph-bub .qb-fld+.qb-fld{margin-top:6px}
+      .qb-pi{width:100%;background:transparent;border:1px dashed rgba(255,255,255,.28);color:inherit;font:inherit;font-size:16px;line-height:1.45;padding:6px 8px;border-radius:8px;outline:none;resize:none;overflow:hidden;display:block}
+      .qb-pi::placeholder{color:rgba(255,255,255,.4)}
+      .qb-pi:focus{border-style:solid;border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.05)}
+      .qb-pi.bold{font-weight:800}
+      .qb-pi.dim{font-size:14px;color:rgba(255,255,255,.7)}
+      .qb-pbtn{display:flex;align-items:center;gap:4px;margin-top:6px;border:1px solid transparent;border-radius:10px;background:#1f2c34;padding:2px 6px;max-width:96%;cursor:pointer}
+      .qb-pbtn .qb-fld{flex:1;min-width:0}
+      .qb-pbtn .qb-ico{color:#53bdeb;font-weight:800}
+      .qb-pbtn .qb-pi{color:#53bdeb;text-align:center;font-weight:800;border-color:transparent}
+      .qb-pbtn.sel,.qb-ph-row.sel{border-color:#53bdeb;box-shadow:0 0 0 1px #53bdeb}
+      .qb-ph-list{background:#1f2c34;border-radius:12px;margin-top:8px;padding:8px;max-width:96%}
+      .qb-ph-row{border:1px solid transparent;border-radius:10px;padding:6px;margin-bottom:6px;cursor:pointer}
+      .qb-ph-row:last-child{margin-bottom:0}
+      .qb-ph-row .qb-fld+.qb-fld{margin-top:4px}
+      .qb-ph-row .qb-pi.sec{color:#25d366;font-weight:800;font-size:13px}
+      .qb-ph-add{margin-top:8px;min-height:36px;padding:0 14px;border-radius:99px;border:1px dashed rgba(255,255,255,.4);background:transparent;color:rgba(255,255,255,.85);font-size:.74rem;font-weight:800;cursor:pointer}
+      .qb-ph-add:disabled{opacity:.4;cursor:default}
+      .qb-ig-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:flex-start}
+      .qb-ig-pc{display:inline-block;border:1px solid #8e5cff;border-radius:99px;padding:2px 6px;cursor:pointer}
+      .qb-ig-pc .qb-pi{border:0;color:#c4a8ff;font-weight:800;text-align:center;width:auto;min-width:60px;padding:5px 6px}
+      .qb-ig-pc.sel{background:rgba(142,92,255,.25);box-shadow:0 0 0 1px #8e5cff}
+      .qb-phone.ig .qb-pbtn{background:#363636}
+      .qb-phone.ig .qb-pbtn .qb-pi,.qb-phone.ig .qb-pbtn .qb-ico{color:#fff}
+      .qb-phone.ig .qb-pbtn.sel{border-color:#8e5cff;box-shadow:0 0 0 1px #8e5cff}
+
+      /* the chat after a tap: customer tap + the reply */
+      .qb-flow{margin-top:14px;border-top:1px dashed rgba(255,255,255,.18);padding-top:12px}
+      .qb-flow-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+      .qb-flow-head b{font-size:.72rem;color:rgba(255,255,255,.85);line-height:1.4;word-break:break-word;flex:1;min-width:140px}
+      .qb-flow .qb-select{margin-bottom:8px;padding:9px 10px;font-size:16px}
+      .qb-out{margin:8px 0 8px auto;width:fit-content;max-width:80%;background:#005c4b;border-radius:12px 12px 4px 12px;padding:8px 12px;font-size:.8rem;line-height:1.45;word-break:break-word}
+      .qb-phone.ig .qb-out{background:#3797f0}
+      .qb-in{background:#1f2c34;border-radius:12px 12px 12px 4px;padding:8px;max-width:96%;margin-bottom:6px}
+      .qb-phone.ig .qb-in{background:#262626;border-radius:20px 20px 20px 6px}
+      .qb-in-note{font-size:.72rem;color:rgba(255,255,255,.72);padding:2px 2px 6px;line-height:1.5}
+      .qb-in-body{font-size:.8rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+
       .qb-note{font-size:.7rem;color:rgba(255,255,255,.66);margin-top:10px;line-height:1.5}
       .qb-safe{display:grid;gap:6px;font-size:.74rem;color:rgba(255,255,255,.82);line-height:1.5}
       @media(max-width:640px){
@@ -330,6 +367,7 @@
         .qb-btn.block-m{width:100%}
         .qb-grid{grid-template-columns:1fr}
         .qb-toolbar .qb-input{width:100%;flex:none}
+        .qb-phone{max-width:none}
       }
     `;
     document.head.appendChild(style);
@@ -585,57 +623,6 @@
   }
 
   /* ---------------------------------------------------------
-     PREVIEW (looks like the customer's chat)
-  --------------------------------------------------------- */
-  function previewHtml(d) {
-    const t = d.menu_type;
-    const items = d.items || [];
-
-    if (d.channel === 'instagram') {
-      const body = esc(d.body_text.trim() || 'Your message text appears here.');
-      let extra = '';
-      if (t === 'cta') {
-        extra = `<div class="qb-ig-cta">↗ ${esc((items[0] && items[0].title.trim()) || 'Open link')}</div>`;
-      } else {
-        extra = `<div class="qb-ig-chips">${items.map(i => `<span class="qb-ig-chip">${esc(i.title.trim() || 'Quick reply')}</span>`).join('')}</div>`;
-      }
-      return `<div class="qb-phone ig"><div class="qb-ig-bub">${body}</div>${extra}</div>`;
-    }
-
-    const head = d.header_text.trim() ? `<div class="qb-ph-h">${esc(d.header_text.trim())}</div>` : '';
-    const body = `<div class="qb-ph-b">${esc(d.body_text.trim() || 'Your message text appears here.')}</div>`;
-    const foot = d.footer_text.trim() ? `<div class="qb-ph-f">${esc(d.footer_text.trim())}</div>` : '';
-
-    let btns = '';
-    let opened = '';
-    if (t === 'list') {
-      btns = `<div class="qb-ph-btn">☰ ${esc(d.list_button_text.trim() || 'Choose option')}</div>`;
-      let last = null;
-      const rows = items
-        .map(i => {
-          const sec = i.section.trim();
-          let secHtml = '';
-          if (sec && sec !== last) {
-            secHtml = `<div class="qb-ph-sec">${esc(sec)}</div>`;
-            last = sec;
-          }
-          return (
-            secHtml +
-            `<div class="qb-ph-opt">${esc(i.title.trim() || 'Option')}${i.description.trim() ? `<small>${esc(i.description.trim())}</small>` : ''}</div>`
-          );
-        })
-        .join('');
-      opened = `<div class="qb-ph-list">${rows || '<div class="qb-ph-opt">No options yet</div>'}</div>`;
-    } else if (t === 'cta') {
-      btns = `<div class="qb-ph-btn">↗ ${esc((items[0] && items[0].title.trim()) || 'Open link')}</div>`;
-    } else {
-      btns = items.map(i => `<div class="qb-ph-btn">${esc(i.title.trim() || 'Button')}</div>`).join('');
-    }
-
-    return `<div class="qb-phone"><div class="qb-ph-bub">${head}${body}${foot}</div>${btns}${opened}</div>`;
-  }
-
-  /* ---------------------------------------------------------
      RENDER
   --------------------------------------------------------- */
   function shellHtml() {
@@ -654,6 +641,16 @@
       c =>
         `<button type="button" role="tab" class="qb-tab ${S.channel === c ? 'active' : ''}" data-act="tab" data-v="${c}" aria-selected="${S.channel === c}">${esc(CH[c].label)} <span class="qb-tab-n">${itemsOf(c).length}/${MAX_MENUS}</span></button>`
     ).join('')}</div>`;
+  }
+
+  /* grow textareas to fit their text */
+  function autosize(scope) {
+    const host = scope || ROOT;
+    if (!host) return;
+    host.querySelectorAll('textarea.qb-ph-ta').forEach(a => {
+      a.style.height = 'auto';
+      a.style.height = a.scrollHeight + 2 + 'px';
+    });
   }
 
   function renderBody() {
@@ -681,8 +678,12 @@
     }
     if (S.draft) {
       host.innerHTML = editorHtml();
-      const ed = q('#qbEditor');
-      if (ed && ed.scrollIntoView) ed.scrollIntoView({ block: 'start' });
+      autosize(host);
+      if (S.scrollEditor) {
+        S.scrollEditor = false;
+        const ed = q('#qbEditor');
+        if (ed && ed.scrollIntoView) ed.scrollIntoView({ block: 'start' });
+      }
       return;
     }
 
@@ -810,7 +811,7 @@
   }
 
   /* ---------------------------------------------------------
-     EDITOR
+     EDITOR (the phone is the editor)
   --------------------------------------------------------- */
   const counter = (val, max) =>
     `<div class="qb-count ${len(val) > max ? 'over' : ''}">${len(val)}/${max}</div>`;
@@ -819,89 +820,148 @@
     return { text: 'Send a reply', menu: 'Open another menu', human: 'Hand over to my team', url: 'Open a link' }[a] || a;
   }
 
-  function itemHtml(d, i, n) {
+  /* one text input and one growing textarea, both typed directly inside the phone */
+  const pin = (f, n, val, max, ph, cls, extra) =>
+    `<div class="qb-fld"><input class="qb-pi ${cls || ''}" data-f="${f}" ${n == null ? '' : `data-i="${n}"`} data-max="${max}" autocomplete="off" placeholder="${esc(ph)}" value="${esc(val)}" ${extra || ''}>${counter(val, max)}</div>`;
+  const pta = (f, n, val, max, ph) =>
+    `<div class="qb-fld"><textarea class="qb-pi qb-ph-ta" rows="1" data-f="${f}" ${n == null ? '' : `data-i="${n}"`} data-max="${max}" placeholder="${esc(ph)}">${esc(val)}</textarea>${counter(val, max)}</div>`;
+
+  /* the part of the chat that follows a tap on the selected button */
+  function flowHtml(d) {
     const ch = d.channel;
     const lim = CH[ch].lim;
     const t = d.menu_type;
-    const tMax = itemTitleMax(ch, t);
     const total = d.items.length;
+    const n = S.sel;
+    const i = d.items[n];
+    if (!i) return '';
     const word = itemWord(ch, t);
     const acts = allowedActions(t);
-
-    /* a menu can only open menus of the same channel */
-    const otherMenus = itemsOf(ch).filter(m => m.id !== d.id);
     const action = acts.includes(i.action) ? i.action : acts[0];
+    const title = i.title.trim() || cap(word) + ' ' + (n + 1);
 
-    let extra = '';
-    if (action === 'text' || action === 'human') {
-      extra = `
-        <div class="qb-field">
-          <label class="qb-label">${action === 'text' ? 'Reply sent when tapped' : 'Message to the customer <span>(optional)</span>'}</label>
-          <textarea class="qb-textarea" style="min-height:70px" data-f="reply_text" data-i="${n}" data-max="${lim.reply}" placeholder="${action === 'text' ? 'e.g. Facial is Rs 999 and takes 45 minutes. Which day suits you?' : 'e.g. Our team will reply to you shortly.'}">${esc(i.reply_text)}</textarea>
-          ${counter(i.reply_text, lim.reply)}
-        </div>`;
-    } else if (action === 'menu') {
-      extra = `
-        <div class="qb-field">
-          <label class="qb-label">Menu to open <span>(${esc(CH[ch].label)} menus only)</span></label>
-          <select class="qb-select" data-f="target_menu_id" data-i="${n}" data-change="1">
-            <option value="">Choose a menu</option>
-            ${otherMenus.map(m => `<option value="${esc(m.id)}" ${i.target_menu_id === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
-          </select>
-          ${otherMenus.length ? '' : '<span class="qb-hint">You have no other ' + esc(CH[ch].label) + ' menu yet. Save this one, create the next menu, then come back and choose it here.</span>'}
-        </div>`;
-    } else if (action === 'url') {
-      extra = `
-        <div class="qb-field">
-          <label class="qb-label">Link</label>
-          <input class="qb-input" data-f="url" data-i="${n}" data-max="${L.url}" inputmode="url" autocomplete="off" placeholder="https://example.com/book" value="${esc(i.url)}">
-        </div>`;
-    }
-
-    const listFields =
-      t === 'list'
-        ? `
-        <div class="qb-grid">
-          <div class="qb-field">
-            <label class="qb-label">Description <span>(optional)</span></label>
-            <input class="qb-input" data-f="description" data-i="${n}" data-max="${lim.rowDesc}" autocomplete="off" placeholder="e.g. 45 minutes" value="${esc(i.description)}">
-            ${counter(i.description, lim.rowDesc)}
-          </div>
-          <div class="qb-field">
-            <label class="qb-label">Section <span>(optional)</span></label>
-            <input class="qb-input" data-f="section" data-i="${n}" data-max="${lim.section}" autocomplete="off" placeholder="e.g. Skin care" value="${esc(i.section)}">
-            ${counter(i.section, lim.section)}
-          </div>
-        </div>`
-        : '';
-
-    return `
-      <div class="qb-row" data-row="${n}">
-        <div class="qb-row-top">
-          <b>${esc(cap(word))} ${n + 1}</b>
-          <div class="qb-row-tools">
+    const tools =
+      t === 'cta'
+        ? ''
+        : `<div class="qb-row-tools">
             <button type="button" class="qb-btn small" aria-label="Move up" data-act="up" data-i="${n}" ${n === 0 ? 'disabled' : ''}>▲</button>
             <button type="button" class="qb-btn small" aria-label="Move down" data-act="down" data-i="${n}" ${n === total - 1 ? 'disabled' : ''}>▼</button>
             <button type="button" class="qb-btn small danger" data-act="del-item" data-i="${n}" ${total <= 1 ? 'disabled' : ''}>Remove</button>
-          </div>
-        </div>
-        <div class="qb-field">
-          <label class="qb-label">${t === 'list' ? 'Option title' : ch === 'instagram' && t === 'buttons' ? 'Quick reply text' : 'Button text'}</label>
-          <input class="qb-input" data-f="title" data-i="${n}" data-max="${tMax}" autocomplete="off" placeholder="e.g. Facial" value="${esc(i.title)}">
-          ${counter(i.title, tMax)}
-        </div>
-        ${listFields}
-        ${
-          acts.length > 1
-            ? `<div class="qb-field">
-          <label class="qb-label">When tapped</label>
-          <select class="qb-select" data-f="action" data-i="${n}" data-change="1">
-            ${acts.map(a => `<option value="${a}" ${action === a ? 'selected' : ''}>${esc(actionLabel(a))}</option>`).join('')}
-          </select>
-        </div>`
-            : ''
-        }
-        ${extra}
+          </div>`;
+
+    let reply = '';
+    if (action === 'text') {
+      reply = `<div class="qb-in">${pta('reply_text', n, i.reply_text, lim.reply, 'Type the reply customers get, e.g. Facial is Rs 999 and takes 45 minutes. Which day suits you?')}</div>`;
+    } else if (action === 'human') {
+      reply =
+        `<div class="qb-in-note">Your team takes over this chat. You can send a message first (optional):</div>` +
+        `<div class="qb-in">${pta('reply_text', n, i.reply_text, lim.reply, 'e.g. Our team will reply to you shortly.')}</div>`;
+    } else if (action === 'menu') {
+      const others = itemsOf(ch).filter(m => m.id !== d.id);
+      const tgt = others.find(m => m.id === i.target_menu_id);
+      reply = `
+        <select class="qb-select" data-f="target_menu_id" data-i="${n}" data-change="1">
+          <option value="">Choose a ${esc(CH[ch].label)} menu to open</option>
+          ${others.map(m => `<option value="${esc(m.id)}" ${i.target_menu_id === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
+        </select>
+        ${others.length ? '' : `<span class="qb-hint" style="margin:-4px 0 8px">You have no other ${esc(CH[ch].label)} menu yet. Save this one, create the next menu, then come back and choose it here.</span>`}
+        ${tgt ? `<div class="qb-in"><div class="qb-in-note">This menu opens next:</div><div class="qb-in-body">${esc(tgt.body_text)}</div></div>` : ''}`;
+    } else if (action === 'url') {
+      reply = `<div class="qb-in"><div class="qb-in-note">The customer's phone opens this link:</div>${pin('url', n, i.url, L.url, 'https://example.com/book', 'dim')}</div>`;
+    }
+
+    return `
+      <div class="qb-flow-head">
+        <b>When the customer taps “${esc(title)}”</b>
+        ${tools}
+      </div>
+      ${
+        acts.length > 1
+          ? `<select class="qb-select" data-f="action" data-i="${n}" data-change="1">${acts.map(a => `<option value="${a}" ${action === a ? 'selected' : ''}>${esc(actionLabel(a))}</option>`).join('')}</select>`
+          : ''
+      }
+      <div class="qb-out">${esc(title)}</div>
+      ${reply}`;
+  }
+
+  function renderFlow() {
+    const host = q('#qbFlow');
+    if (!host || !S.draft) return;
+    host.innerHTML = flowHtml(S.draft);
+    autosize(host);
+  }
+
+  /* the chat as the customer sees it, typed in place */
+  function phoneHtml(d) {
+    const ch = d.channel;
+    const C = CH[ch];
+    const lim = C.lim;
+    const t = d.menu_type;
+    const word = itemWord(ch, t);
+    const canAdd = d.items.length < maxItems(ch, t);
+    const tMax = itemTitleMax(ch, t);
+    const selCls = n => (S.sel === n ? 'sel' : '');
+    const addBtn =
+      t === 'cta'
+        ? ''
+        : `<div><button type="button" class="qb-ph-add" data-act="add-item" ${canAdd ? '' : 'disabled'}>+ Add ${esc(word)} (${d.items.length}/${maxItems(ch, t)})</button></div>`;
+
+    let menu = '';
+    if (ch === 'instagram') {
+      const bub = `<div class="qb-ph-bub">${pta('body_text', null, d.body_text, lim.body, 'Type your message, e.g. Sure! Which service would you like to book?')}</div>`;
+      if (t === 'cta') {
+        const i = d.items[0] || newItem('cta');
+        menu = bub + `<div class="qb-pbtn ${selCls(0)}" data-pi="0"><span class="qb-ico">↗</span>${pin('title', 0, i.title, tMax, 'Button text')}</div>`;
+      } else {
+        menu =
+          bub +
+          `<div class="qb-ig-chips">${d.items
+            .map(
+              (i, n) =>
+                `<div class="qb-ig-pc ${selCls(n)}" data-pi="${n}">${pin('title', n, i.title, tMax, 'Quick reply', 'qb-ig-in', `size="${Math.max(8, len(i.title) + 1)}"`)}</div>`
+            )
+            .join('')}</div>` +
+          addBtn;
+      }
+    } else {
+      const bub = `<div class="qb-ph-bub">
+        ${pin('header_text', null, d.header_text, lim.header, 'Header (optional)', 'bold')}
+        ${pta('body_text', null, d.body_text, lim.body, 'Type your message, e.g. Sure! Which service would you like to book?')}
+        ${pin('footer_text', null, d.footer_text, lim.footer, 'Footer (optional)', 'dim')}
+      </div>`;
+      if (t === 'list') {
+        menu =
+          bub +
+          `<div class="qb-pbtn"><span class="qb-ico">☰</span>${pin('list_button_text', null, d.list_button_text, lim.listBtn, 'Text on the list button')}</div>` +
+          `<div class="qb-ph-list">${d.items
+            .map(
+              (i, n) => `
+            <div class="qb-ph-row ${selCls(n)}" data-pi="${n}">
+              ${pin('section', n, i.section, lim.section, 'Section (optional)', 'sec')}
+              ${pin('title', n, i.title, tMax, 'Option title')}
+              ${pin('description', n, i.description, lim.rowDesc, 'Description (optional)', 'dim')}
+            </div>`
+            )
+            .join('')}</div>` +
+          addBtn;
+      } else if (t === 'cta') {
+        const i = d.items[0] || newItem('cta');
+        menu = bub + `<div class="qb-pbtn ${selCls(0)}" data-pi="0"><span class="qb-ico">↗</span>${pin('title', 0, i.title, tMax, 'Button text')}</div>`;
+      } else {
+        menu =
+          bub +
+          d.items
+            .map((i, n) => `<div class="qb-pbtn ${selCls(n)}" data-pi="${n}">${pin('title', n, i.title, tMax, 'Button text')}</div>`)
+            .join('') +
+          addBtn;
+      }
+    }
+
+    return `
+      <div class="qb-phone ${ch === 'instagram' ? 'ig' : ''}">
+        <div class="qb-ph-cap">${esc(C.label)} · what the customer receives</div>
+        ${menu}
+        <div class="qb-flow" id="qbFlow">${flowHtml(d)}</div>
       </div>`;
   }
 
@@ -909,14 +969,10 @@
     const d = S.draft;
     const ch = d.channel;
     const C = CH[ch];
-    const lim = C.lim;
     const t = d.menu_type;
-    const word = itemWord(ch, t);
-    const canAdd = d.items.length < maxItems(ch, t);
     const triggerLocked = d.is_welcome;
     const welcomeLocked = !!d.trigger_qa_id;
-    const itemsTitle =
-      t === 'list' ? 'Options' : t === 'cta' ? 'Button' : ch === 'instagram' ? 'Quick replies' : 'Buttons';
+    if (S.sel >= d.items.length) S.sel = Math.max(0, d.items.length - 1);
     const itemsHelp =
       t === 'buttons'
         ? ch === 'instagram'
@@ -929,12 +985,12 @@
     return `
       <div class="qb-card" id="qbEditor">
         <h3>${d.id ? 'Edit' : 'New'} ${esc(C.label)} menu</h3>
-        <p class="qb-sub">${esc(C.typeInfo[t].hint)} ${esc(C.label)} limits are checked when you save.</p>
+        <p class="qb-sub">${esc(C.typeInfo[t].hint)} Set it up below, then build the chat right inside the phone. ${esc(C.label)} limits are checked when you save.</p>
 
         <div class="qb-field">
           <label class="qb-label" for="qbName">Menu name <span>(only you see this)</span></label>
           <input class="qb-input" id="qbName" data-f="name" data-max="${L.name}" autocomplete="off" placeholder="e.g. Book appointment" value="${esc(d.name)}">
-          ${counter(d.name, L.name)}
+          <div class="qb-count ${len(d.name) > L.name ? 'over' : ''}">${len(d.name)}/${L.name}</div>
         </div>
 
         <div class="qb-grid">
@@ -952,7 +1008,7 @@
             </select>
           </div>
         </div>
-        ${d.trigger_qa_id ? '<span class="qb-hint" style="margin:-4px 0 12px">When this Fixed Q&amp;A matches, customers get this menu instead of the plain fixed answer. Put the answer text in the message below.</span>' : ''}
+        ${d.trigger_qa_id ? '<span class="qb-hint" style="margin:-4px 0 12px">When this Fixed Q&amp;A matches, customers get this menu instead of the plain fixed answer. Put the answer text in the message in the phone below.</span>' : ''}
 
         <div class="qb-field">
           <label class="qb-check ${welcomeLocked ? 'off' : ''}" for="qbWelcome">
@@ -964,50 +1020,9 @@
           </label>
         </div>
 
-        ${
-          C.hasHeaderFooter
-            ? `<div class="qb-field">
-          <label class="qb-label" for="qbHeader">Header <span>(optional, text only)</span></label>
-          <input class="qb-input" id="qbHeader" data-f="header_text" data-max="${lim.header}" autocomplete="off" placeholder="e.g. Glow Studio" value="${esc(d.header_text)}">
-          ${counter(d.header_text, lim.header)}
-        </div>`
-            : ''
-        }
-
-        <div class="qb-field">
-          <label class="qb-label" for="qbBody">Message text</label>
-          <textarea class="qb-textarea" id="qbBody" data-f="body_text" data-max="${lim.body}" placeholder="e.g. Sure! Which service would you like to book?">${esc(d.body_text)}</textarea>
-          ${counter(d.body_text, lim.body)}
-        </div>
-
-        ${
-          C.hasHeaderFooter
-            ? `<div class="qb-field">
-          <label class="qb-label" for="qbFooter">Footer <span>(optional)</span></label>
-          <input class="qb-input" id="qbFooter" data-f="footer_text" data-max="${lim.footer}" autocomplete="off" placeholder="e.g. Tap an option below" value="${esc(d.footer_text)}">
-          ${counter(d.footer_text, lim.footer)}
-        </div>`
-            : ''
-        }
-
-        ${
-          t === 'list'
-            ? `<div class="qb-field">
-          <label class="qb-label" for="qbListBtn">Text on the button that opens the list</label>
-          <input class="qb-input" id="qbListBtn" data-f="list_button_text" data-max="${lim.listBtn}" autocomplete="off" placeholder="e.g. Choose service" value="${esc(d.list_button_text)}">
-          ${counter(d.list_button_text, lim.listBtn)}
-        </div>`
-            : ''
-        }
-
-        <h3 style="margin-top:18px">${esc(itemsTitle)} <span class="qb-pill" id="qbItemCount">${d.items.length}/${maxItems(ch, t)}</span></h3>
-        <p class="qb-sub">${esc(itemsHelp)}</p>
-        <div id="qbItems">${d.items.map((i, n) => itemHtml(d, i, n)).join('')}</div>
-        ${t === 'cta' ? '' : `<button type="button" class="qb-btn small" data-act="add-item" ${canAdd ? '' : 'disabled'}>+ Add ${esc(word)}</button>`}
-
-        <h3 style="margin-top:18px">Preview</h3>
-        <p class="qb-sub">This is how it looks on the customer's ${esc(C.customerWord)}.</p>
-        <div id="qbPreview">${previewHtml(d)}</div>
+        <h3 style="margin-top:18px">Build it in the phone</h3>
+        <p class="qb-sub">Type straight into the phone. Tap a ${esc(itemWord(ch, t))} to write what happens when the customer taps it. ${esc(itemsHelp)}</p>
+        <div id="qbPhone">${phoneHtml(d)}</div>
 
         <div class="qb-actions" style="margin-top:16px">
           <button type="button" class="qb-btn primary" data-act="save">Save menu</button>
@@ -1016,9 +1031,17 @@
       </div>`;
   }
 
-  function refreshPreview() {
-    const host = q('#qbPreview');
-    if (host && S.draft) host.innerHTML = previewHtml(S.draft);
+  /* highlight and open the chosen button / option */
+  function selectItem(n) {
+    if (!S.draft || n === S.sel || n < 0 || n >= S.draft.items.length) return;
+    S.sel = n;
+    ROOT.querySelectorAll('[data-pi]').forEach(w => w.classList.toggle('sel', Number(w.dataset.pi) === n));
+    renderFlow();
+  }
+
+  function focusItem(n) {
+    const el = q('[data-pi="' + n + '"] input');
+    if (el) el.focus();
   }
 
   /* ---------------------------------------------------------
@@ -1027,6 +1050,8 @@
   function openNew() {
     if (limitReached(S.channel)) return;
     S.draft = emptyDraft(S.channel);
+    S.sel = 0;
+    S.scrollEditor = true;
     renderBody();
   }
 
@@ -1035,6 +1060,8 @@
     if (!row) return;
     S.channel = chOf(row);
     S.draft = fromRow(row);
+    S.sel = 0;
+    S.scrollEditor = true;
     renderBody();
   }
 
@@ -1171,6 +1198,7 @@
     const to = n + dir;
     if (to < 0 || to >= items.length) return;
     [items[n], items[to]] = [items[to], items[n]];
+    S.sel = to;
     renderBody();
   }
 
@@ -1179,7 +1207,14 @@
   --------------------------------------------------------- */
   function onClick(e) {
     const el = e.target.closest ? e.target.closest('[data-act]') : null;
-    if (!el || !ROOT || !ROOT.contains(el)) return;
+
+    /* tapping a button or option inside the phone selects it */
+    if (!el) {
+      const pi = e.target.closest ? e.target.closest('[data-pi]') : null;
+      if (pi && ROOT && ROOT.contains(pi) && S.draft) selectItem(Number(pi.dataset.pi));
+      return;
+    }
+    if (!ROOT || !ROOT.contains(el)) return;
     const d = S.draft;
 
     switch (el.dataset.act) {
@@ -1221,12 +1256,16 @@
       case 'add-item':
         if (d && d.items.length < maxItems(d.channel, d.menu_type)) {
           d.items.push(newItem(d.menu_type));
+          S.sel = d.items.length - 1;
           renderBody();
+          focusItem(S.sel);
         }
         break;
       case 'del-item':
         if (d && d.items.length > 1) {
-          d.items.splice(Number(el.dataset.i), 1);
+          const n = Number(el.dataset.i);
+          d.items.splice(n, 1);
+          S.sel = Math.min(n, d.items.length - 1);
           renderBody();
         }
         break;
@@ -1241,7 +1280,14 @@
     }
   }
 
-  /* typing: update the draft, the counter and the preview without redrawing the form */
+  /* focusing a field of a button or option selects it */
+  function onFocusIn(e) {
+    if (!S.draft || !e.target || !e.target.closest) return;
+    const pi = e.target.closest('[data-pi]');
+    if (pi && ROOT && ROOT.contains(pi)) selectItem(Number(pi.dataset.pi));
+  }
+
+  /* typing: update the draft and the counter without redrawing the phone */
   function onInput(e) {
     const t = e.target;
     if (!t || !t.matches) return;
@@ -1263,7 +1309,15 @@
       cnt.textContent = len(t.value) + '/' + max;
       cnt.classList.toggle('over', len(t.value) > max);
     }
-    refreshPreview();
+
+    if (t.matches('textarea.qb-ph-ta')) {
+      t.style.height = 'auto';
+      t.style.height = t.scrollHeight + 2 + 'px';
+    }
+    if (t.matches('.qb-ig-in')) t.size = Math.max(8, len(t.value) + 1);
+
+    /* the chat below the menu shows the button name the customer taps */
+    if (f === 'title') renderFlow();
   }
 
   /* dropdowns and the welcome checkbox change the shape of the form, so redraw it */
@@ -1295,6 +1349,7 @@
             true
           );
         }
+        S.sel = Math.min(S.sel, d.items.length - 1);
       }
     }
     renderBody();
@@ -1318,6 +1373,7 @@
       ROOT.addEventListener('click', onClick);
       ROOT.addEventListener('input', onInput);
       ROOT.addEventListener('change', onChange);
+      ROOT.addEventListener('focusin', onFocusIn);
 
       /* a new render starts fresh so lists are never stale */
       S.ready = false;
@@ -1325,6 +1381,8 @@
       S.unavailable = false;
       S.error = null;
       S.draft = null;
+      S.sel = 0;
+      S.scrollEditor = false;
       S.channel = 'whatsapp';
       S.filter = 'all';
       S.search = '';
