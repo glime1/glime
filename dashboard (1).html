@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./account-review-flow.js"></script>
+<script src="./account-review-decision-addon.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        http-equiv="Cache-Control"
+        content="no-store, no-cache, must-revalidate, max-age=0"
+    >
+
+    <meta
+        http-equiv="Pragma"
+        content="no-cache"
+    >
+
+    <meta
+        http-equiv="Expires"
+        content="0"
+    >
+
+    <title>Dashboard | Glime AI Automation</title>
+
+    <meta
+        name="description"
+        content="Secure Glime AI Automation client dashboard."
+    >
+
+    <link rel="canonical" href="https://glime.online/dashboard.html">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    
+<style>
+:root{--bg:#05080c;--card:#111827;--green:#00ff88;--cyan:#00f0ff;--text:#fff;--muted:#9ca3af;--danger:#ff4757;--warn:#ffb800;--border:rgba(255,255,255,.07)}
+*{box-sizing:border-box;font-family:Poppins,sans-serif}body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}.sidebar{width:245px;min-height:100vh;padding:28px 16px;background:rgba(17,24,39,.86);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}.logo{text-align:center;margin-bottom:34px;display:flex;flex-direction:column;align-items:center;gap:8px}.official-logo{width:110px;height:58px;object-fit:contain}.logo span{font-size:12px;color:var(--muted);letter-spacing:.7px}.nav-item{padding:13px 16px;color:var(--muted);text-decoration:none;border-radius:10px;margin-bottom:7px;font-weight:600;transition:.2s}.nav-item:hover,.nav-item.active{background:rgba(0,255,136,.09);color:var(--green);border-left:3px solid var(--green)}.logout-btn{margin-top:auto;padding:12px;border-radius:10px;border:1px solid rgba(255,71,87,.3);background:rgba(255,71,87,.08);color:var(--danger);font-weight:700;cursor:pointer}.main-content{flex:1;padding:36px;max-width:1500px}.header{display:flex;justify-content:space-between;align-items:center;gap:24px;padding-bottom:25px;border-bottom:1px solid var(--border)}.eyebrow{font-size:.72rem;letter-spacing:1.8px;color:var(--cyan);font-weight:700;margin-bottom:7px}.header h1,.section h2,.hero-card h2{margin:0}.header h1{font-size:1.8rem}.header p,.hero-card p,.support-card p{color:var(--muted);margin:8px 0 0;line-height:1.6}.identity{text-align:right}.client-badge{display:inline-block;color:var(--cyan);background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.22);padding:8px 13px;border-radius:18px;font-size:.85rem;font-weight:700}.email-display{color:var(--muted);font-size:.76rem;margin-top:7px;overflow-wrap:anywhere}.hero-card{margin-top:24px;padding:26px;border-radius:16px;border:1px solid rgba(0,255,136,.2);background:linear-gradient(135deg,rgba(0,255,136,.07),rgba(0,240,255,.04));display:flex;justify-content:space-between;align-items:center;gap:20px}.hero-card.danger-card{border-color:rgba(255,71,87,.35);background:rgba(255,71,87,.05)}.hero-card.warn-card{border-color:rgba(255,184,0,.4);background:rgba(255,184,0,.05)}.hero-card h2{font-size:1.35rem}.btn{display:inline-block;padding:11px 17px;border-radius:10px;text-decoration:none;font-weight:700;border:1px solid var(--border);color:#fff;background:rgba(255,255,255,.06);white-space:nowrap}.btn.primary{color:#061018;background:linear-gradient(135deg,var(--green),var(--cyan));border:0}.btn.whatsapp{background:#25d366;border:0}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}.stat-card,.card{background:var(--card);border:1px solid var(--border);border-radius:14px}.stat-card{padding:20px}.stat-label{display:block;color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}.stat-card strong{display:block;font-size:1.25rem}.stat-card small{display:block;color:var(--muted);margin-top:5px}.section{margin-top:30px}.section-heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:14px}.section-heading h2{font-size:1.2rem}.muted{color:var(--muted);font-size:.8rem}.usage-grid,.details-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.details-grid{grid-template-columns:1fr 1fr}.usage-card,.detail-card{padding:20px}.card-top,.detail-row{display:flex;justify-content:space-between;gap:15px}.card-top{font-weight:700}.meter{height:9px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:15px 0 9px}.meter-fill{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:99px;transition:width .5s}.usage-card p{color:var(--muted);font-size:.8rem;line-height:1.5;margin:0}.detail-row{padding:13px 0;border-bottom:1px solid var(--border)}.detail-row:last-child{border-bottom:0}.detail-row span{color:var(--muted);font-size:.82rem}.detail-row strong{font-size:.85rem;text-align:right;overflow-wrap:anywhere}.support-card{padding:24px;display:flex;justify-content:space-between;align-items:center;gap:20px}footer{color:#667085;text-align:center;font-size:.75rem;padding:30px 0 8px}footer a{color:var(--muted);text-decoration:none}#dashboardLoading{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}.loading-spinner{width:44px;height:44px;border-radius:50%;border:3px solid rgba(255,255,255,.1);border-top-color:var(--green);border-right-color:var(--cyan);animation:spin .9s linear infinite}.loading-text{color:var(--muted);font-size:.9rem}@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Error screen (client-safe: no technical details are shown) */
+.error-screen{position:fixed;inset:0;z-index:7000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+.error-card{max-width:560px;width:100%;background:var(--card);border:1px solid rgba(255,71,87,.35);border-radius:18px;padding:30px}
+.error-card h2{margin:0 0 10px}
+.error-card p{color:var(--muted);line-height:1.6}
+.error-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.error-code{margin-top:18px;font-size:.75rem;color:var(--muted)}
+.error-code strong{color:#cbd5e1;letter-spacing:.5px}
+
+/* Access gate */
+.access-gate{position:fixed;inset:0;z-index:6000;background:rgba(5,8,12,.95);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+.gate-card{max-width:520px;width:100%;background:var(--card);border:1px solid rgba(255,71,87,.35);border-radius:18px;padding:30px;text-align:center}
+.gate-icon{font-size:2rem;margin-bottom:10px}
+.gate-card h2{margin:0 0 10px}
+.gate-card p{color:var(--muted);line-height:1.6;margin-bottom:22px}
+.gate-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.gate-card p.gate-safe{font-size:.8rem;color:var(--green);margin:18px 0 4px}
+.gate-card p.gate-hint{font-size:.74rem;margin:0}
+.gate-card button{display:block;margin:15px auto 0;background:none;border:0;color:var(--muted);cursor:pointer}
+
+/* Expiry / reminder banner */
+.notice-banner{margin-top:20px;padding:14px 18px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:14px;font-size:.88rem;line-height:1.5;border:1px solid rgba(0,240,255,.25);background:rgba(0,240,255,.06)}
+.notice-banner[hidden]{display:none}
+.notice-banner.warn{border-color:rgba(255,184,0,.45);background:rgba(255,184,0,.07)}
+.notice-banner.danger{border-color:rgba(255,71,87,.45);background:rgba(255,71,87,.08)}
+.notice-banner .btn{padding:8px 14px;font-size:.8rem}
+
+@media(max-width:900px){body{display:block}.sidebar{width:100%;min-height:0;padding:16px 12px;border-right:0;border-bottom:1px solid var(--border)}.logo{margin-bottom:12px}.nav-item{margin-bottom:6px;text-align:center}.logout-btn{margin-top:8px}.main-content{padding:20px 14px}.header,.hero-card,.support-card{flex-direction:column;align-items:flex-start}.identity{text-align:left}.stats-grid{grid-template-columns:1fr 1fr}.usage-grid,.details-grid{grid-template-columns:1fr}.hero-actions{width:100%}.hero-actions .btn{width:100%;text-align:center}.support-card .btn{width:100%;text-align:center}.notice-banner{flex-direction:column;align-items:flex-start}.notice-banner .btn{width:100%;text-align:center}}
+@media(max-width:520px){.stats-grid{grid-template-columns:1fr}.header h1{font-size:1.4rem}.main-content{padding:16px 12px}.stat-card,.usage-card,.detail-card{padding:17px}.hero-card{padding:20px}.gate-actions .btn,.error-actions .btn{width:100%;text-align:center}}
+
+.wallet-stat-card{position:relative}.wallet-stat-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.wallet-add-btn{padding:8px 11px;font-size:.72rem;background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.2);color:var(--cyan)}.wallet-add-btn:hover{background:rgba(0,240,255,.14)}.modules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.module-card{padding:18px;display:flex;align-items:center;justify-content:space-between;gap:14px}.module-link{color:inherit;text-decoration:none;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease}.module-link:hover{transform:translateY(-2px);border-color:rgba(0,240,255,.28);background:#151f31}.module-link:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}.module-card .module-name{font-weight:700}.module-card small{display:block;color:var(--muted);margin-top:5px}.module-status{font-size:.72rem;font-weight:800;padding:6px 9px;border-radius:999px;background:rgba(0,255,136,.08);color:var(--green);white-space:nowrap}.trial-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.trial-card{padding:20px}.trial-card strong{display:block;font-size:1.35rem}.trial-card span{display:block;color:var(--muted);font-size:.78rem;margin-top:6px}.trial-note{color:var(--muted);font-size:.8rem;line-height:1.5;margin-top:12px}
+@media(max-width:900px){.modules-grid,.trial-grid{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
+<script src="dashboard-notify.js" defer></script>
+</head>
+
+<body data-gas-title="Overview" data-gas-support>
+  <div id="dashboardLoading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">
+      Starting GLIME dashboard...
+    </div>
+  </div>
+
+  <main class="main-content" data-gas-content>
+    <header class="header" id="overview">
+      <div>
+        <div class="eyebrow">GLIME BUSINESS GROWTH PLATFORM</div>
+        <h1>Welcome, <span id="clientName">...</span> 👋</h1>
+        <p>Manage your GLIME account, plan, usage and access from one place.</p>
+      </div>
+      <div class="identity">
+        <div>
+          <label class="notify-switch" id="notifySwitchWrap" title="Get notified when someone signs up">
+            <span class="notify-switch-label">🔔 Notifications</span>
+            <input type="checkbox" id="notifyToggle" role="switch" aria-label="Turn sign-up notifications on or off">
+            <span class="notify-slider"></span>
+          </label>
+        </div>
+        <div class="client-badge">Client ID: <span id="dynamicClientId">Loading...</span></div>
+        <div id="clientEmailDisplay" class="email-display">Loading email...</div>
+      </div>
+    </header>
+
+    <div id="expiryBanner" class="notice-banner" hidden></div>
+
+    <section class="hero-card" id="accountCard">
+      <div>
+        <div class="eyebrow">ACCOUNT ACCESS</div>
+        <h2 id="accountTitle">Loading account...</h2>
+        <p id="accountText">Checking your current GLIME access and subscription.</p>
+      </div>
+      <div class="hero-actions">
+        <a href="billing.html" class="btn primary" id="accountCta">Billing & Plans →</a>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-label">Current Plan</span>
+        <strong id="planName">—</strong>
+        <small id="planMeta">Loading...</small>
+      </article>
+      <article class="stat-card wallet-stat-card">
+        <div class="wallet-stat-head">
+          <div>
+            <span class="stat-label">Wallet Balance</span>
+            <strong id="walletBalance">₹0.00</strong>
+          </div>
+          <a href="billing.html#wallet" class="btn wallet-add-btn">＋ Add Wallet</a>
+        </div>
+        <small id="walletMeta">Usage wallet</small>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">AI Credits</span>
+        <strong id="aiCredits">0</strong>
+        <small id="aiMeta">Available credits</small>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Account</span>
+        <strong id="accountStatus">—</strong>
+        <small id="accountMeta">Security status</small>
+      </article>
+    </section>
+
+    <section class="section" id="usage">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">RESOURCE USAGE</div>
+          <h2>Usage & Limits</h2>
+        </div>
+        <span class="muted">Live account data</span>
+      </div>
+
+      <div class="usage-grid">
+        <article class="card usage-card">
+          <div class="card-top"><span>Storage</span><span id="storageValue">—</span></div>
+          <div class="meter"><div id="storageMeter" class="meter-fill"></div></div>
+          <p id="storageMeta">Loading storage limits...</p>
+        </article>
+        <article class="card usage-card">
+          <div class="card-top"><span>Business Data</span><span id="dataValue">—</span></div>
+          <div class="meter"><div id="dataMeter" class="meter-fill"></div></div>
+          <p id="dataMeta">Loading business-data limits...</p>
+        </article>
+        <article class="card usage-card">
+          <div class="card-top"><span>AI Credits</span><span id="creditsValue">0</span></div>
+          <div class="meter"><div id="creditsMeter" class="meter-fill"></div></div>
+          <p id="creditsMeta">Your available AI credits.</p>
+        </article>
+      </div>
+    </section>
+
+
+    <section class="section" id="agents">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">TRIAL ACCESS</div>
+          <h2>Your GLIME Specialists</h2>
+        </div>
+        <span class="muted">Active during your Free Trial</span>
+      </div>
+      <div class="modules-grid" id="trialModulesGrid">
+        <a class="card module-card module-link" href="instagram-sales-specialist.html"><div><div class="module-name">Instagram Sales Specialist</div><small>Sales automation for Instagram</small></div><span class="module-status">Active · Open →</span></a>
+        <a class="card module-card module-link" href="whatsapp-sales-specialist.html"><div><div class="module-name">WhatsApp Sales Specialist</div><small>Sales automation for WhatsApp</small></div><span class="module-status">Active · Open →</span></a>
+        <a class="card module-card module-link" href="leads.html"><div><div class="module-name">Leads AI</div><small>Lead management and intelligence</small></div><span class="module-status">Active · Open →</span></a>
+        <a class="card module-card module-link" href="follow-up.html"><div><div class="module-name">Follow-up Specialist</div><small>Automated lead follow-ups</small></div><span class="module-status">Active · Open →</span></a>
+        <a class="card module-card module-link" href="client-assistant.html"><div><div class="module-name">Client Data Assistant</div><small>Business data assistance</small></div><span class="module-status">Active · Open →</span></a>
+        <a class="card module-card module-link" href="services.html"><div><div class="module-name">Services</div><small>Services and offer management</small></div><span class="module-status">Active · Open →</span></a>
+        <a class="card module-card module-link" href="settings.html"><div><div class="module-name">Channel Controls</div><small>Pause AI, set daily message limits, disconnect WhatsApp or Instagram</small></div><span class="module-status">Active · Open →</span></a>
+      </div>
+    </section>
+
+    <section class="section" id="trialLimits" style="display:none">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">FREE TRIAL BENEFITS</div>
+          <h2>Trial Allowances</h2>
+        </div>
+        <span class="muted">7-day Free Trial</span>
+      </div>
+      <div class="trial-grid">
+        <article class="card trial-card"><strong id="trialAiCredits">10,000 GLIME Credits</strong><span id="trialAiTokens">AI credits included in your free trial</span></article>
+        <article class="card trial-card"><strong id="trialInstagram">100</strong><span>Successful Instagram messages</span></article>
+        <article class="card trial-card"><strong id="trialWhatsApp">50</strong><span>Successful WhatsApp messages</span></article>
+      </div>
+      <p class="trial-note">Only successfully processed Instagram and WhatsApp messages count toward the free trial allowance. Failed messages are not deducted. After the free allowance is used, additional usage follows your existing usage rates and can be paid from the wallet.</p>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">ACCOUNT DETAILS</div>
+          <h2>Subscription</h2>
+        </div>
+      </div>
+      <div class="details-grid">
+        <article class="card detail-card">
+          <div class="detail-row"><span>Plan</span><strong id="detailPlan">—</strong></div>
+          <div class="detail-row"><span>Status</span><strong id="detailStatus">—</strong></div>
+          <div class="detail-row"><span>Billing</span><strong id="detailBilling">—</strong></div>
+          <div class="detail-row"><span>Period</span><strong id="detailPeriod">—</strong></div>
+        </article>
+        <article class="card detail-card">
+          <div class="detail-row"><span>Business</span><strong id="businessName">—</strong></div>
+          <div class="detail-row"><span>Email</span><strong id="detailEmail">—</strong></div>
+          <div class="detail-row"><span>Client ID</span><strong id="detailClientId">—</strong></div>
+          <div class="detail-row"><span>Auto-renew</span><strong id="detailRenew">—</strong></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="support">
+      <article class="card support-card">
+        <div>
+          <div class="eyebrow">CLIENT SUPPORT</div>
+          <h2>Need help?</h2>
+          <p>Contact GLIME support directly. Your account details are added automatically.</p>
+        </div>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="btn whatsapp" id="whatsappSupportBtn">💬 WhatsApp Support →</a>
+      </article>
+    </section>
+
+    <footer>GLIME SaaS Client Portal · <a href="billing.html">Billing & Plans</a></footer>
+  </main>
+
+<script>
+const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const loadingScreen = document.getElementById('dashboardLoading');
+const CLIENT_SUPPORT_NUMBER = '918504926242';
+
+/* Shared page state */
+const ctx = { email: '', client: null, billing: null, supportHref: '#' };
+let gateTimer = null;
+let gatePolls = 0;
+let lastRefresh = 0;
+let redirecting = false;
+let dashboardReady = false;
+
+/* ---------- Small helpers ---------- */
+function money(v){ return '₹' + Number(v || 0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function esc(v){ return String(v ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+function bytes(v){ const n=Number(v||0); if(!n)return '0 MB'; const u=['B','KB','MB','GB','TB']; let i=0,x=n; while(x>=1024&&i<u.length-1){x/=1024;i++;} return `${x.toFixed(i?1:0)} ${u[i]}`; }
+function percent(used,quota){ if(!quota)return 0; return Math.min(100,Math.max(0,(Number(used||0)/Number(quota))*100)); }
+function nameFromEmail(email){ const v=(email||'').split('@')[0]||'Client'; return v.charAt(0).toUpperCase()+v.slice(1); }
+function buildWhatsApp(name,email,id,extra){ const msg=`Hi GLIME Team!\n\nI need help with my account.\n\nClient Name: ${name||'Client'}\nEmail: ${email||''}\nClient ID: ${id||'Not available'}${extra?'\n'+extra:''}\n\nMessage:`; return `https://wa.me/${CLIENT_SUPPORT_NUMBER}?text=${encodeURIComponent(msg)}`; }
+function setMeter(id,p){ document.getElementById(id).style.width=Math.min(100,Math.max(0,p))+'%'; }
+function parseDate(v){ const d=v?new Date(v):null; return d&&!isNaN(d.getTime())?d:null; }
+function fmtDate(v){ const d=parseDate(v); return d?d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):''; }
+function daysLeft(v){ const d=parseDate(v); return d?Math.ceil((d.getTime()-Date.now())/86400000):null; }
+
+/*
+ * Promise timeout helper.
+ * Prevents the dashboard from remaining on
+ * the loading screen indefinitely.
+ */
+function withTimeout(promise, ms, label) {
+    let timer;
+    const timeout = new Promise(function(_, reject) {
+        timer = setTimeout(function() {
+            reject(new Error(label + ' timed out after ' + Math.round(ms / 1000) + ' seconds.'));
+        }, ms);
+    });
+    return Promise.race([promise, timeout]).finally(function() { clearTimeout(timer); });
+}
+
+/* ---------- Client-safe errors (no technical / vendor names on screen) ---------- */
+function isAuthError(err) {
+    const m = String(err?.message || '').toLowerCase();
+    return err?.status === 401 || err?.status === 403 ||
+        m.includes('jwt') || m.includes('session is missing') || m.includes('invalid token') ||
+        m.includes('token is expired') || m.includes('refresh token') || m.includes('not authenticated');
+}
+
+function friendlyError(err) {
+    const m = String(err?.message || err || '').toLowerCase();
+    if (isAuthError(err)) {
+        return 'Your session has expired. Please log in again.';
+    }
+    if (m.includes('timed out') || m.includes('failed to fetch') || m.includes('network') || m.includes('load failed')) {
+        return 'We could not reach GLIME right now. Please check your internet connection and try again.';
+    }
+    return 'Something went wrong while loading your dashboard. Please try again. If it continues, contact GLIME support.';
+}
+
+function showDashboardError(err) {
+    /* Full technical details go to the browser console only. */
+    const code = 'GL-' + Date.now().toString(36).toUpperCase().slice(-6);
+    console.error('[GLIME] Dashboard failed (' + code + '):', err);
+
+    const old = document.getElementById('dashboardErrorScreen');
+    if (old) old.remove();
+
+    const screen = document.createElement('div');
+    screen.id = 'dashboardErrorScreen';
+    screen.className = 'error-screen';
+    screen.innerHTML = `
+        <div class="error-card">
+            <div class="eyebrow">GLIME DASHBOARD</div>
+            <h2>Dashboard could not finish loading</h2>
+            <p>${esc(friendlyError(err))}</p>
+            <div class="error-actions">
+                <button id="dashboardRetryBtn" class="btn primary" type="button">Try Again</button>
+                <a href="billing.html" class="btn">Open Billing</a>
+                <a class="btn whatsapp" target="_blank" rel="noopener noreferrer"
+                   href="${esc(buildWhatsApp(nameFromEmail(ctx.email), ctx.email, ctx.client?.client_id, 'Support code: ' + code))}">💬 WhatsApp Support</a>
+                <button id="dashboardErrorLogout" class="btn" type="button">Secure Logout</button>
+            </div>
+            <div class="error-code">Support code: <strong>${esc(code)}</strong></div>
+        </div>
+    `;
+    document.body.appendChild(screen);
+
+    document.getElementById('dashboardRetryBtn').addEventListener('click', function() {
+        screen.remove();
+        loadingScreen.style.display = 'flex';
+        initializeDashboard();
+    });
+    document.getElementById('dashboardErrorLogout').addEventListener('click', handleLogout);
+}
+
+/* ---------- Session handling ---------- */
+async function handleSessionExpired() {
+    if (redirecting) return;
+    redirecting = true;
+    try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (_) {}
+    localStorage.removeItem('glime_client_email');
+    window.location.replace('login.html?reason=session_expired');
+}
+
+async function handleLogout() {
+    redirecting = true;
+    try {
+        await supabaseClient.auth.signOut({ scope: 'local' });
+    } catch (error) {
+        console.error('Logout error:', error);
+    } finally {
+        localStorage.removeItem('glime_client_email');
+        window.location.replace('login.html');
+    }
+}
+
+async function getBilling(session) {
+    let activeSession = session;
+
+    if (!activeSession) {
+        const authResult = await withTimeout(supabaseClient.auth.getSession(), 10000, 'Login check');
+        if (authResult.error) { throw authResult.error; }
+        activeSession = authResult.data?.session;
+    }
+
+    const token = activeSession?.access_token;
+    if (!token) {
+        throw new Error('Active login session is missing.');
+    }
+
+    const response = await withTimeout(
+        fetch(SUPABASE_URL + '/functions/v1/glime-billing-my-subscription', {
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer ' + token,
+                apikey: SUPABASE_KEY,
+                Accept: 'application/json'
+            },
+            cache: 'no-store'
+        }),
+        15000,
+        'Billing service'
+    );
+
+    const raw = await response.text();
+    let body = {};
+    try { body = raw ? JSON.parse(raw) : {}; } catch (_) { body = {}; }
+
+    if (!response.ok) {
+        const e = new Error(body?.error || body?.message || ('Billing service returned HTTP ' + response.status + '.'));
+        e.status = response.status;
+        throw e;
+    }
+
+    if (body?.ok === false) {
+        throw new Error(body.error || 'Billing data could not be loaded.');
+    }
+
+    return body?.data || {};
+}
+
+/* ---------- Account state ---------- */
+/*
+ * One place that decides what the client sees.
+ * States: suspended, paid (active / ending / past_due / paused), trial_active,
+ * payment_pending, payment_failed, expired, trial_ended.
+ */
+function computeState(billing){
+  const a = billing.account_state || {};
+  const sub = billing.current_subscription || null;
+  const product = billing.current_product || {};
+  const price = billing.current_price || {};
+  const st = String(sub?.status || '').toLowerCase();
+  const periodEnd = parseDate(sub?.current_period_end);
+  const periodLive = !!periodEnd && periodEnd.getTime() > Date.now();
+  const trialEnd = parseDate(a.free_trial_ends_at);
+  const trialStatus = String(a.free_trial_status || '').toLowerCase();
+  const trialActive = !!trialEnd && trialEnd.getTime() > Date.now() && trialStatus === 'active';
+  const planName = sub ? (product.name || product.product_code || 'GLIME Plan') : 'GLIME';
+  const cancelledInPeriod = st === 'cancelled' && periodLive;
+  const paid = ['active','past_due','paused'].includes(st) || cancelledInPeriod;
+  const interval = price.billing_interval || 'billing period';
+
+  const s = {
+    key:'', allowed:false, tone:'', paid, trialActive, planName, periodEnd, trialEnd,
+    title:'', text:'', statusLabel:'', statusMeta:'',
+    planLabel:'—', planMeta:'', detailStatus:'—', detailBilling:'—', detailPeriod:'—', detailRenew:'—',
+    ctaLabel:'Billing & Plans →', ctaHref:'billing.html',
+    gateTitle:'', gateText:'', reminderDays:null, reminderKind:''
+  };
+
+  if (sub && (sub.current_period_start || sub.current_period_end)) {
+    s.detailPeriod = `${(sub.current_period_start||'').slice(0,10)||'—'} → ${(sub.current_period_end||'').slice(0,10)||'—'}`;
+  }
+
+  /* 1. Suspended */
+  if (a.account_status === 'suspended') {
+    s.key = 'suspended'; s.tone = 'danger';
+    s.title = 'Account suspended';
+    s.text = a.suspension_reason || 'Please open Billing & Plans for account options.';
+    s.statusLabel = 'Suspended'; s.statusMeta = 'Action required';
+    s.planLabel = paid ? planName : 'No active plan'; s.planMeta = 'Account on hold';
+    s.detailStatus = 'Suspended';
+    s.gateTitle = 'Account suspended';
+    s.gateText = s.text;
+    return s;
+  }
+
+  /* 2. Paid plan (including cancelled-but-still-in-period) */
+  if (paid) {
+    s.allowed = true;
+    s.planLabel = planName;
+    s.planMeta = money(sub.amount) + ' / ' + interval;
+    s.detailStatus = sub.status || 'active';
+    s.detailBilling = price.billing_interval || '—';
+    s.detailRenew = sub.auto_renew ? 'On' : 'Off';
+
+    if (st === 'past_due') {
+      s.key = 'past_due'; s.tone = 'warn';
+      s.title = 'Payment failed';
+      s.text = 'We could not collect your last payment. Please retry from Billing & Plans to avoid an interruption.';
+      s.ctaLabel = 'Retry payment →';
+      s.statusLabel = 'Payment due'; s.statusMeta = 'Action recommended';
+    } else if (st === 'paused') {
+      s.key = 'paused'; s.tone = 'warn';
+      s.title = planName + ' is paused';
+      s.text = 'Your plan is paused. Open Billing & Plans to resume it.';
+      s.statusLabel = 'Paused'; s.statusMeta = 'Resume in Billing';
+    } else if (cancelledInPeriod || sub.auto_renew === false) {
+      s.key = 'ending'; s.tone = 'warn';
+      s.title = planName + ' ends on ' + fmtDate(periodEnd);
+      s.text = 'Auto-renew is off. Renew before this date so your services continue without a break.';
+      s.ctaLabel = 'Renew plan →';
+      s.statusLabel = 'Active'; s.statusMeta = 'Ends ' + fmtDate(periodEnd);
+      s.reminderDays = daysLeft(periodEnd); s.reminderKind = 'plan';
+    } else {
+      s.key = 'active';
+      s.title = planName + ' is active';
+      s.text = 'Your GLIME services are available according to your current plan and entitlements.';
+      s.statusLabel = 'Active'; s.statusMeta = 'Paid subscription';
+    }
+    return s;
+  }
+
+  /* 3. Free trial running */
+  if (trialActive) {
+    const left = trialEnd.getTime() - Date.now();
+    const d = Math.floor(left/86400000), h = Math.floor(left%86400000/3600000), m = Math.floor(left%3600000/60000);
+    s.key = 'trial_active'; s.allowed = true;
+    s.title = '7-day free trial';
+    s.text = `${d}d ${h}h ${m}m remaining. Your GLIME account is active during the trial.`;
+    s.statusLabel = 'Trial Active'; s.statusMeta = 'Free access';
+    s.planLabel = 'Free Trial'; s.planMeta = '7-day trial';
+    s.detailStatus = 'Trial'; s.detailBilling = 'No charge';
+    s.reminderDays = daysLeft(trialEnd); s.reminderKind = 'trial';
+    return s;
+  }
+
+  /* 4. Payment started but not confirmed */
+  if (['pending','created','authenticated'].includes(st)) {
+    s.key = 'payment_pending'; s.tone = 'warn';
+    s.title = 'Payment pending';
+    s.text = 'We are waiting for confirmation of your payment. This page updates automatically once it is confirmed.';
+    s.statusLabel = 'Payment Pending'; s.statusMeta = 'Awaiting confirmation';
+    s.planLabel = 'No active plan'; s.planMeta = 'Payment pending';
+    s.detailStatus = 'Pending';
+    s.gateTitle = 'Payment is being confirmed';
+    s.gateText = 'We have not received confirmation of your payment yet. If the amount was deducted, your plan starts automatically once it is confirmed. If this takes more than a few minutes, please contact support.';
+    return s;
+  }
+
+  /* 5. Payment failed */
+  if (['failed','halted'].includes(st)) {
+    s.key = 'payment_failed'; s.tone = 'danger';
+    s.title = 'Last payment was not completed';
+    s.text = 'Your last payment did not go through. Please try again from Billing & Plans.';
+    s.ctaLabel = 'Retry payment →';
+    s.statusLabel = 'Payment Failed'; s.statusMeta = 'Action required';
+    s.planLabel = 'No active plan'; s.planMeta = 'Payment not completed';
+    s.detailStatus = 'Payment failed';
+    s.gateTitle = 'Payment not completed';
+    s.gateText = 'Your last payment did not go through. Please try again from Billing & Plans. If the amount was deducted, contact support.';
+    return s;
+  }
+
+  /* 6. Had a paid plan before (cancelled / ended) */
+  if (sub || trialStatus === 'converted') {
+    const endedText = periodEnd ? 'ended on ' + fmtDate(periodEnd) : 'has ended';
+    s.key = 'expired'; s.tone = 'danger';
+    s.title = 'Plan expired';
+    s.text = `Your ${planName} plan ${endedText}. Renew from Billing & Plans to continue. Your account and data are safe.`;
+    s.ctaLabel = 'Renew plan →';
+    s.statusLabel = 'Plan Expired'; s.statusMeta = 'Renewal required';
+    s.planLabel = 'No active plan';
+    s.planMeta = sub ? 'Last plan: ' + planName + (periodEnd ? ' · ended ' + fmtDate(periodEnd) : '') : 'Plan ended';
+    s.detailStatus = st === 'cancelled' ? 'Cancelled · expired' : 'Expired';
+    s.detailBilling = price.billing_interval || '—';
+    s.detailRenew = 'Off';
+    s.gateTitle = 'Your plan has expired';
+    s.gateText = `Your ${planName} plan ${endedText}. Renew to continue. Your account and data are safe.`;
+    return s;
+  }
+
+  /* 7. Trial ended, never paid */
+  s.key = 'trial_ended'; s.tone = 'danger';
+  s.title = 'Free trial ended';
+  s.text = 'Your 7-day trial has ended. Choose a paid plan from Billing & Plans to continue using GLIME.';
+  s.statusLabel = 'Trial Ended'; s.statusMeta = 'Plan required';
+  s.planLabel = 'No active plan'; s.planMeta = 'Free trial ended';
+  s.detailStatus = 'Trial ended'; s.detailBilling = 'No charge';
+  s.ctaLabel = 'Choose a plan →';
+  s.gateTitle = 'Choose a GLIME plan to continue';
+  s.gateText = 'Your 7-day free trial has ended. Your account remains available and can be continued by selecting a paid plan.';
+  return s;
+}
+
+function renderBanner(s){
+  const el = document.getElementById('expiryBanner');
+  if (!el) return;
+  el.hidden = true;
+  el.className = 'notice-banner';
+  if (s.reminderDays == null) return;
+
+  const d = s.reminderDays;
+  let msg = '', level = 'info', label = 'Renew plan →';
+
+  if (s.reminderKind === 'plan' && d <= 7) {
+    if (d <= 1) { msg = 'Your plan ends within 24 hours (' + fmtDate(s.periodEnd) + '). Renew now to avoid losing access.'; level = 'danger'; }
+    else if (d <= 3) { msg = 'Your plan ends in ' + d + ' days (' + fmtDate(s.periodEnd) + '). Renew to keep your services running.'; level = 'warn'; }
+    else { msg = 'Your plan ends in ' + d + ' days (' + fmtDate(s.periodEnd) + '). Auto-renew is off.'; }
+  } else if (s.reminderKind === 'trial' && d <= 2) {
+    msg = d <= 1 ? 'Your free trial ends within 24 hours. Choose a plan to continue.' : 'Your free trial ends in ' + d + ' days. Choose a plan to continue.';
+    level = d <= 1 ? 'danger' : 'warn';
+    label = 'Choose a plan →';
+  } else {
+    return;
+  }
+
+  el.className = 'notice-banner ' + level;
+  el.innerHTML = '<span>' + esc(msg) + '</span><a class="btn primary" href="billing.html">' + esc(label) + '</a>';
+  el.hidden = false;
+}
+
+function renderAccount(billing, client){
+  const s = computeState(billing);
+  document.getElementById('businessName').textContent = client?.business_name || '—';
+  document.getElementById('detailEmail').textContent = client?.email || billing.customer?.email || '—';
+  document.getElementById('detailClientId').textContent = client?.client_id || billing.customer?.client_id || '—';
+  document.getElementById('dynamicClientId').textContent = client?.client_id || billing.customer?.client_id || '—';
+  document.getElementById('clientName').textContent = client?.full_name || billing.customer?.name || nameFromEmail(client?.email);
+  document.getElementById('clientEmailDisplay').textContent = client?.email || billing.customer?.email || '';
+  if (window.GlimeAppShell) window.GlimeAppShell.setIdentity({name:client?.business_name||client?.full_name||billing.customer?.name||'',clientId:client?.client_id||billing.customer?.client_id||''});
+
+  document.getElementById('planName').textContent = s.planLabel;
+  document.getElementById('detailPlan').textContent = s.planLabel;
+  document.getElementById('planMeta').textContent = s.planMeta;
+  document.getElementById('detailStatus').textContent = s.detailStatus;
+  document.getElementById('detailBilling').textContent = s.detailBilling;
+  document.getElementById('detailPeriod').textContent = s.detailPeriod;
+  document.getElementById('detailRenew').textContent = s.detailRenew;
+
+  document.getElementById('accountTitle').textContent = s.title;
+  document.getElementById('accountText').textContent = s.text;
+  document.getElementById('accountStatus').textContent = s.statusLabel;
+  document.getElementById('accountMeta').textContent = s.statusMeta;
+
+  const card = document.getElementById('accountCard');
+  card.classList.remove('danger-card','warn-card');
+  if (s.tone === 'danger') card.classList.add('danger-card');
+  if (s.tone === 'warn') card.classList.add('warn-card');
+
+  const cta = document.getElementById('accountCta');
+  cta.textContent = s.ctaLabel;
+  cta.href = s.ctaHref;
+
+  /* Trial-only blocks are hidden for everyone else */
+  const trialOnly = s.trialActive && !s.paid;
+  document.getElementById('trialLimits').style.display = trialOnly ? '' : 'none';
+
+  renderBanner(s);
+  return s;
+}
+
+function renderUsage(b){
+  const c=b.capacity||{};
+  const storageP=percent(c.file_storage_used_bytes,c.file_storage_quota_bytes), dataP=percent(c.database_used_bytes,c.database_quota_bytes);
+  document.getElementById('storageValue').textContent=bytes(c.file_storage_used_bytes)+' / '+bytes(c.file_storage_quota_bytes);
+  document.getElementById('storageMeta').textContent=`${storageP.toFixed(0)}% used · ${bytes(Math.max(0,Number(c.file_storage_quota_bytes||0)-Number(c.file_storage_used_bytes||0)))} remaining`;
+  setMeter('storageMeter',storageP);
+  document.getElementById('dataValue').textContent=bytes(c.database_used_bytes)+' / '+bytes(c.database_quota_bytes);
+  document.getElementById('dataMeta').textContent=`${dataP.toFixed(0)}% used · ${bytes(Math.max(0,Number(c.database_quota_bytes||0)-Number(c.database_used_bytes||0)))} remaining`;
+  setMeter('dataMeter',dataP);
+  const ai=Number(b.ai_credits?.balance_credits||0);
+  document.getElementById('aiCredits').textContent=ai.toLocaleString('en-IN');
+  document.getElementById('aiMeta').textContent=`${(ai).toLocaleString('en-IN')} AI Tokens remaining`;
+  document.getElementById('creditsValue').textContent=ai.toLocaleString('en-IN');
+  document.getElementById('creditsMeta').textContent=`${Number(b.ai_credits?.used_credits||0).toLocaleString('en-IN')} credits used · ${Number(b.ai_credits?.granted_credits||0).toLocaleString('en-IN')} granted`;
+  setMeter('creditsMeter',percent(b.ai_credits?.used_credits,b.ai_credits?.granted_credits));
+  const wallet=b.wallet||{};
+  document.getElementById('walletBalance').textContent=money(wallet.balance);
+  document.getElementById('walletMeta').textContent=wallet.low_balance?'Low balance · Add funds in Billing':'Usage wallet';
+  renderTrialAllowances(b);
+}
+
+function renderTrialAllowances(b){
+  const a=b.account_state||{};
+  const end=a.free_trial_ends_at?new Date(a.free_trial_ends_at):null;
+  const active=String(a.free_trial_status||'').toLowerCase()==='active' && end && end.getTime()>Date.now();
+  if(!active) return;
+  const grants=b.promotional_grants||[];
+  const events=b.usage_events||[];
+  const quota=(code,usageCode)=>{
+    const g=grants.find(x=>x.grant_code===code && x.status==='active');
+    const used=events.filter(x=>x.usage_code===usageCode && x.metadata?.promotional_grant_code===code).reduce((n,x)=>n+Number(x.quantity||0),0);
+    return Math.max(0,Number(g?.quantity||0)-used);
+  };
+  document.getElementById('trialAiCredits').textContent='10,000 GLIME Credits';
+  document.getElementById('trialAiTokens').textContent=`${Math.max(0,Number(b.ai_credits?.balance_credits||0)).toLocaleString('en-IN')} AI Tokens available`;
+  document.getElementById('trialInstagram').textContent=quota('FREE_TRIAL_INSTAGRAM_MESSAGES','instagram_message').toLocaleString('en-IN');
+  document.getElementById('trialWhatsApp').textContent=quota('FREE_TRIAL_WHATSAPP_MESSAGES','whatsapp_message').toLocaleString('en-IN');
+}
+
+
+async function loadTrialModules(clientId, billing) {
+    const section = document.getElementById('agents');
+    const a = billing.account_state || {};
+    const end = a.free_trial_ends_at ? new Date(a.free_trial_ends_at) : null;
+
+    const active =
+        String(a.free_trial_status || '').toLowerCase() === 'active' &&
+        end &&
+        end.getTime() > Date.now() &&
+        !billing.current_subscription;
+
+    if (!active) {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = '';
+
+    const result = await withTimeout(
+        supabaseClient
+            .from('client_modules')
+            .select('module_id,enabled,status,visible_to_client,expires_at')
+            .eq('client_id', clientId),
+        10000,
+        'Trial modules'
+    );
+
+    const data = result.data;
+    const error = result.error;
+
+    if (error) {
+        console.warn('Trial module access:', error);
+        return;
+    }
+
+    const allowed = new Set(
+        (data || [])
+            .filter(function(x) {
+                return (
+                    x.enabled === true &&
+                    x.visible_to_client === true &&
+                    ['active', 'trial'].includes(String(x.status || '').toLowerCase()) &&
+                    (!x.expires_at || new Date(x.expires_at) > new Date())
+                );
+            })
+            .map(function(x) { return Number(x.module_id); })
+    );
+
+    const ids = { instagram: 7, whatsapp: 12, leads: 1, followup: 11, assistant: 10, services: 4 };
+
+    const cards = [
+        ['Instagram Sales Specialist', ids.instagram],
+        ['WhatsApp Sales Specialist', ids.whatsapp],
+        ['Leads AI', ids.leads],
+        ['Follow-up Specialist', ids.followup],
+        ['GLIME Data Analyst', ids.assistant],
+        ['Services', ids.services]
+    ];
+
+    document.querySelectorAll('#trialModulesGrid .module-card').forEach(function(card, i) {
+        /* Cards beyond the list (e.g. Channel Controls) are always shown. */
+        if (!cards[i]) { card.style.display = 'flex'; return; }
+        card.style.display = allowed.has(cards[i][1]) ? 'flex' : 'none';
+    });
+}
+
+/* ---------- Access gate ---------- */
+function showAccessGate(s){
+  let o = document.getElementById('accessGate');
+  const sig = s.key + '|' + ctx.supportHref;
+  if (o && o.dataset.sig === sig) return;
+  if (!o) {
+    o = document.createElement('div');
+    o.id = 'accessGate';
+    o.className = 'access-gate';
+    document.body.appendChild(o);
+  }
+  o.dataset.sig = sig;
+  o.innerHTML =
+    '<div class="gate-card">' +
+      '<div class="gate-icon">🔒</div>' +
+      '<h2>' + esc(s.gateTitle) + '</h2>' +
+      '<p>' + esc(s.gateText) + '</p>' +
+      '<div class="gate-actions">' +
+        '<a class="btn primary" href="' + esc(s.ctaHref) + '">' + esc(s.ctaLabel) + '</a>' +
+        '<a class="btn whatsapp" href="' + esc(ctx.supportHref) + '" target="_blank" rel="noopener noreferrer">💬 WhatsApp Support</a>' +
+      '</div>' +
+      '<p class="gate-safe">✔ Your account and your data are safe.</p>' +
+      '<p class="gate-hint">Already paid? This page checks automatically, so there is no need to refresh.</p>' +
+      '<button id="gateLogout" type="button">Secure Logout</button>' +
+    '</div>';
+  document.getElementById('gateLogout').onclick = handleLogout;
+}
+
+function hideAccessGate(){
+  const o = document.getElementById('accessGate');
+  if (o) o.remove();
+}
+
+/* While the gate is showing, re-check every 5 seconds (about 3 minutes) so a
+   fresh payment unlocks the dashboard without a manual refresh. */
+function startGatePolling(){
+  if (gateTimer) return;
+  gatePolls = 0;
+  gateTimer = setInterval(function(){
+    if (document.hidden) return;
+    gatePolls++;
+    if (gatePolls > 36) { stopGatePolling(); return; }
+    silentRefresh();
+  }, 5000);
+}
+function stopGatePolling(){
+  if (gateTimer) { clearInterval(gateTimer); gateTimer = null; }
+}
+
+/*
+ * Partner referral: if partner-referral.js saved a click_id that is still
+ * waiting (for example signup could not attribute it), try once more now.
+ * Runs in the background and never blocks or breaks the dashboard.
+ * Keep the storage key and the final error codes in sync with partner-referral.js.
+ */
+async function retryPartnerAttribution(session) {
+    try {
+        const raw = localStorage.getItem('glime_partner_click');
+        if (!raw) return;
+
+        const rec = JSON.parse(raw);
+        const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (!rec || !uuid.test(String(rec.click_id)) || !(Date.parse(rec.expires_at) > Date.now())) {
+            localStorage.removeItem('glime_partner_click');
+            return;
+        }
+
+        const token = session?.access_token;
+        if (!token) return;
+
+        const response = await fetch(SUPABASE_URL + '/functions/v1/glime-partner-api', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'apikey': SUPABASE_KEY
+            },
+            body: JSON.stringify({ action: 'attribute', click_id: rec.click_id })
+        });
+        const body = await response.json().catch(() => ({}));
+
+        const finalErrors = [
+            'REFERRAL_CLICK_NOT_FOUND', 'REFERRAL_CLICK_EXPIRED', 'REFERRAL_CLICK_ALREADY_USED',
+            'PARTNER_NOT_ACTIVE', 'PARTNER_SELF_REFERRAL_BLOCKED', 'ACCOUNT_NOT_NEW',
+            'ACCOUNT_TOO_OLD', 'INVALID_CLICK_ID'
+        ];
+
+        if ((response.ok && body.ok === true) || finalErrors.includes(body.error)) {
+            const cur = JSON.parse(localStorage.getItem('glime_partner_click') || 'null');
+            if (cur && cur.click_id === rec.click_id) {
+                localStorage.removeItem('glime_partner_click');
+            }
+        }
+    } catch (error) {
+        console.warn('Partner referral retry skipped:', error);
+    }
+}
+
+/* ---------- Load + render (used for first load and silent refresh) ---------- */
+async function loadAndRender(session, email) {
+    const results = await Promise.all([
+        withTimeout(
+            supabaseClient
+                .from('client_data')
+                .select('client_id,email,full_name,name,client_name,business_name,account_status,free_trial_status,free_trial_started_at,free_trial_ends_at')
+                .eq('auth_user_id', session.user.id)
+                .limit(1),
+            10000,
+            'Client profile'
+        ),
+        withTimeout(getBilling(session), 15000, 'Billing service')
+    ]);
+
+    const clientResult = results[0];
+    const billing = results[1];
+
+    if (clientResult?.error) {
+        console.warn('Client profile load:', clientResult.error);
+    }
+
+    const client = (clientResult?.data || [])[0] || { email: email };
+
+    ctx.email = email;
+    ctx.client = client;
+    ctx.billing = billing;
+
+    const state = renderAccount(billing, client);
+    renderUsage(billing);
+
+    loadTrialModules(client.client_id, billing).catch(function(moduleError) {
+        console.warn('Trial modules failed:', moduleError);
+    });
+
+    const id = client.client_id || billing.customer?.client_id || '';
+    ctx.supportHref = buildWhatsApp(
+        client.full_name || billing.customer?.name || nameFromEmail(email),
+        email,
+        id
+    );
+    document.getElementById('whatsappSupportBtn').href = ctx.supportHref;
+    const navSupport = document.getElementById('gasSupportLink');
+    if (navSupport) navSupport.href = ctx.supportHref;
+
+    lastRefresh = Date.now();
+
+    if (state.allowed) {
+        hideAccessGate();
+        stopGatePolling();
+    } else {
+        showAccessGate(state);
+        startGatePolling();
+    }
+    return state;
+}
+
+async function silentRefresh() {
+    if (redirecting || !dashboardReady) return;
+    try {
+        const authResult = await withTimeout(supabaseClient.auth.getSession(), 10000, 'Login check');
+        const session = authResult.data?.session;
+        if (!session?.user) { await handleSessionExpired(); return; }
+        await loadAndRender(session, ctx.email || (session.user.email || '').trim().toLowerCase());
+    } catch (error) {
+        if (isAuthError(error)) { await handleSessionExpired(); return; }
+        console.warn('[GLIME] Background refresh skipped:', error);
+    }
+}
+
+async function initializeDashboard() {
+    try {
+        loadingScreen.style.display = 'flex';
+
+        const authResult = await withTimeout(supabaseClient.auth.getSession(), 10000, 'Login check');
+
+        if (authResult.error) { throw authResult.error; }
+
+        const session = authResult.data?.session;
+
+        if (!session?.user) {
+            const wasLoggedIn = !!localStorage.getItem('glime_client_email');
+            window.location.replace(wasLoggedIn ? 'login.html?reason=session_expired' : 'login.html');
+            return;
+        }
+
+        const email = (session.user.email || '').trim().toLowerCase();
+
+        if (!email) {
+            await supabaseClient.auth.signOut({ scope: 'local' });
+            window.location.replace('login.html');
+            return;
+        }
+
+        localStorage.setItem('glime_client_email', email);
+        retryPartnerAttribution(session);
+
+        await loadAndRender(session, email);
+
+        dashboardReady = true;
+        loadingScreen.style.display = 'none';
+
+    } catch (error) {
+        loadingScreen.style.display = 'none';
+
+        if (isAuthError(error)) {
+            await handleSessionExpired();
+            return;
+        }
+        showDashboardError(error);
+    }
+}
+
+/* Re-check when the client comes back from Billing or switches back to this tab. */
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && dashboardReady && Date.now() - lastRefresh > 15000) silentRefresh();
+});
+window.addEventListener('pageshow', function(e) {
+    if (e.persisted && dashboardReady) silentRefresh();
+});
+
+supabaseClient.auth.onAuthStateChange(function(event, session) {
+    if (redirecting) return;
+    if (event === 'SIGNED_OUT' || !session) {
+        const wasLoggedIn = !!localStorage.getItem('glime_client_email');
+        localStorage.removeItem('glime_client_email');
+        redirecting = true;
+        window.location.replace(wasLoggedIn ? 'login.html?reason=session_expired' : 'login.html');
+    }
+});
+
+initializeDashboard();
+</script>
+</body>
+</html>
