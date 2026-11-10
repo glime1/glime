@@ -16,6 +16,12 @@
    which the owner also types in place. Only the menu settings (name,
    type, Fixed Q&A, welcome) sit in a small form above the phone.
 
+   REVIEW. Every saved menu has a Review button. It opens a test chat
+   where the owner taps the buttons like a customer and sees how the
+   system answers: the reply text, the next menu, the hand-over to the
+   team, or the link. It is a simulation only: nothing is sent to any
+   customer and no tokens are used.
+
    WhatsApp limits enforced on this screen (Meta Cloud API):
      Reply buttons   1 to 3 buttons, title up to 20 characters,
                      button titles must be different from each other
@@ -291,6 +297,7 @@
       .qb-btn{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:.8rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none}
       .qb-btn.primary{background:linear-gradient(105deg,var(--gr),var(--cy));color:#031014;border:0}
       .qb-btn.danger{color:var(--rd);border-color:rgba(255,130,145,.5)}
+      .qb-btn.review{color:var(--cy);border-color:rgba(82,232,255,.5)}
       .qb-btn.small{min-height:36px;padding:0 12px;font-size:.74rem;border-radius:10px}
       .qb-btn:disabled{opacity:.5;cursor:default}
       .qb-pill{display:inline-block;font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:99px;border:1px solid rgba(255,255,255,.28);white-space:nowrap}
@@ -353,12 +360,41 @@
       .qb-flow-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
       .qb-flow-head b{font-size:.72rem;color:rgba(255,255,255,.85);line-height:1.4;word-break:break-word;flex:1;min-width:140px}
       .qb-flow .qb-select{margin-bottom:8px;padding:9px 10px;font-size:16px}
-      .qb-out{margin:8px 0 8px auto;width:fit-content;max-width:80%;background:#005c4b;border-radius:12px 12px 4px 12px;padding:8px 12px;font-size:.8rem;line-height:1.45;word-break:break-word}
+      .qb-out{margin:8px 0 8px auto;width:fit-content;max-width:80%;background:#005c4b;border-radius:12px 12px 4px 12px;padding:8px 12px;font-size:.8rem;line-height:1.45;word-break:break-word;white-space:pre-wrap}
       .qb-phone.ig .qb-out{background:#3797f0}
       .qb-in{background:#1f2c34;border-radius:12px 12px 12px 4px;padding:8px;max-width:96%;margin-bottom:6px}
       .qb-phone.ig .qb-in{background:#262626;border-radius:20px 20px 20px 6px}
       .qb-in-note{font-size:.72rem;color:rgba(255,255,255,.72);padding:2px 2px 6px;line-height:1.5}
       .qb-in-body{font-size:.8rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+
+      /* review: tappable test chat */
+      .qb-rv{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.74);display:flex;align-items:center;justify-content:center;padding:14px;color:#fff}
+      .qb-rv *{box-sizing:border-box}
+      .qb-rv-box{background:var(--surf,#101820);border:1px solid var(--bd,rgba(255,255,255,.18));border-radius:20px;width:100%;max-width:440px;max-height:94vh;display:flex;flex-direction:column;overflow:hidden}
+      .qb-rv-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--bd,rgba(255,255,255,.18))}
+      .qb-rv-top b{font-size:.84rem;line-height:1.3;word-break:break-word}
+      .qb-rv-top .qb-row-tools{flex:none}
+      .qb-rv-scroll{overflow:auto;padding:12px 14px;flex:1}
+      .qb-rv-scroll .qb-phone{max-width:none;min-height:240px}
+      .qb-rv-foot{padding:10px 14px;border-top:1px solid var(--bd,rgba(255,255,255,.18));font-size:.68rem;color:rgba(255,255,255,.68);line-height:1.5}
+      .qb-rv-msg{margin-bottom:8px}
+      .qb-rv-note{margin:10px auto;width:fit-content;max-width:94%;text-align:center;font-size:.7rem;line-height:1.5;color:rgba(255,255,255,.78);border:1px dashed rgba(255,255,255,.3);border-radius:10px;padding:6px 10px;word-break:break-word}
+      .qb-rv-h{font-weight:800;margin-bottom:4px;font-size:.8rem}
+      .qb-rv-b{font-size:.8rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+      .qb-rv-f{font-size:.68rem;color:rgba(255,255,255,.55);margin-top:6px}
+      .qb-rvb{display:block;width:96%;margin-top:6px;border:1px solid transparent;border-radius:10px;background:#1f2c34;color:#53bdeb;text-align:center;font-weight:800;font-size:.8rem;padding:10px;font-family:inherit;cursor:pointer;word-break:break-word}
+      .qb-rvb:disabled{opacity:.45;cursor:default}
+      .qb-rvb:not(:disabled):hover{border-color:#53bdeb}
+      .qb-rv-list{background:#1f2c34;border-radius:12px;margin-top:8px;padding:6px 10px;width:96%}
+      .qb-rv-sec{font-size:.68rem;font-weight:800;color:#25d366;margin:8px 0 2px}
+      .qb-rvr{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.08);color:#fff;padding:9px 0;font-size:.78rem;font-family:inherit;cursor:pointer}
+      .qb-rvr:last-child{border-bottom:0}
+      .qb-rvr small{display:block;color:rgba(255,255,255,.55);font-size:.68rem;margin-top:2px}
+      .qb-rv-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+      .qb-rvc{border:1px solid #8e5cff;background:transparent;color:#c4a8ff;border-radius:99px;padding:7px 14px;font-size:.78rem;font-weight:800;font-family:inherit;cursor:pointer;word-break:break-word}
+      .qb-rvc:disabled{opacity:.45;cursor:default}
+      .qb-phone.ig .qb-rvb{background:#363636;color:#fff}
+      .qb-phone.ig .qb-rvb:not(:disabled):hover{border-color:#8e5cff}
 
       .qb-note{font-size:.7rem;color:rgba(255,255,255,.66);margin-top:10px;line-height:1.5}
       .qb-safe{display:grid;gap:6px;font-size:.74rem;color:rgba(255,255,255,.82);line-height:1.5}
@@ -368,6 +404,8 @@
         .qb-grid{grid-template-columns:1fr}
         .qb-toolbar .qb-input{width:100%;flex:none}
         .qb-phone{max-width:none}
+        .qb-rv{padding:0;align-items:flex-end}
+        .qb-rv-box{max-width:none;max-height:96vh;border-radius:20px 20px 0 0}
       }
     `;
     document.head.appendChild(style);
@@ -694,7 +732,7 @@
       ${tabsHtml()}
       <div class="qb-card">
         <h3>Your ${esc(C.label)} menus</h3>
-        <p class="qb-sub">Only <b>On</b> menus are sent to ${esc(C.customerWord)} customers. A menu can open as your <b>Welcome menu</b> (when a customer writes first), when a Fixed Q&amp;A matches, or when a customer taps a button in another ${esc(C.label)} menu.</p>
+        <p class="qb-sub">Only <b>On</b> menus are sent to ${esc(C.customerWord)} customers. A menu can open as your <b>Welcome menu</b> (when a customer writes first), when a Fixed Q&amp;A matches, or when a customer taps a button in another ${esc(C.label)} menu. Tap <b>Review</b> on a menu to try it like a customer.</p>
         <div class="qb-toolbar">
           <input class="qb-input" id="qbSearch" type="search" autocomplete="off" placeholder="Search ${esc(C.label)} menus" value="${esc(S.search)}">
           <button type="button" class="qb-btn primary small" data-act="new" ${reached ? 'disabled' : ''}>+ New ${esc(C.label)} menu</button>
@@ -775,6 +813,7 @@
           <span class="qb-pill on">0 tokens</span>
         </div>
         <div class="qb-actions">
+          <button type="button" class="qb-btn small review" data-act="review" data-id="${esc(m.id)}">▶ Review</button>
           <button type="button" class="qb-btn small" data-act="edit" data-id="${esc(m.id)}">Edit</button>
           <button type="button" class="qb-btn small" data-act="toggle" data-id="${esc(m.id)}" data-v="${on ? 'off' : 'on'}">${on ? 'Turn off' : 'Turn on'}</button>
           <button type="button" class="qb-btn small danger" data-act="delete" data-id="${esc(m.id)}">Delete</button>
@@ -1045,6 +1084,202 @@
   }
 
   /* ---------------------------------------------------------
+     REVIEW (tappable test chat, nothing is sent to anyone)
+  --------------------------------------------------------- */
+  let RV = null; // overlay element
+  let RVS = null; // { ch, menuId, steps, list }
+  /* steps: { k:'menu', m } | { k:'out', t } | { k:'in', t } | { k:'note', t } */
+
+  function rvStart(m) {
+    const steps = [];
+    if (m.is_welcome) {
+      steps.push({ k: 'note', t: "The customer sends their first message (or writes after 24 hours of silence). Your welcome menu is sent." });
+    } else if (m.trigger_qa_id) {
+      steps.push({ k: 'out', t: faqName(m.trigger_qa_id) || 'A question that matches your Fixed Q&A' });
+    } else {
+      steps.push({ k: 'note', t: 'This menu opens from a button in another menu. It is shown here on its own.' });
+    }
+    steps.push({ k: 'menu', m });
+    return steps;
+  }
+
+  function rvLastMenuIdx() {
+    for (let n = RVS.steps.length - 1; n >= 0; n--) if (RVS.steps[n].k === 'menu') return n;
+    return -1;
+  }
+
+  /* one menu as the customer sees it; only the latest menu can be tapped */
+  function rvMenuHtml(m, active) {
+    const ch = chOf(m);
+    const t = m.menu_type;
+    const items = Array.isArray(m.items) ? m.items : [];
+    const dis = active ? '' : 'disabled';
+
+    if (ch === 'instagram') {
+      const bub = `<div class="qb-ph-bub"><div class="qb-rv-b">${esc(m.body_text)}</div></div>`;
+      if (t === 'cta') {
+        const i = items[0];
+        return bub + (i ? `<button type="button" class="qb-rvb" data-rv="tap" data-i="0" ${dis}>↗ ${esc(i.title)}</button>` : '');
+      }
+      return (
+        bub +
+        `<div class="qb-rv-chips">${items.map((i, n) => `<button type="button" class="qb-rvc" data-rv="tap" data-i="${n}" ${dis}>${esc(i.title)}</button>`).join('')}</div>`
+      );
+    }
+
+    const head = m.header_text ? `<div class="qb-rv-h">${esc(m.header_text)}</div>` : '';
+    const foot = m.footer_text ? `<div class="qb-rv-f">${esc(m.footer_text)}</div>` : '';
+    const bub = `<div class="qb-ph-bub">${head}<div class="qb-rv-b">${esc(m.body_text)}</div>${foot}</div>`;
+
+    if (t === 'list') {
+      let out = bub + `<button type="button" class="qb-rvb" data-rv="list" ${dis}>☰ ${esc(m.list_button_text || 'Choose option')}</button>`;
+      if (active && RVS.list) {
+        let last = null;
+        const rows = items
+          .map((i, n) => {
+            const sec = (i.section || '').trim();
+            let secHtml = '';
+            if (sec && sec !== last) {
+              secHtml = `<div class="qb-rv-sec">${esc(sec)}</div>`;
+              last = sec;
+            }
+            return (
+              secHtml +
+              `<button type="button" class="qb-rvr" data-rv="tap" data-i="${n}">${esc(i.title)}${i.description ? `<small>${esc(i.description)}</small>` : ''}</button>`
+            );
+          })
+          .join('');
+        out += `<div class="qb-rv-list">${rows}</div>`;
+      }
+      return out;
+    }
+    if (t === 'cta') {
+      const i = items[0];
+      return bub + (i ? `<button type="button" class="qb-rvb" data-rv="tap" data-i="0" ${dis}>↗ ${esc(i.title)}</button>` : '');
+    }
+    return bub + items.map((i, n) => `<button type="button" class="qb-rvb" data-rv="tap" data-i="${n}" ${dis}>${esc(i.title)}</button>`).join('');
+  }
+
+  function rvBodyHtml() {
+    const lastIdx = rvLastMenuIdx();
+    return RVS.steps
+      .map((s, idx) => {
+        if (s.k === 'menu') return `<div class="qb-rv-msg">${rvMenuHtml(s.m, idx === lastIdx)}</div>`;
+        if (s.k === 'out') return `<div class="qb-out">${esc(s.t)}</div>`;
+        if (s.k === 'in') return `<div class="qb-in"><div class="qb-in-body">${esc(s.t)}</div></div>`;
+        return `<div class="qb-rv-note">${esc(s.t)}</div>`;
+      })
+      .join('');
+  }
+
+  function rvRender(keepScroll) {
+    if (!RV || !RVS) return;
+    const scroller = RV.querySelector('.qb-rv-scroll');
+    const m = S.items.find(x => x.id === RVS.menuId);
+    const ch = RVS.ch;
+    const top = scroller ? scroller.scrollTop : 0;
+    RV.innerHTML = `
+      <div class="qb-rv-box" role="dialog" aria-modal="true" aria-label="Review menu">
+        <div class="qb-rv-top">
+          <b>Review: ${esc(m ? m.name : 'Menu')} <span class="qb-pill ${ch === 'instagram' ? 'ig' : 'wait'}">${esc(CH[ch].label)}</span></b>
+          <div class="qb-row-tools">
+            <button type="button" class="qb-btn small" data-rv="restart">↺ Start again</button>
+            <button type="button" class="qb-btn small" data-rv="close" aria-label="Close">✕</button>
+          </div>
+        </div>
+        <div class="qb-rv-scroll">
+          <div class="qb-phone ${ch === 'instagram' ? 'ig' : ''}">
+            <div class="qb-ph-cap">${esc(CH[ch].label)} · tap the buttons like a customer</div>
+            ${rvBodyHtml()}
+          </div>
+        </div>
+        <div class="qb-rv-foot">Test view only. Nothing is sent to any customer and no tokens are used. Tapping a button here shows what your customer will get.</div>
+      </div>`;
+    const sc = RV.querySelector('.qb-rv-scroll');
+    if (sc) sc.scrollTop = keepScroll ? top : sc.scrollHeight;
+  }
+
+  function rvTap(n) {
+    const lastIdx = rvLastMenuIdx();
+    if (lastIdx < 0) return;
+    const m = RVS.steps[lastIdx].m;
+    const it = (m.items || [])[n];
+    if (!it) return;
+    RVS.list = false;
+    RVS.steps.push({ k: 'out', t: it.title });
+    if (it.action === 'text') {
+      RVS.steps.push({ k: 'in', t: it.reply_text || '' });
+    } else if (it.action === 'human') {
+      if (it.reply_text) RVS.steps.push({ k: 'in', t: it.reply_text });
+      RVS.steps.push({ k: 'note', t: 'The chat is handed over to your team.' });
+    } else if (it.action === 'menu') {
+      const tgt = itemsOf(RVS.ch).find(x => x.id === it.target_menu_id);
+      if (tgt) RVS.steps.push({ k: 'menu', m: tgt });
+      else RVS.steps.push({ k: 'note', t: 'The menu this button should open was not found. Edit the button and choose a menu.' });
+    } else if (it.action === 'url') {
+      RVS.steps.push({ k: 'note', t: "The customer's phone opens this link: " + (it.url || '(no link set)') });
+    }
+    rvRender(false);
+  }
+
+  function rvOnClick(e) {
+    if (!RV) return;
+    if (e.target === RV) return closeReview();
+    const el = e.target.closest ? e.target.closest('[data-rv]') : null;
+    if (!el || !RV.contains(el)) return;
+    switch (el.dataset.rv) {
+      case 'close':
+        closeReview();
+        break;
+      case 'restart': {
+        const m = S.items.find(x => x.id === RVS.menuId);
+        if (m) {
+          RVS.steps = rvStart(m);
+          RVS.list = false;
+          rvRender(false);
+        }
+        break;
+      }
+      case 'list':
+        RVS.list = !RVS.list;
+        rvRender(false);
+        break;
+      case 'tap':
+        rvTap(Number(el.dataset.i));
+        break;
+      default:
+        break;
+    }
+  }
+
+  function rvOnKey(e) {
+    if (e.key === 'Escape') closeReview();
+  }
+
+  function openReview(id) {
+    const m = S.items.find(x => x.id === id);
+    if (!m) return;
+    closeReview();
+    RVS = { ch: chOf(m), menuId: m.id, steps: rvStart(m), list: false };
+    RV = document.createElement('div');
+    RV.className = 'qb-rv';
+    RV.addEventListener('click', rvOnClick);
+    document.body.appendChild(RV);
+    document.addEventListener('keydown', rvOnKey);
+    rvRender(false);
+  }
+
+  function closeReview() {
+    document.removeEventListener('keydown', rvOnKey);
+    if (RV) {
+      RV.removeEventListener('click', rvOnClick);
+      RV.remove();
+    }
+    RV = null;
+    RVS = null;
+  }
+
+  /* ---------------------------------------------------------
      ACTIONS
   --------------------------------------------------------- */
   function openNew() {
@@ -1104,7 +1339,7 @@
         S.filter = 'all';
         S.search = '';
         renderBody();
-        ui.toast('Menu saved. Taps on it send your reply with 0 tokens.');
+        ui.toast('Menu saved. Tap Review on it to try it like a customer.');
       } catch (e) {
         console.error('[GLIME Quick Buttons] save:', e);
         const info = describeError(e, d.channel);
@@ -1231,6 +1466,9 @@
         break;
       case 'edit':
         openEdit(el.dataset.id);
+        break;
+      case 'review':
+        openReview(el.dataset.id);
         break;
       case 'cancel':
         S.draft = null;
@@ -1365,6 +1603,7 @@
 
     render: async ({ container }) => {
       injectStyles();
+      closeReview();
 
       container.innerHTML = '<div class="qb-root" id="qbRoot"></div>';
       ROOT = container.querySelector('#qbRoot');
