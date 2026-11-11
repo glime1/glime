@@ -23,6 +23,13 @@ var ICON='<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8
 function isOn(uid){
   try{return !!uid&&localStorage.getItem(PREFIX+uid)==='1';}catch(e){return false;}
 }
+/* Also kept on the server (connector.get / connector.set) so every phone and computer sees the same switch. */
+function gw(sb,action,body){
+  return sb.auth.getSession().then(function(r){
+    var s=r&&r.data&&r.data.session;if(!s)throw new Error('no session');
+    return fetch(String(sb.supabaseUrl).replace(/\/$/,'')+'/functions/v1/glime-glimecal-gateway?action='+action,{method:'POST',headers:{Authorization:'Bearer '+s.access_token,apikey:sb.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify(body||{})}).then(function(x){return x.json();});
+  });
+}
 function setOn(uid,on){
   if(!uid)return false;
   try{
@@ -78,6 +85,7 @@ function mount(container,opts){
     var want=!st.on;
     if(setOn(st.uid,want)){
       st.on=want;st.err='';
+      gw(sb,'connector.set',{enabled:want}).catch(function(e){console.warn('Calendar connector not saved on server:',e&&e.message);});
     }else{
       st.err='This setting could not be saved in your browser. Please allow site storage and try again.';
     }
@@ -97,6 +105,10 @@ function mount(container,opts){
     st.uid=s.user.id;
     st.on=isOn(st.uid);
     draw();
+    return gw(sb,'connector.get').then(function(d){
+      if(d&&typeof d.enabled==='boolean'&&d.enabled!==st.on){setOn(st.uid,d.enabled);st.on=d.enabled;draw();}
+      else if(d&&d.enabled==null&&st.on)gw(sb,'connector.set',{enabled:true}).catch(function(){});
+    }).catch(function(){});
   }).catch(function(e){console.error('GLIME Calendar connector error:',e);});
 }
 
