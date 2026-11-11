@@ -6,6 +6,8 @@
    The admin sees which client sent it (business, client id,
    contact), the rating, the page it was sent from and the device,
    and can reply, add a note and move it to resolved.
+   Video reward submissions also get an Open video / Open Instagram
+   button and a "reason shown to the client" box (required to Close).
    Reads : rpc admin_feedback_list (fallback: table client_feedback)
    Writes: rpc admin_feedback_set_status (fallback: table update)
    See ADMIN_FEEDBACK_BACKEND_SPEC.md
@@ -96,9 +98,10 @@
       #${VIEW} dt{color:#7b8797}#${VIEW} dd{margin:0;color:#dfe7ef;word-break:break-word}#${VIEW} dd a{color:#00f0ff}
       #${VIEW} .gf-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
       #${VIEW} .gf-act button,#${VIEW} .gf-act a{border:0;border-radius:9px;padding:8px 13px;font:700 .76rem system-ui,sans-serif;cursor:pointer;background:rgba(255,255,255,.1);color:#fff;text-decoration:none}
-      #${VIEW} .gf-act .wa{background:#25d366;color:#04200f}#${VIEW} .gf-act .go{background:#00ff88;color:#06100b}#${VIEW} .gf-act .vid{background:#00f0ff;color:#04141a}
+      #${VIEW} .gf-act .wa{background:#25d366;color:#04200f}#${VIEW} .gf-act .go{background:#00ff88;color:#06100b}#${VIEW} .gf-act .vid{background:#00f0ff;color:#04141a}#${VIEW} .gf-act .ig{background:#e1306c;color:#fff}
       #${VIEW} .gf-act button:disabled{opacity:.5}
       #${VIEW} .gf-act input{flex:1 1 200px;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#fff;font:inherit;font-size:.76rem}
+      #${VIEW} .gf-hint{margin-top:6px;color:#7b8797;font-size:.7rem;line-height:1.5}
       #${VIEW} .gf-empty{padding:22px;border:1px dashed rgba(255,255,255,.14);border-radius:14px;color:#9ba7b7;text-align:center;font-size:.82rem;line-height:1.6}
       #${VIEW} .gf-note{padding:12px 14px;border-radius:12px;background:rgba(255,200,87,.07);border:1px solid rgba(255,200,87,.35);color:#ffd98a;font-size:.78rem;line-height:1.55;margin-bottom:12px}
       .gf-badge{margin-left:8px;padding:1px 7px;border-radius:999px;background:#ff5263;color:#fff;font-size:.66rem;font-weight:700}
@@ -158,16 +161,17 @@
     const text = "Hi " + (p.r.client_name || "") + ", this is the GLIME team about your feedback " + (p.ref ? "(" + p.ref + ")" : "") + ".";
     return "https://wa.me/" + num + "?text=" + encodeURIComponent(text);
   }
-  /* Video reward submissions carry the client's video link in metadata.video_url.
-     The value comes from the client, so only https YouTube / Instagram links are opened. */
-  function videoLink(p) {
-    if (p.meta.kind !== "video_reward") return "";
+  /* Video reward submissions carry links in metadata. The values come from the client,
+     so only https YouTube / Instagram links are ever opened. */
+  function safeLink(value, hosts) {
     let u;
-    try { u = new URL(String(p.meta.video_url || "").trim()); } catch (e) { return ""; }
+    try { u = new URL(String(value || "").trim()); } catch (e) { return ""; }
     if (u.protocol !== "https:") return "";
     const host = u.hostname.toLowerCase().replace(/^(www|m)\./, "");
-    return host === "youtube.com" || host === "youtu.be" || host === "instagram.com" ? u.href : "";
+    return hosts.indexOf(host) > -1 ? u.href : "";
   }
+  const videoLink = (p) => (p.meta.kind === "video_reward" ? safeLink(p.meta.video_url, ["youtube.com", "youtu.be", "instagram.com"]) : "");
+  const igLink = (p) => (p.meta.kind === "video_reward" ? safeLink(p.meta.instagram_url, ["instagram.com"]) : "");
   function device(p) {
     const m = p.meta, bits = [];
     if (m.viewport) bits.push(m.viewport);
@@ -184,7 +188,8 @@
   function card(p) {
     const r = p.r, st = p.status;
     const wa = waLink(p);
-    const vid = videoLink(p);
+    const vid = videoLink(p), ig = igLink(p);
+    const isVideo = p.meta.kind === "video_reward";
     const contactBits = [r.client_name && esc(r.client_name), r.client_email && `<a href="mailto:${esc(r.client_email)}">${esc(r.client_email)}</a>`, r.client_phone && `<a href="tel:${esc(r.client_phone)}">${esc(r.client_phone)}</a>`].filter(Boolean).join(" \u00b7 ");
     return `<div class="gf-card${p.type === "bug" ? " bug" : ""}" data-id="${esc(r.id)}">
       <div class="gf-top"><div><div class="gf-name">${esc(p.who)}${r.client_name && r.business_name ? ` <span style="color:#7b8797;font-weight:500">\u00b7 ${esc(r.client_name)}</span>` : ""}</div>
@@ -199,11 +204,14 @@
         ${r.resolved_at ? `<dt>Resolved</dt><dd>${esc(when(r.resolved_at))}${r.resolved_by ? " by " + esc(r.resolved_by) : ""}</dd>` : ""}</dl>
       <div class="gf-act">
         ${vid ? `<a class="vid" href="${esc(vid)}" target="_blank" rel="noopener noreferrer">\u25b6 Open video</a>` : ""}
+        ${ig ? `<a class="ig" href="${esc(ig)}" target="_blank" rel="noopener noreferrer">Open Instagram</a>` : ""}
         ${wa && r.can_contact !== false ? `<a class="wa" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">Reply on WhatsApp</a>` : ""}
         ${r.client_email && r.can_contact !== false ? `<a href="mailto:${esc(r.client_email)}?subject=${encodeURIComponent("GLIME: your feedback " + (p.ref || ""))}">Email</a>` : ""}
         ${st === "new" ? '<button data-st="in_progress">Start working</button>' : ""}
         ${st !== "resolved" && st !== "closed" ? '<button class="go" data-st="resolved">Mark resolved</button><button data-st="closed">Close</button>' : '<button data-st="new">Reopen</button>'}
       </div>
+      ${isVideo ? `<div class="gf-act"><input type="text" data-reason placeholder="Reason shown to the client (required to Close)" value="${esc(r.client_message || "")}" maxlength="500"></div>
+      <div class="gf-hint">The client sees this on their Video reward screen. Resolved = approved. Close = rejected, and the client can then send a new video.</div>` : ""}
       <div class="gf-act"><input type="text" data-note placeholder="Private admin note (only admins see this)" value="${esc(r.admin_notes || "")}" maxlength="500"><button data-st="${esc(st)}" data-savenote>Save note</button></div></div>`;
   }
   function render() {
@@ -226,14 +234,16 @@
   function renderList() { const l = $("gfList"); if (!l) return; const list = visible(); l.innerHTML = list.length ? list.map(card).join("") : `<div class="gf-empty">No feedback here right now.</div>`; }
 
   /* ---------- actions ---------- */
-  async function setStatus(id, status, btn, note) {
+  /* msg = the message the client sees (video reward cards only); null leaves it to the server. */
+  async function setStatus(id, status, btn, note, msg) {
     const c = client(); if (!c) return;
     btn.disabled = true;
     try {
-      let r = await c.rpc("admin_feedback_set_status", { p_id: id, p_status: status, p_note: note });
+      let r = await c.rpc("admin_feedback_set_status", { p_id: id, p_status: status, p_note: note, p_client_message: msg });
       if (r.error && /function|schema cache|PGRST202|42883/i.test(String(r.error.message) + String(r.error.code))) {
         const patch = { status, updated_at: new Date().toISOString() };
         if (note !== null) patch.admin_notes = note;
+        if (msg !== null) patch.client_message = msg || null;
         if (status === "resolved" || status === "closed") patch.resolved_at = new Date().toISOString();
         else { patch.resolved_at = null; patch.resolved_by = null; }
         r = await c.from("client_feedback").update(patch).eq("id", id);
@@ -254,7 +264,18 @@
       const inp = card.querySelector("[data-note]");
       const typed = inp ? inp.value.trim() : "";
       const old = (rows.find((p) => String(p.r.id) === card.dataset.id) || { r: {} }).r.admin_notes || "";
-      setStatus(card.dataset.id, s.dataset.st, s, typed !== old || s.hasAttribute("data-savenote") ? typed : null);
+      /* Video reward cards: the reason is sent with Resolved / Close, and Close needs one. */
+      const reasonInp = card.querySelector("[data-reason]");
+      let msg = null;
+      if (reasonInp && (s.dataset.st === "resolved" || s.dataset.st === "closed")) {
+        msg = reasonInp.value.trim();
+        if (s.dataset.st === "closed" && !msg) {
+          window.alert("Please write the reason for the client before you close this video.");
+          reasonInp.focus();
+          return;
+        }
+      }
+      setStatus(card.dataset.id, s.dataset.st, s, typed !== old || s.hasAttribute("data-savenote") ? typed : null, msg);
       return;
     }
     if (e.target.id === "gfRefresh") { load().then(render); }
