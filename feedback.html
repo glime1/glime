@@ -156,10 +156,10 @@ html[data-theme="light"] .note{color:#64748b !important}
       <form id="vdForm" novalidate>
         <div class="reward">
           <div class="amt"><small>REWARD</small><b>2,500,000 tokens</b></div>
-          <p>Share a short video about how GLIME has grown your business. Once our team approves it, we will add 2,500,000 tokens to your account.</p>
+          <p>Share a video about how GLIME has grown your business. Once our team approves it, we will add 2,500,000 tokens to your account. One reward per client.</p>
         </div>
         <ul class="rules">
-          <li>Video length: 30 to 40 seconds only.</li>
+          <li>Video length: 60 to 90 seconds. Videos shorter than 60 seconds or longer than 90 seconds will not be approved.</li>
           <li>Upload the video to YouTube or Instagram yourself, then paste its link below. We do not accept file uploads here.</li>
           <li>Keep the video public or unlisted so our team can watch it.</li>
           <li>Tell us in your own words how GLIME has helped your business, and how much your sales have grown.</li>
@@ -193,7 +193,7 @@ html[data-theme="light"] .note{color:#64748b !important}
         </select>
 
         <label class="check"><input type="checkbox" id="vdConsent"> I allow GLIME to use this video, my business name and these sales numbers in its case studies.</label>
-        <p class="note">Our team reviews every video. After approval, it can take 1 to 2 days for the tokens to reach your account.</p>
+        <p class="note">Our team reviews every video. After approval, it can take 1 to 2 days for the tokens to reach your account. If a video is rejected, you can submit a new one.</p>
         <div class="err" id="vdErr" role="alert" hidden></div>
 
         <div class="actions">
@@ -208,7 +208,6 @@ html[data-theme="light"] .note{color:#64748b !important}
         <p id="vdDoneText"></p>
         <span class="ref" id="vdRef" hidden></span>
         <div class="actions">
-          <button type="button" class="btn" id="vdAgain">Submit another</button>
           <a class="btn send" href="dashboard.html">Back to dashboard</a>
         </div>
       </div>
@@ -234,12 +233,15 @@ html[data-theme="light"] .note{color:#64748b !important}
     PENDING: 'glime_feedback_pending',
     LAST: 'glime_feedback_last'
   };
-  /* Video reward: link only (YouTube / Instagram). No file is ever uploaded. */
+  /* Video reward: link only (YouTube / Instagram). No file is ever uploaded.
+     One reward per client; a rejected (closed) submission can be replaced. */
   var VD = {
     KIND: 'video_reward',
     TOKENS: 2500000,
     MAX_URL: 500,
     MAX_SALES: 100000000000,
+    STATUS_RPC: 'client_video_reward_status',
+    SENT_CODE: 'video_already_sent',
     LAST: 'glime_video_last'
   };
   var TYPES = [
@@ -303,7 +305,7 @@ html[data-theme="light"] .note{color:#64748b !important}
     };
   }
 
-  /* Sends one payload. Resolves { ok, id, reference, error, queue, auth }. Never rejects. */
+  /* Sends one payload. Resolves { ok, id, reference, error, code, queue, auth }. Never rejects. */
   function send(p) {
     return sb.auth.getSession().then(function (r) {
       if (!r || !r.data || !r.data.session) return { ok: false, auth: true, error: 'Your session has expired. Please sign in again.' };
@@ -315,7 +317,7 @@ html[data-theme="light"] .note{color:#64748b !important}
           return { ok: false, queue: missing || offline, error: missing ? 'Feedback is being set up on our side.' : (offline ? 'No internet connection.' : (msg || 'Feedback could not be sent.')) };
         }
         var d = res.data || {};
-        if (d.ok === false) return { ok: false, error: d.error || 'Feedback could not be sent.' };
+        if (d.ok === false) return { ok: false, code: d.code || '', error: d.error || 'Feedback could not be sent.' };
         return { ok: true, id: d.id || null, reference: d.reference || null };
       });
     }).catch(function () { return { ok: false, queue: true, error: 'No internet connection.' }; });
@@ -332,7 +334,8 @@ html[data-theme="light"] .note{color:#64748b !important}
     var step = function (i) {
       if (i >= list.length) { store(FB.PENDING, null); return; }
       send(list[i]).then(function (res) {
-        if (res.ok) { step(i + 1); return; }
+        /* A video that was already accepted earlier is dropped, not retried forever. */
+        if (res.ok || res.code === VD.SENT_CODE) { step(i + 1); return; }
         store(FB.PENDING, JSON.stringify(list.slice(i)));
       });
     };
@@ -496,20 +499,26 @@ html[data-theme="light"] .note{color:#64748b !important}
     $('vdSend').disabled = on;
     $('vdSend').textContent = on ? 'Submitting…' : 'Submit video';
   }
+  /* Replaces the form with a message. One reward per client, so there is no "submit another". */
   function showVdDone(title, text, reference) {
     $('vdForm').hidden = true;
     $('vdDoneTitle').textContent = title;
     $('vdDoneText').textContent = text;
     var ref = $('vdRef'); ref.hidden = !reference; ref.textContent = reference ? 'Reference: ' + reference : '';
     $('vdDone').hidden = false;
-    try { $('vdAgain').focus(); } catch (e) { /* ignore */ }
   }
-  function resetVideo() {
-    $('vdDone').hidden = true; $('vdForm').hidden = false;
-    $('vdLink').value = ''; $('vdBefore').value = ''; $('vdNow').value = ''; $('vdHelped').value = '';
-    $('vdConsent').checked = false;
-    updateGrowth(); showVdError(''); setVdSending(false);
-    try { $('vdLink').focus(); } catch (e) { /* ignore */ }
+  function showVdAlreadySent(status, reference) {
+    var text = status === 'resolved'
+      ? 'Your video has been approved. If your 2,500,000 tokens have not arrived yet, they can take 1 to 2 days.'
+      : 'Our team is reviewing your video. After approval, it can take 1 to 2 days for the 2,500,000 tokens to reach your account.';
+    showVdDone('You have already sent your video', text, reference || null);
+  }
+  /* If this client already has an open video submission, show its state instead of the form. */
+  function checkVideoStatus() {
+    sb.rpc(VD.STATUS_RPC).then(function (res) {
+      var d = res && res.data;
+      if (d && d.ok && d.sent) showVdAlreadySent(d.status, d.reference);
+    }).catch(function () { /* ignore: submitting still enforces the rule */ });
   }
   function submitVideo() {
     if (st.sendingVd) return;
@@ -546,6 +555,7 @@ html[data-theme="light"] .note{color:#64748b !important}
         showVdDone('Video received!', 'Thank you. Our team will review your video. After approval, it can take 1 to 2 days for the 2,500,000 tokens to reach your account.', res.reference);
         return;
       }
+      if (res.code === VD.SENT_CODE) { checkVideoStatus(); showVdError(res.error); return; }
       if (res.auth) { showVdError(res.error); setTimeout(function () { location.replace('login.html'); }, 1800); return; }
       if (res.queue) {
         queue(p); store(VD.LAST, String(Date.now()));
@@ -585,7 +595,6 @@ html[data-theme="light"] .note{color:#64748b !important}
   $('vdNow').addEventListener('input', function () { showVdError(''); updateGrowth(); });
   $('vdConsent').addEventListener('change', function () { showVdError(''); });
   $('vdForm').addEventListener('submit', function (e) { e.preventDefault(); submitVideo(); });
-  $('vdAgain').addEventListener('click', resetVideo);
 
   var startTab = '';
   try { startTab = new URLSearchParams(location.search).get('tab') || ''; } catch (e) { /* ignore */ }
@@ -595,6 +604,7 @@ html[data-theme="light"] .note{color:#64748b !important}
   sb.auth.getSession().then(function (r) {
     var sess = r && r.data && r.data.session;
     if (!sess || !sess.user) { location.replace('login.html'); return; }
+    checkVideoStatus();
     setTimeout(flushPending, 3000);
   }).catch(function () { /* stay on page; sending will report the problem */ });
   sb.auth.onAuthStateChange(function (ev, s) { if (ev === 'SIGNED_OUT' || !s) location.replace('login.html'); });
