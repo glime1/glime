@@ -67,6 +67,12 @@ h1{margin:0;font-size:1.7rem}
 .row2 .label:first-child{margin-top:16px}
 .growth{margin:10px 0 0;padding:9px 13px;border-radius:12px;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.08);color:var(--green);font-size:.84rem;font-weight:600}
 .note{margin:14px 0 0;font-size:.8rem;line-height:1.6;color:var(--soft)}
+.hint{margin:6px 0 0;font-size:.74rem;line-height:1.5;color:var(--soft)}
+.verdict{margin:0 0 16px;padding:13px 15px;border-radius:14px;border:1px solid rgba(255,93,115,.45);background:rgba(255,93,115,.09);color:var(--text);font-size:.85rem;line-height:1.6}
+.verdict b{display:block;margin-bottom:4px;color:#ff9aa8;font-size:.9rem}
+.verdict .why{display:block;margin-top:6px;white-space:pre-wrap;word-break:break-word}
+.teammsg{margin:12px 0 0;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--ref);font-size:.84rem;line-height:1.6;text-align:left;white-space:pre-wrap;word-break:break-word}
+.teammsg small{display:block;margin-bottom:4px;font-size:.68rem;letter-spacing:.8px;text-transform:uppercase;font-weight:700;color:var(--soft)}
 
 /* ---------- Light theme ---------- */
 html[data-theme="light"]{--bg:#f4f7fa;--card:#ffffff;--text:#0f172a;--muted:#475569;--soft:#64748b;--label:#1e293b;--line:rgba(15,23,42,.16);--field:#f8fafc;--chip:#f1f5f9;--star:#cbd5e1;--ref:#eef2f6}
@@ -99,7 +105,11 @@ html[data-theme="light"] .rules{color:#475569 !important}
 html[data-theme="light"] .inp{background:#f8fafc !important;color:#0f172a !important;border-color:rgba(15,23,42,.18) !important}
 html[data-theme="light"] .inp::placeholder{color:#94a3b8}
 html[data-theme="light"] .growth{background:rgba(5,150,105,.08) !important;border-color:rgba(5,150,105,.4) !important;color:#047857 !important}
-html[data-theme="light"] .note{color:#64748b !important}
+html[data-theme="light"] .note,html[data-theme="light"] .hint{color:#64748b !important}
+html[data-theme="light"] .verdict{background:#fef2f2 !important;border-color:rgba(220,38,38,.4) !important;color:#1e293b !important}
+html[data-theme="light"] .verdict b{color:#b91c1c !important}
+html[data-theme="light"] .teammsg{background:#eef2f6 !important;color:#1e293b !important;border-color:rgba(15,23,42,.14) !important}
+html[data-theme="light"] .teammsg small{color:#64748b !important}
 
 @media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}}
 @media(max-width:520px){.card{padding:18px 14px}.actions{flex-direction:column-reverse}.btn{width:100%}.reward{flex-direction:column;align-items:flex-start;gap:8px}.reward .amt{text-align:left}.row2{grid-template-columns:1fr;gap:0}}
@@ -154,12 +164,18 @@ html[data-theme="light"] .note{color:#64748b !important}
 
     <div id="panelVd" role="tabpanel" aria-labelledby="tabVd" hidden>
       <form id="vdForm" novalidate>
+        <div class="verdict" id="vdVerdict" role="status" hidden>
+          <b>Your last video was not approved</b>
+          <span id="vdVerdictRef"></span>
+          <span class="why" id="vdVerdictWhy"></span>
+          <span class="why">You can submit a new video below.</span>
+        </div>
         <div class="reward">
           <div class="amt"><small>REWARD</small><b>2,500,000 tokens</b></div>
           <p>Share a video about how GLIME has grown your business. Once our team approves it, we will add 2,500,000 tokens to your account. One reward per client.</p>
         </div>
         <ul class="rules">
-          <li>Video length: 60 to 90 seconds. Videos shorter than 60 seconds or longer than 90 seconds will not be approved.</li>
+          <li>Video length: at least 60 seconds. There is no upper limit, so a longer video is fine.</li>
           <li>Upload the video to YouTube or Instagram yourself, then paste its link below. We do not accept file uploads here.</li>
           <li>Keep the video public or unlisted so our team can watch it.</li>
           <li>Tell us in your own words how GLIME has helped your business, and how much your sales have grown.</li>
@@ -167,6 +183,10 @@ html[data-theme="light"] .note{color:#64748b !important}
 
         <label class="label" for="vdLink">Video link<span>YouTube or Instagram</span></label>
         <input id="vdLink" class="inp" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="500" placeholder="https://www.youtube.com/watch?v=... or https://www.instagram.com/reel/...">
+
+        <label class="label" for="vdIg">Your Instagram account connected to GLIME<span>profile link</span></label>
+        <input id="vdIg" class="inp" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200" placeholder="https://www.instagram.com/yourbusiness">
+        <p class="hint">Paste the link of the Instagram account you connected with GLIME. You can also type @yourbusiness.</p>
 
         <div class="row2">
           <div>
@@ -193,7 +213,7 @@ html[data-theme="light"] .note{color:#64748b !important}
         </select>
 
         <label class="check"><input type="checkbox" id="vdConsent"> I allow GLIME to use this video, my business name and these sales numbers in its case studies.</label>
-        <p class="note">Our team reviews every video. After approval, it can take 1 to 2 days for the tokens to reach your account. If a video is rejected, you can submit a new one.</p>
+        <p class="note">Our team reviews every video. After approval, it can take 1 to 2 days for the tokens to reach your account. If a video is rejected, you will see the reason here and you can submit a new one.</p>
         <div class="err" id="vdErr" role="alert" hidden></div>
 
         <div class="actions">
@@ -206,6 +226,7 @@ html[data-theme="light"] .note{color:#64748b !important}
         <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
         <h3 id="vdDoneTitle">Video received!</h3>
         <p id="vdDoneText"></p>
+        <div class="teammsg" id="vdDoneMsg" hidden><small>Message from our team</small><span id="vdDoneMsgText"></span></div>
         <span class="ref" id="vdRef" hidden></span>
         <div class="actions">
           <a class="btn send" href="dashboard.html">Back to dashboard</a>
@@ -234,7 +255,8 @@ html[data-theme="light"] .note{color:#64748b !important}
     LAST: 'glime_feedback_last'
   };
   /* Video reward: link only (YouTube / Instagram). No file is ever uploaded.
-     One reward per client; a rejected (closed) submission can be replaced. */
+     One reward per client; a rejected (closed) submission can be replaced.
+     Minimum video length is 60 seconds (checked by our team), there is no maximum. */
   var VD = {
     KIND: 'video_reward',
     TOKENS: 2500000,
@@ -454,6 +476,25 @@ html[data-theme="light"] .note{color:#64748b !important}
     if (u.href.length > VD.MAX_URL) return null;
     return { platform: platform, url: u.href };
   }
+  /* The client's Instagram profile: a profile link or @handle. Returns { user, url } or null. */
+  function parseInstagram(raw) {
+    var v = String(raw || '').trim();
+    if (!v) return null;
+    var user = '';
+    if (/^@?[A-Za-z0-9._]{1,30}$/.test(v)) {
+      user = v.replace(/^@/, '');
+    } else {
+      if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+      var u;
+      try { u = new URL(v); } catch (e) { return null; }
+      if (u.hostname.toLowerCase().replace(/^(www|m)\./, '') !== 'instagram.com') return null;
+      var seg = u.pathname.split('/').filter(Boolean)[0] || '';
+      if (/^(p|reel|reels|tv|stories|explore|accounts|direct)$/i.test(seg)) return null;
+      if (!/^[A-Za-z0-9._]{1,30}$/.test(seg)) return null;
+      user = seg;
+    }
+    return { user: user, url: 'https://www.instagram.com/' + user + '/' };
+  }
   /* Whole rupees, 1 to MAX_SALES. Returns 0 when the box is empty or invalid. */
   function readSales(id) {
     var n = Math.floor(Number($(id).value));
@@ -470,9 +511,10 @@ html[data-theme="light"] .note{color:#64748b !important}
       el.textContent = ''; el.hidden = true;
     }
   }
-  function videoPayload(v, before, now, helped) {
+  function videoPayload(v, ig, before, now, helped) {
     var pct = growthPct(before, now);
     var msg = 'Video case study (' + v.platform + '): ' + v.url +
+      ' | Instagram: ' + ig.url +
       ' | Monthly sales before GLIME: INR ' + before +
       ' | Now: INR ' + now +
       ' | Growth: ' + pct + '%' +
@@ -485,6 +527,8 @@ html[data-theme="light"] .note{color:#64748b !important}
     p.metadata.kind = VD.KIND;
     p.metadata.video_url = v.url;
     p.metadata.platform = v.platform;
+    p.metadata.instagram_url = ig.url;
+    p.metadata.instagram_user = ig.user;
     p.metadata.reward_tokens = VD.TOKENS;
     p.metadata.sales_before_inr = before;
     p.metadata.sales_now_inr = now;
@@ -500,24 +544,38 @@ html[data-theme="light"] .note{color:#64748b !important}
     $('vdSend').textContent = on ? 'Submitting…' : 'Submit video';
   }
   /* Replaces the form with a message. One reward per client, so there is no "submit another". */
-  function showVdDone(title, text, reference) {
+  function showVdDone(title, text, reference, teamMsg) {
     $('vdForm').hidden = true;
     $('vdDoneTitle').textContent = title;
     $('vdDoneText').textContent = text;
+    var m = $('vdDoneMsg'); m.hidden = !teamMsg; $('vdDoneMsgText').textContent = teamMsg || '';
     var ref = $('vdRef'); ref.hidden = !reference; ref.textContent = reference ? 'Reference: ' + reference : '';
     $('vdDone').hidden = false;
   }
-  function showVdAlreadySent(status, reference) {
-    var text = status === 'resolved'
-      ? 'Your video has been approved. If your 2,500,000 tokens have not arrived yet, they can take 1 to 2 days.'
-      : 'Our team is reviewing your video. After approval, it can take 1 to 2 days for the 2,500,000 tokens to reach your account.';
-    showVdDone('You have already sent your video', text, reference || null);
+  function showVdAlreadySent(status, reference, teamMsg) {
+    if (status === 'resolved') {
+      showVdDone('Your video was approved',
+        'Thank you! If your 2,500,000 tokens have not arrived yet, they can take 1 to 2 days.',
+        reference || null, teamMsg || '');
+      return;
+    }
+    showVdDone('You have already sent your video',
+      'Our team is reviewing your video. After approval, it can take 1 to 2 days for the 2,500,000 tokens to reach your account.',
+      reference || null, teamMsg || '');
   }
-  /* If this client already has an open video submission, show its state instead of the form. */
+  /* A rejected video: show why, and keep the form open so the client can send a new one. */
+  function showVdRejected(reference, reason) {
+    $('vdVerdictRef').textContent = reference ? 'Reference: ' + reference : '';
+    $('vdVerdictWhy').textContent = reason ? 'Reason: ' + reason : '';
+    $('vdVerdict').hidden = false;
+  }
+  /* Shows this client's current video reward state instead of (or above) the form. */
   function checkVideoStatus() {
     sb.rpc(VD.STATUS_RPC).then(function (res) {
       var d = res && res.data;
-      if (d && d.ok && d.sent) showVdAlreadySent(d.status, d.reference);
+      if (!d || !d.ok) return;
+      if (d.sent) showVdAlreadySent(d.status, d.reference, d.message);
+      else if (d.rejected) showVdRejected(d.reference, d.message);
     }).catch(function () { /* ignore: submitting still enforces the rule */ });
   }
   function submitVideo() {
@@ -526,6 +584,12 @@ html[data-theme="light"] .note{color:#64748b !important}
     if (!v) {
       showVdError('Please paste a valid YouTube or Instagram video link.');
       $('vdLink').focus();
+      return;
+    }
+    var ig = parseInstagram($('vdIg').value);
+    if (!ig) {
+      showVdError('Please enter the link of your Instagram account, for example https://www.instagram.com/yourbusiness or @yourbusiness.');
+      $('vdIg').focus();
       return;
     }
     var before = readSales('vdBefore');
@@ -547,7 +611,7 @@ html[data-theme="light"] .note{color:#64748b !important}
     var last = Number(store(VD.LAST) || 0);
     if (Date.now() - last < FB.COOLDOWN_MS) { showVdError('Please wait a few seconds before submitting again.'); return; }
     showVdError(''); setVdSending(true);
-    var p = videoPayload(v, before, now, $('vdHelped').value);
+    var p = videoPayload(v, ig, before, now, $('vdHelped').value);
     send(p).then(function (res) {
       setVdSending(false);
       if (res.ok) {
@@ -591,6 +655,7 @@ html[data-theme="light"] .note{color:#64748b !important}
     b.addEventListener('click', function () { setTab(b.getAttribute('data-tab')); });
   });
   $('vdLink').addEventListener('input', function () { showVdError(''); });
+  $('vdIg').addEventListener('input', function () { showVdError(''); });
   $('vdBefore').addEventListener('input', function () { showVdError(''); updateGrowth(); });
   $('vdNow').addEventListener('input', function () { showVdError(''); updateGrowth(); });
   $('vdConsent').addEventListener('change', function () { showVdError(''); });
