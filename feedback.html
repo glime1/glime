@@ -63,6 +63,9 @@ h1{margin:0;font-size:1.7rem}
 .rules{margin:14px 0 0;padding-left:20px;color:var(--muted);font-size:.84rem;line-height:1.75}
 .inp{width:100%;min-height:48px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:var(--field);color:var(--text);font:inherit;font-size:16px;outline:0;transition:border-color .15s,box-shadow .15s}
 .inp:focus{border-color:rgba(0,255,136,.55);box-shadow:0 0 0 3px rgba(0,255,136,.12)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row2 .label:first-child{margin-top:16px}
+.growth{margin:10px 0 0;padding:9px 13px;border-radius:12px;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.08);color:var(--green);font-size:.84rem;font-weight:600}
 .note{margin:14px 0 0;font-size:.8rem;line-height:1.6;color:var(--soft)}
 
 /* ---------- Light theme ---------- */
@@ -95,10 +98,11 @@ html[data-theme="light"] .reward p{color:#1e293b !important}
 html[data-theme="light"] .rules{color:#475569 !important}
 html[data-theme="light"] .inp{background:#f8fafc !important;color:#0f172a !important;border-color:rgba(15,23,42,.18) !important}
 html[data-theme="light"] .inp::placeholder{color:#94a3b8}
+html[data-theme="light"] .growth{background:rgba(5,150,105,.08) !important;border-color:rgba(5,150,105,.4) !important;color:#047857 !important}
 html[data-theme="light"] .note{color:#64748b !important}
 
 @media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}}
-@media(max-width:520px){.card{padding:18px 14px}.actions{flex-direction:column-reverse}.btn{width:100%}.reward{flex-direction:column;align-items:flex-start;gap:8px}.reward .amt{text-align:left}}
+@media(max-width:520px){.card{padding:18px 14px}.actions{flex-direction:column-reverse}.btn{width:100%}.reward{flex-direction:column;align-items:flex-start;gap:8px}.reward .amt{text-align:left}.row2{grid-template-columns:1fr;gap:0}}
 </style>
 <link rel="stylesheet" href="glime-app-shell.css">
 <script src="glime-app-shell.js" defer></script>
@@ -151,20 +155,44 @@ html[data-theme="light"] .note{color:#64748b !important}
     <div id="panelVd" role="tabpanel" aria-labelledby="tabVd" hidden>
       <form id="vdForm" novalidate>
         <div class="reward">
-          <div class="amt"><small>REWARD</small><b>200,000 tokens</b></div>
-          <p>Share a short video about how GLIME helps your business. Once our team approves it, we will add 200,000 tokens to your account.</p>
+          <div class="amt"><small>REWARD</small><b>2,500,000 tokens</b></div>
+          <p>Share a short video about how GLIME has grown your business. Once our team approves it, we will add 2,500,000 tokens to your account.</p>
         </div>
         <ul class="rules">
           <li>Video length: 30 to 40 seconds only.</li>
           <li>Upload the video to YouTube or Instagram yourself, then paste its link below. We do not accept file uploads here.</li>
           <li>Keep the video public or unlisted so our team can watch it.</li>
-          <li>Tell us in your own words how GLIME has helped your business.</li>
+          <li>Tell us in your own words how GLIME has helped your business, and how much your sales have grown.</li>
         </ul>
 
         <label class="label" for="vdLink">Video link<span>YouTube or Instagram</span></label>
         <input id="vdLink" class="inp" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="500" placeholder="https://www.youtube.com/watch?v=... or https://www.instagram.com/reel/...">
 
-        <label class="check"><input type="checkbox" id="vdConsent"> I allow GLIME to use this video and my business name in its case studies.</label>
+        <div class="row2">
+          <div>
+            <label class="label" for="vdBefore">Monthly sales before GLIME<span>in INR</span></label>
+            <input id="vdBefore" class="inp" type="number" inputmode="numeric" min="1" max="100000000000" step="1" placeholder="e.g. 50000">
+          </div>
+          <div>
+            <label class="label" for="vdNow">Monthly sales now<span>in INR</span></label>
+            <input id="vdNow" class="inp" type="number" inputmode="numeric" min="1" max="100000000000" step="1" placeholder="e.g. 120000">
+          </div>
+        </div>
+        <div class="growth" id="vdGrowth" hidden></div>
+
+        <label class="label" for="vdHelped">What helped your business the most?<span>optional</span></label>
+        <select id="vdHelped" class="inp">
+          <option value="">Select one</option>
+          <option>WhatsApp sales</option>
+          <option>Instagram sales</option>
+          <option>Follow-up messages</option>
+          <option>Leads and pipeline</option>
+          <option>Orders and payments</option>
+          <option>GLIME AI replies</option>
+          <option>Something else</option>
+        </select>
+
+        <label class="check"><input type="checkbox" id="vdConsent"> I allow GLIME to use this video, my business name and these sales numbers in its case studies.</label>
         <p class="note">Our team reviews every video. After approval, it can take 1 to 2 days for the tokens to reach your account.</p>
         <div class="err" id="vdErr" role="alert" hidden></div>
 
@@ -209,8 +237,9 @@ html[data-theme="light"] .note{color:#64748b !important}
   /* Video reward: link only (YouTube / Instagram). No file is ever uploaded. */
   var VD = {
     KIND: 'video_reward',
-    TOKENS: 200000,
+    TOKENS: 2500000,
     MAX_URL: 500,
+    MAX_SALES: 100000000000,
     LAST: 'glime_video_last'
   };
   var TYPES = [
@@ -422,8 +451,30 @@ html[data-theme="light"] .note{color:#64748b !important}
     if (u.href.length > VD.MAX_URL) return null;
     return { platform: platform, url: u.href };
   }
-  function videoPayload(v) {
-    var p = payload('Video case study (' + v.platform + '): ' + v.url);
+  /* Whole rupees, 1 to MAX_SALES. Returns 0 when the box is empty or invalid. */
+  function readSales(id) {
+    var n = Math.floor(Number($(id).value));
+    return (isFinite(n) && n >= 1 && n <= VD.MAX_SALES) ? n : 0;
+  }
+  function growthPct(before, now) { return Math.round((now - before) / before * 100); }
+  function updateGrowth() {
+    var b = readSales('vdBefore'), n = readSales('vdNow');
+    var el = $('vdGrowth');
+    if (b && n && n > b) {
+      el.textContent = 'Sales growth: +' + growthPct(b, n).toLocaleString('en-IN') + '%';
+      el.hidden = false;
+    } else {
+      el.textContent = ''; el.hidden = true;
+    }
+  }
+  function videoPayload(v, before, now, helped) {
+    var pct = growthPct(before, now);
+    var msg = 'Video case study (' + v.platform + '): ' + v.url +
+      ' | Monthly sales before GLIME: INR ' + before +
+      ' | Now: INR ' + now +
+      ' | Growth: ' + pct + '%' +
+      (helped ? ' | Helped most: ' + helped : '');
+    var p = payload(msg);
     p.type = 'other';
     p.rating = null;
     p.page = 'Video reward';
@@ -432,6 +483,10 @@ html[data-theme="light"] .note{color:#64748b !important}
     p.metadata.video_url = v.url;
     p.metadata.platform = v.platform;
     p.metadata.reward_tokens = VD.TOKENS;
+    p.metadata.sales_before_inr = before;
+    p.metadata.sales_now_inr = now;
+    p.metadata.growth_pct = pct;
+    p.metadata.helped_most = helped || '';
     p.metadata.case_study_consent = true;
     return p;
   }
@@ -451,8 +506,9 @@ html[data-theme="light"] .note{color:#64748b !important}
   }
   function resetVideo() {
     $('vdDone').hidden = true; $('vdForm').hidden = false;
-    $('vdLink').value = ''; $('vdConsent').checked = false;
-    showVdError(''); setVdSending(false);
+    $('vdLink').value = ''; $('vdBefore').value = ''; $('vdNow').value = ''; $('vdHelped').value = '';
+    $('vdConsent').checked = false;
+    updateGrowth(); showVdError(''); setVdSending(false);
     try { $('vdLink').focus(); } catch (e) { /* ignore */ }
   }
   function submitVideo() {
@@ -463,6 +519,18 @@ html[data-theme="light"] .note{color:#64748b !important}
       $('vdLink').focus();
       return;
     }
+    var before = readSales('vdBefore');
+    if (!before) {
+      showVdError('Please enter your monthly sales before GLIME, in rupees (numbers only).');
+      $('vdBefore').focus();
+      return;
+    }
+    var now = readSales('vdNow');
+    if (!now) {
+      showVdError('Please enter your monthly sales now, in rupees (numbers only).');
+      $('vdNow').focus();
+      return;
+    }
     if (!$('vdConsent').checked) {
       showVdError('Please tick the box to allow us to use your video in our case studies.');
       return;
@@ -470,18 +538,18 @@ html[data-theme="light"] .note{color:#64748b !important}
     var last = Number(store(VD.LAST) || 0);
     if (Date.now() - last < FB.COOLDOWN_MS) { showVdError('Please wait a few seconds before submitting again.'); return; }
     showVdError(''); setVdSending(true);
-    var p = videoPayload(v);
+    var p = videoPayload(v, before, now, $('vdHelped').value);
     send(p).then(function (res) {
       setVdSending(false);
       if (res.ok) {
         store(VD.LAST, String(Date.now()));
-        showVdDone('Video received!', 'Thank you. Our team will review your video. After approval, it can take 1 to 2 days for the 200,000 tokens to reach your account.', res.reference);
+        showVdDone('Video received!', 'Thank you. Our team will review your video. After approval, it can take 1 to 2 days for the 2,500,000 tokens to reach your account.', res.reference);
         return;
       }
       if (res.auth) { showVdError(res.error); setTimeout(function () { location.replace('login.html'); }, 1800); return; }
       if (res.queue) {
         queue(p); store(VD.LAST, String(Date.now()));
-        showVdDone('Saved on this device', res.error + ' Your video link is saved and will be sent automatically the next time you open GLIME.', null);
+        showVdDone('Saved on this device', res.error + ' Your video details are saved and will be sent automatically the next time you open GLIME.', null);
         return;
       }
       showVdError(res.error || 'Your video could not be submitted. Please try again.');
@@ -513,6 +581,8 @@ html[data-theme="light"] .note{color:#64748b !important}
     b.addEventListener('click', function () { setTab(b.getAttribute('data-tab')); });
   });
   $('vdLink').addEventListener('input', function () { showVdError(''); });
+  $('vdBefore').addEventListener('input', function () { showVdError(''); updateGrowth(); });
+  $('vdNow').addEventListener('input', function () { showVdError(''); updateGrowth(); });
   $('vdConsent').addEventListener('change', function () { showVdError(''); });
   $('vdForm').addEventListener('submit', function (e) { e.preventDefault(); submitVideo(); });
   $('vdAgain').addEventListener('click', resetVideo);
