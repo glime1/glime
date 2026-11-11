@@ -96,7 +96,7 @@
       #${VIEW} dt{color:#7b8797}#${VIEW} dd{margin:0;color:#dfe7ef;word-break:break-word}#${VIEW} dd a{color:#00f0ff}
       #${VIEW} .gf-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
       #${VIEW} .gf-act button,#${VIEW} .gf-act a{border:0;border-radius:9px;padding:8px 13px;font:700 .76rem system-ui,sans-serif;cursor:pointer;background:rgba(255,255,255,.1);color:#fff;text-decoration:none}
-      #${VIEW} .gf-act .wa{background:#25d366;color:#04200f}#${VIEW} .gf-act .go{background:#00ff88;color:#06100b}
+      #${VIEW} .gf-act .wa{background:#25d366;color:#04200f}#${VIEW} .gf-act .go{background:#00ff88;color:#06100b}#${VIEW} .gf-act .vid{background:#00f0ff;color:#04141a}
       #${VIEW} .gf-act button:disabled{opacity:.5}
       #${VIEW} .gf-act input{flex:1 1 200px;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#fff;font:inherit;font-size:.76rem}
       #${VIEW} .gf-empty{padding:22px;border:1px dashed rgba(255,255,255,.14);border-radius:14px;color:#9ba7b7;text-align:center;font-size:.82rem;line-height:1.6}
@@ -158,6 +158,16 @@
     const text = "Hi " + (p.r.client_name || "") + ", this is the GLIME team about your feedback " + (p.ref ? "(" + p.ref + ")" : "") + ".";
     return "https://wa.me/" + num + "?text=" + encodeURIComponent(text);
   }
+  /* Video reward submissions carry the client's video link in metadata.video_url.
+     The value comes from the client, so only https YouTube / Instagram links are opened. */
+  function videoLink(p) {
+    if (p.meta.kind !== "video_reward") return "";
+    let u;
+    try { u = new URL(String(p.meta.video_url || "").trim()); } catch (e) { return ""; }
+    if (u.protocol !== "https:") return "";
+    const host = u.hostname.toLowerCase().replace(/^(www|m)\./, "");
+    return host === "youtube.com" || host === "youtu.be" || host === "instagram.com" ? u.href : "";
+  }
   function device(p) {
     const m = p.meta, bits = [];
     if (m.viewport) bits.push(m.viewport);
@@ -174,6 +184,7 @@
   function card(p) {
     const r = p.r, st = p.status;
     const wa = waLink(p);
+    const vid = videoLink(p);
     const contactBits = [r.client_name && esc(r.client_name), r.client_email && `<a href="mailto:${esc(r.client_email)}">${esc(r.client_email)}</a>`, r.client_phone && `<a href="tel:${esc(r.client_phone)}">${esc(r.client_phone)}</a>`].filter(Boolean).join(" \u00b7 ");
     return `<div class="gf-card${p.type === "bug" ? " bug" : ""}" data-id="${esc(r.id)}">
       <div class="gf-top"><div><div class="gf-name">${esc(p.who)}${r.client_name && r.business_name ? ` <span style="color:#7b8797;font-weight:500">\u00b7 ${esc(r.client_name)}</span>` : ""}</div>
@@ -187,6 +198,7 @@
         <dt>Device</dt><dd>${esc(device(p))}</dd>
         ${r.resolved_at ? `<dt>Resolved</dt><dd>${esc(when(r.resolved_at))}${r.resolved_by ? " by " + esc(r.resolved_by) : ""}</dd>` : ""}</dl>
       <div class="gf-act">
+        ${vid ? `<a class="vid" href="${esc(vid)}" target="_blank" rel="noopener noreferrer">\u25b6 Open video</a>` : ""}
         ${wa && r.can_contact !== false ? `<a class="wa" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">Reply on WhatsApp</a>` : ""}
         ${r.client_email && r.can_contact !== false ? `<a href="mailto:${esc(r.client_email)}?subject=${encodeURIComponent("GLIME: your feedback " + (p.ref || ""))}">Email</a>` : ""}
         ${st === "new" ? '<button data-st="in_progress">Start working</button>' : ""}
