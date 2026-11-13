@@ -1,0 +1,29 @@
+/* GLIME LEADS — IMPORT ADDON styles */
+.import-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 14px 0;
+}
+.import-box .input { flex: 1 1 220px; min-width: 0; }
+
+.imp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+
+.imp-table { min-width: 520px; width: 100%; }
+.imp-table td, .imp-table th { white-space: nowrap; }
+.imp-table .imp-duplicate td,
+.imp-table .imp-invalid td { opacity: .6; }
+
+.imp-problems { margin: 10px 0 0; padding-left: 18px; font-size: 13px; opacity: .85; }
+
+.imp-error { color: #f87171; font-weight: 500; margin: 12px 0; }
+.imp-success { color: #34d399; font-weight: 500; margin: 12px 0; }
+
+#importModal .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+#importModal .modal-panel { max-height: 90vh; overflow-y: auto; }

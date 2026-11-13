@@ -136,7 +136,7 @@
       if (src && l.source !== src) return false;
       if (pri && l.priority !== pri) return false;
       if (!q) return true;
-      return [l.name, l.mobile, l.whatsapp, l.interest, l.product_service, l.city_area, l.notes]
+      return [l.name, l.mobile, l.whatsapp, l.email, l.address, l.interest, l.product_service, l.city_area, l.notes]
         .join(" ")
         .toLowerCase()
         .includes(q);
@@ -487,7 +487,8 @@
     const tel = l.mobile || l.whatsapp;
     const wa = waDigits(l.whatsapp || l.mobile);
     const info = [
-      ["Mobile", l.mobile], ["WhatsApp", l.whatsapp], ["City / Area", l.city_area],
+      ["Mobile", l.mobile], ["WhatsApp", l.whatsapp], ["Email", l.email], ["City / Area", l.city_area],
+      ["Address", l.address],
       ["Source", src.label], ["Priority", cap(l.priority)], ["Created", fmtDate(l.created_at)],
       ["Last contacted", fmtDate(l.last_contacted_at)], ["Last activity", fmtDate(l.last_activity_at)]
     ];
@@ -517,7 +518,7 @@
       </section>
       <section class="dp-sec" id="dpInfo">
         <h3>Contact details</h3>
-        <div class="detail-grid">${info.map(([k, v]) => `<div class="detail-item"><small>${esc(k)}</small><strong>${esc(v || "—")}</strong></div>`).join("")}</div>
+        <div class="detail-grid">${info.map(([k, v]) => `<div class="detail-item${k === "Address" ? " full" : ""}"><small>${esc(k)}</small><strong>${esc(v || "—")}</strong></div>`).join("")}</div>
       </section>
       <section class="dp-sec" id="dpEnquiry">
         <h3>Enquiry</h3>
@@ -796,6 +797,8 @@
         name: c("name"),
         mobile: c("mobile") || null,
         whatsapp: c("whatsapp") || null,
+        email: c("email").toLowerCase() || null,
+        address: c("address") || null,
         city_area: c("city_area") || null,
         interest: c("interest") || null,
         product_service: c("product_service") || null,
