@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+
+<title>Authorize secure connection | GLIME</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg:#05080c;
+  --card:#0e1520;
+  --card-2:#131c2a;
+  --border:rgba(255,255,255,.09);
+  --green:#00ff88;
+  --cyan:#00f0ff;
+  --teal:#0b8f8c;
+  --muted:#9ca3af;
+  --soft:#c9d3df;
+  --white:#fff;
+  --danger:#ff4757;
+}
+
+*{
+  box-sizing:border-box;
+  font-family:Poppins,system-ui,-apple-system,Segoe UI,sans-serif;
+}
+
+html,body{
+  margin:0;
+}
+
+body{
+  background:
+    radial-gradient(900px 420px at 15% -10%, rgba(0,255,136,.10), transparent 60%),
+    radial-gradient(800px 420px at 100% 0%, rgba(0,240,255,.08), transparent 60%),
+    var(--bg);
+  color:var(--white);
+  min-height:100vh;
+  padding:28px 16px 40px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+}
+
+.wrap{
+  width:100%;
+  max-width:580px;
+}
+
+.card{
+  position:relative;
+  background:linear-gradient(180deg,var(--card-2),var(--card));
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:26px 22px 24px;
+  box-shadow:
+    0 0 0 1px rgba(0,255,136,.05),
+    0 24px 70px rgba(0,0,0,.55),
+    0 0 90px rgba(0,255,136,.06);
+  overflow:hidden;
+}
+
+.card::before{
+  content:"";
+  position:absolute;
+  left:0; right:0; top:0;
+  height:3px;
+  background:linear-gradient(90deg,transparent,var(--green),var(--cyan),transparent);
+  opacity:.9;
+}
+
+.logo{
+  height:156px;
+  display:flex;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.logo img{
+  width:220px;
+  height:220px;
+  margin-top:-12px;
+  display:block;
+}
+
+.badge-row{
+  display:flex;
+  justify-content:center;
+  margin:2px 0 14px;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  font-size:.74rem;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--green);
+  background:rgba(0,255,136,.08);
+  border:1px solid rgba(0,255,136,.25);
+  border-radius:999px;
+  padding:6px 12px;
+}
+
+.badge svg{
+  width:14px;
+  height:14px;
+  flex:none;
+}
+
+h1{
+  margin:0 0 8px;
+  font-size:1.55rem;
+  line-height:1.25;
+  text-align:center;
+}
+
+.sub{
+  color:var(--muted);
+  line-height:1.6;
+  margin:0 auto 20px;
+  text-align:center;
+  font-size:.92rem;
+  max-width:460px;
+}
+
+.box{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:15px 16px;
+  margin:12px 0;
+  background:rgba(255,255,255,.03);
+}
+
+.app-box{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.avatar{
+  width:46px;
+  height:46px;
+  border-radius:12px;
+  flex:none;
+  display:grid;
+  place-items:center;
+  font-weight:800;
+  font-size:1.2rem;
+  color:#03110a;
+  background:linear-gradient(135deg,var(--green),var(--cyan));
+}
+
+.label{
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  color:var(--muted);
+  margin-bottom:5px;
+}
+
+.value{
+  font-weight:700;
+  font-size:1.05rem;
+  word-break:break-word;
+}
+
+.who{
+  color:var(--muted);
+  font-size:.8rem;
+  margin-top:3px;
+  word-break:break-all;
+}
+
+.scopes{
+  list-style:none;
+  margin:8px 0 0;
+  padding:0;
+}
+
+.scopes li{
+  position:relative;
+  padding:10px 0 10px 28px;
+  border-top:1px solid var(--border);
+  color:var(--soft);
+  line-height:1.5;
+}
+
+.scopes li:first-child{
+  border-top:0;
+}
+
+.scopes li::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:13px;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:rgba(0,255,136,.14)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.4l2.3 2.3 4.7-4.9' fill='none' stroke='%2300ff88' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center/16px 16px no-repeat;
+}
+
+.s-head{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+
+.s-head strong{
+  color:var(--white);
+  font-size:.95rem;
+}
+
+.s-head code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.72rem;
+  color:var(--cyan);
+  background:rgba(0,240,255,.08);
+  border:1px solid rgba(0,240,255,.2);
+  border-radius:6px;
+  padding:1px 7px;
+}
+
+.s-desc{
+  display:block;
+  font-size:.84rem;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.shield{
+  margin:18px 0 6px;
+  border:1px solid rgba(0,255,136,.2);
+  background:linear-gradient(180deg,rgba(0,255,136,.06),rgba(0,255,136,.015));
+  border-radius:16px;
+  padding:16px;
+}
+
+.shield-title{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font-weight:800;
+  font-size:.95rem;
+  margin-bottom:12px;
+}
+
+.shield-title svg{
+  width:20px;
+  height:20px;
+  flex:none;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.feat{
+  background:rgba(5,8,12,.55);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:11px 12px;
+}
+
+.feat b{
+  display:block;
+  font-size:.82rem;
+  color:var(--green);
+  margin-bottom:3px;
+}
+
+.feat span{
+  display:block;
+  font-size:.78rem;
+  line-height:1.5;
+  color:var(--soft);
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:20px;
+}
+
+button{
+  flex:1;
+  border:0;
+  border-radius:12px;
+  padding:14px 16px;
+  font-weight:800;
+  font-size:.98rem;
+  cursor:pointer;
+}
+
+.approve{
+  background:linear-gradient(135deg,var(--green),#00d9b0);
+  color:#03110a;
+  box-shadow:0 8px 28px rgba(0,255,136,.25);
+}
+
+.deny{
+  background:rgba(255,255,255,.07);
+  color:var(--white);
+  border:1px solid var(--border);
+}
+
+button:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.message{
+  padding:13px;
+  border-radius:12px;
+  margin-top:16px;
+  display:none;
+  line-height:1.5;
+  font-size:.9rem;
+}
+
+.error{
+  display:block;
+  background:rgba(255,71,87,.08);
+  border:1px solid rgba(255,71,87,.25);
+  color:#ffb0b0;
+}
+
+.notice{
+  color:var(--muted);
+  font-size:.78rem;
+  line-height:1.65;
+  margin:16px 0 0;
+  text-align:center;
+}
+
+a{
+  color:var(--cyan);
+}
+
+@media(max-width:560px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+  .actions{
+    flex-direction:column-reverse;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<main class="wrap">
+
+  <section class="card">
+
+    <div class="logo">
+      <img src="/glime_logo_clean.svg" alt="GLIME" width="220" height="220">
+    </div>
+
+    <div class="badge-row">
+      <span class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="4" y="10" width="16" height="11" rx="2.5"></rect>
+          <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+        </svg>
+        Secure connection &middot; glime.online
+      </span>
+    </div>
+
+    <h1 id="title">Authorize secure connection</h1>
+
+    <p class="sub">
+      An application is asking to connect to your GLIME account.
+      Review exactly what it is requesting before you continue.
+    </p>
+
+    <div id="details">
+
+      <div class="box app-box">
+        <div class="avatar" id="clientInitial">?</div>
+        <div>
+          <div class="label">Application</div>
+          <div class="value" id="clientName">Loading…</div>
+          <div class="who" id="userEmail"></div>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="label">What this app is asking for</div>
+        <ul id="scopes" class="scopes">
+          <li>Loading…</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="shield">
+
+      <div class="shield-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3l7 3v5.5c0 4.4-2.9 8.3-7 9.5-4.1-1.2-7-5.1-7-9.5V6l7-3z"></path>
+          <path d="M9 12l2.2 2.2L15.5 10"></path>
+        </svg>
+        How GLIME keeps your data safe
+      </div>
+
+      <div class="grid">
+
+        <div class="feat">
+          <b>Verified identity</b>
+          <span>Every request carries a signed token that GLIME checks on its own servers before anything is shown.</span>
+        </div>
+
+        <div class="feat">
+          <b>Your data only</b>
+          <span>Access is tied to your account on the server. The app cannot pick or switch to another business.</span>
+        </div>
+
+        <div class="feat">
+          <b>Permissions you control</b>
+          <span>What the app may read or change is set and enforced by GLIME on every single action.</span>
+        </div>
+
+        <div class="feat">
+          <b>Audit trail</b>
+          <span>Actions taken through this connection are recorded so they can be reviewed.</span>
+        </div>
+
+        <div class="feat">
+          <b>Limited tools</b>
+          <span>Only Leads, Follow-ups and Services. No database queries, no passwords, no secrets.</span>
+        </div>
+
+        <div class="feat">
+          <b>Encrypted &amp; revocable</b>
+          <span>Traffic is encrypted over HTTPS, and you can disconnect the app at any time.</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div
+      id="actions"
+      class="actions"
+      style="display:none">
+
+      <button
+        id="deny"
+        class="deny"
+        type="button">
+
+        Deny
+
+      </button>
+
+      <button
+        id="approve"
+        class="approve"
+        type="button">
+
+        Approve &amp; Continue
+
+      </button>
+
+    </div>
+
+    <div
+      id="message"
+      class="message">
+    </div>
+
+    <p class="notice">
+      Approving does not give unrestricted access. GLIME separately enforces
+      tenant isolation and AI permissions at the MCP Gateway. Only approve
+      if you recognise this application.
+    </p>
+
+  </section>
+
+</main>
+
+
+<script>
+
+const SUPABASE_URL =
+  "https://ufoulgbiqgjriwapuopc.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
+
+const sb =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    {
+      auth:{
+        persistSession:true,
+        autoRefreshToken:true,
+        detectSessionInUrl:true
+      }
+    }
+  );
+
+
+const authorizationId =
+  new URLSearchParams(
+    location.search
+  ).get("authorization_id");
+
+
+const SCOPE_INFO = {
+  openid: [
+    "Verify your identity",
+    "Confirms that it is really you signing in."
+  ],
+  email: [
+    "See your account email",
+    "Reads the email address of your GLIME account."
+  ],
+  offline_access: [
+    "Stay connected",
+    "Keeps the connection working without asking you to approve again each time."
+  ]
+};
+
+
+function showError(message){
+
+  const el =
+    document.getElementById("message");
+
+  el.textContent =
+    message;
+
+  el.className =
+    "message error";
+}
+
+
+function setBusy(busy){
+
+  const approve =
+    document.getElementById("approve");
+
+  const deny =
+    document.getElementById("deny");
+
+  if(approve){
+    approve.disabled = busy;
+  }
+
+  if(deny){
+    deny.disabled = busy;
+  }
+
+}
+
+
+async function decide(action){
+
+  if(!authorizationId){
+
+    showError(
+      "Missing authorization_id."
+    );
+
+    return;
+  }
+
+  setBusy(true);
+
+  try{
+
+    let result;
+
+    if(action === "approve"){
+
+      result =
+        await sb.auth.oauth
+          .approveAuthorization(
+            authorizationId
+          );
+
+    }else{
+
+      result =
+        await sb.auth.oauth
+          .denyAuthorization(
+            authorizationId
+          );
+
+    }
+
+    const {
+      data,
+      error
+    } = result;
+
+    if(error){
+
+      setBusy(false);
+
+      showError(
+        error.message ||
+        "The OAuth request could not be completed."
+      );
+
+      return;
+    }
+
+    if(!data?.redirect_url){
+
+      setBusy(false);
+
+      showError(
+        "OAuth completed but no redirect URL was returned."
+      );
+
+      return;
+    }
+
+    window.location.replace(
+      data.redirect_url
+    );
+
+  }catch(error){
+
+    console.error(
+      "OAuth decision error:",
+      error
+    );
+
+    setBusy(false);
+
+    showError(
+      "The authorization request could not be completed."
+    );
+
+  }
+
+}
+
+
+async function init(){
+
+  if(!authorizationId){
+
+    showError(
+      "This authorization request is missing its authorization_id."
+    );
+
+    return;
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await sb.auth.getUser();
+
+  if(error){
+
+    showError(
+      error.message ||
+      "Could not verify your GLIME session."
+    );
+
+    return;
+  }
+
+
+  const user =
+    data?.user;
+
+
+  if(!user){
+
+    showError(
+      "Please sign in to GLIME first, then return to this authorization request."
+    );
+
+    const link =
+      document.createElement("a");
+
+    link.href =
+      "/login.html";
+
+    link.textContent =
+      " Open GLIME Login";
+
+    link.style.display =
+      "inline-block";
+
+    link.style.marginTop =
+      "10px";
+
+    document
+      .getElementById("message")
+      .appendChild(link);
+
+    return;
+  }
+
+
+  const {
+    data:details,
+    error:detailsError
+  } =
+    await sb.auth.oauth
+      .getAuthorizationDetails(
+        authorizationId
+      );
+
+
+  if(detailsError){
+
+    showError(
+      detailsError.message ||
+      "Invalid or expired authorization request."
+    );
+
+    return;
+  }
+
+
+  if(!details){
+
+    showError(
+      "Authorization request not found."
+    );
+
+    return;
+  }
+
+
+  const clientName =
+    details.client?.name ||
+    details.client_name ||
+    "AI application";
+
+
+  document
+    .getElementById("clientName")
+    .textContent =
+    clientName;
+
+
+  document
+    .getElementById("clientInitial")
+    .textContent =
+    clientName.trim().charAt(0).toUpperCase() || "?";
+
+
+  if(user.email){
+
+    document
+      .getElementById("userEmail")
+      .textContent =
+      "Signing in as " + user.email;
+
+  }
+
+
+  const requestedScope =
+    String(
+      details.scope || ""
+    ).trim();
+
+
+  const scopeList =
+    requestedScope
+      ? requestedScope.split(/\s+/)
+      : ["email"];
+
+
+  const scopes =
+    document.getElementById(
+      "scopes"
+    );
+
+  scopes.innerHTML = "";
+
+
+  scopeList.forEach(scope => {
+
+    const info =
+      SCOPE_INFO[scope];
+
+    const li =
+      document.createElement("li");
+
+    const head =
+      document.createElement("div");
+
+    head.className =
+      "s-head";
+
+    const title =
+      document.createElement("strong");
+
+    title.textContent =
+      info ? info[0] : scope;
+
+    const code =
+      document.createElement("code");
+
+    code.textContent =
+      scope;
+
+    head.appendChild(title);
+    head.appendChild(code);
+
+    const desc =
+      document.createElement("span");
+
+    desc.className =
+      "s-desc";
+
+    desc.textContent =
+      info
+        ? info[1]
+        : "Additional permission requested by this app.";
+
+    li.appendChild(head);
+    li.appendChild(desc);
+
+    scopes.appendChild(li);
+
+  });
+
+
+  document
+    .getElementById("actions")
+    .style.display =
+    "flex";
+
+}
+
+
+document
+  .getElementById("approve")
+  .addEventListener(
+    "click",
+    () => decide("approve")
+  );
+
+
+document
+  .getElementById("deny")
+  .addEventListener(
+    "click",
+    () => decide("deny")
+  );
+
+
+init().catch(error => {
+
+  console.error(
+    "OAuth consent initialization error:",
+    error
+  );
+
+  showError(
+    "Could not load the authorization request."
+  );
+
+});
+
+</script>
+
+</body>
+</html>
