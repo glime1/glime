@@ -1,8 +1,9 @@
 /* =========================================================
    GLIME ADMIN - Promo Codes
    Adds a "Promo Codes" tab to the admin sidebar. The admin can create a
-   code (for example for a YouTube video: "first 100 people get 20,000
-   tokens"), see how many people used it, pause/resume it, and see who used it.
+   short code (GLM100 = 100 people) for a YouTube video or a festival offer,
+   see how many people used it, pause/resume it, and see who used it.
+   Clients type the code in the Referral code box on signup.html.
    Frontend only. Backend RPCs (see PROMO_CODE_BACKEND_SPEC.md):
      admin_promo_create, admin_promo_list, admin_promo_set_active,
      admin_promo_redemptions
@@ -23,7 +24,7 @@
   const ERR = {
     not_admin: "आप admin नहीं हैं या 2FA पूरा नहीं हुआ",
     CODE_EXISTS: "यह code पहले से मौजूद है, दूसरा code बनाएँ",
-    INVALID_CODE: "Code 4 से 32 अक्षरों का हो (A-Z, 0-9, - और _ ही)",
+    INVALID_CODE: "Code 4 से 12 अक्षर/अंकों का हो (सिर्फ़ A-Z और 0-9, signup के box में इतना ही आता है)",
     INVALID_TOKENS: "Tokens 1 से 10,000,000 के बीच हों",
     INVALID_LIMIT: "लोगों की संख्या 1 से 100,000 के बीच हो",
     INVALID_EXPIRY: "समाप्ति की तारीख़ आगे की होनी चाहिए",
@@ -40,13 +41,22 @@
   let promos = [], busy = false, createKey = "";
   const uuid = () => (window.crypto && crypto.randomUUID ? crypto.randomUUID() : "k-" + Date.now() + "-" + Math.random().toString(16).slice(2));
 
+  /* Short code: letters + number of people, e.g. GLM100 = 100 people.
+     A custom word works too (DIWALI -> DIWALI500). If the code is already
+     taken, a letter is added (GLM100A, GLM100B ...). */
+  let codeTouched = false;
   function genCode() {
-    const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    const buf = new Uint32Array(6);
-    (window.crypto || window.msCrypto).getRandomValues(buf);
-    let s = "";
-    for (let i = 0; i < 6; i++) s += abc[buf[i] % abc.length];
-    return "GLIME-" + s;
+    const cur = ($("pmCode") && $("pmCode").value || "").toUpperCase();
+    const m = cur.match(/^[A-Z]+/);
+    const n = Math.floor(Number($("pmMax") && $("pmMax").value)) || 0;
+    const digits = String(n > 0 ? n : "");
+    let prefix = (m ? m[0] : "GLM");
+    prefix = prefix.slice(0, Math.max(1, 12 - digits.length - 1));
+    const base = prefix + digits;
+    const taken = new Set(promos.map((p) => String(p.code).toUpperCase()));
+    if (!taken.has(base)) return base;
+    for (const ch of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") if (!taken.has(base + ch)) return base + ch;
+    return base;
   }
 
   function statusOf(p) {
@@ -105,7 +115,8 @@
         <p class="sub">YouTube या किसी भी campaign के लिए code बनाइए। जितने लोगों की limit रखेंगे, उतने लोग ही code इस्तेमाल कर पाएँगे। हर client एक code सिर्फ़ एक बार use कर सकता है।</p>
         <div class="pm-form">
           <div class="full"><label for="pmCode">Code</label>
-            <div class="pm-row"><input id="pmCode" maxlength="32" autocomplete="off" spellcheck="false" placeholder="GLIME-XXXXXX"><button class="pm-btn" id="pmGen" type="button">Generate</button></div></div>
+            <div class="pm-row"><input id="pmCode" maxlength="12" autocomplete="off" spellcheck="false" placeholder="GLM100"><button class="pm-btn" id="pmGen" type="button">Generate</button></div>
+            <div class="sub" style="margin-top:6px">Code छोटा रखा है: GLM के पीछे लोगों की संख्या (GLM100 = 100 लोग)। चाहें तो अपना नाम लिखें, जैसे DIWALI500। Client इसे signup पेज के "Referral code" box में डालेगा।</div></div>
           <div><label for="pmTokens">Tokens हर व्यक्ति को</label><input id="pmTokens" type="number" min="1" max="${MAX_TOKENS}" step="1" inputmode="numeric" value="20000"></div>
           <div><label for="pmMax">कितने लोगों के लिए (पहले N लोग)</label><input id="pmMax" type="number" min="1" max="${MAX_USERS}" step="1" inputmode="numeric" value="100"></div>
           <div><label for="pmExp">आख़िरी तारीख़ (optional)</label><input id="pmExp" type="datetime-local"></div>
@@ -121,7 +132,7 @@
       </div>
       <div class="card" style="margin-top:14px;display:none" id="pmRedeemCard">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><h3 style="margin:0" id="pmRedeemTitle">Who used this code</h3><button class="pm-btn sm" id="pmRedeemClose" type="button">Close</button></div>
-        <div style="overflow:auto"><table><thead><tr><th>Client</th><th>Email</th><th>Tokens</th><th>Date</th></tr></thead><tbody id="pmRedeemRows"></tbody></table></div>
+        <div style="overflow:auto"><table><thead><tr><th>Client</th><th>Business</th><th>Phone</th><th>Email</th><th>Tokens</th><th>Date</th></tr></thead><tbody id="pmRedeemRows"></tbody></table></div>
       </div>`;
   }
 
@@ -130,7 +141,7 @@
   function preview() {
     const code = ($("pmCode").value || "").trim().toUpperCase() || "—";
     const t = Number($("pmTokens").value) || 0, n = Number($("pmMax").value) || 0;
-    $("pmPreview").innerHTML = `वीडियो में बोलने के लिए: <b>पहले ${num(n)} लोगों</b> को <b>${num(t)} tokens</b> मिलेंगे। Code: <b class="pm-code">${esc(code)}</b><br><span class="pm-gray">कुल ज़्यादा से ज़्यादा tokens जो बँट सकते हैं: ${num(t * n)}</span>`;
+    $("pmPreview").innerHTML = `वीडियो में बोलने के लिए: <b>पहले ${num(n)} लोगों</b> को <b>${num(t)} tokens</b> मिलेंगे। Signup में Referral code box में डालें: <b class="pm-code">${esc(code)}</b><br><span class="pm-gray">कुल ज़्यादा से ज़्यादा tokens जो बँट सकते हैं: ${num(t * n)}</span>`;
   }
 
   function renderStats() {
@@ -165,6 +176,7 @@
       if (error) throw error;
       promos = Array.isArray(data) ? data : (data && Array.isArray(data.promos) ? data.promos : []);
       renderRows();
+      if (!codeTouched && $("pmCode")) { $("pmCode").value = genCode(); preview(); }
     } catch (e) {
       promos = []; renderRows();
       say("pmListMsg", errText(e), NOT_READY.test(String((e && e.message) || e)) ? "w" : "e");
@@ -176,7 +188,7 @@
     const code = $("pmCode").value.trim().toUpperCase();
     const tokens = Number($("pmTokens").value), max = Number($("pmMax").value);
     const expVal = $("pmExp").value, note = $("pmNote").value.trim();
-    if (!/^[A-Z0-9_-]{4,32}$/.test(code)) { say("pmMsg", ERR.INVALID_CODE, "e"); return; }
+    if (!/^[A-Z0-9]{4,12}$/.test(code)) { say("pmMsg", ERR.INVALID_CODE, "e"); return; }
     if (!Number.isInteger(tokens) || tokens < 1 || tokens > MAX_TOKENS) { say("pmMsg", ERR.INVALID_TOKENS, "e"); return; }
     if (!Number.isInteger(max) || max < 1 || max > MAX_USERS) { say("pmMsg", ERR.INVALID_LIMIT, "e"); return; }
     let expiresAt = null;
@@ -189,8 +201,9 @@
       if (error) throw error;
       createKey = "";
       say("pmMsg", "Promo code बन गया: " + ((data && data.code) || code) + ". अब इसे वीडियो में बोल सकते हैं।", "s");
-      $("pmCode").value = genCode(); $("pmNote").value = ""; $("pmExp").value = "";
-      preview(); await load();
+      await load();
+      codeTouched = false; $("pmCode").value = genCode(); $("pmNote").value = ""; $("pmExp").value = "";
+      preview();
     } catch (e) {
       const m = String((e && e.message) || e || "");
       if (m.includes("CODE_EXISTS")) createKey = "";
@@ -213,14 +226,14 @@
     const card = $("pmRedeemCard");
     card.style.display = "block";
     $("pmRedeemTitle").textContent = "इस code को किसने use किया: " + p.code;
-    $("pmRedeemRows").innerHTML = `<tr><td colspan="4" class="sub">Loading…</td></tr>`;
+    $("pmRedeemRows").innerHTML = `<tr><td colspan="6" class="sub">Loading…</td></tr>`;
     card.scrollIntoView({ behavior: "smooth", block: "nearest" });
     try {
       const { data, error } = await sb.rpc("admin_promo_redemptions", { p_code: p.code, p_limit: 500 });
       if (error) throw error;
       const rows = Array.isArray(data) ? data : (data && Array.isArray(data.redemptions) ? data.redemptions : []);
-      $("pmRedeemRows").innerHTML = rows.length ? rows.map((r) => `<tr><td>${esc(r.client_id || "—")}</td><td>${esc(r.email || "—")}</td><td>${num(r.tokens)}</td><td>${esc(dt(r.redeemed_at || r.created_at))}</td></tr>`).join("") : `<tr><td colspan="4" class="sub">अभी तक किसी ने use नहीं किया।</td></tr>`;
-    } catch (e) { $("pmRedeemRows").innerHTML = `<tr><td colspan="4"><div class="pm-msg e">${esc(errText(e))}</div></td></tr>`; }
+      $("pmRedeemRows").innerHTML = rows.length ? rows.map((r) => `<tr><td><b>${esc(r.full_name || "—")}</b><br><span class="sub">${esc(r.client_id || "—")}</span></td><td>${esc(r.business_name || "—")}</td><td>${esc(r.phone || "—")}</td><td>${esc(r.email || "—")}</td><td>${num(r.tokens)}</td><td>${esc(dt(r.redeemed_at || r.created_at))}</td></tr>`).join("") : `<tr><td colspan="6" class="sub">अभी तक किसी ने use नहीं किया।</td></tr>`;
+    } catch (e) { $("pmRedeemRows").innerHTML = `<tr><td colspan="6"><div class="pm-msg e">${esc(errText(e))}</div></td></tr>`; }
   }
 
   async function copy(text, btn) {
@@ -258,9 +271,10 @@
     nav.insertBefore(b, nav.querySelector('[data-view="notifications"]') || nav.querySelector('[data-view="settings"]') || nav.querySelector(".logout"));
     b.addEventListener("click", open);
     $("pmCode").value = genCode();
-    ["pmCode", "pmTokens", "pmMax"].forEach((id) => $(id).addEventListener("input", preview));
-    $("pmCode").addEventListener("input", (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""); preview(); });
-    $("pmGen").addEventListener("click", () => { $("pmCode").value = genCode(); preview(); });
+    $("pmTokens").addEventListener("input", preview);
+    $("pmMax").addEventListener("input", () => { if (!codeTouched) $("pmCode").value = genCode(); preview(); });
+    $("pmCode").addEventListener("input", (e) => { codeTouched = true; e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); preview(); });
+    $("pmGen").addEventListener("click", () => { codeTouched = false; $("pmCode").value = genCode(); preview(); });
     $("pmCreate").addEventListener("click", create);
     $("pmReload").addEventListener("click", load);
     $("pmRedeemClose").addEventListener("click", () => { $("pmRedeemCard").style.display = "none"; });

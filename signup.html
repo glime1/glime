@@ -28,7 +28,7 @@
 <div class="group"><label for="email">Email Address</label><input id="email" type="email" autocomplete="email" placeholder="you@company.com" maxlength="254" required></div>
 <div class="group"><label for="password">Password</label><input id="password" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" minlength="8" required></div>
 <div class="group"><label for="confirmPassword">Confirm Password</label><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Re-enter your password" minlength="8" required></div>
-<div class="group"><label for="referralCode">Referral code <span class="opt">(optional)</span></label><input id="referralCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Partner referral code" maxlength="12"><div class="hint">Got a code from a GLIME partner? Enter it here. If you came through a partner's link, it is filled in for you.</div></div>
+<div class="group"><label for="referralCode">Referral code <span class="opt">(optional)</span></label><input id="referralCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Referral or offer code" maxlength="12"><div class="hint">Got a code from a GLIME partner, or an offer code from GLIME? Enter it here. If you came through a partner's link, it is filled in for you.</div></div>
 <div class="terms">By creating an account, you agree to GLIME's <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</div>
 <button type="submit" id="startBtn">Send Email OTP</button>
 </div>
@@ -94,7 +94,7 @@ function getDetails(){
  if(!/^\S+@\S+\.\S+$/.test(email))throw new Error('Please enter a valid email address.');
  if(password.length<8)throw new Error('Password must be at least 8 characters.');
  if(password!==confirmPassword)throw new Error('Passwords do not match.');
- if(referralRaw&&!/^[A-Z0-9]{6,12}$/.test(referralRaw))throw new Error('Please enter a valid referral code, or leave that box empty.');
+ if(referralRaw&&!/^[A-Z0-9]{4,12}$/.test(referralRaw))throw new Error('Please enter a valid referral code, or leave that box empty.');
  return {fullName,businessName,phone,email,password,referralCode:referralRaw};
 }
 
@@ -125,6 +125,39 @@ async function resolveTypedReferral(code){
  if(!res.ok)console.warn('Referral code could not be checked:',res.error);
 }
 
+/* Offer (promo) codes share the same box. The code is checked as an offer code first;
+   anything that is not an offer code follows the partner referral path above. */
+let pendingPromo='';
+const PROMO_MSG={PROMO_FULL:'This offer code has reached its limit.',PROMO_EXPIRED:'This offer code has expired.',PROMO_PAUSED:'This offer code is not active right now.'};
+async function checkPromo(code){
+ try{
+  const {data,error}=await supabaseClient.rpc('promo_code_check',{p_code:code});
+  if(error)return null;
+  return data&&typeof data==='object'?data:null;
+ }catch(e){return null}
+}
+async function resolveCode(code){
+ pendingPromo='';
+ if(!code)return;
+ const p=await checkPromo(code);
+ if(p&&p.found===true){
+  if(p.valid!==true)throw new Error(PROMO_MSG[p.reason]||'This offer code cannot be used.');
+  pendingPromo=code;
+  return;
+ }
+ await resolveTypedReferral(code);
+}
+/* Runs only after provisionClient() succeeded. A failure here never blocks signup. */
+async function redeemPromo(){
+ if(!pendingPromo)return;
+ const code=pendingPromo;pendingPromo='';
+ try{
+  const {data,error}=await supabaseClient.rpc('redeem_promo_code',{p_code:code});
+  if(error)throw error;
+  if(data&&data.ok){showSuccess('Offer code applied. '+Number(data.tokens||0).toLocaleString('en-IN')+' tokens added to your account.');await new Promise(r=>setTimeout(r,1400))}
+ }catch(error){console.warn('Offer code could not be applied:',error)}
+}
+
 /* Runs only after provisionClient() succeeded. A failure here never blocks signup; dashboard.html retries once. */
 async function attributeReferral(){
  if(!PR)return;
@@ -139,13 +172,13 @@ form.addEventListener('submit',async e=>{
  e.preventDefault(); errorMessage.style.display='none'; successMessage.style.display='none';
  try{
   const d=getDetails(); startBtn.disabled=true; startBtn.textContent='Creating account...';
-  await resolveTypedReferral(d.referralCode);
+  await resolveCode(d.referralCode);
   const {data,error}=await supabaseClient.auth.signUp({email:d.email,password:d.password,options:{data:{full_name:d.fullName,business_name:d.businessName,phone:d.phone}}});
   if(error)throw error;
   if(data?.session){
    detailsStep.classList.add('hidden'); emailVerificationStep.classList.remove('hidden');
    showSuccess('Account created. Preparing your GLIME dashboard...');
-   await provisionClient(); await attributeReferral(); window.location.replace('dashboard.html'); return;
+   await provisionClient(); await redeemPromo(); await attributeReferral(); window.location.replace('dashboard.html'); return;
   }
   detailsStep.classList.add('hidden'); emailVerificationStep.classList.remove('hidden');
   document.getElementById('emailOtp').focus();
@@ -173,6 +206,7 @@ document.getElementById('verifyEmailBtn').addEventListener('click',async()=>{
   showSuccess('Email verified. Setting up your GLIME dashboard...');
   const provisioned=await provisionClient();
   if(!provisioned?.client)throw new Error('GLIME client account could not be prepared.');
+  await redeemPromo();
   await attributeReferral();
   window.location.replace('dashboard.html');
  }catch(error){
@@ -193,7 +227,7 @@ resendEmailBtn.addEventListener('click',async()=>{
 });
 
 document.getElementById('changeDetailsBtn').addEventListener('click',async()=>{
- await supabaseClient.auth.signOut({scope:'local'}); emailVerificationStep.classList.add('hidden'); detailsStep.classList.remove('hidden'); document.getElementById('emailOtp').value=''; showSuccess('You can change your signup details and start again.');
+ await supabaseClient.auth.signOut({scope:'local'}); pendingPromo=''; emailVerificationStep.classList.add('hidden'); detailsStep.classList.remove('hidden'); document.getElementById('emailOtp').value=''; showSuccess('You can change your signup details and start again.');
 });
 </script>
 </body></html>
