@@ -20,20 +20,20 @@ a{color:inherit;text-decoration:none}
 button,input,select{font:inherit}
 button{cursor:pointer}
 .wrap{width:min(1180px,calc(100% - 24px));margin:0 auto;padding:18px 0 70px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800}
 .brand img{width:42px;height:42px}
 .back{color:var(--cy);font-size:.8rem;font-weight:800}
 .hero{margin-bottom:22px}
 .eyebrow{color:var(--cy);font-size:.68rem;letter-spacing:.14em;font-weight:800}
 h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
-.sub{color:var(--mu);font-size:.84rem}
-.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}
+.sub{color:var(--mu);font-size:.86rem;max-width:760px}
+.layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;align-items:start}
 .nav{position:sticky;top:14px;background:var(--surf);border:1px solid var(--bd);border-radius:17px;padding:8px}
 .nav-title{padding:10px 10px 8px;color:var(--mu);font-size:.67rem;font-weight:800;letter-spacing:.12em}
 .nav button{
   width:100%;text-align:left;border:0;background:transparent;color:var(--mu);
-  padding:10px 11px;border-radius:10px;font-size:.78rem;font-weight:800;margin-bottom:3px
+  padding:12px 13px;border-radius:10px;font-size:.86rem;font-weight:800;margin-bottom:3px
 }
 .nav button:hover{background:rgba(82,232,255,.06);color:var(--tx)}
 .nav button.active{background:rgba(82,232,255,.10);color:var(--cy)}
@@ -100,12 +100,12 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   .layout{grid-template-columns:1fr}
   .nav{display:none}
   .mobile-nav{
-    display:flex;overflow:auto;gap:7px;padding:7px;background:var(--surf);
-    border:1px solid var(--bd);border-radius:14px;margin-bottom:14px
+    display:flex;overflow:auto;gap:9px;padding:9px;background:var(--surf);
+    border:1px solid var(--bd);border-radius:16px;margin-bottom:18px
   }
   .mobile-nav button{
     flex:none;border:1px solid var(--bd);background:transparent;color:var(--mu);
-    padding:8px 11px;border-radius:9px;font-size:.72rem;font-weight:800
+    padding:13px 18px;border-radius:12px;font-size:.9rem;font-weight:800
   }
   .mobile-nav button.active{color:var(--cy);border-color:rgba(82,232,255,.35);background:rgba(82,232,255,.07)}
   .row{align-items:flex-start}
@@ -124,13 +124,13 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
     <a class="back" href="dashboard.html">← Dashboard</a>
   </div>
 
+  <div id="mobileNav" class="mobile-nav" aria-label="Settings navigation"></div>
+
   <div class="hero">
     <div class="eyebrow">ACCOUNT SETTINGS</div>
     <h1>Settings</h1>
-    <p class="sub">Manage GLIME channel behaviour from your settings area. </p>
+    <p class="sub">Your business data is protected end to end: secure sign-in, encrypted connections and private channel access, with every control in your hands.</p>
   </div>
-
-  <div id="mobileNav" class="mobile-nav" aria-label="Settings navigation"></div>
 
   <div class="layout">
     <aside id="settingsNav" class="nav" aria-label="Settings navigation">
@@ -152,7 +152,7 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
   This file intentionally contains the stable shell only:
   - authentication
   - client context
-  - settings navigation
+  - settings navigation (tabs shown at the top on mobile)
   - module registration
   - shared UI helpers
   - current channel-settings module
@@ -166,10 +166,8 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
       });
 
   Do not create another settings.html for a new settings area.
-  Add a module/addon instead and reuse the shared API/helpers.
-
-  Addons loaded (in order): settings-profile-addon.js, settings-ai-addon.js,
-  settings-teach-ai-addon.js, settings-automation-addon.js, settings-followups-addon.js, connector-ui.js, settings-connector-addon.js
+  Add a module/addon instead: create the addon file and add its name to
+  SETTINGS_ADDONS below.
 
   Dialogs: glime-dialog.js (loaded in <head>) provides GLIME_DIALOG.confirm /
   alert / prompt in GLIME colours instead of the browser's native boxes.
@@ -183,6 +181,20 @@ h1{font-size:2rem;letter-spacing:-.035em;margin:4px 0 5px}
                settings.html#teach         opens Teach AI (the owner teaches the AI from customer questions)
                settings.html#<module-id>   opens any registered module
 */
+
+/* Addons load in this order; one failing addon never blocks the others. */
+const SETTINGS_ADDONS = [
+  'settings-profile-addon.js',
+  'settings-quick-buttons-addon.js',
+  'settings-ai-addon.js',
+  'settings-teach-ai-addon.js',
+  'settings-automation-addon.js',
+  'settings-followups-addon.js',
+  'settings-template-followups-addon.js',
+  'connector-ui.js',
+  'settings-connector-addon.js',
+  'settings-payments-addon.js'
+];
 
 const sb = supabase.createClient(
   'https://ufoulgbiqgjriwapuopc.supabase.co',
@@ -617,7 +629,7 @@ async function init(){
   await openModule(state.activeModule || 'channels');
 }
 
-async function loadSettingsAddon(src){
+function loadSettingsAddon(src){
   return new Promise((resolve,reject)=>{
     const script=document.createElement('script');
     script.src=src;
@@ -629,8 +641,7 @@ async function loadSettingsAddon(src){
 }
 
 (async()=>{
-  /* Addons load in order; one failing addon never blocks the others. */
-  for(const src of ['settings-profile-addon.js','settings-quick-buttons-addon.js','settings-ai-addon.js','settings-teach-ai-addon.js','settings-automation-addon.js','settings-followups-addon.js','settings-template-followups-addon.js','connector-ui.js','settings-connector-addon.js','settings-payments-addon.js']){
+  for(const src of SETTINGS_ADDONS){
     try{
       await loadSettingsAddon(src);
     }catch(error){
