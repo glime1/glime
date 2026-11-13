@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inbox | GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="inbox.css">
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
+</head>
+<body data-gas-title="Inbox">
+<div id="loadingScreen" class="loading-screen">
+  <div class="spinner"></div>
+  <div>Loading Inbox…</div>
+</div>
+
+<main class="ib-main" data-gas-content>
+  <header class="ib-header">
+    <div>
+      <h1>Shared Inbox</h1>
+      <p>WhatsApp, Instagram and Voice conversations in one place.</p>
+    </div>
+    <button id="refreshBtn" class="ib-btn" type="button">↻ Refresh</button>
+  </header>
+
+  <div id="ibError" class="ib-error hidden" role="alert"></div>
+
+  <div class="ib-layout">
+    <!-- Column 1: conversation list -->
+    <section class="ib-col ib-list-col" aria-label="Conversations">
+      <div class="ib-list-head">
+        <input id="searchInput" class="ib-search" type="search" placeholder="Search name, phone, message…" aria-label="Search conversations" autocomplete="off">
+        <div class="ib-filters" role="group" aria-label="Filter conversations">
+          <button class="ib-filter active" data-filter="all" type="button">All <b data-count="all">0</b></button>
+          <button class="ib-filter" data-filter="needs" type="button">Needs reply <b data-count="needs">0</b></button>
+          <button class="ib-filter" data-filter="whatsapp" type="button">WhatsApp <b data-count="whatsapp">0</b></button>
+          <button class="ib-filter" data-filter="instagram" type="button">Instagram <b data-count="instagram">0</b></button>
+          <button class="ib-filter" data-filter="voice" type="button">Voice <b data-count="voice">0</b></button>
+        </div>
+      </div>
+      <div id="convList" class="ib-conv-list"></div>
+    </section>
+
+    <!-- Column 2: chat -->
+    <section class="ib-col ib-chat" aria-label="Conversation">
+      <div id="chatEmpty" class="ib-chat-empty">
+        <strong>Select a conversation</strong>
+        <span>Pick a chat from the list to read the full conversation.</span>
+      </div>
+      <div id="chatBody" class="ib-chat-body hidden">
+        <div id="chatHead" class="ib-chat-head hidden"></div>
+        <div id="thread" class="ib-thread" aria-live="polite"></div>
+        <div class="ib-readonly">View only. Replies are sent by your GLIME AI agents.</div>
+      </div>
+    </section>
+
+    <!-- Column 3: customer details -->
+    <aside class="ib-col ib-contact ib-contact-col" id="contactPanel" aria-label="Customer details"></aside>
+  </div>
+</main>
+
+<script src="inbox.js"></script>
+</body>
+</html>
