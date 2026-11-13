@@ -4,6 +4,11 @@
    Registers Settings > Follow-ups through window.GLIME_SETTINGS.
    Replaces the empty placeholder registered by settings.html.
 
+   Follow-ups here are free-form messages, so every step must go out
+   within 23 hours of the customer's last message (inside the 24-hour
+   WhatsApp / Instagram window). Anything later is handled by the
+   separate "Template follow-ups" tab. Messages can go at any hour.
+
    Data:
    - client_followup_settings (existing)  -> enabled, sending_mode
        sending_mode: 'manual_approval' | 'automatic_sending'
@@ -25,7 +30,8 @@ if(!S || typeof S.register !== 'function'){
 }
 
 const MAX_STEPS = 10;
-const MAX_DAYS = 365;
+const MAX_HOURS = 23;
+const MAX_MINUTES = MAX_HOURS * 60;
 
 const TYPES = {
   message:  {label:'Simple message',      text:'Hi {name}, just checking in. Can I help you with anything?'},
@@ -41,11 +47,8 @@ const TYPES = {
 
 const UNITS = [
   {v:'minutes', t:'minutes', m:1},
-  {v:'hours',   t:'hours',   m:60},
-  {v:'days',    t:'days',    m:1440}
+  {v:'hours',   t:'hours',   m:60}
 ];
-
-const DAYS = [[1,'Mon'],[2,'Tue'],[3,'Wed'],[4,'Thu'],[5,'Fri'],[6,'Sat'],[7,'Sun']];
 
 const LINKS = [
   {k:'website',  t:'Website',            h:'Your main website or landing page'},
@@ -57,6 +60,9 @@ const LINKS = [
 
 const PLACEHOLDERS = ['{name}','{business}','{website}','{review_link}','{catalog}','{location}','{payment_link}'];
 const LINK_PLACEHOLDER = {website:'{website}', review:'{review_link}', catalog:'{catalog}', location:'{location}', payment:'{payment_link}'};
+
+/* Messages may go at any hour, every day. Kept in the saved config so older readers still find a window. */
+const OPEN_WINDOW = {start:'00:00', end:'23:59', days:[1,2,3,4,5,6,7]};
 
 const STYLE = `
 .gfu-card{background:var(--surf);border:1px solid var(--bd);border-radius:18px;padding:18px;margin-bottom:15px}
@@ -91,11 +97,6 @@ const STYLE = `
 .gfu-warnline{color:#ffd37a;font-size:.68rem;margin-top:7px}
 .gfu-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .gfu-chip{font-size:.66rem;color:var(--cy);border:1px solid rgba(82,232,255,.28);border-radius:99px;padding:2px 9px;background:rgba(82,232,255,.05)}
-.gfu-days{display:flex;flex-wrap:wrap;gap:6px}
-.gfu-day{cursor:pointer}
-.gfu-day input{display:none}
-.gfu-day span{display:inline-block;border:1px solid var(--bd);border-radius:9px;padding:7px 11px;font-size:.74rem;font-weight:800;color:var(--mu)}
-.gfu-day input:checked+span{color:var(--cy);border-color:rgba(82,232,255,.45);background:rgba(82,232,255,.08)}
 .gfu-time{display:flex;align-items:center;gap:8px}
 .gfu-time input{width:auto}
 .gfu-link-row{margin-top:10px}
@@ -136,13 +137,13 @@ function mk(delay, unit, type){
 function defaults(){
   return {
     version: 1,
-    steps: [mk(2,'hours','message'), mk(1,'days','website'), mk(3,'days','offer'), mk(7,'days','final')],
+    steps: [mk(30,'minutes','message'), mk(2,'hours','website'), mk(6,'hours','offer'), mk(20,'hours','final')],
     links: {website:'', review:'', catalog:'', location:'', payment:''},
     stop: {
       on_reply:true, on_purchase:true, on_optout:true, max_followups:4,
       optout_words:'stop, not interested, no thanks, nahi chahiye, नहीं चाहिए'
     },
-    window: {start:'09:00', end:'21:00', days:[1,2,3,4,5,6,7]},
+    window: {...OPEN_WINDOW, days:OPEN_WINDOW.days.slice()},
     audience: {mode:'all', tags:'', skip_buyers_days:7},
     limits: {cooldown_days:14, max_per_day:0},
     style: {language:'auto', tone:'friendly'}
@@ -172,8 +173,16 @@ function sortSteps(cfg){
 
 function delayLabel(step){
   const n = Number(step.delay);
-  const unit = step.unit === 'minutes' ? 'minute' : step.unit === 'hours' ? 'hour' : 'day';
+  const unit = step.unit === 'minutes' ? 'minute' : 'hour';
   return `${n} ${unit}${n === 1 ? '' : 's'}`;
+}
+
+/* A new step one hour after the last one, or null when that would pass 23 hours. */
+function nextStep(cfg){
+  const last = cfg.steps[cfg.steps.length - 1];
+  const m = last ? minutesOf(last) + 60 : 120;
+  if(!isFinite(m) || m > MAX_MINUTES) return null;
+  return m % 60 === 0 ? mk(m / 60, 'hours', 'message') : mk(m, 'minutes', 'message');
 }
 
 function setByPath(obj, path, value){
@@ -195,7 +204,7 @@ function validate(cfg){
     const s = cfg.steps[i];
     const n = Number(s.delay);
     if(!Number.isInteger(n) || n < 1) return `Step ${i+1}: enter a whole number of ${s.unit} (1 or more).`;
-    if(minutesOf(s) > MAX_DAYS * 1440) return `Step ${i+1}: the delay cannot be more than ${MAX_DAYS} days.`;
+    if(minutesOf(s) > MAX_MINUTES) return `Step ${i+1}: the delay cannot be more than ${MAX_HOURS} hours. For later messages, use Template follow-ups.`;
     if(!s.ai && !String(s.text || '').trim()) return `Step ${i+1}: write the message, or turn on "Let AI write this message".`;
     const need = TYPES[s.type] && TYPES[s.type].needs;
     if(need && !s.ai && !String(s.text).includes(LINK_PLACEHOLDER[need])){
@@ -218,11 +227,6 @@ function validate(cfg){
 
   const m = Number(cfg.stop.max_followups);
   if(!Number.isInteger(m) || m < 1 || m > MAX_STEPS) return `Maximum follow-ups must be between 1 and ${MAX_STEPS}.`;
-
-  if(!cfg.window.days.length) return 'Choose at least one day for sending.';
-  if(!cfg.window.start || !cfg.window.end || cfg.window.start >= cfg.window.end){
-    return 'Sending window: the start time must be earlier than the end time.';
-  }
 
   if(cfg.audience.mode === 'tags' && !String(cfg.audience.tags || '').trim()){
     return 'Add at least one tag, or choose a different audience.';
@@ -292,10 +296,16 @@ S.register({
         if(raw){ cfg = merge(cfg, JSON.parse(raw)); storedWhere = 'device'; }
       }catch(e){}
     }
-    cfg.steps = (cfg.steps || []).filter(s => s && TYPES[s.type]).map(s => ({
-      id: s.id || uid(), delay: s.delay, unit: UNITS.some(u => u.v === s.unit) ? s.unit : 'hours',
-      type: s.type, text: s.text || '', ai: !!s.ai
-    }));
+    const loadedCount = (cfg.steps || []).length;
+    cfg.steps = (cfg.steps || [])
+      .filter(s => s && TYPES[s.type] && UNITS.some(u => u.v === s.unit))
+      .map(s => ({
+        id: s.id || uid(), delay: s.delay, unit: s.unit,
+        type: s.type, text: s.text || '', ai: !!s.ai
+      }))
+      .filter(s => minutesOf(s) <= MAX_MINUTES);
+    const removedLong = loadedCount - cfg.steps.length;
+    cfg.window = {...OPEN_WINDOW, days:OPEN_WINDOW.days.slice()};
     sortSteps(cfg);
 
     /* ---- render ---- */
@@ -309,7 +319,6 @@ S.register({
     function stepHtml(s, i){
       const t = TYPES[s.type];
       const needs = t.needs;
-      const long = minutesOf(s) > 1440;
       return `
         <div class="gfu-step" data-step="${i}">
           <div class="gfu-step-top">
@@ -332,7 +341,6 @@ S.register({
             Let AI write this message (uses AI tokens)
           </label>
           ${needs && !String(cfg.links[needs]||'').trim() ? `<div class="gfu-warnline">Add your ${esc(LINKS.find(l=>l.k===needs).t.toLowerCase())} under "Your links" for this step.</div>` : ''}
-          ${long ? `<div class="gfu-warnline">After 24 hours, WhatsApp and Instagram can limit free-form messages. GLIME sends this step only where the platform allows it.</div>` : ''}
         </div>`;
     }
 
@@ -347,7 +355,7 @@ S.register({
     function refreshSteps(){
       sortSteps(cfg);
       container.querySelector('#gfuSteps').innerHTML = cfg.steps.map(stepHtml).join('');
-      container.querySelector('#gfuAdd').disabled = cfg.steps.length >= MAX_STEPS;
+      container.querySelector('#gfuAdd').disabled = cfg.steps.length >= MAX_STEPS || !nextStep(cfg);
       refreshPreview();
     }
 
@@ -393,6 +401,8 @@ S.register({
       <section class="gfu-card">
         <h3>Follow-up steps</h3>
         <p class="gfu-intro">Choose when each message goes, counted from the customer's last message. Steps are kept in time order.</p>
+        <p class="gfu-intro">These follow-ups go within ${MAX_HOURS} hours of the customer's last message, at any time of day. For customers silent longer than that, use the Template follow-ups tab.</p>
+        ${removedLong > 0 ? `<div class="gfu-warnline">${removedLong} older step${removedLong === 1 ? '' : 's'} set for more than ${MAX_HOURS} hours ${removedLong === 1 ? 'was' : 'were'} removed from this list. Press Save to apply.</div>` : ''}
         <div id="gfuSteps"></div>
         <div class="actions">
           <button type="button" class="btn" id="gfuAdd" data-act="add">+ Add step</button>
@@ -433,19 +443,6 @@ S.register({
         <div class="row">
           <div class="row-info"><b>Maximum follow-ups per customer</b><small>No more than this many messages are sent in one follow-up run.</small></div>
           <input class="gfu-in num" type="number" inputmode="numeric" min="1" max="${MAX_STEPS}" step="1" data-path="stop.max_followups" data-num="1" value="${esc(cfg.stop.max_followups)}">
-        </div>
-      </section>
-
-      <section class="gfu-card">
-        <h3>When to send</h3>
-        <p class="gfu-intro">Follow-ups never go out at night. Anything due outside this window waits for the next opening (India time).</p>
-        <div class="gfu-time">
-          <input class="gfu-in" type="time" data-path="window.start" value="${esc(cfg.window.start)}" aria-label="From">
-          <span style="color:var(--mu)">to</span>
-          <input class="gfu-in" type="time" data-path="window.end" value="${esc(cfg.window.end)}" aria-label="Until">
-        </div>
-        <div class="gfu-days" style="margin-top:12px">
-          ${DAYS.map(d => `<label class="gfu-day"><input type="checkbox" data-day="${d[0]}" ${cfg.window.days.includes(d[0])?'checked':''}><span>${d[1]}</span></label>`).join('')}
         </div>
       </section>
 
@@ -539,8 +536,8 @@ S.register({
       const act = btn.dataset.act;
       if(act === 'add'){
         if(cfg.steps.length >= MAX_STEPS) return;
-        const last = cfg.steps[cfg.steps.length - 1];
-        const next = last ? mk(Math.max(1, Number(last.delay) + 1), last.unit, 'message') : mk(2, 'hours', 'message');
+        const next = nextStep(cfg);
+        if(!next){ ui.toast(`Steps cannot go beyond ${MAX_HOURS} hours.`, true); return; }
         cfg.steps.push(next);
         refreshSteps();
       }else if(act === 'remove'){
@@ -596,19 +593,11 @@ S.register({
     container.addEventListener('input', onPath);
     container.addEventListener('change', onPath);
 
-    container.querySelectorAll('[data-day]').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const d = Number(cb.dataset.day);
-        const set = new Set(cfg.window.days);
-        if(cb.checked) set.add(d); else set.delete(d);
-        cfg.window.days = [...set].sort((a,b) => a - b);
-      });
-    });
-
     /* ---- save ---- */
     container.querySelector('#gfuSave').addEventListener('click', async ev => {
       const button = ev.currentTarget;
       sortSteps(cfg);
+      cfg.window = {...OPEN_WINDOW, days:OPEN_WINDOW.days.slice()};
       cfg.links = Object.fromEntries(Object.entries(cfg.links).map(([k, v]) => [k, String(v || '').trim()]));
       const problem = validate(cfg);
       showErr(problem);
