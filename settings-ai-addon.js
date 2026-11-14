@@ -1,14 +1,19 @@
 /* =========================================================
-   GLIME - SETTINGS > AI  (v2: Central AI Brain + Knowledge Base)
+   GLIME - SETTINGS > AI  (v3: lean Central AI Brain + Knowledge Base)
    ---------------------------------------------------------
    One Client AI Brain per client. WhatsApp, Instagram and Voice
    all read the same brain and the same central knowledge.
 
    Tabs:  Behaviour | Knowledge | Channels | Handoff | Health
 
+   Knowledge is kept small on purpose (fewer tokens per reply):
+   Business Profile, Services (read-only), FAQs, Lead Capture and
+   Customer Support. Language lives only in Behaviour.
+
    Data sources (all client-scoped, resolved from the signed-in user):
-   - client_ai_brains               AI behaviour, handoff rules, lead capture config
-   - client_knowledge_items         FAQs, policies, rules, specialist knowledge
+   - client_ai_brains               AI behaviour, handoff rules (+ how the team is
+                                    reached), lead capture config
+   - client_knowledge_items         FAQs and Customer Support
                                     (through the client-storage-knowledge Edge Function)
    - client_business_profiles       central business profile
    - lead_custom_field_definitions  custom lead-capture fields
@@ -78,33 +83,6 @@
     ['custom', 'Custom']
   ];
 
-  const POLICY_CATS = [
-    ['cancellation', 'Cancellation'],
-    ['refund', 'Refund'],
-    ['payment', 'Payment'],
-    ['shipping', 'Shipping'],
-    ['return', 'Return'],
-    ['warranty', 'Warranty'],
-    ['privacy', 'Privacy'],
-    ['other', 'Other']
-  ];
-
-  const SPECIALIST_CATS = [
-    ['lead_generation', 'Lead Generation'],
-    ['appointments', 'Appointments'],
-    ['support', 'Support'],
-    ['negotiation', 'Negotiation'],
-    ['collections', 'Collections']
-  ];
-
-  const SPECIALIST_HINTS = {
-    lead_generation: 'Lead qualification rules, ideal customer details, follow-up rules',
-    appointments: 'Booking rules, timings, rescheduling and no-show policy',
-    support: 'Product help, troubleshooting steps, common support answers',
-    negotiation: 'Allowed discounts, negotiation limits, payment plans',
-    collections: 'Payment reminder rules, overdue process, approved wording'
-  };
-
   /* Guided topics for the Customer Support card.
      key, title, hint (what to write), example (placeholder text) */
   const SUPPORT_TOPICS = [
@@ -168,17 +146,6 @@
     ['sunday', 'Sunday']
   ];
 
-  const BUSINESS_LANGS = [
-    ['hi', 'Hindi'],
-    ['en', 'English'],
-    ['gu', 'Gujarati'],
-    ['mr', 'Marathi'],
-    ['pa', 'Punjabi'],
-    ['ta', 'Tamil'],
-    ['te', 'Telugu'],
-    ['bn', 'Bengali']
-  ];
-
   const CORE_FIELDS = [
     // key, default label, type, enabled by default, required by default
     ['name', 'Name', 'text', true, true],
@@ -209,6 +176,19 @@
     ['sensitive', 'Sensitive situation', 'Health, legal, safety or other delicate topics.']
   ];
 
+  /* How the handoff reaches the client's team (stored inside handoff_rules). */
+  const HANDOFF_AFTER = [
+    ['pause', 'Pause AI on this chat until my team replies'],
+    ['continue', 'AI keeps answering simple questions until my team joins']
+  ];
+
+  const HANDOFF_RESPONSE = [
+    ['15_min', 'Within 15 minutes'],
+    ['1_hour', 'Within 1 hour'],
+    ['4_hours', 'Within 4 hours'],
+    ['next_working_day', 'Next working day']
+  ];
+
   const DEFAULT_HANDOFF_MESSAGE =
     'This needs a quick check from our team. Please share your preferred contact details and we will follow up.';
 
@@ -224,19 +204,13 @@
     { key: 'profile', label: 'Business Profile', owner: 'Managed here' },
     { key: 'services', label: 'Services & Offers', owner: 'Managed in Services' },
     { key: 'faq', label: 'FAQs', owner: 'Managed here', scope: 'faq' },
-    { key: 'policy', label: 'Policies', owner: 'Managed here', scope: 'policy' },
-    { key: 'rule', label: 'Business Rules', owner: 'Managed here', scope: 'rule' },
     { key: 'lead', label: 'Lead Capture', owner: 'Managed here' },
-    { key: 'support', label: 'Customer Support', owner: 'Managed here', scope: 'support' },
-    { key: 'specialist', label: 'Specialist Knowledge', owner: 'Managed here', scope: 'specialist' }
+    { key: 'support', label: 'Customer Support', owner: 'Managed here', scope: 'support' }
   ];
 
   const EMPTY_TEXT = {
     faq: ['No FAQs added yet.', 'Add your most common customer questions so AI can answer consistently.'],
-    policy: ['No policies added yet.', 'Add cancellation, refund, payment and shipping policies so AI never has to guess.'],
-    rule: ['No business rules added yet.', 'Add hard rules such as maximum discount or when to escalate to a human.'],
-    support: ['No customer support knowledge added yet.', 'Add the topics above one by one so AI can help customers who need support.'],
-    specialist: ['No specialist knowledge added yet.', 'Add focused guidance for lead generation, appointments, negotiation or collections.']
+    support: ['No customer support knowledge added yet.', 'Add the topics above one by one so AI can help customers who need support.']
   };
 
   /* ---------------------------------------------------------
@@ -376,7 +350,7 @@
   async function fetchProfile() {
     const { data, error } = await db
       .from('client_business_profiles')
-      .select('client_id,business_type,description,location,whatsapp,website,instagram,working_hours,holidays,languages,updated_at')
+      .select('client_id,business_type,description,location,whatsapp,website,instagram,working_hours,holidays,updated_at')
       .eq('client_id', clientId())
       .maybeSingle();
     if (error) throw error;
@@ -465,11 +439,12 @@
     let scope = item.knowledge_scope || 'general';
     let category = item.category || '';
 
+    // Older support items were saved as general knowledge with a use-case tag.
     if (scope === 'general') {
       const legacy = item.metadata && item.metadata.use_case_category;
-      if (SPECIALIST_CATS.some(c => c[0] === legacy)) {
+      if (legacy === 'support') {
         scope = 'specialist';
-        category = legacy;
+        category = 'support';
       }
     }
     return { scope, category };
@@ -480,10 +455,6 @@
       const n = normalize(item);
       // Customer Support = specialist knowledge with the "support" use case.
       if (sectionScope === 'support') return n.scope === 'specialist' && n.category === 'support';
-      // Specialist Knowledge shows everything specialist except support (that has its own card).
-      if (sectionScope === 'specialist') {
-        return (n.scope === 'specialist' && n.category !== 'support') || n.scope === 'general';
-      }
       return n.scope === sectionScope;
     });
   }
@@ -540,11 +511,25 @@
   function handoffConfig() {
     const h = isObj(M.brain?.handoff_rules) ? M.brain.handoff_rules : {};
     const rules = isObj(h.rules) ? h.rules : {};
+    const n = isObj(h.notify) ? h.notify : null;
+
+    const savedNumber = n && typeof n.whatsapp_number === 'string' ? n.whatsapp_number : '';
+    const savedEmail = n && typeof n.email_address === 'string' ? n.email_address : '';
+
     return {
       configured: Object.keys(h).length > 0,
       enabled: h.enabled === true,
       rules: Object.fromEntries(HANDOFF_RULES.map(([k]) => [k, h.rules ? rules[k] === true : true])),
-      message: typeof h.message === 'string' && h.message ? h.message : DEFAULT_HANDOFF_MESSAGE
+      message: typeof h.message === 'string' && h.message ? h.message : DEFAULT_HANDOFF_MESSAGE,
+      notify: {
+        dashboard: n ? n.dashboard !== false : true,
+        whatsapp: n ? n.whatsapp === true : false,
+        whatsapp_number: savedNumber || M.profile?.whatsapp || M.identity?.phone || '',
+        email: n ? n.email === true : false,
+        email_address: savedEmail || state.session?.user?.email || ''
+      },
+      after: HANDOFF_AFTER.some(x => x[0] === h.after_handoff) ? h.after_handoff : 'pause',
+      response: HANDOFF_RESPONSE.some(x => x[0] === h.response_time) ? h.response_time : '1_hour'
     };
   }
 
@@ -603,17 +588,6 @@
       go: ['knowledge', 'faq']
     });
 
-    // Policies
-    const pol = activeCount('policy');
-    rows.push({
-      key: 'policy',
-      label: 'Policies',
-      owner: 'Managed here',
-      state: M.itemsError ? 'warn' : pol > 0 ? 'ok' : 'miss',
-      detail: M.itemsError ? 'Could not load knowledge.' : `${pol} active`,
-      go: ['knowledge', 'policy']
-    });
-
     // Lead Capture
     const lc = leadConfig();
     const enabledFields = lc.rows.filter(r => r.enabled).length;
@@ -624,28 +598,6 @@
       state: !lc.configured ? 'miss' : !lc.enabled || enabledFields === 0 ? 'warn' : 'ok',
       detail: !lc.configured ? 'Not configured yet.' : !lc.enabled ? 'Lead capture is switched off.' : `${enabledFields} core field${enabledFields === 1 ? '' : 's'} + ${M.leadDefs.filter(d => d.is_active).length} custom`,
       go: ['knowledge', 'lead']
-    });
-
-    // Business Rules
-    const rule = activeCount('rule');
-    rows.push({
-      key: 'rule',
-      label: 'Business Rules',
-      owner: 'Managed here',
-      state: M.itemsError ? 'warn' : rule > 0 ? 'ok' : 'miss',
-      detail: M.itemsError ? 'Could not load knowledge.' : `${rule} active`,
-      go: ['knowledge', 'rule']
-    });
-
-    // Specialist
-    const spec = activeCount('specialist');
-    rows.push({
-      key: 'specialist',
-      label: 'Specialist Knowledge',
-      owner: 'Managed here',
-      state: M.itemsError ? 'warn' : spec > 0 ? 'ok' : 'miss',
-      detail: M.itemsError ? 'Could not load knowledge.' : `${spec} active`,
-      go: ['knowledge', 'specialist']
     });
 
     // Overall
@@ -669,7 +621,7 @@
       const noneCritical = !M.itemsError;
       overall = behaviourOk && profileOk && sources > 0 && noneCritical ? 'READY' : 'NEEDS_ATTENTION';
       if (!profileOk) notes.push('Add at least some Business Profile details.');
-      if (sources === 0) notes.push('Add at least one service, FAQ, policy or rule.');
+      if (sources === 0) notes.push('Add at least one service or FAQ.');
       if (M.itemsError) notes.push('Knowledge could not be loaded: ' + M.itemsError);
     }
 
@@ -776,10 +728,6 @@
       .ai-hour span.day{font-size:.78rem;font-weight:700}
       .ai-hour .ai-input{padding:9px}
       .ai-hol{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:8px;margin-bottom:8px;align-items:center}
-      .ai-lchips{display:flex;gap:7px;flex-wrap:wrap}
-      .ai-lchip input{display:none}
-      .ai-lchip span{display:inline-flex;align-items:center;min-height:38px;padding:0 14px;border-radius:99px;border:1px solid var(--bd);font-size:.76rem;font-weight:700;cursor:pointer}
-      .ai-lchip input:checked+span{background:#fff;color:#031014;border-color:#fff}
       .ai-core{border:1px solid var(--bd);background:var(--surf2);border-radius:14px;padding:12px;margin-bottom:10px}
       .ai-core-top{display:flex;gap:8px;align-items:center;margin-bottom:10px}
       .ai-core-top .ai-input{flex:1;min-width:0;padding:10px}
@@ -812,6 +760,7 @@
       .ai-step .ai-btn{flex:none}
       .ai-progress{height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin:2px 0 12px}
       .ai-progress span{display:block;height:100%;border-radius:99px;background:linear-gradient(105deg,var(--gr),var(--cy))}
+      .ai-subfield{padding:0 0 13px}
       .hidden{display:none!important}
       @media(max-width:640px){
         .ai-grid{grid-template-columns:1fr}
@@ -826,7 +775,7 @@
         .ai-step .ai-btn{flex:none}
       }
       @media(min-width:900px){
-        .ai-kbgrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+        .ai-kbgrid{grid-template-columns:repeat(5,minmax(0,1fr))}
       }
     `;
     document.head.appendChild(style);
@@ -960,7 +909,7 @@
           <p class="ai-sub">Switch these on so replies feel informed and personal.</p>
 
           <div class="ai-toggle-row">
-            <div><b>Knowledge usage</b><small>AI uses your Business Profile, services, FAQs, policies and rules.</small></div>
+            <div><b>Knowledge usage</b><small>AI uses your Business Profile, services and FAQs.</small></div>
             ${sw('aiKnowledge', b.knowledge_enabled === true)}
           </div>
           <div class="ai-toggle-row">
@@ -1088,7 +1037,6 @@
     const wh = isObj(p.working_hours) ? p.working_hours : {};
     const hasSavedHours = Object.keys(wh).length > 0;
     const hols = Array.isArray(p.holidays) ? p.holidays : [];
-    const langs = Array.isArray(p.languages) ? p.languages : [];
 
     return `
       <div data-form="profile">
@@ -1164,16 +1112,6 @@
           <button type="button" class="ai-btn small" data-act="hol-add">+ Add holiday</button>
         </div>
 
-        <div class="ai-card">
-          <h3>Languages you serve</h3>
-          <p class="ai-sub">Languages your team can support.</p>
-          <div class="ai-lchips">
-            ${BUSINESS_LANGS.map(([k, l]) => `
-              <label class="ai-lchip"><input type="checkbox" data-lang="${k}" ${langs.includes(k) ? 'checked' : ''}><span>${esc(l)}</span></label>
-            `).join('')}
-          </div>
-        </div>
-
         <div class="ai-actions">
           <button class="ai-btn primary" data-act="save-profile">Save Changes</button>
         </div>
@@ -1212,8 +1150,6 @@
     }
     holidays.sort((a, b) => a.date.localeCompare(b.date));
 
-    const languages = qa('[data-lang]').filter(el => el.checked).map(el => el.dataset.lang);
-
     const payload = {
       client_id: clientId(),
       business_type: val('#bpType').slice(0, 120) || null,
@@ -1224,7 +1160,6 @@
       instagram: val('#bpInstagram').slice(0, 100) || null,
       working_hours,
       holidays,
-      languages,
       updated_by: state.session.user.id,
       updated_at: new Date().toISOString()
     };
@@ -1234,7 +1169,7 @@
         const { data, error } = await db
           .from('client_business_profiles')
           .upsert(payload, { onConflict: 'client_id' })
-          .select('client_id,business_type,description,location,whatsapp,website,instagram,working_hours,holidays,languages,updated_at')
+          .select('client_id,business_type,description,location,whatsapp,website,instagram,working_hours,holidays,updated_at')
           .single();
         if (error) throw error;
         M.profile = data;
@@ -1522,7 +1457,7 @@
     });
   }
 
-  /* ---- Collections: FAQ / Policy / Rule / Customer Support / Specialist ---- */
+  /* ---- Collections: FAQ / Customer Support ---- */
   const COLLECTION_COPY = {
     faq: {
       title: 'FAQs',
@@ -1531,33 +1466,12 @@
       titleLabel: 'Question',
       contentLabel: 'Answer'
     },
-    policy: {
-      title: 'Policies',
-      sub: 'Cancellation, refund, payment, shipping and other official policies.',
-      add: '+ Add policy',
-      titleLabel: 'Policy name',
-      contentLabel: 'Policy details'
-    },
-    rule: {
-      title: 'Business Rules',
-      sub: 'Hard rules AI must always follow. Rules outrank ordinary knowledge.',
-      add: '+ Add rule',
-      titleLabel: 'Rule name',
-      contentLabel: 'Exact rule'
-    },
     support: {
       title: 'Customer Support',
       sub: 'What AI should say and do when a customer needs support, such as order help, complaints, refunds or product problems.',
       add: '+ Add support knowledge',
       titleLabel: 'Support topic',
       contentLabel: 'What AI should say or do'
-    },
-    specialist: {
-      title: 'Specialist Knowledge',
-      sub: 'Focused guidance for lead generation, appointments, negotiation and collections.',
-      add: '+ Add knowledge',
-      titleLabel: 'Title',
-      contentLabel: 'Knowledge'
     }
   };
 
@@ -1634,7 +1548,6 @@
   }
 
   function collectionListHtml(scope) {
-    const copy = COLLECTION_COPY[scope];
     const all = itemsFor(scope);
     const term = M.filter.q.toLowerCase();
 
@@ -1658,11 +1571,7 @@
     return rows.map(i => {
       const n = normalize(i);
       const topic = scope === 'support' ? supportTopicOf(i) : null;
-      const catLabel =
-        scope === 'policy' ? labelOf(POLICY_CATS, n.category)
-        : scope === 'specialist' ? (n.scope === 'general' ? 'General' : labelOf(SPECIALIST_CATS, n.category))
-        : scope === 'support' ? (topic ? topic[1] : 'Custom topic')
-        : n.category;
+      const catLabel = scope === 'support' ? (topic ? topic[1] : 'Custom topic') : n.category;
 
       return `
         <article class="ai-item">
@@ -1670,7 +1579,6 @@
           <div class="ai-item-meta">
             <span class="ai-pill">${esc(i.status === 'active' ? 'Active' : i.status === 'draft' ? 'Draft' : 'Archived')}</span>
             ${catLabel ? `<span class="ai-pill">${esc(catLabel)}</span>` : ''}
-            ${scope !== 'rule' ? '' : ''}
             <span class="ai-pill">Priority ${esc(i.priority ?? 50)}</span>
           </div>
           <p>${esc(i.content)}</p>
@@ -1679,7 +1587,7 @@
             <button type="button" class="ai-btn small danger" data-act="kb-delete" data-id="${esc(i.id)}">Delete</button>
           </div>
         </article>`;
-    }).join('') || `<div class="ai-empty"><b>${esc(copy.title)}</b></div>`;
+    }).join('');
   }
 
   function editorHtml(scope) {
@@ -1697,31 +1605,15 @@
     const contentPlaceholder = topic ? topic[3] : '';
 
     const categoryField =
-      scope === 'policy'
+      scope === 'faq'
         ? `<div class="ai-field">
-            <label class="ai-label" for="kbCategory">Category</label>
-            <select class="ai-select" id="kbCategory">
-              <option value="" disabled ${n.category ? '' : 'selected'}>Select a category…</option>
-              ${opts(POLICY_CATS, n.category)}
-            </select>
+            <label class="ai-label" for="kbCategory">Category <span style="font-weight:400;opacity:.7">(optional)</span></label>
+            <input class="ai-input" id="kbCategory" list="kbCatList" maxlength="60" placeholder="e.g. Delivery, Pricing" value="${esc(n.category || '')}">
+            <datalist id="kbCatList">
+              ${[...new Set(itemsFor('faq').map(i => i.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('')}
+            </datalist>
           </div>`
-        : scope === 'specialist'
-          ? `<div class="ai-field">
-              <label class="ai-label" for="kbCategory">Use case</label>
-              <select class="ai-select" id="kbCategory">
-                ${opts([...SPECIALIST_CATS.filter(c => c[0] !== 'support'), ['general', 'General (no category)']], existing ? (n.scope === 'general' ? 'general' : n.category) : 'lead_generation')}
-              </select>
-              <span class="ai-hint" id="kbCatHint">${esc(SPECIALIST_HINTS[n.category || 'lead_generation'] || '')}</span>
-            </div>`
-          : scope === 'faq'
-            ? `<div class="ai-field">
-                <label class="ai-label" for="kbCategory">Category <span style="font-weight:400;opacity:.7">(optional)</span></label>
-                <input class="ai-input" id="kbCategory" list="kbCatList" maxlength="60" placeholder="e.g. Delivery, Pricing" value="${esc(n.category || '')}">
-                <datalist id="kbCatList">
-                  ${[...new Set(itemsFor('faq').map(i => i.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('')}
-                </datalist>
-              </div>`
-            : '';
+        : '';
 
     return `
       <div class="ai-editor" id="aiEditor" data-form="kb">
@@ -1800,10 +1692,6 @@
     let knowledgeScope = scope;
     const metadata = isObj(existing?.metadata) ? { ...existing.metadata } : {};
 
-    if (scope === 'policy' && !category) {
-      return ui.toast('Choose a policy category.', true);
-    }
-
     if (scope === 'support') {
       // Stored as specialist knowledge with the "support" use case.
       knowledgeScope = 'specialist';
@@ -1811,17 +1699,6 @@
       metadata.use_case_category = 'support';
       metadata.knowledge_scope = 'client';
       if (M.editing.topic) metadata.support_topic = M.editing.topic;
-    }
-
-    if (scope === 'specialist') {
-      if (category === 'general' || !category) {
-        knowledgeScope = 'general';
-        category = '';
-        delete metadata.use_case_category;
-      } else {
-        metadata.use_case_category = category;
-        metadata.knowledge_scope = 'client';
-      }
     }
 
     await withBusy(btn, 'Saving…', async () => {
@@ -1938,10 +1815,12 @@
 
   /* ---------------------------------------------------------
      TAB 4 - HUMAN HANDOFF
+     When AI hands over + how the client's team is reached.
   --------------------------------------------------------- */
   function handoffHtml() {
     if (!M.brain) return brainMissingHtml();
     const h = handoffConfig();
+    const n = h.notify;
 
     return `
       <div data-form="handoff">
@@ -1960,6 +1839,52 @@
               ${sw('hoRule_' + k, h.rules[k])}
             </div>
           `).join('')}
+        </div>
+
+        <div class="ai-card">
+          <h3>How should we reach your team?</h3>
+          <p class="ai-sub">When AI hands a chat over, GLIME alerts your team the way you choose here.</p>
+
+          <div class="ai-toggle-row">
+            <div><b>Dashboard alert</b><small>Shows a handoff alert inside your GLIME dashboard.</small></div>
+            ${sw('hoNotifyApp', n.dashboard)}
+          </div>
+
+          <div class="ai-toggle-row">
+            <div><b>WhatsApp message</b><small>Sends a short alert to your team's WhatsApp number.</small></div>
+            ${sw('hoNotifyWa', n.whatsapp)}
+          </div>
+          <div class="ai-subfield ${n.whatsapp ? '' : 'hidden'}" id="hoWaWrap">
+            <label class="ai-label" for="hoWaNumber" style="display:block;font-size:.74rem;font-weight:800;margin-bottom:6px">Team WhatsApp number</label>
+            <input class="ai-input" id="hoWaNumber" inputmode="tel" maxlength="20" placeholder="+91 98765 43210" value="${esc(n.whatsapp_number)}">
+            <span class="ai-hint" style="display:block;font-size:.68rem;color:rgba(255,255,255,.62);margin-top:5px">Include the country code.</span>
+          </div>
+
+          <div class="ai-toggle-row">
+            <div><b>Email</b><small>Sends an email alert with the customer's details.</small></div>
+            ${sw('hoNotifyEmail', n.email)}
+          </div>
+          <div class="ai-subfield ${n.email ? '' : 'hidden'}" id="hoEmailWrap">
+            <label class="ai-label" for="hoEmailAddr" style="display:block;font-size:.74rem;font-weight:800;margin-bottom:6px">Team email</label>
+            <input class="ai-input" id="hoEmailAddr" type="email" inputmode="email" maxlength="120" placeholder="team@yourbusiness.com" value="${esc(n.email_address)}">
+          </div>
+        </div>
+
+        <div class="ai-card">
+          <h3>After handoff</h3>
+          <p class="ai-sub">What happens in the chat once your team has been alerted.</p>
+
+          <div class="ai-grid">
+            <div class="ai-field ai-full">
+              <label class="ai-label" for="hoAfter">AI behaviour</label>
+              <select class="ai-select" id="hoAfter">${opts(HANDOFF_AFTER, h.after)}</select>
+            </div>
+            <div class="ai-field ai-full">
+              <label class="ai-label" for="hoResponse">Your reply time</label>
+              <select class="ai-select" id="hoResponse">${opts(HANDOFF_RESPONSE, h.response)}</select>
+              <span class="ai-hint">AI tells the customer when to expect a reply from your team.</span>
+            </div>
+          </div>
         </div>
 
         <div class="ai-card">
@@ -1987,7 +1912,42 @@
       rules[k] = checked('#hoRule_' + k);
     });
 
-    const handoff_rules = { enabled, rules, message };
+    const notify = {
+      dashboard: checked('#hoNotifyApp'),
+      whatsapp: checked('#hoNotifyWa'),
+      whatsapp_number: val('#hoWaNumber').slice(0, 20),
+      email: checked('#hoNotifyEmail'),
+      email_address: val('#hoEmailAddr').slice(0, 120)
+    };
+
+    if (enabled) {
+      if (!notify.dashboard && !notify.whatsapp && !notify.email) {
+        return ui.toast('Choose at least one way to reach your team.', true);
+      }
+      if (notify.whatsapp) {
+        const digits = notify.whatsapp_number.replace(/\D/g, '');
+        if (digits.length < 10 || digits.length > 15) {
+          return ui.toast('Enter a valid team WhatsApp number with country code.', true);
+        }
+      }
+      if (notify.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notify.email)) {
+        return ui.toast('Enter a valid team email address.', true);
+      }
+    }
+
+    const afterSel = val('#hoAfter');
+    const responseSel = val('#hoResponse');
+
+    const previous = isObj(M.brain?.handoff_rules) ? M.brain.handoff_rules : {};
+    const handoff_rules = {
+      ...previous,
+      enabled,
+      rules,
+      message,
+      notify,
+      after_handoff: HANDOFF_AFTER.some(x => x[0] === afterSel) ? afterSel : 'pause',
+      response_time: HANDOFF_RESPONSE.some(x => x[0] === responseSel) ? responseSel : '1_hour'
+    };
 
     await withBusy(btn, 'Saving…', async () => {
       try {
@@ -2190,9 +2150,11 @@
     if (t.id === 'aiTone') {
       q('#aiToneCustom')?.classList.toggle('hidden', t.value !== 'custom');
     }
-    if (t.id === 'kbCategory' && M.editing?.scope === 'specialist') {
-      const hint = q('#kbCatHint');
-      if (hint) hint.textContent = SPECIALIST_HINTS[t.value] || '';
+    if (t.id === 'hoNotifyWa') {
+      q('#hoWaWrap')?.classList.toggle('hidden', !t.checked);
+    }
+    if (t.id === 'hoNotifyEmail') {
+      q('#hoEmailWrap')?.classList.toggle('hidden', !t.checked);
     }
     if (t.matches && t.matches('[data-cf-type]')) {
       const wrap = t.closest('[data-cf]')?.querySelector('[data-cf-options-wrap]');
