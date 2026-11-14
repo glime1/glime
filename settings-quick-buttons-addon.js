@@ -28,8 +28,8 @@
      Two buttons per card: "Shop Now" (asks for a confirmation, then the normal order + Pay
      securely flow) and "See Full Collection" (c_action text | menu | human, c_reply_text,
      c_target_menu_id). Card item = { key 'p1'.., title, card_text, offer_id, c_action,
-     c_reply_text, c_target_menu_id }. Sent through the Meta template glime_carousel_<N>_v1,
-     created from the Edge Function whatsapp-carousel-template (one per card count).
+     c_reply_text, c_target_menu_id }. Sent as normal chat messages (free version, 2026-11-14): the opening text,
+     then one message per card with the photo and the two buttons. No Meta template.
 
    WhatsApp limits enforced on this screen (Meta Cloud API):
      Reply buttons   1 to 3 buttons, title up to 20 characters,
@@ -602,7 +602,6 @@
     S.loading = false;
     S.ready = true;
     renderBody();
-    loadTplStatus();
   }
 
   /* ---------------------------------------------------------
@@ -1550,6 +1549,7 @@
      CAROUSEL UI
   --------------------------------------------------------- */
   function tplPillHtml(n) {
+    return '';
     const st = S.tpl[n];
     if (!st) return '';
     const map = {
@@ -1563,6 +1563,7 @@
   }
 
   function tplBtnHtml(n) {
+    return '';
     const st = S.tpl[n];
     if (!st) return '';
     if (st.status === 'NOT_CREATED' || st.status === 'REJECTED') {
@@ -1575,15 +1576,10 @@
   }
 
   function tplPanelHtml(d) {
-    const n = d.items.length;
-    const st = S.tpl[n];
-    const info = st ? tplMessage(st) : 'Not checked yet.';
     return `
       <div class="qb-tpl">
-        <b>Meta approval (${n} cards)</b>
-        Customers see "Hello!" followed by your opening message. WhatsApp sends carousels only through a template that Meta approves once for each card count. GLIME creates it for you when you save this menu. Changing photos or texts later needs no new approval.
-        <div style="margin-top:6px"><b style="display:inline">Status:</b> ${esc(info)}</div>
-        <div class="qb-actions"><button type="button" class="qb-btn small" data-act="tpl-check" data-n="${n}">Check status</button></div>
+        <b>How customers get this</b>
+        GLIME sends your opening message, then one message per card: the service photo, its text and the buttons Shop Now and See Full Collection. These are normal chat messages (no Meta approval and no Meta template fee). 3 to 5 cards work best. Each message counts as one WhatsApp message in your GLIME wallet.
       </div>`;
   }
 
@@ -1672,13 +1668,13 @@
         return `
         <div class="qb-cc" style="cursor:default">
           <div class="qb-cc-img">${img ? `<img src="${esc(img)}" alt="">` : 'No photo'}</div>
-          <div class="qb-cc-t">✨ ${esc(i.card_text || i.title)} ✨</div>
+          <div class="qb-cc-t">${esc(i.card_text || i.title)}</div>
           <button type="button" class="qb-rvb" style="width:100%" data-rv="tap" data-i="${n}" ${dis}>↗ Shop Now</button>
           <button type="button" class="qb-rvb" style="width:100%" data-rv="tapc" data-i="${n}" ${dis}>↩ See Full Collection</button>
         </div>`;
       })
       .join('');
-    return `<div class="qb-ph-bub"><div class="qb-rv-b">Hello! ${esc(top)} 👇</div></div><div class="qb-cc-strip">${cards}</div>`;
+    return `<div class="qb-ph-bub"><div class="qb-rv-b">${esc(top)}</div></div><div class="qb-cc-strip">${cards}</div>`;
   }
 
   /* ---------------------------------------------------------
@@ -1742,7 +1738,6 @@
         S.search = '';
         renderBody();
         ui.toast('Menu saved. Tap Review on it to try it like a customer.');
-        if (saved.menu_type === 'carousel') refreshTpl((saved.items || []).length, true, null);
       } catch (e) {
         console.error('[GLIME Quick Buttons] save:', e);
         const info = describeError(e, d.channel);
