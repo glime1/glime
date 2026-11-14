@@ -3,27 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GLIME Voice AI</title>
+  <title>GLIME Voice AI | Custom Plan</title>
+  <meta name="robots" content="noindex">
   <link rel="stylesheet" href="voice-ai.css">
 </head>
 <body>
-  <main class="voice-app">
-    <section class="voice-card">
-      <div class="brand">GLIME <span>VOICE AI</span></div>
-      <div id="status" class="status">Checking access…</div>
-      <div id="orb" class="orb"><div class="orb-core">🎙️</div></div>
-      <h1 id="agentName">Voice AI</h1>
-      <p id="agentGoal">Your AI assistant is getting ready.</p>
-      <div id="conversation" class="conversation" aria-live="polite"></div>
-      <div class="controls">
-        <button id="startBtn" class="primary" disabled>🎙️ Start Conversation</button>
-        <button id="stopBtn" class="secondary" disabled>■ Stop</button>
+  <main class="vl-app">
+    <section class="vl-card" aria-labelledby="vlTitle">
+      <div class="vl-top">
+        <div class="vl-brand">GLIME <span>VOICE AI</span></div>
+        <span class="vl-badge">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="M3 8l4.6 4.2L12 5l4.4 7.2L21 8l-1.8 10H4.8z" fill="currentColor"/></svg>
+          CUSTOM PLAN
+        </span>
       </div>
-      <p class="hint">Chrome/Android is recommended for browser microphone support.</p>
+
+      <div class="vl-orb" aria-hidden="true">
+        <div class="vl-ring vl-ring-1"></div>
+        <div class="vl-ring vl-ring-2"></div>
+        <div class="vl-core">
+          <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <rect x="5" y="11" width="14" height="10" rx="3"/>
+            <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+            <circle cx="12" cy="16" r="1.2" fill="currentColor"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="vl-state"><span class="vl-dot"></span> Locked</div>
+      <h1 id="vlTitle">Voice AI is a Custom Plan feature</h1>
+      <p class="vl-lead">
+        Voice AI is built specially for each business, so it is not part of the standard plans.
+        Tell us what you need and the GLIME team will set up a voice agent made for you.
+      </p>
+
+      <div class="vl-wave" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+
+      <ul class="vl-list">
+        <li>
+          <span class="vl-tick" aria-hidden="true">✓</span>
+          <span><strong>Your own voice agent</strong> trained on your business, services and tone</span>
+        </li>
+        <li>
+          <span class="vl-tick" aria-hidden="true">✓</span>
+          <span><strong>Incoming and outgoing calls</strong> handled by AI, in your language</span>
+        </li>
+        <li>
+          <span class="vl-tick" aria-hidden="true">✓</span>
+          <span><strong>Set up by the GLIME team</strong> so you never have to configure anything</span>
+        </li>
+      </ul>
+
+      <div class="vl-actions">
+        <a class="vl-btn vl-primary" href="contact.html?package=Voice%20AI%20Custom%20Plan">Contact us for Custom Voice AI</a>
+        <a class="vl-btn vl-secondary" href="dashboard.html">Back to dashboard</a>
+      </div>
+
+      <p class="vl-hint">Our team usually replies within one working day.</p>
     </section>
   </main>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="voice-ai.js"></script>
-  <script src="voice-ai-setup-addon.js"></script>
 </body>
 </html>
