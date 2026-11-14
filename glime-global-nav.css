@@ -220,3 +220,65 @@
   .glime-menu-button span{transition:none}
   .glime-mobile-nav.open a{animation:none}
 }
+
+/* =========================================================
+   PREMIUM LOGO ANIMATION
+   A soft breathing halo behind the logo, a glow on the logo
+   itself, and a bright shine that sweeps across the logo shape
+   every few seconds. The logo file itself is not changed.
+========================================================= */
+.glime-brand{
+  position:relative;
+  isolation:isolate;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1);
+}
+.glime-brand:active{transform:scale(.94)}
+
+.glime-brand::before{
+  content:"";
+  position:absolute;
+  inset:-6px;
+  z-index:-1;
+  border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,rgba(67,224,196,.30),rgba(82,232,255,.10) 45%,transparent 70%);
+  opacity:.5;
+  pointer-events:none;
+  animation:glime-brand-halo 3.6s ease-in-out infinite;
+}
+
+.glime-brand img{
+  animation:glime-brand-glow 3.6s ease-in-out infinite;
+}
+
+.glime-brand::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  -webkit-mask:url("glime_logo_clean.svg") center/contain no-repeat;
+  mask:url("glime_logo_clean.svg") center/contain no-repeat;
+  background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.55) 46%,rgba(255,255,255,.95) 50%,rgba(255,255,255,.55) 54%,transparent 62%) 100% 0/300% 100% no-repeat;
+  animation:glime-brand-shine 3.6s cubic-bezier(.45,0,.2,1) 1.4s infinite;
+}
+
+@keyframes glime-brand-shine{
+  0%{background-position:100% 0}
+  55%,100%{background-position:0 0}
+}
+@keyframes glime-brand-glow{
+  0%,100%{filter:drop-shadow(0 0 2px rgba(67,224,196,.25))}
+  50%{filter:drop-shadow(0 0 9px rgba(82,232,255,.65)) drop-shadow(0 0 3px rgba(125,255,196,.4))}
+}
+@keyframes glime-brand-halo{
+  0%,100%{opacity:.35;transform:scale(.92)}
+  50%{opacity:.85;transform:scale(1.08)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .glime-brand,
+  .glime-brand::before,
+  .glime-brand::after,
+  .glime-brand img{animation:none;transition:none}
+  .glime-brand::after{display:none}
+}
