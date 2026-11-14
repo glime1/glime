@@ -1,5 +1,12 @@
 (function () {
 
+  /* Packages link in the public navigation opens packages.html directly
+     (not the #packages section of the home page). Runs first, so the
+     mobile menu built below also gets the correct link. */
+  Array.prototype.slice
+    .call(document.querySelectorAll('.glime-global-header a[data-nav="packages"]'))
+    .forEach(function (a) { a.setAttribute("href", "packages.html"); });
+
   /* Cookie consent banner (loads once on every page that uses the global nav) */
   if (!window.GLIME_COOKIE_CONSENT && !document.getElementById("glime-cookie-consent-js")) {
     const cc = document.createElement("script");
