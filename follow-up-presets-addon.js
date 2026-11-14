@@ -24,7 +24,7 @@
     festive_sale_en: ['name', ''],
     we_miss_you_en: ['name', 'interest']
   };
-  var S = { cid: null, presets: null, added: {}, open: false, busy: false };
+  var S = { cid: null, presets: null, added: {}, auto: {}, open: false, busy: false };
 
   function $(id) { return document.getElementById(id); }
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -38,7 +38,12 @@
     var p = await db.from('whatsapp_template_presets').select('*').eq('is_active', true).order('sort_order');
     if (p.error) return false; S.presets = p.data || [];
     await loadAdded();
+    await loadAuto();
     return true;
+  }
+  async function loadAuto() {
+    var r = await db.from('client_template_followup_settings').select('enabled,utility_template_id,marketing_template_id').eq('client_id', S.cid).maybeSingle();
+    S.auto = r.data || {};
   }
   async function loadAdded() {
     var r = await db.from('client_followup_templates').select('preset_key').eq('client_id', S.cid).not('preset_key', 'is', null);
@@ -70,6 +75,37 @@
     box.innerHTML = html();
   }
 
+  /* "Use for automatic follow-up" button on the client's own Approved template cards (reads the card, writes only the chosen template id) */
+  function decorate() {
+    var m = $('fupMeta'); if (!m || !S.cid) return;
+    Array.prototype.forEach.call(m.querySelectorAll('.fup-card'), function (c) {
+      if (c.closest('#fupPre')) return;
+      var edit = c.querySelector('[data-fup="edit"]'), id = edit && edit.getAttribute('data-id'), foot = c.querySelector('footer'); if (!id || !foot) return;
+      var st = c.querySelector('.fup-st'), approved = !!(st && st.classList.contains('approved'));
+      var cat = String(((c.querySelector('.fup-meta span') || {}).textContent) || '').toLowerCase();
+      var col = cat === 'utility' ? 'utility_template_id' : (cat === 'marketing' ? 'marketing_template_id' : '');
+      var b = foot.querySelector('[data-pre="auto"]');
+      if (!approved || !col) { if (b) b.remove(); return; }
+      var on = S.auto[col] === id;
+      var label = on ? '\u2713 Used for automatic follow-up' : (cat === 'marketing' ? 'Use for follow-up (you approve each)' : 'Use for automatic follow-up');
+      if (!b) { b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-pre', 'auto'); foot.appendChild(b); }
+      b.setAttribute('data-id', id); b.setAttribute('data-col', col);
+      var cls = 'btn sm ' + (on ? 'primary' : 'ghost'); if (b.className !== cls) b.className = cls;
+      if (b.textContent !== label) b.textContent = label;
+    });
+  }
+  async function setAuto(btn) {
+    var col = btn.getAttribute('data-col'), id = btn.getAttribute('data-id'); if (!col || !id || S.busy) return;
+    var val = S.auto[col] === id ? null : id; S.busy = true; btn.disabled = true;
+    try {
+      var row = { client_id: S.cid }; row[col] = val;
+      var r = await db.from('client_template_followup_settings').upsert(row, { onConflict: 'client_id' }); if (r.error) throw r.error;
+      S.auto[col] = val;
+      toast(val ? (S.auto.enabled ? 'This template will be used for automatic follow-ups.' : 'Selected. Switch on \"Use template follow-ups\" in Settings to start.') : 'Removed from automatic follow-ups.', 'success');
+    } catch (e) { toast('Could not save: ' + (e.message || 'error'), 'error'); }
+    S.busy = false; btn.disabled = false; decorate();
+  }
+
   async function add(key, btn) {
     if (S.busy) return; var p = S.presets.filter(function (x) { return x.key === key; })[0]; if (!p) return;
     S.busy = true; btn.disabled = true;
@@ -92,6 +128,7 @@
     var k = a.getAttribute('data-pre'), key = a.getAttribute('data-key');
     if (k === 'toggle') { S.open = !S.open; mount(); }
     else if (k === 'add') add(key, a);
+    else if (k === 'auto') setAuto(a);
     else if (k === 'copy') {
       var p = S.presets.filter(function (x) { return x.key === key; })[0]; if (!p) return;
       (navigator.clipboard ? navigator.clipboard.writeText(p.body_text) : Promise.reject()).then(
@@ -104,7 +141,7 @@
     load().then(function (ok) {
       if (!ok) return;
       var m = $('fupMeta');
-      if (m) new MutationObserver(function () { if (!$('fupPre') && m.querySelector('.fup-top')) mount(); }).observe(m, { childList: true, subtree: true });
+      if (m) new MutationObserver(function () { if (!$('fupPre') && m.querySelector('.fup-top')) mount(); decorate(); }).observe(m, { childList: true, subtree: true });
       try {
         if (sessionStorage.getItem('fup_reopen_meta')) {
           sessionStorage.removeItem('fup_reopen_meta'); S.open = true;
@@ -114,7 +151,7 @@
           }, 700);
         }
       } catch (e) { }
-      mount();
+      mount(); decorate();
     }).catch(function (e) { if (window.console) console.warn('Presets add-on:', e); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true }); else start();

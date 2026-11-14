@@ -27,10 +27,11 @@
     var r = await Promise.all([
       sb.from('client_followup_templates').select('id,name,category,language,status,rejection_reason,last_synced_at').eq('client_id', cid).order('updated_at', { ascending: false }),
       sb.from('client_template_followup_settings').select('*').eq('client_id', cid).maybeSingle(),
-      sb.from('client_template_followup_log').select('kind,status,error_code,created_at').eq('client_id', cid).order('created_at', { ascending: false }).limit(15)
+      sb.from('client_template_followup_log').select('kind,status,error_code,created_at').eq('client_id', cid).order('created_at', { ascending: false }).limit(15),
+      sb.from('client_action_requests').select('id,target_label,action_payload,created_at').eq('client_id', cid).eq('intent', 'template_follow_up').eq('status', 'proposed').order('created_at', { ascending: false }).limit(30)
     ]);
     if (r[0].error || r[1].error) throw (r[0].error || r[1].error);
-    var tpls = r[0].data || [], s = r[1].data || {}, logs = r[2].data || [];
+    var tpls = r[0].data || [], s = r[1].data || {}, logs = r[2].data || [], pend = r[3].data || [];
     var okU = tpls.filter(function (t) { return t.status === 'approved' && t.category === 'utility'; });
     var okM = tpls.filter(function (t) { return t.status === 'approved' && t.category === 'marketing'; });
     var wa = (ctx.state.settings || []).filter(function (x) { return x.channel === 'whatsapp'; })[0];
@@ -46,6 +47,11 @@
     container.innerHTML =
       '<div class="section-head"><h2>Template follow-ups</h2><p>After a customer has been silent for more than 24 hours, WhatsApp only allows Meta-approved templates. Choose which ones GLIME may use.</p></div>' +
       (warn.length ? '<div class="empty" style="margin-bottom:14px;color:#ffd58a">' + warn.map(function (w) { return '• ' + esc(w); }).join('<br>') + '</div>' : '') +
+      (pend.length ? '<div class="section-head"><h2>Waiting for your approval (' + pend.length + ')</h2><p>These Marketing messages are ready. Nothing is sent until you press Approve and send. Each costs ₹1.20.</p></div>' + pend.map(function (q) {
+        var pl = q.action_payload || {};
+        return '<section class="channel-card" style="margin-bottom:12px"><b>' + esc(q.target_label || 'Customer') + '</b><p class="note" style="white-space:pre-wrap">' + esc(pl.message || '') + '</p><small class="note">Template: ' + esc(pl.template_name || '') + ' · ' + esc(fmt(q.created_at)) + '</small>' +
+          '<div class="actions"><button class="btn primary" data-tf-act="approve" data-id="' + esc(q.id) + '">Approve and send</button><button class="btn" data-tf-act="dismiss" data-id="' + esc(q.id) + '">Dismiss</button></div></section>';
+      }).join('') : '') +
       '<section class="channel-card">' +
       '<div class="row" style="border-top:0"><div class="row-info"><b>Use template follow-ups</b><small>Off by default. Nothing is sent to customers while this is off.</small></div>' +
       '<label class="sw"><input type="checkbox" id="tfEnabled"' + (s.enabled ? ' checked' : '') + '><span></span></label></div>' +
@@ -66,6 +72,18 @@
       }).join('') : '<div class="empty">Nothing yet.</div>');
 
     var $ = function (id) { return document.getElementById(id); };
+    async function errText(e) { try { var j = await e.context.json(); return j.error || j.message || ''; } catch (x) { return ''; } }
+    Array.prototype.forEach.call(container.querySelectorAll('[data-tf-act]'), function (btn) {
+      btn.onclick = async function () {
+        var act = btn.getAttribute('data-tf-act'), id = btn.getAttribute('data-id');
+        if (act === 'approve' && !(await G.ui.confirm('Send this Marketing template message to the customer now? ₹1.20 will be charged.', { title: 'Approve and send', confirmText: 'Send' }))) return;
+        btn.disabled = true;
+        var res = await sb.functions.invoke('whatsapp-template-sync', { body: { action: act, request_id: id } });
+        if (res.error) { toast((await errText(res.error)) || 'Could not complete this. Nothing was sent.', true); btn.disabled = false; render(ctx); return; }
+        toast(act === 'approve' ? 'Message sent.' : 'Dismissed. Nothing was sent.');
+        render(ctx);
+      };
+    });
     $('tfSync').onclick = async function (e) {
       var b = e.currentTarget; b.disabled = true;
       var res = await sb.functions.invoke('whatsapp-template-sync', { body: {} });
