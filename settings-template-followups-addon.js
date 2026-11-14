@@ -90,6 +90,10 @@
       b.disabled = false;
       if (res.error) { toast('Could not refresh status. Try again in a minute.', true); return; }
       var d = res.data || {};
+      var note = (d.detail && d.detail.notes && d.detail.notes[0]) || '';
+      if (note.indexOf('meta_error:200') === 0) { toast('Meta did not allow GLIME to read template status for this WhatsApp account. Set the status on the template card yourself for now.', true); return; }
+      if (note === 'meta_token_invalid') { toast('Your WhatsApp connection has expired. Please reconnect WhatsApp in Connectors.', true); return; }
+      if (note === 'whatsapp_not_connected') { toast('WhatsApp is not connected.', true); return; }
       toast(d.throttled ? 'Status was refreshed a moment ago.' : ('Checked ' + (d.checked || 0) + ' templates, ' + (d.updated || 0) + ' changed.'));
       render(ctx);
     };
