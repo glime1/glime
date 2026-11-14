@@ -10,6 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
   <link rel="stylesheet" href="packages.css">
   <link rel="stylesheet" href="packages-premium.css">
+  <link rel="stylesheet" href="packages-compact.css">
   <link rel="stylesheet" href="glime-global-nav.css">
 </head>
 
@@ -144,7 +145,7 @@
             <li>Your 5 Business Specialists included</li>
             <li>Lead management and business workflow tools</li>
             <li>AI agents for your WhatsApp and Instagram conversations</li>
-            <li>AI replies to customers within the 24-hour messaging window</li>
+            <li>AI replies only within the 24-hour messaging window</li>
             <li>Wallet-based pay-as-you-use messaging</li>
             <li>Standard support</li>
           </ul>
@@ -197,6 +198,8 @@
 
           <ul class="feature-list">
             <li>Everything in Growth</li>
+            <li>AI replies even after the 24-hour window</li>
+            <li>Broadcast messages to your customers</li>
             <li>ChatGPT + Claude connectors</li>
             <li>Priority access to newly released agents</li>
             <li>Room for larger catalogs, chats and files</li>
@@ -328,8 +331,20 @@
               <td class="col-ent"><span class="tick" aria-label="Included">✓</span></td>
             </tr>
             <tr>
-              <th scope="row">WhatsApp + Instagram AI replies</th>
+              <th scope="row">WhatsApp + Instagram AI replies (within 24 hours)</th>
               <td><span class="tick" aria-label="Included">✓</span></td>
+              <td class="col-omni"><span class="tick" aria-label="Included">✓</span></td>
+              <td class="col-ent"><span class="tick" aria-label="Included">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">AI replies after 24 hours</th>
+              <td><span class="cross" aria-label="Not included">✕</span></td>
+              <td class="col-omni"><span class="tick" aria-label="Included">✓</span></td>
+              <td class="col-ent"><span class="tick" aria-label="Included">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Broadcast messages</th>
+              <td><span class="cross" aria-label="Not included">✕</span></td>
               <td class="col-omni"><span class="tick" aria-label="Included">✓</span></td>
               <td class="col-ent"><span class="tick" aria-label="Included">✓</span></td>
             </tr>
@@ -376,7 +391,7 @@
           <p>Add money to your GLIME wallet whenever you need, from ₹100. Every time your AI replies or sends a follow-up to a customer on WhatsApp or Instagram, a small fixed amount is deducted from your wallet, only as much as you actually use.</p>
         </div>
 
-        <p class="rates-label">INSIDE THE 24-HOUR WINDOW · AI REPLIES</p>
+        <p class="rates-label">INSIDE THE 24-HOUR WINDOW · AI REPLIES (GROWTH, OMNI)</p>
         <div class="rates-grid rates-two">
           <div class="rate-card">
             <strong>₹0.02</strong>
@@ -388,7 +403,7 @@
           </div>
         </div>
 
-        <p class="rates-label">AFTER 24 HOURS · FOLLOW-UP MESSAGES</p>
+        <p class="rates-label">AFTER 24 HOURS · FOLLOW-UPS AND BROADCASTS (OMNI)</p>
         <div class="rates-grid rates-two">
           <div class="rate-card rate-card-follow">
             <strong>₹1.20</strong>
@@ -396,7 +411,7 @@
             <em>Offers, promotions and win-back follow-ups</em>
           </div>
           <div class="rate-card rate-card-follow">
-            <strong>₹0.50</strong>
+            <strong>₹0.80</strong>
             <span>per utility message</span>
             <em>Order, booking, payment and account updates</em>
           </div>
@@ -443,13 +458,13 @@
             <input type="number" min="0" step="1" value="100" inputmode="numeric" data-rate="1.2" aria-label="Marketing follow-up messages per month">
           </label>
           <label>
-            <span>Utility follow-ups <em>₹0.50 each</em></span>
-            <input type="number" min="0" step="1" value="100" inputmode="numeric" data-rate="0.5" aria-label="Utility follow-up messages per month">
+            <span>Utility follow-ups <em>₹0.80 each</em></span>
+            <input type="number" min="0" step="1" value="100" inputmode="numeric" data-rate="0.8" aria-label="Utility follow-up messages per month">
           </label>
 
           <div class="calc-total">
             <span>Estimated wallet usage</span>
-            <strong id="calc-total">₹200</strong>
+            <strong id="calc-total">₹230</strong>
             <small>per month, plus your plan price</small>
           </div>
         </form>
@@ -580,7 +595,7 @@
 
         <details>
           <summary>What is the 24-hour window?</summary>
-          <p>Within 24 hours of a customer's last message, your AI can reply at ₹0.02 per WhatsApp reply and ₹0.01 per Instagram reply. After 24 hours, follow-ups are sent as marketing messages at ₹1.20 or utility messages at ₹0.50 each.</p>
+          <p>Within 24 hours of a customer's last message, your AI can reply at ₹0.02 per WhatsApp reply and ₹0.01 per Instagram reply. On Growth, AI replies are possible only inside this window. On Omni, your AI can also reply after 24 hours and send broadcast messages, as marketing messages at ₹1.20 or utility messages at ₹0.80 each.</p>
         </details>
 
         <details>
