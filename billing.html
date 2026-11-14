@@ -5,51 +5,180 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./account-review-flow.js"></script>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05080c">
 <title>GLIME Billing</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <link rel="preconnect" href="https://ufoulgbiqgjriwapuopc.supabase.co" crossorigin>
 <link rel="preconnect" href="https://checkout.razorpay.com" crossorigin>
 <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
 <style>
-:root{--bg:#05080c;--panel:#0d151f;--panel2:#09111a;--line:rgba(255,255,255,.09);--text:#fff;--muted:#98a6b5;--green:#00ff88;--cyan:#00f0ff;--danger:#ff5364}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,rgba(0,240,255,.08),transparent 34%),radial-gradient(circle at 0 0,rgba(0,255,136,.07),transparent 32%),var(--bg);color:var(--text);font-family:Poppins,Inter,system-ui,-apple-system,Segoe UI,sans-serif}
-.wrap{max-width:1220px;margin:auto;padding:22px 16px 70px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
-.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}.brand img{width:46px;height:46px;object-fit:contain}.brand b{font-size:22px}.brand span{display:block;color:var(--muted);font-size:12px}
-.grid{display:grid;gap:16px}.cols{grid-template-columns:repeat(2,minmax(0,1fr))}.plans{grid-template-columns:repeat(2,minmax(0,1fr))}
-.card{background:rgba(13,21,31,.9);border:1px solid var(--line);border-radius:17px;padding:20px;box-shadow:0 14px 38px rgba(0,0,0,.2)}.section{margin-top:18px}
-.card.planFocus{border-color:rgba(0,240,255,.7);box-shadow:0 0 0 2px rgba(0,240,255,.22),0 14px 38px rgba(0,0,0,.2)}
-.card h2,.card h3{margin:0 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.price{font-size:30px;font-weight:850;margin:14px 0}.price small{font-size:13px;color:var(--muted);font-weight:500}
-.btn{border:1px solid rgba(0,255,136,.32);background:rgba(0,255,136,.07);color:var(--green);padding:10px 15px;border-radius:10px;cursor:pointer;font-weight:750;transition:.18s}.btn:hover{background:rgba(0,255,136,.14);box-shadow:0 0 18px rgba(0,255,136,.1)}.btn.primary{background:linear-gradient(135deg,rgba(0,255,136,.18),rgba(0,240,255,.14));border-color:rgba(0,240,255,.42);color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
-.toggle{display:flex;justify-content:center;margin:0 0 18px}.toggle button{padding:9px 20px;border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.04);color:var(--muted);cursor:pointer}.toggle button:first-child{border-radius:10px 0 0 10px}.toggle button:last-child{border-radius:0 10px 10px 0}.toggle .active{background:linear-gradient(90deg,rgba(0,255,136,.18),rgba(0,240,255,.12));color:#fff;border-color:rgba(0,240,255,.45)}
-.features{padding-left:18px;color:#dbe5f2;line-height:1.75}.stat,.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}.stat:last-child,.row:last-child{border-bottom:0}
-.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.2);color:var(--cyan);font-size:12px}.success{color:var(--green)}.cyan{color:var(--cyan)}
-.bar{height:9px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:9px 0 5px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:99px}
-.notice{padding:13px 15px;border-radius:12px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.18);margin-bottom:14px}.notice.error{background:rgba(255,83,100,.06);border-color:rgba(255,83,100,.22)}.action-message{padding:11px 13px;border-radius:10px;margin-top:12px;font-size:13px;line-height:1.45;border:1px solid rgba(255,83,100,.28);background:rgba(255,83,100,.07);color:#ff9aa5}.action-message.success{border-color:rgba(0,255,136,.28);background:rgba(0,255,136,.06);color:#7dffba}
-.hidden{display:none!important}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.loader,.empty{color:var(--muted);padding:10px 0}
-table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted)}
-.kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);font-weight:800}.heroTitle{font-size:25px;margin:5px 0}.countdown{font-size:24px;font-weight:850;color:var(--green);margin-top:5px}
-.input{background:#08111a;border:1px solid var(--line);color:#fff;border-radius:10px;padding:10px}.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.wallet-quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.wallet-quick .btn{padding:8px 12px;font-size:13px}.mini{padding:13px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025)}
-.loadnote{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-radius:12px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.18);margin-bottom:14px;line-height:1.5}
+/* ============ GLIME Billing — premium, mobile-first ============ */
+:root{
+  --bg:#05080c;--panel:#0b131c;--panel2:#08101a;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --text:#f4f8fc;--muted:#93a3b5;--green:#00ff88;--cyan:#00f0ff;--danger:#ff5364;--gold:#ffd27a;--violet:#a78bfa;
+  --r:20px;--gut:16px
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:
+  radial-gradient(520px 380px at 100% -5%,rgba(0,240,255,.10),transparent 70%),
+  radial-gradient(520px 380px at -10% 0,rgba(0,255,136,.09),transparent 70%),
+  var(--bg);
+  color:var(--text);font-family:Poppins,Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:16px var(--gut) calc(72px + env(safe-area-inset-bottom))}
+h1,h2,h3,p{margin:0}
+.muted{color:var(--muted)}.small{font-size:12px}.hidden{display:none!important}.success{color:var(--green)}.cyan{color:var(--cyan)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:#fff;min-width:0}
+.brand img{width:42px;height:42px;object-fit:contain;flex:0 0 auto}
+.brand b{font-size:20px;letter-spacing:.02em;display:block;line-height:1.1}
+.brand span{display:block;color:var(--muted);font-size:12px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid rgba(0,255,136,.3);background:rgba(0,255,136,.07);color:var(--green);padding:10px 16px;border-radius:12px;cursor:pointer;font:inherit;font-size:14px;font-weight:700;text-decoration:none;transition:.18s}
+.btn:hover{background:rgba(0,255,136,.14);box-shadow:0 0 22px rgba(0,255,136,.12)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:linear-gradient(135deg,rgba(0,255,136,.22),rgba(0,240,255,.18));border-color:rgba(0,240,255,.45);color:#fff}
+.btn.block{width:100%}
+.btn.sm{min-height:38px;padding:7px 13px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;transform:none}
+.btn.gold{background:linear-gradient(135deg,#ffd27a,#f6a94b);border-color:transparent;color:#2a1a00;box-shadow:0 10px 30px rgba(246,169,75,.25)}
+.btn.gold:hover{box-shadow:0 12px 36px rgba(246,169,75,.38);background:linear-gradient(135deg,#ffdd94,#f8b562)}
+
+/* cards */
+.section{margin-top:16px}
+.card{position:relative;background:linear-gradient(180deg,rgba(16,26,38,.92),rgba(10,17,26,.92));border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:0 16px 44px rgba(0,0,0,.28)}
+.card h2{font-size:20px;margin-bottom:6px}.card h3{font-size:16px;margin-bottom:10px}
+.kicker{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);font-weight:800;margin-bottom:6px}
+.grid{display:grid;gap:14px}
+.heroTitle{font-size:24px;margin:4px 0;font-weight:800}
+.countdown{font-size:26px;font-weight:850;color:var(--green);margin-top:4px}
+
+/* rows / stats */
+.stat,.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.stat:last-child,.row:last-child{border-bottom:0}
+.row>div:first-child{min-width:0}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.22);color:var(--cyan);font-size:11px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
+.badge.ok{background:rgba(0,255,136,.1);border-color:rgba(0,255,136,.32);color:var(--green)}
+.badge.warn{background:rgba(255,200,87,.1);border-color:rgba(255,200,87,.32);color:#ffc857}
+.badge.bad{background:rgba(255,83,100,.1);border-color:rgba(255,83,100,.32);color:#ff8d99}
+.badge.new{background:rgba(0,255,136,.12);border-color:rgba(0,255,136,.35);color:var(--green)}
+.bar{height:9px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:9px 0 5px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:99px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.loader,.empty{color:var(--muted);padding:10px 0}
+
+/* notices */
+.notice{padding:13px 15px;border-radius:14px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.2);margin-bottom:14px;font-size:14px}
+.notice.error{background:rgba(255,83,100,.07);border-color:rgba(255,83,100,.25)}
+.action-message{padding:11px 13px;border-radius:12px;margin-top:12px;font-size:13px;line-height:1.45;border:1px solid rgba(255,83,100,.28);background:rgba(255,83,100,.07);color:#ff9aa5}
+.action-message.success{border-color:rgba(0,255,136,.28);background:rgba(0,255,136,.06);color:#7dffba}
+.loadnote{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-radius:14px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.18);margin-bottom:14px;font-size:14px}
 .spin{flex:0 0 auto;width:18px;height:18px;margin-top:3px;border:2px solid rgba(0,240,255,.25);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.rw{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:14px;margin-top:10px;border:1px solid rgba(0,255,136,.16);border-radius:13px;background:linear-gradient(135deg,rgba(0,255,136,.05),rgba(0,240,255,.03))}
-.rw-main{min-width:0}.rw-title{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.rw-meta{margin-top:5px;font-size:12px;color:var(--muted);line-height:1.6}.rw-meta b{color:#dbe5f2;font-weight:600}
-.rw-side{text-align:right;flex:0 0 auto}.rw-amt{font-size:18px;font-weight:850;color:var(--green)}.rw-side .badge{margin-top:6px}
-.badge.new{background:rgba(0,255,136,.12);border-color:rgba(0,255,136,.35);color:var(--green)}
-@media(max-width:850px){.plans,.cols{grid-template-columns:1fr}.mini-grid{grid-template-columns:1fr}.top{align-items:flex-start}.price{font-size:27px}.rw{flex-direction:column}.rw-side{text-align:left}}
+
+/* billing cycle toggle */
+.toggle{display:flex;justify-content:center;margin:0 0 16px}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line2);max-width:100%}
+.seg button{position:relative;min-height:42px;padding:8px 20px;border:0;border-radius:999px;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:.18s}
+.seg button.active{background:linear-gradient(135deg,rgba(0,255,136,.24),rgba(0,240,255,.2));color:#fff;box-shadow:inset 0 0 0 1px rgba(0,240,255,.4)}
+.seg .save{margin-left:6px;font-size:10px;padding:2px 7px;border-radius:99px;background:rgba(0,255,136,.16);color:var(--green);font-weight:800}
+
+/* plans */
+.plans{display:grid;gap:14px;grid-template-columns:1fr}
+.plan{display:flex;flex-direction:column;padding:22px 20px;overflow:hidden}
+.plan::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--green),var(--cyan));opacity:.7}
+.plan.omni{border-color:rgba(0,240,255,.4);background:linear-gradient(180deg,rgba(14,32,46,.95),rgba(9,18,28,.95));box-shadow:0 0 0 1px rgba(0,240,255,.12),0 22px 60px rgba(0,240,255,.08)}
+.plan.omni::before{opacity:1;height:4px}
+.plan.custom{border-color:rgba(255,210,122,.38);background:radial-gradient(420px 260px at 100% 0,rgba(246,169,75,.14),transparent 70%),linear-gradient(180deg,rgba(28,22,14,.96),rgba(14,12,10,.96))}
+.plan.custom::before{background:linear-gradient(90deg,#ffd27a,#a78bfa)}
+.card.planFocus{border-color:rgba(0,240,255,.75);box-shadow:0 0 0 2px rgba(0,240,255,.25),0 14px 38px rgba(0,0,0,.25)}
+.plan-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.tag{display:inline-block;padding:4px 11px;border-radius:999px;background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.22);color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:.08em}
+.tag.pop{background:linear-gradient(135deg,rgba(0,255,136,.2),rgba(0,240,255,.2));color:#fff;border-color:rgba(0,240,255,.45)}
+.tag.gold{background:rgba(255,210,122,.1);border-color:rgba(255,210,122,.4);color:var(--gold)}
+.plan h2{font-size:22px;margin:8px 0 4px}
+.plan .desc{font-size:13px;color:var(--muted);min-height:20px}
+.price{font-size:34px;font-weight:850;margin:14px 0 2px;letter-spacing:-.01em}
+.price small{font-size:14px;color:var(--muted);font-weight:500}
+.price-note{font-size:12px;color:var(--green);min-height:18px;margin-bottom:12px}
+.features{list-style:none;margin:6px 0 18px;padding:0;flex:1}
+.features li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:14px;color:#dbe5f2}
+.features li .ic{flex:0 0 20px;height:20px;margin-top:1px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;background:rgba(0,255,136,.14);color:var(--green)}
+.features li.off{color:#6f7f90}
+.features li.off .ic{background:rgba(255,255,255,.06);color:#7b8a9a}
+.features li.off span.t{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.2)}
+.features li.group{display:block;padding-top:4px}
+.features li.group b{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:12px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:#cfd9e6}
+.crown{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,210,122,.12);border:1px solid rgba(255,210,122,.35);color:var(--gold);margin-bottom:8px}
+.custom-line{font-size:16px;line-height:1.6;color:#f2e7d0;flex:1;margin:10px 0 20px}
+
+/* mini grid, wallet, inputs */
+.mini-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.mini{padding:13px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}
+.input{background:#08111a;border:1px solid var(--line2);color:#fff;border-radius:12px;padding:11px 13px;font:inherit;font-size:16px;min-height:46px}
+.input:focus{outline:2px solid rgba(0,240,255,.4);outline-offset:1px}
+.wallet-quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.wallet-quick .btn{min-height:38px;padding:7px 13px;font-size:13px}
+
+/* usage rates */
+.rates{display:grid;grid-template-columns:1fr;gap:10px;margin-top:6px}
+.rate{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}
+.rate b{font-size:15px;color:var(--green);white-space:nowrap}
+
+/* list cards (invoices, payments) */
+.list{display:grid;gap:10px;margin-top:8px}
+.item{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.025)}
+.item-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.item-title{font-weight:700;font-size:14px;word-break:break-all}
+.item-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.item-amt{font-weight:850;font-size:17px;white-space:nowrap}
+.item-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px}
+
+/* rewards */
+.rw{display:flex;flex-direction:column;gap:10px;padding:14px;margin-top:10px;border:1px solid rgba(0,255,136,.16);border-radius:16px;background:linear-gradient(135deg,rgba(0,255,136,.05),rgba(0,240,255,.03))}
+.rw-title{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rw-meta{margin-top:5px;font-size:12px;color:var(--muted);line-height:1.6}.rw-meta b{color:#dbe5f2;font-weight:600}
+.rw-side{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rw-amt{font-size:18px;font-weight:850;color:var(--green)}
+
+/* ---- larger screens ---- */
+@media(min-width:640px){
+  :root{--gut:22px}
+  .mini-grid{grid-template-columns:repeat(3,1fr)}
+  .rates{grid-template-columns:repeat(2,1fr)}
+  .item{flex-direction:row;align-items:center;justify-content:space-between}
+  .item-top{flex:1}
+  .item-bottom{flex:0 0 auto;gap:16px}
+  .rw{flex-direction:row;justify-content:space-between;align-items:flex-start}
+  .rw-side{flex-direction:column;align-items:flex-end}
+}
+@media(min-width:820px){
+  .cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .cols>.card{margin:0}
+}
+@media(min-width:1000px){
+  .plans{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+  .rates{grid-template-columns:repeat(3,1fr)}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header class="top">
-<a class="brand" href="dashboard.html"><img src="glime_logo_clean.svg" alt="GLIME"><div><b>GLIME</b><span>Billing & Usage</span></div></a>
-<button class="btn" id="refresh">Refresh</button>
+<a class="brand" href="dashboard.html"><img src="glime_logo_clean.svg" alt="GLIME"><div><b>GLIME</b><span>Billing &amp; Usage</span></div></a>
+<button class="btn sm" id="refresh" type="button">Refresh</button>
 </header>
 
-<div id="loadNote" class="loadnote"><span class="spin"></span><div><b>Loading your billing details…</b><div class="small muted">Plans, prices and your account data are fetched live from our secure database, so this page may take a few seconds to fill in. Each section will appear as soon as it is ready.</div></div></div>
+<div id="loadNote" class="loadnote"><span class="spin"></span><div><b>Loading your billing details…</b><div class="small muted">Plans, prices and your account data are fetched live from our secure database. Each section will appear as soon as it is ready.</div></div></div>
 
-<div id="notice" class="notice hidden"></div>
+<div id="notice" class="notice hidden" role="status"></div>
 
 <section class="section card" id="accountCard">
   <div id="accountState" class="loader">Loading account status…</div>
@@ -61,40 +190,44 @@ table{width:100%;border-collapse:collapse;overflow:hidden}th,td{text-align:left;
   <div id="subBody" class="loader">Loading…</div>
 </section>
 
-<section class="section">
-  <div class="toggle"><button id="monthly" class="active">Monthly</button><button id="yearly">Yearly</button></div>
-  <div id="plans" class="grid plans"><div class="card loader">Loading plans and prices…</div></div>
+<section class="section" id="plansSection">
+  <div class="toggle"><div class="seg" role="tablist" aria-label="Billing cycle"><button id="monthly" class="active" type="button" role="tab">Monthly</button><button id="yearly" type="button" role="tab">Yearly<span class="save hidden" id="yearSave"></span></button></div></div>
+  <div id="plans" class="plans"><div class="card loader">Loading plans and prices…</div></div>
 </section>
 
-<section class="section grid cols">
-  <div class="card"><h3>Business Data</h3><div id="capacity" class="loader">Loading capacity…</div><div id="dataAddons" style="margin-top:12px" class="loader">Loading add-ons…</div><div id="dataMessage" class="action-message hidden" role="alert"></div></div>
-  <div class="card"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div id="creditMessage" class="action-message hidden" role="alert"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1 AI token. Input + output tokens are counted together.</div></div>
+<section class="section cols">
+  <div class="card section"><h3>Business Data</h3><div id="capacity" class="loader">Loading capacity…</div><div id="dataAddons" style="margin-top:12px" class="loader">Loading add-ons…</div><div id="dataMessage" class="action-message hidden" role="alert"></div></div>
+  <div class="card section"><h3>AI Credits</h3><div id="credits" class="loader">Loading…</div><div id="creditPacks" style="margin-top:14px"></div><div id="creditMessage" class="action-message hidden" role="alert"></div><div class="small muted" style="margin-top:10px">1 GLIME Credit = 1 AI token. Input + output tokens are counted together.</div></div>
 </section>
 
 <section class="section card"><h3>Extra Storage</h3><div id="storageAddons" class="loader">Loading storage options…</div><div id="storageMessage" class="action-message hidden" role="alert"></div><div class="small muted" style="margin-top:10px">Additional storage is billed monthly and is added to your active subscription.</div></section>
 
-<section class="section grid cols">
-  <div class="card"><h3>Wallet</h3><div id="wallet" class="loader">Loading…</div><div class="actions"><input id="walletAmount" class="input" type="number" min="100" step="1" value="100" style="flex:1;min-width:130px"><button class="btn primary" id="walletBtn">Add Balance</button></div><div class="wallet-quick" aria-label="Quick wallet amounts"><button type="button" class="btn" data-wallet-amount="100">₹100</button><button type="button" class="btn" data-wallet-amount="500">₹500</button><button type="button" class="btn" data-wallet-amount="1000">₹1,000</button><button type="button" class="btn" data-wallet-amount="2000">₹2,000</button><button type="button" class="btn" data-wallet-amount="5000">₹5,000</button><button type="button" class="btn" data-wallet-amount="10000">₹10,000</button></div><div class="small muted" style="margin-top:8px">Choose a quick amount or enter any amount from ₹100 upward.</div><div id="walletMessage" class="action-message hidden" role="alert"></div></div>
-  <div class="card"><h3>Usage & Spending</h3><div id="usage" class="loader">Loading…</div></div>
+<section class="section cols">
+  <div class="card section"><h3>Wallet</h3><div id="wallet" class="loader">Loading…</div><div class="actions"><input id="walletAmount" class="input" type="number" inputmode="numeric" min="100" step="1" value="100" style="flex:1;min-width:130px" aria-label="Wallet amount"><button class="btn primary" id="walletBtn" type="button">Add Balance</button></div><div class="wallet-quick" aria-label="Quick wallet amounts"><button type="button" class="btn" data-wallet-amount="100">₹100</button><button type="button" class="btn" data-wallet-amount="500">₹500</button><button type="button" class="btn" data-wallet-amount="1000">₹1,000</button><button type="button" class="btn" data-wallet-amount="2000">₹2,000</button><button type="button" class="btn" data-wallet-amount="5000">₹5,000</button><button type="button" class="btn" data-wallet-amount="10000">₹10,000</button></div><div class="small muted" style="margin-top:10px">Choose a quick amount or enter any amount from ₹100 upward.</div><div id="walletMessage" class="action-message hidden" role="alert"></div></div>
+  <div class="card section"><h3>Usage &amp; Spending</h3><div id="usage" class="loader">Loading…</div></div>
 </section>
 
-<section class="section card"><h3>Agents & Access</h3><div id="agents" class="loader">Loading…</div></section>
-<section class="section card" id="grantsCard"><h3>GLIME Rewards & Grants</h3><div id="grants" class="loader">Loading rewards…</div></section>
+<section class="section card" id="ratesCard"><h3>Usage Rates</h3><div class="small muted">What each action costs. Usage is charged to your wallet balance.</div><div id="rates" class="loader">Loading rates…</div></section>
+
+<section class="section card"><h3>Agents &amp; Access</h3><div id="agents" class="loader">Loading…</div></section>
+<section class="section card" id="grantsCard"><h3>GLIME Rewards &amp; Grants</h3><div id="grants" class="loader">Loading rewards…</div></section>
 <section class="section card"><h3>Payment History</h3><div id="payments" class="loader">Loading…</div></section>
-<section class="section card"><h3>Invoices</h3><div id="invoices" class="loader">Loading…</div></section>
+<section class="section card" id="invoicesCard"><h3>Invoices</h3><div id="invoices" class="loader">Loading…</div><div id="invoiceMessage" class="action-message hidden" role="alert"></div></section>
 </div>
 
 <script>
 const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
 const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const state={cycle:'monthly',catalog:{growth:null,omni:null,data:[],credits:[],all:[]},billing:null,billingLoaded:false,catalogLoaded:false};
+const state={cycle:'monthly',catalog:{growth:null,omni:null,data:[],credits:[],all:[]},billing:null,billingLoaded:false,catalogLoaded:false,rates:null};
 /* ?plan=omni (e.g. from the Connector page upgrade button) scrolls to and highlights that plan card. */
 const wantedPlan=(()=>{try{const v=new URLSearchParams(location.search).get('plan');return v?'glime_'+String(v).toLowerCase().replace(/[^a-z0-9_]/g,''):''}catch(e){return ''}})();
 let planFocusDone=false;
+const CUSTOM_CONTACT_URL='contact.html?package=Custom%20Plan';
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>v==null?'—':new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(Number(v));
+const rateMoney=v=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',minimumFractionDigits:2,maximumFractionDigits:4}).format(Number(v));
 const num=v=>Number(v||0).toLocaleString('en-IN');
 function fnUrl(name){return `${SUPABASE_URL}/functions/v1/${name}`}
 async function authHeaders(){const {data:{session},error}=await sb.auth.getSession();if(error||!session){location.replace('login.html');throw Error('LOGIN_REQUIRED')}return {Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'}}
@@ -152,82 +285,27 @@ function getProductPrice(p,cycle){
       || prices.find(x=>x.active!==false)
       || null;
 }
-function featureLabel(code){
-  const labels={
-    business_data_mb:'Business Data',
-    storage_mb:'Storage',
-    ai_credits:'AI Credits',
-    voice_agent:'Voice Agent',
-    new_agent_priority:'New Agent Priority',
-    ai_connector_chatgpt:'ChatGPT Connector',
-    ai_connector_claude:'Claude Connector'
-  };
-  const key=String(code||'').toLowerCase();
-  if(labels[key]) return labels[key];
-  return String(code||'Feature')
-    .replace(/_/g,' ')
-    .replace(/\b\w/g,m=>m.toUpperCase());
-}
+function priceFor(p,cycle){return (p?.prices||[]).find(x=>String(x.billing_interval)===String(cycle))||null}
 
 function pct(used,quota){return quota>0?Math.min(100,Math.max(0,(used/quota)*100)):0}
 function bytes(v){const n=Number(v||0);if(n<1024*1024)return `${num(Math.round(n/1024))} KB`;if(n<1024*1024*1024)return `${(n/1024/1024).toFixed(1)} MB`;return `${(n/1024/1024/1024).toFixed(2)} GB`}
+function statusBadge(s){
+  const v=String(s||'').toLowerCase();
+  const cls=['paid','active','captured','success','received','confirmed'].includes(v)?'ok':['failed','cancelled','canceled','suspended','expired'].includes(v)?'bad':['pending','payment_pending','created','past_due','paused'].includes(v)?'warn':'';
+  return `<span class="badge ${cls}">${esc(s||'—')}</span>`;
+}
+
 function renderAccount(){
   const a=state.billing?.account_state||{};
   const status=String(a.account_status||'active').toLowerCase();
   const end=a.free_trial_ends_at;
-  if(status==='suspended'){ $('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">Account suspended</div><div class="muted">${esc(a.suspension_reason||'Access is currently suspended.')}</div><div class="actions"><button class="btn primary" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">Choose a paid plan</button></div>`;return}
+  if(status==='suspended'){ $('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">Account suspended</div><div class="muted">${esc(a.suspension_reason||'Access is currently suspended.')}</div><div class="actions"><button class="btn primary" type="button" onclick="document.getElementById('plansSection').scrollIntoView({behavior:'smooth'})">Choose a paid plan</button></div>`;return}
   if(end && (a.free_trial_status==='active'||!a.current_subscription)){
     const t=new Date(end).getTime();const left=Math.max(0,t-Date.now());const d=Math.floor(left/86400000),h=Math.floor(left%86400000/3600000),m=Math.floor(left%3600000/60000);
-    $('accountState').innerHTML=`<div class="kicker">Free access</div><div class="heroTitle">7-day trial</div><div class="countdown" id="trialCountdown">${d}d ${h}h ${m}m remaining</div><div class="muted small">Trial ends ${esc(new Date(end).toLocaleString('en-IN'))}. After expiry, the account is suspended unless a paid subscription is active.</div>`;
+    $('accountState').innerHTML=`<div class="kicker">Free access</div><div class="heroTitle">7-day trial</div><div class="countdown" id="trialCountdown">${d}d ${h}h ${m}m remaining</div><div class="muted small" style="margin-top:6px">Trial ends ${esc(new Date(end).toLocaleString('en-IN'))}. After expiry, the account is suspended unless a paid subscription is active.</div>`;
   }else{
     $('accountState').innerHTML=`<div class="kicker">Account status</div><div class="heroTitle">${esc(a.free_trial_status||status||'active')}</div><div class="muted">Your access and limits are controlled by your current GLIME billing configuration.</div>`;
   }
-}
-function displayEntitlement(e,isOmni){
-  const raw=String(e?.entitlement_code||'').trim();
-  const lower=raw.toLowerCase();
-  const unit=String(e?.unit||'').toLowerCase();
-  const meta=e?.metadata||{};
-
-  /* Use the display label stored in the Supabase catalog. */
-  if((lower==='core_agents'||lower==='omni_access') && meta.display_label){
-    return String(meta.display_label);
-  }
-
-  /* Connectors show the provider name only; never show quantity/unit. */
-  if(unit==='connector' || lower.includes('connector')){
-    const provider=String(meta.provider||raw.replace(/^ai_connector_/i,''))
-      .replace(/[_-]+/g,' ')
-      .trim();
-    return provider
-      ? `${provider.charAt(0).toUpperCase()+provider.slice(1)} Connector`
-      : 'Connector';
-  }
-
-  if(isOmni && lower==='business_data_mb'){
-    return 'Business Data — 200 MB';
-  }
-
-  if(isOmni && lower==='storage_mb'){
-    return 'Storage — 10000 MB';
-  }
-
-  if(isOmni && lower==='ai_credits'){
-    return 'AI Credits — 1000000';
-  }
-
-  const friendly={
-    new_agent_priority:'New Agent Priority',
-    voice_agent:'Voice Agent'
-  };
-
-  const label=friendly[lower]||raw
-    .replace(/_/g,' ')
-    .replace(/\b\w/g,m=>m.toUpperCase());
-
-  return e?.quantity!=null
-    ? `${label} — ${e.quantity}${e.unit ? ` ${e.unit}` : ''}`
-    : label;
 }
 
 function renderSubscription(){
@@ -241,15 +319,15 @@ function renderSubscription(){
   }
 
   $('subBody').innerHTML=`
-    <div class="stat"><span>Plan</span><b>${esc(p.name||p.product_code||'GLIME')}</b></div>
-    <div class="stat"><span>Status</span><span class="badge">${esc(s.status||'active')}</span></div>
-    <div class="stat"><span>Amount</span><b>${money(s.amount)}</b></div>
-    <div class="stat"><span>Billing cycle</span><span>${esc(b.current_price?.billing_interval||'—')}</span></div>
-    <div class="stat"><span>Current period</span><span>${esc((s.current_period_start||'').slice(0,10))} → ${esc((s.current_period_end||'').slice(0,10))}</span></div>
-    <div class="stat"><span>Auto-renew</span><span>${s.auto_renew?'On':'Off'}</span></div>
+    <div class="stat"><span class="muted">Plan</span><b>${esc(p.name||p.product_code||'GLIME')}</b></div>
+    <div class="stat"><span class="muted">Status</span>${statusBadge(s.status||'active')}</div>
+    <div class="stat"><span class="muted">Amount</span><b>${money(s.amount)}</b></div>
+    <div class="stat"><span class="muted">Billing cycle</span><span>${esc(b.current_price?.billing_interval||'—')}</span></div>
+    <div class="stat"><span class="muted">Current period</span><span>${esc((s.current_period_start||'').slice(0,10))} → ${esc((s.current_period_end||'').slice(0,10))}</span></div>
+    <div class="stat"><span class="muted">Auto-renew</span><span>${s.auto_renew?'On':'Off'}</span></div>
     <div class="actions">
-      <button class="btn primary" id="changePlan">Change Plan</button>
-      <button class="btn" id="renewBtn">${s.auto_renew?'Cancel auto-renew':'Resume subscription'}</button>
+      <button class="btn primary" id="changePlan" type="button">Change Plan</button>
+      <button class="btn" id="renewBtn" type="button">${s.auto_renew?'Cancel auto-renew':'Resume subscription'}</button>
     </div>`;
 
   const renew=$('renewBtn');
@@ -266,91 +344,114 @@ function renderSubscription(){
 
   const change=$('changePlan');
   if(change){
-    change.onclick=()=>document.getElementById('plans').scrollIntoView({behavior:'smooth'});
+    change.onclick=()=>document.getElementById('plansSection').scrollIntoView({behavior:'smooth'});
   }
 }
 
+/* ---------- Plans (prices and quantities come from the database) ---------- */
+const SPECIALISTS=['Follow-up','Leads','Instagram Sales','WhatsApp Sales','GLIME Data Analyst'];
+const CYCLE_WORD={monthly:'month',yearly:'year',one_time:'one-time'};
+function entFeature(e){
+  const raw=String(e.entitlement_code||'').toLowerCase();
+  const unit=String(e.unit||'').toLowerCase();
+  const meta=e.metadata||{};
+  const q=e.quantity!=null?Number(e.quantity):null;
+  if(['core_agents','omni_access','voice_agent'].includes(raw))return null;
+  if(unit==='connector'||raw.includes('connector')){
+    const provider=String(meta.provider||raw.replace(/^ai_connector_/,'')||'connector').replace(/[_-]+/g,' ').trim();
+    return provider.charAt(0).toUpperCase()+provider.slice(1)+' Connector';
+  }
+  if(raw==='business_data_mb')return q!=null?`Business Data — ${num(q)} MB`:'Business Data';
+  if(raw==='storage_mb')return q!=null?`File Storage — ${num(q)} MB`:'File Storage';
+  if(raw==='ai_credits')return q!=null?`AI Credits — ${num(q)} included`:'AI Credits';
+  if(raw==='fixed_qa_items')return q!=null?`Fixed Q&A — ${num(q)} items`:'Fixed Q&A';
+  if(raw==='new_agent_priority')return 'Priority access to new agents';
+  const label=String(meta.display_label||raw).replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
+  return q!=null?`${label} — ${num(q)}${e.unit?' '+e.unit:''}`:label;
+}
+/* What each plan can do with messages (plan rules set by GLIME). */
+function messagingFeatures(code){
+  if(code==='glime_growth')return [
+    {t:'Reply to customers inside the 24-hour WhatsApp window',on:true},
+    {t:'Send messages after 24 hours',on:false},
+    {t:'Broadcast messages',on:false}
+  ];
+  if(code==='glime_omni')return [
+    {t:'Send messages even after 24 hours',on:true},
+    {t:'Broadcast messages to your customers',on:true}
+  ];
+  return [];
+}
+const TICK='<span class="ic" aria-hidden="true">✓</span>';
+const CROSS='<span class="ic" aria-hidden="true">✕</span>';
+
+function planCard(p,current,ready){
+  const product=p.product||{};
+  const pr=priceFor(p,state.cycle)||getProductPrice(p,state.cycle)||{};
+  const code=product.product_code||'';
+  const isOmni=code==='glime_omni';
+  const isCurrent=current===code&&String(state.billing?.current_price?.billing_interval||'')===String(pr.billing_interval||state.cycle);
+  const sameProduct=current===code;
+
+  const monthly=priceFor(p,'monthly'),yearly=priceFor(p,'yearly');
+  let note='';
+  if(String(pr.billing_interval)==='yearly'&&monthly&&pr.amount!=null){
+    const m12=Number(monthly.amount)*12,y=Number(pr.amount);
+    note=`≈ ${money(y/12)} / month`+(m12>y?` · you save ${money(m12-y)} a year`:'');
+  }
+
+  const dataFeatures=(p.entitlements||[]).map(entFeature).filter(Boolean);
+  const msg=messagingFeatures(code);
+
+  const li=(t,on=true)=>`<li class="${on?'':'off'}">${on?TICK:CROSS}<span class="t">${esc(t)}</span></li>`;
+  const list=
+    `<li class="group"><b>Your Business Specialists</b><div class="chips">${SPECIALISTS.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div></li>`+
+    (msg.length?msg.map(x=>li(x.t,x.on)).join(''):'')+
+    dataFeatures.map(x=>li(x)).join('');
+
+  const btnLabel=!ready?'Checking your account…':isCurrent?'Current plan':sameProduct?'Change billing cycle':'Choose plan';
+  return `<article class="card plan${isOmni?' omni':''}${code===wantedPlan?' planFocus':''}" id="plan-${esc(code)}">
+    <div class="plan-head"><span class="tag${isOmni?' pop':''}">${esc(code.replace('glime_','').toUpperCase())}</span>${isOmni?'<span class="tag pop">BEST VALUE</span>':''}</div>
+    <h2>${esc(product.name||'GLIME Plan')}</h2>
+    <div class="desc">${esc(product.description||'')}</div>
+    <div class="price">${money(pr.amount)} <small>/ ${esc(CYCLE_WORD[pr.billing_interval||state.cycle]||pr.billing_interval||state.cycle)}</small></div>
+    <div class="price-note">${esc(note)}</div>
+    <ul class="features">${list}</ul>
+    <button class="btn primary block planBtn" type="button"
+      data-product="${esc(code)}"
+      data-interval="${esc(pr.billing_interval||state.cycle)}"
+      ${(isCurrent||!ready)?'disabled':''}>${btnLabel}</button>
+    <div id="planMessage-${esc(code)}" class="action-message hidden" role="alert"></div>
+  </article>`;
+}
+function customCard(){
+  return `<article class="card plan custom" id="plan-glime_custom">
+    <div class="plan-head"><span class="tag gold">CUSTOM</span></div>
+    <div class="crown" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M3 8l4.6 4.2L12 5l4.4 7.2L21 8l-1.8 10H4.8z"/></svg></div>
+    <h2>GLIME Custom</h2>
+    <p class="custom-line">Want something made only for your business — a special setup, a voice agent or any custom work? Tell us what you need and we will build it for you.</p>
+    <a class="btn gold block" href="${CUSTOM_CONTACT_URL}">Contact us</a>
+  </article>`;
+}
+function renderYearSave(){
+  const el=$('yearSave');if(!el)return;
+  let best=0;
+  [state.catalog.growth,state.catalog.omni].filter(Boolean).forEach(p=>{
+    const m=priceFor(p,'monthly'),y=priceFor(p,'yearly');
+    if(m&&y&&Number(m.amount)>0){const s=Math.round((1-Number(y.amount)/(Number(m.amount)*12))*100);if(s>best)best=s}
+  });
+  el.textContent=best>0?`Save ${best}%`:'';
+  el.classList.toggle('hidden',best<=0);
+}
 function renderPlans(){
   if(!state.catalogLoaded)return;
   const arr=[state.catalog.growth,state.catalog.omni].filter(Boolean);
   const current=state.billing?.current_product?.product_code;
   const ready=state.billingLoaded;
-
-  $('plans').innerHTML=arr.map(p=>{
-    const product=p.product||{};
-    const pr=getProductPrice(p,state.cycle)||{};
-    const ents=p.entitlements||[];
-    const code=product.product_code||'';
-    const isOmni=code==='glime_omni';
-    const isCurrent=current===code
-      && String(state.billing?.current_price?.billing_interval||'')
-      ===String(pr.billing_interval||state.cycle);
-    const sameProduct=current===code;
-
-    const visible=ents.filter(e=>{
-      const x=String(e.entitlement_code||'').toLowerCase();
-      return x!=='core_agents' && x!=='omni_access';
-    });
-
-    let features=visible.map(e=>{
-      const raw=String(e.entitlement_code||'').toLowerCase();
-      const unit=String(e.unit||'').toLowerCase();
-      const meta=e.metadata||{};
-
-      if(unit==='connector'||raw.includes('connector')){
-        const provider=String(meta.provider||raw.replace(/^ai_connector_/,'')||'connector')
-          .replace(/[_-]+/g,' ').trim();
-        return provider.charAt(0).toUpperCase()+provider.slice(1)+' Connector';
-      }
-
-      if(isOmni&&raw==='business_data_mb') return 'Business Data — 200 MB';
-      if(isOmni&&raw==='storage_mb') return 'Storage — 10000 MB';
-      if(isOmni&&raw==='ai_credits') return 'AI Credits — 1000000';
-
-      return featureLabel(raw)+(e.quantity!=null
-        ? ' — '+e.quantity+(e.unit?' '+e.unit:'')
-        : '');
-    }).filter(Boolean);
-
-    /* Keep the internal core_agents/omni_access entitlements in Supabase,
-       but present one simple client-facing specialist group. */
-    if(isOmni){
-      features=[
-        'Your Business Specialists',
-        'Follow-up Specialist',
-        'Leads Specialist',
-        'Instagram Sales Specialist',
-        'WhatsApp Sales Specialist',
-        'GLIME Data Analyst',
-        ...features
-      ];
-    }else{
-      features=[
-        'Your Business Specialists',
-        'Follow-up Specialist',
-        'Leads Specialist',
-        'Instagram Sales Specialist',
-        'WhatsApp Sales Specialist',
-        'GLIME Data Analyst',
-        ...features
-      ];
-    }
-
-    return `<article class="card${code===wantedPlan?' planFocus':''}" id="plan-${esc(code)}">
-      <span class="badge">${esc(code.replace('glime_','').toUpperCase())}</span>
-      <h2 style="margin-top:10px">${esc(product.name||'GLIME Plan')}</h2>
-      <div class="muted">${esc(product.description||'')}</div>
-      <div class="price">${money(pr.amount)} <small>/ ${esc(pr.billing_interval||state.cycle)}</small></div>
-      <ul class="features">${features.slice(0,16).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
-      <button class="btn primary planBtn"
-        data-product="${esc(code)}"
-        data-interval="${esc(pr.billing_interval||state.cycle)}"
-        ${(isCurrent||!ready)?'disabled':''}>
-        ${!ready?'Checking your account…':isCurrent?'Current plan':sameProduct?'Change billing cycle':'Choose plan'}
-      </button>
-      <div id="planMessage-${esc(code)}" class="action-message hidden" role="alert"></div>
-    </article>`;
-  }).join('')||'<div class="card empty">Plans are unavailable right now.</div>';
+  renderYearSave();
+  $('plans').innerHTML=arr.map(p=>planCard(p,current,ready)).join('')
+    +(arr.length?'':'<div class="card empty">Plans are unavailable right now.</div>')
+    +customCard();
 
   /* Bring the requested plan (?plan=omni) into view. Repeats until the account data has
      loaded, because other sections growing above can push the card out of view. */
@@ -366,18 +467,20 @@ function renderPlans(){
 function renderCapacity(){
   const c=state.billing?.capacity||{};
   const fq=Number(c.file_storage_quota_bytes||0),fu=Number(c.file_storage_used_bytes||0),dq=Number(c.database_quota_bytes||0),du=Number(c.database_used_bytes||0);
-  $('capacity').innerHTML=`<div class="stat"><span>Business Data</span><b>${bytes(du)} / ${bytes(dq)}</b></div><div class="bar"><i style="width:${pct(du,dq)}%"></i></div><div class="small muted">Business data limit: ${bytes(dq)}</div><div class="stat" style="margin-top:10px"><span>Files & Photos</span><b>${bytes(fu)} / ${bytes(fq)}</b></div><div class="bar"><i style="width:${pct(fu,fq)}%"></i></div><div class="small muted">Files & photos limit: ${bytes(fq)}</div>`;
+  $('capacity').classList.remove('loader');
+  $('capacity').innerHTML=`<div class="stat"><span>Business Data</span><b>${bytes(du)} / ${bytes(dq)}</b></div><div class="bar"><i style="width:${pct(du,dq)}%"></i></div><div class="small muted">Business data limit: ${bytes(dq)}</div><div class="stat" style="margin-top:10px"><span>Files &amp; Photos</span><b>${bytes(fu)} / ${bytes(fq)}</b></div><div class="bar"><i style="width:${pct(fu,fq)}%"></i></div><div class="small muted">Files &amp; photos limit: ${bytes(fq)}</div>`;
 }
 function renderAddons(){
   if(!state.catalogLoaded)return;
   const arr=state.catalog.data;
+  $('dataAddons').classList.remove('loader');
   $('dataAddons').innerHTML=arr.length
     ? arr.map(x=>{
         const p=x.product||{},pr=getProductPrice(x,'monthly')||{};
         return `<div class="row">
           <div><b>${esc(p.name)}</b><div class="muted small">${esc(p.description||'')}</div></div>
           <div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month</div>
-          <button class="btn" style="margin-top:7px" data-data-code="${esc(p.product_code)}">Add</button></div>
+          <button class="btn sm" type="button" style="margin-top:7px" data-data-code="${esc(p.product_code)}">Add</button></div>
         </div>`;
       }).join('')
     : '<div class="empty">Business Data add-ons are unavailable in the current catalog.</div>';
@@ -387,14 +490,14 @@ function renderStorage(){
   const products=(state.catalog.all||[]).filter(x=>[
     'glime_storage_50mb','glime_storage_1gb'
   ].includes(x.product?.product_code));
+  $('storageAddons').classList.remove('loader');
   $('storageAddons').innerHTML=products.length
     ? products.map(x=>{
         const p=x.product||{},pr=getProductPrice(x,'monthly')||{};
-        const mb=p.product_code==='glime_storage_1gb'?1024:500;
         return `<div class="row">
-          <div><b>${esc(p.name)}</b><div class="muted small">${mb} MB additional storage</div></div>
+          <div><b>${esc(p.name)}</b><div class="muted small">${esc(p.description||'')}</div></div>
           <div style="text-align:right"><b>${money(pr.amount)}</b><div class="small muted">/month</div>
-          <button class="btn" style="margin-top:7px" data-storage-code="${esc(p.product_code)}">Add</button></div>
+          <button class="btn sm" type="button" style="margin-top:7px" data-storage-code="${esc(p.product_code)}">Add</button></div>
         </div>`;
       }).join('')
     : '<div class="empty">Extra Storage options are unavailable in the current catalog.</div>';
@@ -403,22 +506,47 @@ function renderStorage(){
 function renderCredits(){
   if(state.billing){
     const tx=state.billing?.ai_credits||{},credits=Number(tx.balance_credits||0),tokens=Number(tx.remaining_tokens??credits);
+    $('credits').classList.remove('loader');
     $('credits').innerHTML=`<div class="stat"><span>Credits remaining</span><b class="cyan">${num(credits)}</b></div><div class="stat"><span>AI tokens remaining</span><b>${num(tokens)}</b></div><div class="stat"><span>Credits granted</span><span>${num(tx.granted_credits||0)}</span></div><div class="stat"><span>Credits used</span><span>${num(tx.used_credits||0)}</span></div>`;
   }
   if(!state.catalogLoaded)return;
-  $('creditPacks').innerHTML=state.catalog.credits.length?`<div class="small muted" style="margin-bottom:8px">Add credits</div>${state.catalog.credits.map(x=>{const p=x.product,pr=getProductPrice(x,'one_time')||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="small muted">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><br><button class="btn" style="margin-top:6px" data-credit-code="${esc(p.product_code)}">Buy</button></div></div>`}).join('')}`:'';
+  $('creditPacks').innerHTML=state.catalog.credits.length?`<div class="small muted" style="margin-bottom:6px">Add credits</div>${state.catalog.credits.map(x=>{const p=x.product,pr=getProductPrice(x,'one_time')||{};return `<div class="row"><div><b>${esc(p.name)}</b><div class="small muted">${esc(p.description||'')}</div></div><div style="text-align:right"><b>${money(pr.amount)}</b><br><button class="btn sm" type="button" style="margin-top:6px" data-credit-code="${esc(p.product_code)}">Buy</button></div></div>`}).join('')}`:'';
 }
-function renderWallet(){const w=state.billing?.wallet;if(!w){$('wallet').innerHTML='<div class="empty">Wallet balance is not available yet.</div>';return}$('wallet').innerHTML=`<div class="stat"><span>Balance</span><b class="success">${money(w.balance)}</b></div><div class="stat"><span>Status</span><span class="badge">${esc(w.status||'active')}</span></div>`}
+function renderWallet(){const w=state.billing?.wallet;$('wallet').classList.remove('loader');if(!w){$('wallet').innerHTML='<div class="empty">Wallet balance is not available yet.</div>';return}$('wallet').innerHTML=`<div class="stat"><span class="muted">Balance</span><b class="success" style="font-size:22px">${money(w.balance)}</b></div><div class="stat"><span class="muted">Status</span>${statusBadge(w.status||'active')}</div>`}
 function renderUsage(){
   const rows=state.billing?.usage_summary||[];
-  const labels={voice_minute:'Voice AI',sms_message:'SMS',email_message:'Email',instagram_message:'Instagram',whatsapp_message:'WhatsApp',whatsapp_marketing_24h:'WhatsApp 24h follow-up / marketing',lead_processing:'Lead processing',ai_token:'AI tokens'};
+  const labels={voice_minute:'Voice AI',sms_message:'SMS',email_message:'Email',instagram_message:'Instagram',instagram_followup:'Instagram follow-up',whatsapp_message:'WhatsApp',whatsapp_template_utility:'WhatsApp utility templates',whatsapp_template_marketing:'WhatsApp marketing templates',whatsapp_marketing_24h:'WhatsApp 24h follow-up / marketing',lead_processing:'Lead processing',ai_token:'AI tokens'};
+  $('usage').classList.remove('loader');
   $('usage').innerHTML=rows.length?rows.map(r=>`<div class="stat"><span>${esc(labels[r.usage_code]||r.usage_code)}</span><span>${num(r.quantity)} · ${money(r.amount||0)}</span></div>`).join(''):'<div class="empty">No usage recorded yet.</div>';
+}
+/* Usage rates are read straight from the database table (active rates only). */
+const RATE_UNITS={message:'message',template_message:'message',connected_call_minute:'minute',outgoing_sms:'SMS',outgoing_email:'email',lead:'lead',token:'token'};
+async function loadRates(){
+  try{
+    const {data,error}=await sb.from('glime_billing_usage_rates').select('usage_code,name,unit,customer_unit_price,currency,active').eq('active',true).order('usage_code');
+    if(error)throw error;
+    state.rates=(data||[]).filter(r=>r.customer_unit_price!=null&&r.usage_code!=='ai_token');
+  }catch(e){state.rates=null}
+  renderRates();
+}
+function renderRates(){
+  const box=$('rates'),card=$('ratesCard');
+  if(!box)return;
+  if(!state.rates||!state.rates.length){card.classList.add('hidden');return}
+  card.classList.remove('hidden');box.classList.remove('loader');
+  box.className='rates';
+  box.innerHTML=state.rates.map(r=>{
+    const price=Number(r.customer_unit_price);
+    const unit=RATE_UNITS[r.unit]||String(r.unit||'').replace(/_/g,' ');
+    return `<div class="rate"><span>${esc(r.name)}</span><b>${price===0?'Free':esc(rateMoney(price))+' <span class="small muted" style="font-weight:500">/ '+esc(unit)+'</span>'}</b></div>`;
+  }).join('');
 }
 function renderAgents(){
   const rows=state.billing?.entitlements||[];
   const agents=rows.filter(x=>x.entitlement_code&&(/agent|voice|whatsapp|instagram|lead|follow|marketing/i.test(x.entitlement_code)));
   const limit=rows.find(x=>/agent.*limit|limit.*agent/i.test(x.entitlement_code));
-  $('agents').innerHTML=`<div class="mini-grid"><div class="mini"><div class="small muted">Agent limit</div><b>${limit?.quantity!=null?esc(limit.quantity):'Configured by plan'}</b></div><div class="mini"><div class="small muted">Included access</div><b>${agents.length} entitlement(s)</b></div><div class="mini"><div class="small muted">Future agents</div><b>Plan-controlled</b></div></div><div style="margin-top:12px">${agents.length?agents.map(x=>`<div class="row"><span>${esc(x.entitlement_code)}</span><span class="badge">${esc(x.status||'active')}</span></div>`).join(''):'<div class="empty">Agent access is controlled by your active GLIME entitlements.</div>'}</div>`;
+  $('agents').classList.remove('loader');
+  $('agents').innerHTML=`<div class="mini-grid"><div class="mini"><div class="small muted">Agent limit</div><b>${limit?.quantity!=null?esc(limit.quantity):'Configured by plan'}</b></div><div class="mini"><div class="small muted">Included access</div><b>${agents.length} entitlement(s)</b></div><div class="mini"><div class="small muted">Future agents</div><b>Plan-controlled</b></div></div><div style="margin-top:12px">${agents.length?agents.map(x=>`<div class="row"><span>${esc(x.entitlement_code)}</span>${statusBadge(x.status||'active')}</div>`).join(''):'<div class="empty">Agent access is controlled by your active GLIME entitlements.</div>'}</div>`;
 }
 
 /* ---------- Rewards & Grants ----------
@@ -526,7 +654,7 @@ function renderGrants(){
       </div>
       <div class="rw-side">
         <div class="rw-amt">${esc(x.amount)}</div>
-        <span class="badge">${esc(x.status)}</span>
+        ${statusBadge(x.status)}
       </div>
     </div>`;
   }).join('');
@@ -534,12 +662,47 @@ function renderGrants(){
 
 function renderPayments(){
   const rows=state.billing?.payments?.length?state.billing.payments:state.billing?.orders||[];
-  $('payments').innerHTML=rows.length?`<table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc((x.created_at||x.paid_at||'').slice(0,19).replace('T',' '))}</td><td>${esc(x.order_type||x.payment_type||'Payment')}</td><td>${money(x.total_amount??x.amount)}</td><td>${esc(x.status||'—')}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No payment records yet.</div>';
+  const box=$('payments');box.classList.remove('loader');
+  box.innerHTML=rows.length?`<div class="list">${rows.map(x=>{
+    const when=fmtDate(x.created_at||x.paid_at);
+    const type=String(x.order_type||x.payment_type||'Payment').replace(/_/g,' ');
+    return `<div class="item"><div class="item-top"><div><div class="item-title" style="word-break:normal;text-transform:capitalize">${esc(type)}</div><div class="item-sub">${esc(when)}</div></div></div><div class="item-bottom"><div class="item-amt">${money(x.total_amount??x.amount)}</div>${statusBadge(x.status)}</div></div>`;
+  }).join('')}</div>`:'<div class="empty">No payment records yet.</div>';
 }
+
+/* ---------- Invoices ----------
+   The invoice list holds no file link. Each invoice PDF is produced on demand by the
+   secure invoice-download function, so the button asks for it with the signed-in session. */
 function renderInvoices(){
   const rows=state.billing?.invoices||[];
-  $('invoices').innerHTML=rows.length?`<table><thead><tr><th>Date</th><th>Invoice</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${rows.map((x,i)=>{const url=x.download_url||x.invoice_url||x.pdf_url||x.file_url;return `<tr><td>${esc((x.created_at||'').slice(0,10))}</td><td>${esc(x.invoice_number||'Invoice')}</td><td>${money(x.total_amount??x.amount)}</td><td>${esc(x.status||'—')}</td><td>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Download</a>`:'—'}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No invoices yet.</div>';
+  const box=$('invoices');box.classList.remove('loader');
+  if(!rows.length){box.innerHTML='<div class="empty">No invoices yet. An invoice is created after each successful payment.</div>';return}
+  box.innerHTML=`<div class="list">${rows.map(x=>{
+    const when=fmtDate(x.paid_at||x.created_at);
+    return `<div class="item"><div class="item-top"><div><div class="item-title">${esc(x.invoice_number||'Invoice')}</div><div class="item-sub">${esc(when)}</div></div></div><div class="item-bottom"><div class="item-amt">${money(x.total_amount??x.amount)}</div>${statusBadge(x.status)}<button class="btn sm primary" type="button" data-invoice-id="${esc(x.id)}" data-invoice-no="${esc(x.invoice_number||'GLIME-Invoice')}">Download PDF</button></div></div>`;
+  }).join('')}</div>`+(rows.length>=20?'<div class="small muted" style="margin-top:10px">Showing your 20 most recent invoices.</div>':'');
 }
+async function downloadInvoice(id,number,btn){
+  clearActionMessage('invoiceMessage');
+  const label=btn.textContent;btn.disabled=true;btn.textContent='Preparing…';
+  try{
+    const h=await authHeaders();
+    const r=await fetch(fnUrl('glime-billing-invoice-download')+'?invoice_id='+encodeURIComponent(id),{method:'GET',headers:{Authorization:h.Authorization}});
+    if(!r.ok){
+      let code='';try{code=(await r.json()).error||''}catch(e){}
+      throw Error(code==='INVOICE_NOT_FOUND'?'This invoice was not found on your account.':'The invoice could not be prepared. Please try again in a moment.');
+    }
+    const blob=await r.blob();
+    const url=URL.createObjectURL(new Blob([blob],{type:'application/pdf'}));
+    const a=document.createElement('a');
+    a.href=url;a.download=String(number||'GLIME-Invoice').replace(/[^A-Za-z0-9._-]/g,'_')+'.pdf';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }catch(e){
+    if(e.message!=='LOGIN_REQUIRED')actionMessage('invoiceMessage',e.message||'The invoice could not be downloaded.',true);
+  }finally{btn.disabled=false;btn.textContent=label}
+}
+
 async function razorpayCheckoutOrder(d,description){
   const x=d?.data||d;
   if(!x?.provider_order_id||!x?.key_id)throw Error('Razorpay order is not ready.');
@@ -618,7 +781,7 @@ function renderBillingParts(){
   renderAccount();renderSubscription();renderCapacity();renderCredits();renderWallet();renderUsage();renderAgents();renderGrants();renderPayments();renderInvoices();
 }
 
-/* Catalog and the account data load at the same time (not one after the other),
+/* Catalog, account data and usage rates load at the same time (not one after the other),
    and each part of the page is drawn as soon as its data arrives. */
 async function loadAll(){
   const {data:{session}}=await sb.auth.getSession();if(!session){location.replace('login.html');return}
@@ -632,25 +795,38 @@ async function loadAll(){
     renderBillingParts();
     renderCatalogParts();
   });
+  loadRates();
   const results=await Promise.allSettled([catP,billP]);
   showLoadNote(false);
   const failed=results.find(r=>r.status==='rejected');
   if(failed)throw failed.reason;
 }
-$('monthly').onclick=()=>{state.cycle='monthly';$('monthly').classList.add('active');$('yearly').classList.remove('active');renderPlans()};
-$('yearly').onclick=()=>{state.cycle='yearly';$('yearly').classList.add('active');$('monthly').classList.remove('active');renderPlans()};
+function setCycle(c){
+  state.cycle=c;
+  $('monthly').classList.toggle('active',c==='monthly');
+  $('yearly').classList.toggle('active',c==='yearly');
+  $('monthly').setAttribute('aria-selected',c==='monthly');
+  $('yearly').setAttribute('aria-selected',c==='yearly');
+  renderPlans();
+}
+$('monthly').onclick=()=>setCycle('monthly');
+$('yearly').onclick=()=>setCycle('yearly');
 $('refresh').onclick=async()=>{try{await loadAll();notice('Billing refreshed.')}catch(e){notice(e.message,true)}};
 $('walletBtn').onclick=async()=>{try{await walletTopup()}catch(e){actionMessage('walletMessage',e.message,true)}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-wallet-amount]');if(!b)return;const input=$('walletAmount');input.value=b.dataset.walletAmount;input.focus();});
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
   try{
-    if(b.classList.contains('planBtn')&&!b.disabled){
+    if(b.dataset.invoiceId){
+      await downloadInvoice(b.dataset.invoiceId,b.dataset.invoiceNo,b);
+    }else if(b.classList.contains('planBtn')&&!b.disabled){
       const code=b.dataset.product,interval=b.dataset.interval,current=state.billing?.current_product?.product_code;
       const target=`planMessage-${code}`;
       clearActionMessage(target);
       try{
-        if(!current)await subscribe(code,interval);else if(current!==code)await upgrade(code,interval);
+        if(!current)await subscribe(code,interval);
+        else if(current!==code)await upgrade(code,interval);
+        else actionMessage(target,'Changing the billing cycle is not available from this page yet.',true);
       }catch(err){actionMessage(target,err.message,true)}
     }else if(b.dataset.dataCode){
       clearActionMessage('dataMessage');
