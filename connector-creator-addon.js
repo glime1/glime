@@ -7,22 +7,27 @@
    only reads it and shows the right state:
 
      No application yet -> short text + "Apply as a creator" form
-     Pending            -> "Under review" + what was submitted
+     Pending            -> "Under review" + passcode to put in the bio/description
      Approved           -> "Approved" + "Open Creator" (creator.html)
-     Rejected           -> reason + "Edit and apply again"
+     Rejected           -> reason + "Edit and apply again" (a new passcode is issued)
+
+   Ownership check: after applying, the server gives the creator a passcode
+   (for example GLIME-3F9A2C). The creator pastes it in their Instagram bio or
+   YouTube channel description for 1-2 days. The GLIME team opens the profile
+   from the admin Creators tab, sees the same passcode, and approves.
 
    Backend this card expects (names can be changed in CFG below):
      table  public.creator_applications   (one row per signed-in user)
             auth_user_id, full_name, instagram_url, youtube_url, followers,
             category, course_name, status ('pending'|'approved'|'rejected'),
-            reject_reason, created_at, updated_at
+            reject_reason, verify_code, created_at, updated_at
             RLS: a user may only SELECT their own row. A user must NOT be able
             to INSERT/UPDATE the status column directly.
      rpc    client_submit_creator_application(
               p_full_name, p_instagram_url, p_youtube_url,
               p_followers, p_category, p_course_name)
-            Creates or updates the caller's row and always sets status to
-            'pending' on the server.
+            Creates or updates the caller's row, always sets status to
+            'pending' and creates the passcode on the server.
    If the table or the function does not exist yet, the card shows
    "not available yet" and nothing else on the Connector page is affected.
 
@@ -67,7 +72,13 @@
     '.gcr-sum li{display:flex;gap:8px;flex-wrap:wrap}' +
     '.gcr-sum b{opacity:.7;font-weight:600}' +
     '.gcr-note{margin:10px 0 0;padding:10px 12px;border-radius:10px;border:1px dashed rgba(127,127,127,.5);font-size:.84rem}' +
-    '.gcr-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}';
+    '.gcr-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}' +
+    '.gcr-code{margin:12px 0 0;padding:14px;border-radius:12px;border:1px solid rgba(245,166,35,.55);background:rgba(245,166,35,.08)}' +
+    '.gcr-code small{display:block;font-size:.76rem;opacity:.8;margin-bottom:6px}' +
+    '.gcr-code strong{display:block;font-size:1.35rem;letter-spacing:.08em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;' +
+    'word-break:break-all;user-select:all}' +
+    '.gcr-code p{margin:10px 0 0;font-size:.82rem;line-height:1.5}' +
+    '.gcr-code .gcx-btn{margin-top:10px}';
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -155,7 +166,7 @@
 
     var st = {
       uid: '', loading: true, row: null, unavailable: false, loadErr: '',
-      form: false, busy: false, msg: '', errs: {}, draft: {}
+      form: false, busy: false, msg: '', errs: {}, draft: {}, copied: false
     };
 
     function stateName() {
@@ -188,6 +199,25 @@
       }).join('') + '</ul>';
     }
 
+    /* Where the passcode must be placed, based on the links the creator gave. */
+    function whereText(r) {
+      var ig = r && r.instagram_url, yt = r && r.youtube_url;
+      if (ig && yt) return 'your Instagram bio or your YouTube channel description (any one is enough)';
+      if (ig) return 'your Instagram bio';
+      return 'your YouTube channel description';
+    }
+
+    function codeHtml(r) {
+      var code = r && r.verify_code ? String(r.verify_code) : '';
+      if (!code) return '';
+      return '<div class="gcr-code">' +
+        '<small>Your verification passcode</small>' +
+        '<strong>' + esc(code) + '</strong>' +
+        '<p>Add this passcode to ' + esc(whereText(r)) + ' and keep it there for <b>1–2 days</b> so our team can check that the account is yours and review your application. You can remove it after you are approved.</p>' +
+        '<button type="button" class="gcx-btn" data-cr-act="copy" data-code="' + esc(code) + '">' + (st.copied ? 'Copied ✓' : 'Copy passcode') + '</button>' +
+      '</div>';
+    }
+
     function fieldHtml(key, label, type, hint, extra) {
       var v = st.draft[key] == null ? '' : st.draft[key];
       var err = st.errs[key] ? '<span class="gcr-fe" role="alert">' + esc(st.errs[key]) + '</span>' : '';
@@ -214,6 +244,7 @@
         fieldHtml('followers', 'Total followers', 'text', '', ' inputmode="numeric" placeholder="12000"') +
         fieldHtml('category', 'Category', 'select', '') +
         fieldHtml('course_name', 'Course you want to sell', 'text', '', ' maxlength="120" placeholder="e.g. Learn AI tools in 7 days"') +
+        '<div class="gcr-note">After you submit, we give you a <b>verification passcode</b>. You will add it to your Instagram bio or YouTube channel description for 1–2 days so our team can confirm the account is yours.</div>' +
         '<div class="gcx-actions">' +
           '<button type="submit" class="gcx-btn primary"' + (st.busy ? ' disabled' : '') + '>' + (st.busy ? 'Sending…' : 'Submit application') + '</button> ' +
           '<button type="button" class="gcx-btn" data-cr-act="cancel"' + (st.busy ? ' disabled' : '') + '>Cancel</button>' +
@@ -242,7 +273,8 @@
         body = '<p class="gcx-desc">Sell your own course through GLIME. Apply as a creator, and when our team approves you, Creator appears in your menu.</p>';
         actions = '<button type="button" class="gcx-btn primary" data-cr-act="apply">Apply as a creator</button>';
       } else if (sn === 'pending') {
-        body = '<p class="gcx-desc">Your application is under review. When it is approved, Creator will appear in your menu automatically.</p>' + summaryHtml(st.row);
+        body = '<p class="gcx-desc">Your application is under review. When it is approved, Creator will appear in your menu automatically.</p>' +
+          codeHtml(st.row) + summaryHtml(st.row);
         actions = '<button type="button" class="gcx-btn" data-cr-act="refresh">Refresh status</button>';
       } else if (sn === 'approved') {
         body = '<p class="gcx-desc">You are approved as a creator. Open the Creator page to manage your course.</p>';
@@ -277,7 +309,7 @@
       if (!st.uid) return Promise.resolve();
       if (!silent) { st.loading = true; st.loadErr = ''; draw(); }
       return sb.from(CFG.TABLE)
-        .select('status,reject_reason,full_name,instagram_url,youtube_url,followers,category,course_name,updated_at')
+        .select('status,reject_reason,verify_code,full_name,instagram_url,youtube_url,followers,category,course_name,updated_at')
         .eq('auth_user_id', st.uid)
         .order('updated_at', { ascending: false })
         .limit(1)
@@ -351,12 +383,29 @@
           return;
         }
         st.form = false;
+        st.copied = false;
         return load(false);
       }).catch(function () {
         st.busy = false;
         st.msg = 'Your application could not be sent. Please check your internet and try again.';
         draw();
       });
+    }
+
+    function copyCode(code, btn) {
+      if (!code) return;
+      function done() {
+        st.copied = true;
+        if (btn) btn.textContent = 'Copied \u2713';
+        setTimeout(function () { st.copied = false; if (btn && btn.isConnected) btn.textContent = 'Copy passcode'; }, 2000);
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(done, function () { window.prompt('Copy this passcode:', code); });
+          return;
+        }
+      } catch (e) { /* fall through */ }
+      window.prompt('Copy this passcode:', code);
     }
 
     container.addEventListener('click', function (ev) {
@@ -366,6 +415,7 @@
       if (act === 'apply') openForm();
       else if (act === 'cancel') { st.form = false; st.msg = ''; draw(); }
       else if (act === 'refresh') load(false);
+      else if (act === 'copy') copyCode(b.getAttribute('data-code'), b);
     });
 
     container.addEventListener('input', function (ev) {

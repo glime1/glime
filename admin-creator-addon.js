@@ -2,6 +2,8 @@
    GLIME ADMIN — Creators (review creator applications)
    Adds a "Creators" tab to the admin sidebar. Admin can:
      - see every creator application (pending first)
+     - see the verification passcode the creator was given, to match it
+       against the Instagram bio / YouTube description before approving
      - Approve an application
      - Reject a pending application with a written reason that the
        client sees on their Creator card (Settings > Connector)
@@ -11,7 +13,8 @@
      admin_creator_list(p_status text default null) -> json array
        [{ id, auth_user_id, client_id, business_name, email, full_name,
           instagram_url, youtube_url, followers, category, course_name,
-          status, reject_reason, reviewed_at, created_at, updated_at }]
+          status, reject_reason, verify_code, reviewed_at, created_at,
+          updated_at }]
      admin_creator_review(p_application_id uuid, p_action text, p_note text)
        p_action: 'approve' | 'reject'   (reject needs a note, max 500 chars)
 ========================================================= */
@@ -71,6 +74,7 @@
       #${ID} dl{display:grid;grid-template-columns:110px 1fr;gap:5px 10px;font-size:.76rem;margin:0 0 12px}
       #${ID} dt{color:#687587}#${ID} dd{margin:0;color:#dfe7ef;word-break:break-word}
       #${ID} dd a{color:#7c9cff}
+      #${ID} .gc-pass{display:inline-block;padding:3px 9px;border-radius:8px;border:1px solid rgba(255,200,87,.45);background:rgba(255,200,87,.08);color:#ffc857;font:700 .82rem ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;user-select:all}
       #${ID} .gc-why{margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,82,99,.3);background:rgba(255,82,99,.06);color:#ffd5da;font-size:.76rem;line-height:1.5;word-break:break-word}
       #${ID} .gc-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
       #${ID} button{border:0;border-radius:9px;padding:9px 13px;font:700 .76rem system-ui,sans-serif;cursor:pointer;background:rgba(255,255,255,.09);color:#fff}
@@ -132,7 +136,7 @@
     const term = ($("gcSearch")?.value || "").trim().toLowerCase();
     return list.filter((r) => {
       if (filter !== "all" && st(r) !== filter) return false;
-      return !term || [r.full_name, r.email, r.business_name, r.client_id, r.course_name, r.category, r.instagram_url, r.youtube_url].join(" ").toLowerCase().includes(term);
+      return !term || [r.full_name, r.email, r.business_name, r.client_id, r.course_name, r.category, r.instagram_url, r.youtube_url, r.verify_code].join(" ").toLowerCase().includes(term);
     });
   }
 
@@ -154,13 +158,14 @@
     const note = draftNote[r.id] || "";
     const rejBox = s === "pending" && rejectingId === r.id
       ? `<div class="gc-rej"><label for="gcNote-${esc(r.id)}">Reason for rejection (the client will see this)</label>
-          <textarea id="gcNote-${esc(r.id)}" data-note maxlength="${MAX_NOTE}" placeholder="For example: Please add a working Instagram or YouTube link and describe your course in more detail.">${esc(note)}</textarea>
+          <textarea id="gcNote-${esc(r.id)}" data-note maxlength="${MAX_NOTE}" placeholder="For example: We could not find the passcode on your profile. Please add it to your bio and apply again.">${esc(note)}</textarea>
           <div class="gc-cnt"><span data-count>${note.length}</span>/${MAX_NOTE}</div>
           <div class="gc-row"><button class="no" data-do="reject-send" ${busy ? "disabled" : ""}>${busy ? "Sending..." : "Reject and send reason"}</button><button data-do="reject-cancel" ${busy ? "disabled" : ""}>Cancel</button></div></div>`
       : "";
     return `<div class="gc-card" data-id="${esc(r.id)}">
       <div class="gc-head"><div><div class="gc-name">${esc(r.full_name || "Unnamed applicant")}</div><div class="gc-meta">${esc(who || "—")} · applied ${day(r.created_at)}</div></div><span class="gc-st ${esc(s)}">${esc(s || "unknown")}</span></div>
-      <dl><dt>Course</dt><dd>${esc(r.course_name || "—")}</dd>
+      <dl><dt>Passcode</dt><dd>${r.verify_code ? `<span class="gc-pass">${esc(r.verify_code)}</span>` : "—"}</dd>
+      <dt>Course</dt><dd>${esc(r.course_name || "—")}</dd>
       <dt>Category</dt><dd>${esc(r.category || "—")}</dd>
       <dt>Followers</dt><dd>${r.followers == null ? "—" : num(r.followers).toLocaleString("en-IN")}</dd>
       <dt>Instagram</dt><dd>${link(r.instagram_url)}</dd>
@@ -233,10 +238,10 @@
     const s = document.createElement("div");
     s.id = ID;
     s.innerHTML = `<div class="gc-title">Creator Applications</div>
-      <div class="gc-sub">Clients who applied to sell a course through GLIME. Approve to give them the Creator menu, or reject with a reason. The client sees the reason on their Creator card.</div>
+      <div class="gc-sub">Clients who applied to sell a course through GLIME. Open their Instagram / YouTube link and check that the passcode shown here is in the bio or channel description, then approve. If it is missing, reject with a reason. The client sees the reason on their Creator card.</div>
       <div class="gc-sum" id="gcSum"></div>
       <div class="gc-tabs"><button id="gcTab-pending" class="on" type="button">Pending</button><button id="gcTab-approved" type="button">Approved</button><button id="gcTab-rejected" type="button">Rejected</button><button id="gcTab-all" type="button">All</button></div>
-      <div class="gc-bar"><input id="gcSearch" type="search" placeholder="Search name, email, course or client ID"><button id="gcRefresh" type="button">Refresh</button></div>
+      <div class="gc-bar"><input id="gcSearch" type="search" placeholder="Search name, email, course, passcode or client ID"><button id="gcRefresh" type="button">Refresh</button></div>
       <div id="gcList"><div class="gc-empty">Open this tab to load applications.</div></div><div id="gcMsg" class="gc-msg"></div>`;
     view.appendChild(s);
     $("gcSearch").addEventListener("input", render);
