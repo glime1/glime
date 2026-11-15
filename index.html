@@ -100,12 +100,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{o
 .sp,.ls{display:grid;margin-top:18px;list-style:none}
 .sp li{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:.8rem}.sp span{color:var(--mu)}.sp strong{text-align:right}
 .ls{gap:10px;color:var(--mu);font-size:.79rem}.ls li{display:flex;gap:9px}.ls li:before{content:"✓";color:var(--gr);font-weight:900}
+.ls li.no{color:var(--dm)}.ls li.no:before{content:"✕";color:var(--dm)}
 .pk .b{margin-top:auto;width:100%}.pk .ls{margin-bottom:24px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.chips span{padding:5px 11px;color:var(--gr);background:rgba(80,245,168,.08);border:1px solid rgba(80,245,168,.28);border-radius:999px;font-size:.68rem;font-weight:700}
+.pk.ent{margin-top:18px;background:linear-gradient(145deg,rgba(255,196,107,.09),rgba(255,255,255,.025));border-color:rgba(255,196,107,.38)}
+.pk.ent .pr{color:#ffc46b}
+.pk.ent .chips span{color:#ffc46b;background:rgba(255,196,107,.09);border-color:rgba(255,196,107,.35)}
+.pk.ent .b{margin-top:22px}
 .pay{margin-top:18px;padding:26px;background:rgba(255,255,255,.025);border:1px solid var(--bd);border-radius:var(--r)}
 .pay h3{font-size:1.25rem;letter-spacing:-.03em}.pay>p{margin-top:10px;max-width:720px;color:var(--mu);font-size:.82rem}
 .rt{display:grid;gap:10px;margin-top:16px;max-width:720px}.rt div{padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:14px}
 .rt strong{display:block;font-size:1.5rem;line-height:1.1;letter-spacing:-.04em}.rt small{color:var(--mu);font-size:.74rem;font-weight:700}
+.int .rt{max-width:none}.int .rt strong{font-size:1.1rem}.int .rt small{display:block;margin-top:6px;font-weight:600;line-height:1.55}
 .fine{margin-top:14px;color:var(--dm);font-size:.68rem;text-align:center}.fine a{color:var(--cy);font-weight:800}
 /* founder, faq, programs, cta */
 .fd{margin-top:24px;padding:30px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:var(--r)}
@@ -575,7 +581,7 @@ body{padding-top:82px}
 <h3>GLIME Growth</h3><p>The plan to run your business on GLIME after the trial.</p>
 <p class="pr">₹299 <small>/ month</small></p><p class="pa">or <strong>₹2,999</strong> / year <em>(save ₹589)</em></p>
 <ul class="sp"><li><span>AI credits</span><strong>1,00,000</strong></li><li><span>Storage</span><strong>500 MB</strong></li><li><span>Business data</span><strong>50 MB</strong></li><li><span>Agents</span><strong>Core AI agents</strong></li></ul>
-<ul class="ls"><li>Lead management and business workflow tools</li><li>AI agents for your WhatsApp and Instagram conversations</li><li>Chat Menus: tap-buttons on WhatsApp and Instagram, 0 AI token use</li><li>AI replies within the 24-hour messaging window</li><li>Standard support</li></ul>
+<ul class="ls"><li>Lead management and business workflow tools</li><li>AI agents for your WhatsApp and Instagram conversations</li><li>Chat Menus: tap-buttons on WhatsApp and Instagram, 0 AI token use</li><li>AI replies within the 24-hour messaging window</li><li class="no">Broadcast messages are not included. Available in Omni</li><li>Standard support</li></ul>
 <a href="signup.html?package=glime_growth" class="b b2">Start with Growth →</a>
 </article>
 <article class="pk f">
@@ -583,9 +589,22 @@ body{padding-top:82px}
 <p class="pr">₹1,499 <small>/ month</small></p><p class="pa">or <strong>₹15,999</strong> / year <em>(save ₹1,989)</em></p>
 <div class="chips"><span>10x credits</span><span>20x storage</span><span>4x data</span></div>
 <ul class="sp"><li><span>AI credits</span><strong>10,00,000</strong></li><li><span>Storage</span><strong>10 GB</strong></li><li><span>Business data</span><strong>200 MB</strong></li><li><span>Agents</span><strong>Core + priority access to new</strong></li></ul>
-<ul class="ls"><li>Everything in Growth, at a much larger scale</li><li>Chat Menus: tap-buttons on WhatsApp and Instagram, 0 AI token use</li><li>Message customers anytime, even beyond the 24-hour window</li><li>Priority access to newly released agents</li><li>Priority support</li></ul>
+<ul class="ls"><li>Everything in Growth, at a much larger scale</li><li>Chat Menus: tap-buttons on WhatsApp and Instagram, 0 AI token use</li><li>Message customers anytime, even beyond the 24-hour window</li><li>Broadcast messages to your customers</li><li>Priority access to newly released agents</li><li>Priority support</li></ul>
 <a href="signup.html?package=glime_omni" class="b b1">Start with Omni →</a>
 </article>
+</div>
+<article class="pk ent">
+<div class="chips" style="margin:0 0 14px"><span>Unlimited · Custom</span></div>
+<h3>GLIME Enterprise</h3>
+<p>For every industry and every large business. Need a custom integration or a system shaped around how you work? Tell us what you need and we will build it with you.</p>
+<p class="pr">Custom <small>tailored quote</small></p>
+<div class="chips"><span>Unlimited credits</span><span>Custom storage</span><span>Dedicated support</span></div>
+<a href="contact.html" class="b b2">Talk to us about Enterprise →</a>
+</article>
+<div class="pay int">
+<h3>Connect the tools you already use.</h3>
+<p>Ship orders with Shiprocket Cargo, and use GLIME Webhooks to connect as many apps as you need.</p>
+<div class="rt"><div><strong>Shiprocket Cargo</strong><small>Connect your account so GLIME can create orders, book shipments and track deliveries for your business.</small></div><div><strong>GLIME Webhooks</strong><small>Send new leads, orders, payments and messages to Zapier, Make, n8n or your own server, and connect unlimited apps.</small></div></div>
 </div>
 <div class="pay">
 <h3>Your wallet. Pay only for what you use.</h3>
