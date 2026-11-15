@@ -134,6 +134,11 @@ html[data-theme="light"] .ob-step[data-st="done"] .ob-meta .ob-s{color:#008a52}
 .ob-tabs{display:flex;gap:4px;border-bottom:1px solid var(--ob-line)}
 .ob-tabs button{min-height:44px;padding:0 16px;margin-bottom:-1px;border:0;border-bottom:3px solid transparent;background:none;color:var(--ob-mut);font:inherit;font-size:.92rem;font-weight:700;cursor:pointer}
 .ob-tabs button[aria-selected="true"]{color:var(--ob-ink);border-bottom-color:var(--ob-g2)}
+.ob-tabs a.ob-tablink{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;margin-bottom:-1px;border-bottom:3px solid transparent;color:var(--ob-mut);font:inherit;font-size:.92rem;font-weight:700;text-decoration:none}
+.ob-tabs a.ob-tablink:hover{color:var(--ob-ink)}
+.ob-tablink .hi{display:none}
+.ob[lang="hi"] .ob-tablink .en{display:none}
+.ob[lang="hi"] .ob-tablink .hi{display:inline}
 .ob-hero-act{display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px;margin-top:10px}
 .ob-hero-act .ob-refresh{margin-top:0}
 .ob-det{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:6px 8px}
@@ -189,6 +194,7 @@ html[data-theme="light"] .rp-d[data-dir="down"]{color:#b4540a;border-color:#b454
     <div class="ob-tabs" role="tablist" aria-label="Sections">
       <button type="button" role="tab" id="tabSetup" data-tab="setup" aria-selected="true" aria-controls="viewSetup" data-i18n="tabSetup">Get started</button>
       <button type="button" role="tab" id="tabReport" data-tab="report" aria-selected="false" aria-controls="viewReport" data-i18n="tabReport">Reports</button>
+      <a class="ob-tablink" href="inbox.html"><span class="en">Inbox</span><span class="hi">इनबॉक्स</span></a>
     </div>
     <div class="ob-lang" role="radiogroup" aria-label="Language / भाषा">
       <button type="button" role="radio" data-lang="en" aria-checked="true">English</button>
