@@ -28,6 +28,7 @@ const ADDONS=[
   {id:'cargo',    src:'connector-shiprocket-addon.js',   global:'GLIME_CARGO'},
   {id:'calendar', src:'connector-calendar-addon.js?v=1', global:'GLIME_CALENDAR_CONNECTOR'},
   {id:'telegram', src:'connector-telegram-addon.js?v=1', global:'GLIME_TELEGRAM'},
+  {id:'creator',  src:'connector-creator-addon.js?v=1',  global:'GLIME_CREATOR'},
   {id:'webhook',  src:'connector-webhook-addon.js?v=1',  global:'GLIME_WEBHOOK'}
 ];
 
