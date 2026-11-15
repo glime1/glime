@@ -12,49 +12,46 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#05080c;--card:#111827;--green:#00ff88;--cyan:#00f0ff;--violet:#a78bfa;--amber:#fbbf24;--text:#fff;--muted:#9ca3af;--danger:#ff4757;--border:rgba(255,255,255,.07)}
+/* Every colour is a variable, so dark and light mode both work. */
+:root{--bg:#05080c;--card:#111827;--card2:#0b1220;--sheet:#101b29;--input:#0b1220;--soft:rgba(255,255,255,.05);--soft2:rgba(255,255,255,.08);--green:#00ff88;--cyan:#00f0ff;--text:#fff;--muted:#9ca3af;--border:rgba(255,255,255,.07);--line2:rgba(184,222,234,.16);--ov:rgba(3,8,12,.82);--note-t:#fde68a;--warn-t:#ffc2c8;--danger-t:#ffb3ba;--ok-t:#00ff88;--link:#00f0ff;--toast-bg:#0b1220}
+html[data-theme="light"]{--bg:#ffffff;--card:#ffffff;--card2:#f9fafb;--sheet:#ffffff;--input:#ffffff;--soft:rgba(0,0,0,.04);--soft2:rgba(0,0,0,.08);--text:#000000;--muted:#4b5563;--border:#e5e7eb;--line2:#d1d5db;--ov:rgba(255,255,255,.82);--note-t:#92400e;--warn-t:#b91c1c;--danger-t:#c62828;--ok-t:#0a7a4a;--link:#0e7490;--toast-bg:#ffffff}
 *{box-sizing:border-box;font-family:Poppins,sans-serif}
 body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}
-.main-content{flex:1;padding:36px;max-width:1100px;min-width:0}
+.main-content{flex:1;padding:36px;max-width:1100px;min-width:0;color:var(--text)}
 h1{margin:0;font-size:1.7rem}
 h2{margin:0;font-size:1.05rem}
 .lead{color:var(--muted);margin:8px 0 0;line-height:1.6;font-size:.9rem}
 .hide{display:none!important}
 
-/* banners */
 .banner{margin-top:18px;padding:13px 16px;border-radius:12px;font-size:.82rem;line-height:1.55}
-.banner.preview{border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.07);color:#fde68a}
-.banner.warn{border:1px solid rgba(255,71,87,.35);background:rgba(255,71,87,.07);color:#ffc2c8}
-.banner.warn strong{color:#fff}
+.banner.note{border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.08);color:var(--note-t)}
+.banner.warn{border:1px solid rgba(255,71,87,.35);background:rgba(255,71,87,.07);color:var(--warn-t)}
+.banner.warn strong{color:var(--text)}
 .banner .row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.banner a.btn{white-space:nowrap}
 
-/* generic blocks */
 .card{margin-top:22px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .muted{color:var(--muted)}
 .small{font-size:.78rem;line-height:1.55}
 .btn{display:inline-block;padding:12px 20px;border-radius:12px;border:0;font-weight:700;font-size:.88rem;cursor:pointer;color:#061018;background:linear-gradient(135deg,var(--green),var(--cyan));text-decoration:none;text-align:center}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
-.btn.ghost{background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--border)}
-.btn.danger{background:rgba(255,71,87,.14);color:#ffb3ba;border:1px solid rgba(255,71,87,.35)}
+.btn.ghost{background:var(--soft);color:var(--text);border:1px solid var(--border)}
+.btn.danger{background:rgba(255,71,87,.12);color:var(--danger-t);border:1px solid rgba(255,71,87,.35)}
 .btn.sm{padding:7px 13px;font-size:.76rem;border-radius:10px}
-.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:700;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#e5e7eb;white-space:nowrap}
-.pill.ok{color:var(--green);border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.08)}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:700;border:1px solid var(--border);background:var(--soft);color:var(--text);white-space:nowrap}
+.pill.ok{color:var(--ok-t);border-color:rgba(0,255,136,.45);background:rgba(0,255,136,.09)}
 .pill.draft{color:var(--muted)}
-.pill.stop{color:#ffb3ba;border-color:rgba(255,71,87,.4);background:rgba(255,71,87,.08)}
+.pill.stop{color:var(--danger-t);border-color:rgba(255,71,87,.4);background:rgba(255,71,87,.08)}
 :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 
-/* top summary */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:22px}
 .stat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px}
 .stat .k{font-size:.76rem;color:var(--muted)}
 .stat .v{font-size:1.55rem;font-weight:700;margin-top:4px}
 .stat .s{font-size:.74rem;color:var(--muted);margin-top:2px}
-.stat .s a{color:var(--cyan);text-decoration:none;font-weight:600}
+.stat .s a{color:var(--link);text-decoration:none;font-weight:600}
 
-/* storage */
-.meter{display:flex;height:14px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.07);margin:6px 0 12px}
+.meter{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--soft2);margin:6px 0 12px}
 .meter i{display:block;height:100%;min-width:2px}
 .meter-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
 .meter-top b{font-size:1.25rem}
@@ -62,63 +59,60 @@ h2{margin:0;font-size:1.05rem}
 .legend span{display:flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted)}
 .legend em{width:10px;height:10px;border-radius:3px;display:inline-block;flex:0 0 auto}
 
-/* courses */
 .courses{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.course{background:#0b1220;border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
-.thumb{height:130px;background:linear-gradient(135deg,rgba(0,255,136,.16),rgba(0,240,255,.12));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:rgba(255,255,255,.55);background-size:cover;background-position:center}
+.course{background:var(--card2);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.thumb{height:130px;background:linear-gradient(135deg,rgba(0,255,136,.16),rgba(0,240,255,.12));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:var(--muted);background-size:cover;background-position:center}
 .course-body{padding:14px;display:flex;flex-direction:column;gap:9px;flex:1}
 .course-title{font-weight:700;font-size:.95rem;line-height:1.4}
 .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.76rem;color:var(--muted)}
 .course-foot{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap}
 .empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:.86rem;line-height:1.6}
-.empty b{display:block;color:#fff;font-size:1rem;margin-bottom:4px}
+.empty b{display:block;color:var(--text);font-size:1rem;margin-bottom:4px}
 
-/* sales table */
 .sales{width:100%;border-collapse:collapse;font-size:.82rem}
 .sales th{font-weight:600;color:var(--muted);text-align:left;padding:0 10px 10px 0;font-size:.74rem}
 .sales td{padding:11px 10px 11px 0;border-top:1px solid var(--border);vertical-align:top}
 .sales td.amt,.sales th.amt{text-align:right;padding-right:0;white-space:nowrap}
 .tablewrap{overflow-x:auto}
 
-/* fee slabs */
 .slabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
-.slab{background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
-.slab b{font-size:1.15rem;display:block}
+.slab{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.slab b{font-size:1.15rem;display:block;color:var(--text)}
 .slab span{font-size:.76rem;color:var(--muted)}
 
-/* editor */
-.ov{position:fixed;inset:0;z-index:5000;background:rgba(3,8,12,.82);display:none;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto}
+.ov{position:fixed;inset:0;z-index:5000;background:var(--ov);display:none;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto}
 .ov.on{display:flex}
-.sheet{width:min(720px,100%);background:#101b29;border:1px solid rgba(184,222,234,.16);border-radius:20px;padding:22px;margin:auto 0}
+.sheet{width:min(720px,100%);background:var(--sheet);border:1px solid var(--line2);border-radius:20px;padding:22px;margin:auto 0;color:var(--text)}
 .sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
 .field{display:flex;flex-direction:column;gap:6px;margin-top:14px}
 .field>label,.field>.lab{font-size:.78rem;color:var(--muted);font-weight:600}
 .field .help{font-size:.72rem;color:var(--muted);line-height:1.5}
-input[type=text],input[type=number],select,textarea{background:#0b1220;border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 12px;font-size:.9rem;outline:none;width:100%}
+input[type=text],input[type=number],select,textarea{background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 12px;font-size:.9rem;outline:none;width:100%}
+html[data-theme="light"] input[type=text],html[data-theme="light"] input[type=number],html[data-theme="light"] select,html[data-theme="light"] textarea{border-color:var(--line2)}
 textarea{resize:vertical;min-height:90px;line-height:1.5}
-input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.5)}
+input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.6)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .thumb-pick{display:flex;gap:12px;align-items:center}
 .thumb-pick .thumb{width:112px;height:64px;border-radius:10px;font-size:1.2rem;flex:0 0 auto}
 .lessons{display:flex;flex-direction:column;gap:9px}
-.lesson{background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:8px}
+.lesson{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:8px}
 .lesson-top{display:flex;gap:8px;align-items:center}
 .lesson-top input[type=text]{padding:8px 10px;font-size:.84rem}
 .lesson-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
 .lesson-row label{display:flex;gap:6px;align-items:center;cursor:pointer}
-.lesson-row input[type=checkbox]{accent-color:#00ff88;width:16px;height:16px;margin:0}
-.iconbtn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#e5e7eb;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:.8rem;flex:0 0 auto}
+.lesson-row input[type=checkbox]{accent-color:#00c46a;width:16px;height:16px;margin:0}
+.iconbtn{background:var(--soft);border:1px solid var(--border);color:var(--text);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:.8rem;flex:0 0 auto}
 .iconbtn[disabled]{opacity:.35;cursor:not-allowed}
-.bar{height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar{height:6px;border-radius:999px;background:var(--soft2);overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));width:0}
-.fee-note{margin-top:16px;padding:12px 14px;border-radius:12px;border:1px dashed rgba(0,240,255,.3);background:rgba(0,240,255,.04);font-size:.8rem;line-height:1.55}
+.fee-note{margin-top:16px;padding:12px 14px;border-radius:12px;border:1px dashed rgba(0,160,190,.45);background:rgba(0,240,255,.05);font-size:.8rem;line-height:1.55}
 .sheet-foot{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
-.err{color:#ff8b96;font-size:.8rem;min-height:18px;margin-top:10px}
-.modal{width:min(420px,100%);background:#101b29;border:1px solid rgba(184,222,234,.16);border-radius:20px;padding:22px;margin:auto 0}
+.err{color:var(--danger-t);font-size:.8rem;min-height:18px;margin-top:10px}
+.modal{width:min(420px,100%);background:var(--sheet);border:1px solid var(--line2);border-radius:20px;padding:22px;margin:auto 0;color:var(--text)}
 .modal p{color:var(--muted);font-size:.86rem;line-height:1.55;margin:8px 0 0}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b1220;border:1px solid rgba(0,255,136,.4);color:#fff;padding:11px 18px;border-radius:12px;font-size:.84rem;z-index:6000;max-width:calc(100% - 28px);display:none}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--toast-bg);color:var(--text);border:1px solid rgba(0,200,110,.5);padding:11px 18px;border-radius:12px;font-size:.84rem;z-index:6000;max-width:calc(100% - 28px);display:none;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .toast.on{display:block}
-.toast.bad{border-color:rgba(255,71,87,.5)}
+.toast.bad{border-color:rgba(255,71,87,.55)}
 
 @media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}.card{padding:16px}}
 @media(max-width:520px){.two{grid-template-columns:1fr}.courses{grid-template-columns:1fr}.sheet{padding:18px 16px}.sheet-foot .btn{flex:1}.stat .v{font-size:1.35rem}}
@@ -132,9 +126,8 @@ input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.5)}
   <h1>Creator</h1>
   <p class="lead">Upload your courses, set a price and sell them through your Instagram and WhatsApp chats. Buyers pay straight into your own account.</p>
 
-  <div id="loading" class="banner preview">Loading your creator account…</div>
+  <div id="loading" class="banner note">Loading your creator account…</div>
 
-  <!-- shown when the client is not an approved creator -->
   <section id="locked" class="card hide">
     <h2 id="lockedTitle">Creator access is not active</h2>
     <p class="lead" id="lockedText"></p>
@@ -142,14 +135,14 @@ input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.5)}
   </section>
 
   <div id="app" class="hide">
-    <div id="previewBanner" class="banner preview hide">Preview mode: the courses, sales and balances below are sample data. Nothing you do here is saved yet.</div>
+    <div id="setupBanner" class="banner note hide">Course uploads and sales are still being set up for creators. You can look around, but nothing can be saved yet.</div>
     <div id="walletAlert" class="banner warn hide"></div>
 
     <div class="stats">
       <div class="stat"><div class="k">Earned this month</div><div class="v" id="stEarn">–</div><div class="s">Paid directly to your account</div></div>
       <div class="stat"><div class="k">Students</div><div class="v" id="stStudents">–</div><div class="s" id="stCourses"></div></div>
       <div class="stat"><div class="k">GLIME wallet</div><div class="v" id="stWallet">–</div><div class="s"><a href="billing.html">Add money</a> · the sale fee is taken from here</div></div>
-      <div class="stat"><div class="k">Plan</div><div class="v" id="stPlan">–</div><div class="s" id="stPlanSub"></div></div>
+      <div class="stat hide" id="stPlanCard"><div class="k">Plan</div><div class="v" id="stPlan">–</div><div class="s" id="stPlanSub"></div></div>
     </div>
 
     <section class="card">
@@ -178,7 +171,6 @@ input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.5)}
   </div>
 </main>
 
-<!-- course editor -->
 <div class="ov" id="edOv" role="dialog" aria-modal="true" aria-labelledby="edTitle">
   <div class="sheet">
     <div class="sheet-head"><h2 id="edTitle">New course</h2><button type="button" class="iconbtn" id="edClose" aria-label="Close">✕</button></div>
@@ -211,7 +203,6 @@ input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.5)}
   </div>
 </div>
 
-<!-- confirm -->
 <div class="ov" id="cfOv" role="alertdialog" aria-modal="true" aria-labelledby="cfTitle">
   <div class="modal">
     <h2 id="cfTitle">Delete this course?</h2>
@@ -229,12 +220,14 @@ window.supabaseClient=sb;
 
 /* ------------------------------------------------------------------
    Settings. Change these in one place.
-   DEMO = true  -> courses, sales, wallet and storage are sample data.
-   DEMO = false -> the page calls CFG.API (the creator backend, to be built).
+   BACKEND_READY = false -> the page shows only what already exists for the
+                            client (wallet, storage). Saving and uploading are off.
+   BACKEND_READY = true  -> the page also loads courses and sales from CFG.API
+                            and can save, upload and delete.
 ------------------------------------------------------------------- */
 const MB=1024*1024, GB=1024*MB;
 const CFG={
-  DEMO:true,
+  BACKEND_READY:false,
   API:SUPABASE_URL+'/functions/v1/creator-api',
   COURSE_URL:'https://glime.online/c/',
   MAX_BYTES:{video:500*MB,audio:100*MB,pdf:50*MB,image:2*MB},
@@ -242,89 +235,70 @@ const CFG={
   SLABS:[{upTo:499,fee:20,label:'Up to ₹499'},{upTo:1999,fee:100,label:'₹500 to ₹1,999'},{upTo:Infinity,fee:200,label:'₹2,000 and above'}],
   CATEGORIES:['Yoga','Fitness','Music','Dance','Cooking','Art and craft','Language','Business','Other']
 };
-const COLORS=['#00ff88','#00f0ff','#a78bfa','#fbbf24','#fb7185','#60a5fa'];
+const COLORS=['#00c46a','#00b7d4','#8b6cf0','#f0a500','#e8506f','#4f8cf0'];
+const OFF_MSG='Saving and uploading are not switched on yet. They will work once creator courses are set up.';
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN');
+const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
 const fmtDate=d=>new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-function fmtSize(b){b=Number(b)||0;return b>=GB?(b/GB).toFixed(2).replace(/\.?0+$/,'')+' GB':b>=MB?Math.round(b/MB)+' MB':Math.max(1,Math.round(b/1024))+' KB';}
+function fmtSize(b){b=Number(b)||0;return b>=GB?(b/GB).toFixed(2).replace(/\.?0+$/,'')+' GB':b>=MB?Math.round(b/MB)+' MB':b>0?Math.max(1,Math.round(b/1024))+' KB':'0 MB';}
 function feeFor(price){price=Number(price)||0;if(price<=0)return 0;return CFG.SLABS.find(s=>price<=s.upTo).fee;}
-let tmr;function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className='toast on'+(bad?' bad':'');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on'),3200);}
+let tmr;function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className='toast on'+(bad?' bad':'');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on'),3400);}
 const uid=()=>'x'+Math.random().toString(36).slice(2,10);
 
 const state={ctx:null,data:null,ed:null,busyUploads:0};
 
 /* ------------------------------------------------------------------
-   Data layer. The live calls are what the backend must provide.
-   Every call sends the signed-in user's access token; the backend must
-   check approval and ownership itself, because this page is only a screen.
-   overview     -> { plan:{name,endsAt}, quotaBytes, wallet, courses[], sales[], alerts[] }
-   saveCourse   -> course (with id, slug, status)         { course, publish }
-   deleteCourse -> { ok:true }                            { id }
-   uploadUrl    -> { url, fileId }  (short-lived upload link, backend checks storage limit)
-   uploadDone   -> { ok:true }      { fileId }
+   Data. Everything shown is the signed-in client's own data.
+   Wallet and storage are read straight from the client's own rows.
+   When BACKEND_READY is true, these actions go to CFG.API:
+   overview     -> { courses[], sales[], earnedThisMonth, plan:{name,endsAt,free} }
+   saveCourse   -> course            { course, publish }
+   deleteCourse -> { ok:true }       { id }
+   uploadUrl    -> { url, fileId }   short-lived upload link; backend checks the storage limit
+   uploadDone   -> { ok:true }       { fileId }
+   The backend must check creator approval, ownership, storage and the fee
+   by itself. This page is only a screen.
 ------------------------------------------------------------------- */
 async function call(action,payload){
   const s=(await sb.auth.getSession()).data.session;
-  if(!s)throw new Error('signed-out');
+  if(!s)throw new Error('You are signed out. Please sign in again.');
   const r=await fetch(CFG.API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token,apikey:SUPABASE_KEY},body:JSON.stringify({action,...payload})});
   const j=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(j.error||'Request failed');
+  if(!r.ok)throw new Error(j.error||'Request failed. Please try again.');
   return j;
 }
-
-function demoData(){
-  const day=n=>new Date(Date.now()-n*864e5).toISOString();
-  const L=(t,type,mb,free)=>({id:uid(),title:t,type,size:Math.round(mb*MB),free:!!free,status:'ready',progress:1});
-  return{
-    plan:{name:'Growth',endsAt:new Date(Date.now()+23*864e5).toISOString(),free:true},
-    quotaBytes:10*GB,
-    wallet:150,
-    courses:[
-      {id:'c1',title:'Yoga for beginners: 21-day plan',category:'Yoga',price:499,description:'A gentle 21-day routine for stiff backs and tired shoulders. No equipment needed.',status:'published',students:34,slug:'yoga-21-day',thumb:'',
-        lessons:[L('Welcome and how to use this course','video',210,true),L('Day 1: Waking up the spine','video',410),L('Day 2: Hips and hamstrings','video',385),L('Breathing guide','pdf',6),L('Daily checklist','pdf',2)]},
-      {id:'c2',title:'Morning breathing audio pack',category:'Yoga',price:199,description:'Seven short audio sessions to start the day calm.',status:'published',students:12,slug:'morning-breathing',thumb:'',
-        lessons:[L('Session 1: Slow breathing','audio',38,true),L('Session 2: Alternate nostril','audio',41),L('Session 3: Box breathing','audio',36)]},
-      {id:'c3',title:'Advanced Surya Namaskar masterclass',category:'Yoga',price:2499,description:'Build flow, strength and control with the full sun salutation series.',status:'published',students:3,slug:'surya-namaskar',thumb:'',
-        lessons:[L('Masterclass part 1','video',480,true),L('Masterclass part 2','video',470),L('Masterclass part 3','video',455)]},
-      {id:'c4',title:'Weight loss meal planner',category:'Fitness',price:1499,description:'',status:'draft',students:0,slug:'',thumb:'',lessons:[L('Meal planner','pdf',9)]}
-    ],
-    sales:[
-      {id:'s1',buyer:'Riya K.',course:'Yoga for beginners: 21-day plan',amount:499,at:day(0),channel:'Instagram'},
-      {id:'s2',buyer:'Ananya M.',course:'Morning breathing audio pack',amount:199,at:day(1),channel:'WhatsApp'},
-      {id:'s3',buyer:'Omar K.',course:'Yoga for beginners: 21-day plan',amount:499,at:day(2),channel:'WhatsApp'},
-      {id:'s4',buyer:'Meera J.',course:'Advanced Surya Namaskar masterclass',amount:2499,at:day(5),channel:'Instagram'}
-    ],
-    earnedThisMonth:3696,
-    alerts:[]
-  };
-}
+const first=r=>(r&&r.data&&r.data[0])||null;
 
 const API={
   async overview(){
-    if(CFG.DEMO)return demoData();
-    return call('overview',{});
+    const u=state.ctx.userId,k=state.ctx.clientId;
+    const [w,q,us]=await Promise.all([
+      sb.from('glime_billing_wallets').select('balance').eq('auth_user_id',u).limit(1),
+      sb.from('client_storage_quotas').select('quota_bytes').eq('client_id',k).limit(1),
+      sb.from('client_storage_usage').select('used_bytes,reserved_bytes').eq('client_id',k).limit(1)
+    ]);
+    const wr=first(w),qr=first(q),ur=first(us);
+    const d={
+      wallet:Number(wr&&wr.balance)||0,
+      quotaBytes:Number(qr&&qr.quota_bytes)||0,
+      usedBytes:(Number(ur&&ur.used_bytes)||0)+(Number(ur&&ur.reserved_bytes)||0),
+      courses:[],sales:[],earnedThisMonth:0,plan:null
+    };
+    if(CFG.BACKEND_READY)Object.assign(d,await call('overview',{}));
+    return d;
   },
   async saveCourse(course,publish){
-    if(CFG.DEMO){
-      const d=state.data,saved={...course,status:publish?'published':(course.status==='published'?'published':'draft'),students:course.students||0};
-      if(!saved.id||saved.id.startsWith('new'))saved.id=uid();
-      if(publish&&!saved.slug)saved.slug=saved.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||saved.id;
-      const i=d.courses.findIndex(c=>c.id===saved.id);
-      if(i>=0)d.courses[i]=saved;else d.courses.unshift(saved);
-      return saved;
-    }
+    if(!CFG.BACKEND_READY)throw new Error(OFF_MSG);
     return call('saveCourse',{course:stripFiles(course),publish});
   },
   async deleteCourse(id){
-    if(CFG.DEMO){state.data.courses=state.data.courses.filter(c=>c.id!==id);return{ok:true};}
+    if(!CFG.BACKEND_READY)throw new Error(OFF_MSG);
     return call('deleteCourse',{id});
   },
   async upload(file,onProgress){
-    if(CFG.DEMO){
-      return new Promise(res=>{let p=0;const t=setInterval(()=>{p+=.12+Math.random()*.12;if(p>=1){clearInterval(t);onProgress(1);res({fileId:uid()});}else onProgress(p);},250);});
-    }
+    if(!CFG.BACKEND_READY)throw new Error(OFF_MSG);
     const t=await call('uploadUrl',{name:file.name,type:file.type,size:file.size});
     await new Promise((res,rej)=>{
       const x=new XMLHttpRequest();x.open('PUT',t.url);x.setRequestHeader('Content-Type',file.type||'application/octet-stream');
@@ -337,31 +311,27 @@ const API={
 };
 function stripFiles(c){return{...c,lessons:c.lessons.map(l=>{const {file,...rest}=l;return rest;})};}
 
-/* ------------------------------------------------------------------
-   Derived numbers
-------------------------------------------------------------------- */
-const courseBytes=c=>c.lessons.reduce((n,l)=>n+(l.status==='ready'||l.status==='uploading'?l.size:0),0);
-const usedBytes=()=>state.data.courses.reduce((n,c)=>n+courseBytes(c),0);
+const courseBytes=c=>(c.lessons||[]).reduce((n,l)=>n+(l.status==='ready'||l.status==='uploading'?l.size:0),0);
 const isPaused=c=>c.status==='published'&&feeFor(c.price)>state.data.wallet;
 
 /* ------------------------------------------------------------------
-   Render dashboard
+   Dashboard
 ------------------------------------------------------------------- */
 function render(){
   const d=state.data,courses=d.courses;
-  $('previewBanner').classList.toggle('hide',!CFG.DEMO);
+  $('setupBanner').classList.toggle('hide',CFG.BACKEND_READY);
   $('stEarn').textContent=inr(d.earnedThisMonth);
   $('stStudents').textContent=courses.reduce((n,c)=>n+(c.students||0),0).toLocaleString('en-IN');
   const pub=courses.filter(c=>c.status==='published').length;
-  $('stCourses').textContent=pub+' published, '+(courses.length-pub)+' draft';
+  $('stCourses').textContent=courses.length?pub+' published, '+(courses.length-pub)+' draft':'No courses yet';
   $('stWallet').textContent=inr(d.wallet);
-  $('stPlan').textContent=(d.plan&&d.plan.name)||'–';
-  const left=d.plan&&d.plan.endsAt?Math.max(0,Math.ceil((new Date(d.plan.endsAt)-Date.now())/864e5)):0;
-  $('stPlanSub').textContent=d.plan&&d.plan.free?(left?'Free for you · '+left+' day'+(left>1?'s':'')+' left':'Free period has ended'):'';
+  if(d.plan&&d.plan.name){
+    $('stPlanCard').classList.remove('hide');$('stPlan').textContent=d.plan.name;
+    const left=d.plan.endsAt?Math.max(0,Math.ceil((new Date(d.plan.endsAt)-Date.now())/864e5)):0;
+    $('stPlanSub').textContent=d.plan.free?(left?'Free for you · '+left+' day'+(left>1?'s':'')+' left':'Free period has ended'):'';
+  }else $('stPlanCard').classList.add('hide');
 
-  /* wallet alert */
-  const paused=courses.filter(isPaused);
-  const wa=$('walletAlert');
+  const paused=courses.filter(isPaused),wa=$('walletAlert');
   if(paused.length){
     const need=Math.max(...paused.map(c=>feeFor(c.price)));
     wa.innerHTML='<div class="row"><div><strong>Buying is paused for '+paused.length+' course'+(paused.length>1?'s':'')+'.</strong> '+
@@ -371,21 +341,22 @@ function render(){
     wa.classList.remove('hide');
   }else wa.classList.add('hide');
 
-  renderStorage();
-  renderCourses();
-  renderSales();
+  renderStorage();renderCourses();renderSales();
   $('slabs').innerHTML=CFG.SLABS.map(s=>'<div class="slab"><b>'+inr(s.fee)+'</b><span>per sale · '+esc(s.label)+'</span></div>').join('')+
     '<div class="slab"><b>₹0</b><span>per sale · Free courses</span></div>';
 }
 
 function renderStorage(){
-  const d=state.data,used=usedBytes(),q=d.quotaBytes||1;
+  const d=state.data,used=d.usedBytes||0,q=d.quotaBytes||0;
   $('stUsed').textContent=fmtSize(used);
-  $('stQuota').textContent='of '+fmtSize(q)+' used';
-  $('stLeft').textContent=fmtSize(Math.max(0,q-used))+' free';
-  const segs=d.courses.map((c,i)=>({c,b:courseBytes(c),color:COLORS[i%COLORS.length]})).filter(s=>s.b>0);
-  $('meter').innerHTML=segs.map(s=>'<i style="width:'+(s.b/q*100).toFixed(2)+'%;background:'+s.color+'" title="'+esc(s.c.title)+': '+fmtSize(s.b)+'"></i>').join('');
-  $('legend').innerHTML=segs.length?segs.map(s=>'<span><em style="background:'+s.color+'"></em>'+esc(s.c.title)+' · '+fmtSize(s.b)+'</span>').join(''):'<span>No files uploaded yet.</span>';
+  $('stQuota').textContent=q>0?'of '+fmtSize(q)+' used':'No course storage assigned yet';
+  $('stLeft').textContent=q>0?fmtSize(Math.max(0,q-used))+' free':'';
+  const base=Math.max(q,used,1);
+  const segs=d.courses.map((c,i)=>({name:c.title,b:courseBytes(c),color:COLORS[i%COLORS.length]})).filter(s=>s.b>0);
+  const known=segs.reduce((n,s)=>n+s.b,0);
+  if(used>known)segs.push({name:'Other files',b:used-known,color:'#9ca3af'});
+  $('meter').innerHTML=segs.map(s=>'<i style="width:'+(s.b/base*100).toFixed(2)+'%;background:'+s.color+'" title="'+esc(s.name)+': '+fmtSize(s.b)+'"></i>').join('');
+  $('legend').innerHTML=segs.length?segs.map(s=>'<span><em style="background:'+s.color+'"></em>'+esc(s.name)+' · '+fmtSize(s.b)+'</span>').join(''):'<span>No files uploaded yet.</span>';
 }
 
 function renderCourses(){
@@ -395,9 +366,10 @@ function renderCourses(){
     const paused=isPaused(c);
     const status=c.status==='published'?(paused?'<span class="pill stop">Paused: wallet low</span>':'<span class="pill ok">Published</span>'):'<span class="pill draft">Draft</span>';
     const thumb=c.thumb?'<div class="thumb" style="background-image:url(\''+esc(c.thumb)+'\')"></div>':'<div class="thumb">'+esc((c.title||'?').trim().charAt(0).toUpperCase())+'</div>';
+    const n=(c.lessons||[]).length;
     return '<article class="course" data-id="'+esc(c.id)+'">'+thumb+'<div class="course-body">'+
       '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div class="course-title">'+esc(c.title)+'</div>'+status+'</div>'+
-      '<div class="meta"><span>'+(c.price>0?inr(c.price):'Free')+'</span><span>'+c.lessons.length+' lesson'+(c.lessons.length===1?'':'s')+'</span><span>'+fmtSize(courseBytes(c))+'</span><span>'+(c.students||0)+' student'+(c.students===1?'':'s')+'</span></div>'+
+      '<div class="meta"><span>'+(c.price>0?inr(c.price):'Free')+'</span><span>'+n+' lesson'+(n===1?'':'s')+'</span><span>'+fmtSize(courseBytes(c))+'</span><span>'+(c.students||0)+' student'+(c.students===1?'':'s')+'</span></div>'+
       '<div class="course-foot"><button type="button" class="btn ghost sm" data-act="edit">Edit</button>'+
       (c.status==='published'&&c.slug?'<button type="button" class="btn ghost sm" data-act="copy">Copy link</button>':'')+
       '<button type="button" class="btn danger sm" data-act="del">Delete</button></div></div></article>';
@@ -417,11 +389,13 @@ function renderSales(){
 function openEditor(id){
   const src=id?state.data.courses.find(c=>c.id===id):null;
   state.ed=src?JSON.parse(JSON.stringify(src)):{id:'new'+uid(),title:'',category:CFG.CATEGORIES[0],price:'',description:'',thumb:'',status:'draft',students:0,slug:'',lessons:[]};
-  state.ed.lessons.forEach(l=>{if(l.status==='uploading'){l.status='ready';l.progress=1;}});
+  state.ed.lessons=state.ed.lessons||[];
   $('edTitle').textContent=src?'Edit course':'New course';
   $('fTitle').value=state.ed.title;$('fPrice').value=state.ed.price===''?'':state.ed.price;$('fDesc').value=state.ed.description||'';
   $('fCat').innerHTML=CFG.CATEGORIES.map(c=>'<option'+(c===state.ed.category?' selected':'')+'>'+esc(c)+'</option>').join('');
-  $('edErr').textContent='';
+  const off=!CFG.BACKEND_READY;
+  $('edSave').disabled=$('edPublish').disabled=$('fAddLesson').disabled=off;
+  $('edErr').textContent=off?OFF_MSG:'';
   paintThumb();renderLessons();feeNote();
   $('edPublish').textContent=state.ed.status==='published'?'Save changes':'Publish course';
   $('edOv').classList.add('on');$('fTitle').focus();
@@ -437,7 +411,7 @@ function paintThumb(){
 }
 function feeNote(){
   const p=Number($('fPrice').value)||0,fee=feeFor(p);
-  $('feeNote').innerHTML=p<=0?'This is a free course, so GLIME charges no fee. People still need to be in your chats to get access.':
+  $('feeNote').innerHTML=p<=0?'This is a free course, so GLIME charges no fee.':
     'Buyers pay <b>'+inr(p)+'</b> straight into your account. GLIME takes <b>'+inr(fee)+'</b> from your wallet for each sale.';
 }
 const TYPE_LABEL={video:'Video',audio:'Audio',pdf:'PDF'};
@@ -454,7 +428,7 @@ function renderLessons(){
     '<label><input type="checkbox" data-f="free"'+(l.free?' checked':'')+'> Free preview</label></div></div>').join('');
 }
 function paintProgress(l){
-  const i=state.ed&&state.ed.lessons.indexOf(l);if(i==null||i<0)return;
+  const i=state.ed?state.ed.lessons.indexOf(l):-1;if(i<0)return;
   const row=$('lessons').querySelector('[data-i="'+i+'"]');if(!row)return;
   const b=row.querySelector('.bar i');if(b)b.style.width=Math.round(l.progress*100)+'%';
   const s=row.querySelector('.lesson-row span');if(s)s.textContent=fmtSize(l.size)+' · uploading '+Math.round(l.progress*100)+'%';
@@ -467,7 +441,8 @@ function kindOf(f){
 }
 function addFiles(files){
   const err=$('edErr');err.textContent='';
-  const others=usedBytes()-courseBytes(state.data.courses.find(c=>c.id===state.ed.id)||{lessons:[]});
+  const saved=state.data.courses.find(c=>c.id===state.ed.id);
+  const others=Math.max(0,(state.data.usedBytes||0)-(saved?courseBytes(saved):0));
   let draftBytes=courseBytes(state.ed);
   [...files].forEach(f=>{
     const k=kindOf(f);
@@ -477,7 +452,7 @@ function addFiles(files){
     draftBytes+=f.size;
     const l={id:uid(),title:f.name.replace(/\.[^.]+$/,'').slice(0,90),type:k,size:f.size,free:false,status:'uploading',progress:0};
     state.ed.lessons.push(l);state.busyUploads++;renderLessons();
-    API.upload(f,p=>{l.progress=p;paintProgress(l);}).then(r=>{l.status='ready';l.progress=1;l.fileId=r.fileId;}).catch(()=>{l.status='error';err.textContent='"'+f.name+'" could not be uploaded. Remove it and try again.';}).finally(()=>{state.busyUploads=Math.max(0,state.busyUploads-1);if(state.ed)renderLessons();});
+    API.upload(f,p=>{l.progress=p;paintProgress(l);}).then(r=>{l.status='ready';l.progress=1;l.fileId=r.fileId;}).catch(x=>{l.status='error';err.textContent='"'+f.name+'" could not be uploaded. '+(x&&x.message?x.message:'')+' Remove it and try again.';}).finally(()=>{state.busyUploads=Math.max(0,state.busyUploads-1);if(state.ed)renderLessons();});
   });
 }
 function readEditor(){
@@ -497,13 +472,15 @@ async function saveEditor(publish){
     if(!e.description){err.textContent='Add a short description so buyers know what they get.';$('fDesc').focus();return;}
   }
   e.price=e.price===''?0:e.price;
+  const wasPublished=e.status==='published';
   $('edSave').disabled=$('edPublish').disabled=true;
   try{
     await API.saveCourse(e,publish);
+    state.data=await API.overview();
     state.ed=null;$('edOv').classList.remove('on');render();
-    toast(publish?(e.status==='published'?'Changes saved':'Course published'):'Draft saved');
+    toast(publish?(wasPublished?'Changes saved':'Course published'):'Draft saved');
   }catch(x){err.textContent=x.message||'Could not save. Please try again.';}
-  finally{$('edSave').disabled=$('edPublish').disabled=false;}
+  finally{const off=!CFG.BACKEND_READY;$('edSave').disabled=$('edPublish').disabled=off;}
 }
 
 /* ------------------------------------------------------------------
@@ -519,7 +496,7 @@ $('fThumbFile').onchange=e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
   if(!/^image\/(png|jpe?g|webp)$/.test(f.type)){$('edErr').textContent='Cover image must be JPG, PNG or WebP.';return;}
   if(f.size>CFG.MAX_BYTES.image){$('edErr').textContent='Cover image must be under 2 MB.';return;}
-  $('edErr').textContent='';
+  $('edErr').textContent=CFG.BACKEND_READY?'':OFF_MSG;
   const r=new FileReader();r.onload=()=>{state.ed.thumb=r.result;paintThumb();};r.readAsDataURL(f);
 };
 $('fAddLesson').onclick=()=>$('fLessonFile').click();
@@ -559,13 +536,13 @@ $('courses').addEventListener('click',e=>{
 $('cfNo').onclick=()=>{pendingDelete=null;$('cfOv').classList.remove('on');};
 $('cfYes').onclick=async()=>{
   const c=pendingDelete;if(!c)return;$('cfYes').disabled=true;
-  try{await API.deleteCourse(c.id);$('cfOv').classList.remove('on');render();toast('Course deleted');}
-  catch(x){toast(x.message||'Could not delete the course.',true);}
+  try{await API.deleteCourse(c.id);state.data=await API.overview();$('cfOv').classList.remove('on');render();toast('Course deleted');}
+  catch(x){$('cfOv').classList.remove('on');toast(x.message||'Could not delete the course.',true);}
   finally{$('cfYes').disabled=false;pendingDelete=null;}
 };
 
 /* ------------------------------------------------------------------
-   Boot: sign-in check, approval check, then load.
+   Boot: sign-in check, approval check, then load the client's own data.
    Approval is read from the signed-in user's own creator_applications row.
    The backend must enforce approval again; this only decides what to show.
 ------------------------------------------------------------------- */
@@ -587,7 +564,7 @@ async function init(){
     if(!sess||!sess.user){location.replace('login.html');return;}
     const u=sess.user;
     const cd=await sb.from('client_data').select('id,client_id,business_name,full_name').eq('auth_user_id',u.id).limit(1);
-    const row=cd.data&&cd.data[0];
+    const row=first(cd);
     if(!row||!row.client_id){showLocked('Account not found','We could not find your GLIME account. Please refresh or sign in again.');return;}
     state.ctx={userId:u.id,clientId:String(row.client_id)};
     const ident={name:row.business_name||row.full_name||'',clientId:state.ctx.clientId};
@@ -595,7 +572,7 @@ async function init(){
     else window.addEventListener('load',()=>window.GlimeAppShell&&window.GlimeAppShell.setIdentity(ident));
 
     const ap=await sb.from('creator_applications').select('status,reject_reason').eq('auth_user_id',u.id).limit(1);
-    const app=ap.data&&ap.data[0];
+    const app=first(ap);
     const st=app?String(app.status).toLowerCase():'';
     if(st!=='approved'){
       if(st==='rejected')showLocked('Creator application was not approved',app.reject_reason?app.reject_reason:'You can review your application and apply again from AI connections.');
