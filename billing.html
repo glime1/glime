@@ -209,7 +209,6 @@ h1,h2,h3,p{margin:0}
 
 <section class="section card" id="ratesCard"><h3>Usage Rates</h3><div class="small muted">What each action costs. Usage is charged to your wallet balance.</div><div id="rates" class="loader">Loading rates…</div></section>
 
-<section class="section card"><h3>Agents &amp; Access</h3><div id="agents" class="loader">Loading…</div></section>
 <section class="section card" id="grantsCard"><h3>GLIME Rewards &amp; Grants</h3><div id="grants" class="loader">Loading rewards…</div></section>
 <section class="section card"><h3>Payment History</h3><div id="payments" class="loader">Loading…</div></section>
 <section class="section card" id="invoicesCard"><h3>Invoices</h3><div id="invoices" class="loader">Loading…</div><div id="invoiceMessage" class="action-message hidden" role="alert"></div></section>
@@ -525,7 +524,10 @@ async function loadRates(){
   try{
     const {data,error}=await sb.from('glime_billing_usage_rates').select('usage_code,name,unit,customer_unit_price,currency,active').eq('active',true).order('usage_code');
     if(error)throw error;
-    state.rates=(data||[]).filter(r=>r.customer_unit_price!=null&&r.usage_code!=='ai_token');
+    /* Voice, Instagram follow-up and SMS rates are not shown. Email is shown as ₹0.20. */
+    const HIDE_RATES=['ai_token','voice_minute','instagram_followup','sms_message'];
+    state.rates=(data||[]).filter(r=>r.customer_unit_price!=null&&!HIDE_RATES.includes(r.usage_code))
+      .map(r=>r.usage_code==='email_message'?{...r,customer_unit_price:0.20}:r);
   }catch(e){state.rates=null}
   renderRates();
 }
@@ -540,13 +542,6 @@ function renderRates(){
     const unit=RATE_UNITS[r.unit]||String(r.unit||'').replace(/_/g,' ');
     return `<div class="rate"><span>${esc(r.name)}</span><b>${price===0?'Free':esc(rateMoney(price))+' <span class="small muted" style="font-weight:500">/ '+esc(unit)+'</span>'}</b></div>`;
   }).join('');
-}
-function renderAgents(){
-  const rows=state.billing?.entitlements||[];
-  const agents=rows.filter(x=>x.entitlement_code&&(/agent|voice|whatsapp|instagram|lead|follow|marketing/i.test(x.entitlement_code)));
-  const limit=rows.find(x=>/agent.*limit|limit.*agent/i.test(x.entitlement_code));
-  $('agents').classList.remove('loader');
-  $('agents').innerHTML=`<div class="mini-grid"><div class="mini"><div class="small muted">Agent limit</div><b>${limit?.quantity!=null?esc(limit.quantity):'Configured by plan'}</b></div><div class="mini"><div class="small muted">Included access</div><b>${agents.length} entitlement(s)</b></div><div class="mini"><div class="small muted">Future agents</div><b>Plan-controlled</b></div></div><div style="margin-top:12px">${agents.length?agents.map(x=>`<div class="row"><span>${esc(x.entitlement_code)}</span>${statusBadge(x.status||'active')}</div>`).join(''):'<div class="empty">Agent access is controlled by your active GLIME entitlements.</div>'}</div>`;
 }
 
 /* ---------- Rewards & Grants ----------
@@ -778,7 +773,7 @@ async function buyCredits(code){
 
 function renderCatalogParts(){renderPlans();renderAddons();renderStorage();renderCredits()}
 function renderBillingParts(){
-  renderAccount();renderSubscription();renderCapacity();renderCredits();renderWallet();renderUsage();renderAgents();renderGrants();renderPayments();renderInvoices();
+  renderAccount();renderSubscription();renderCapacity();renderCredits();renderWallet();renderUsage();renderGrants();renderPayments();renderInvoices();
 }
 
 /* Catalog, account data and usage rates load at the same time (not one after the other),
