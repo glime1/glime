@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Creator | Glime AI Automation</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#05080c;--card:#111827;--green:#00ff88;--cyan:#00f0ff;--violet:#a78bfa;--amber:#fbbf24;--text:#fff;--muted:#9ca3af;--danger:#ff4757;--border:rgba(255,255,255,.07)}
+*{box-sizing:border-box;font-family:Poppins,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}
+.main-content{flex:1;padding:36px;max-width:1100px;min-width:0}
+h1{margin:0;font-size:1.7rem}
+h2{margin:0;font-size:1.05rem}
+.lead{color:var(--muted);margin:8px 0 0;line-height:1.6;font-size:.9rem}
+.hide{display:none!important}
+
+/* banners */
+.banner{margin-top:18px;padding:13px 16px;border-radius:12px;font-size:.82rem;line-height:1.55}
+.banner.preview{border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.07);color:#fde68a}
+.banner.warn{border:1px solid rgba(255,71,87,.35);background:rgba(255,71,87,.07);color:#ffc2c8}
+.banner.warn strong{color:#fff}
+.banner .row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.banner a.btn{white-space:nowrap}
+
+/* generic blocks */
+.card{margin-top:22px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.muted{color:var(--muted)}
+.small{font-size:.78rem;line-height:1.55}
+.btn{display:inline-block;padding:12px 20px;border-radius:12px;border:0;font-weight:700;font-size:.88rem;cursor:pointer;color:#061018;background:linear-gradient(135deg,var(--green),var(--cyan));text-decoration:none;text-align:center}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--border)}
+.btn.danger{background:rgba(255,71,87,.14);color:#ffb3ba;border:1px solid rgba(255,71,87,.35)}
+.btn.sm{padding:7px 13px;font-size:.76rem;border-radius:10px}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:700;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#e5e7eb;white-space:nowrap}
+.pill.ok{color:var(--green);border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.08)}
+.pill.draft{color:var(--muted)}
+.pill.stop{color:#ffb3ba;border-color:rgba(255,71,87,.4);background:rgba(255,71,87,.08)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* top summary */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:22px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px}
+.stat .k{font-size:.76rem;color:var(--muted)}
+.stat .v{font-size:1.55rem;font-weight:700;margin-top:4px}
+.stat .s{font-size:.74rem;color:var(--muted);margin-top:2px}
+.stat .s a{color:var(--cyan);text-decoration:none;font-weight:600}
+
+/* storage */
+.meter{display:flex;height:14px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.07);margin:6px 0 12px}
+.meter i{display:block;height:100%;min-width:2px}
+.meter-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.meter-top b{font-size:1.25rem}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px}
+.legend span{display:flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted)}
+.legend em{width:10px;height:10px;border-radius:3px;display:inline-block;flex:0 0 auto}
+
+/* courses */
+.courses{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.course{background:#0b1220;border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.thumb{height:130px;background:linear-gradient(135deg,rgba(0,255,136,.16),rgba(0,240,255,.12));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:rgba(255,255,255,.55);background-size:cover;background-position:center}
+.course-body{padding:14px;display:flex;flex-direction:column;gap:9px;flex:1}
+.course-title{font-weight:700;font-size:.95rem;line-height:1.4}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.76rem;color:var(--muted)}
+.course-foot{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap}
+.empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:.86rem;line-height:1.6}
+.empty b{display:block;color:#fff;font-size:1rem;margin-bottom:4px}
+
+/* sales table */
+.sales{width:100%;border-collapse:collapse;font-size:.82rem}
+.sales th{font-weight:600;color:var(--muted);text-align:left;padding:0 10px 10px 0;font-size:.74rem}
+.sales td{padding:11px 10px 11px 0;border-top:1px solid var(--border);vertical-align:top}
+.sales td.amt,.sales th.amt{text-align:right;padding-right:0;white-space:nowrap}
+.tablewrap{overflow-x:auto}
+
+/* fee slabs */
+.slabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.slab{background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.slab b{font-size:1.15rem;display:block}
+.slab span{font-size:.76rem;color:var(--muted)}
+
+/* editor */
+.ov{position:fixed;inset:0;z-index:5000;background:rgba(3,8,12,.82);display:none;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto}
+.ov.on{display:flex}
+.sheet{width:min(720px,100%);background:#101b29;border:1px solid rgba(184,222,234,.16);border-radius:20px;padding:22px;margin:auto 0}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.field>label,.field>.lab{font-size:.78rem;color:var(--muted);font-weight:600}
+.field .help{font-size:.72rem;color:var(--muted);line-height:1.5}
+input[type=text],input[type=number],select,textarea{background:#0b1220;border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 12px;font-size:.9rem;outline:none;width:100%}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.5)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.thumb-pick{display:flex;gap:12px;align-items:center}
+.thumb-pick .thumb{width:112px;height:64px;border-radius:10px;font-size:1.2rem;flex:0 0 auto}
+.lessons{display:flex;flex-direction:column;gap:9px}
+.lesson{background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:8px}
+.lesson-top{display:flex;gap:8px;align-items:center}
+.lesson-top input[type=text]{padding:8px 10px;font-size:.84rem}
+.lesson-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
+.lesson-row label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.lesson-row input[type=checkbox]{accent-color:#00ff88;width:16px;height:16px;margin:0}
+.iconbtn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#e5e7eb;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:.8rem;flex:0 0 auto}
+.iconbtn[disabled]{opacity:.35;cursor:not-allowed}
+.bar{height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));width:0}
+.fee-note{margin-top:16px;padding:12px 14px;border-radius:12px;border:1px dashed rgba(0,240,255,.3);background:rgba(0,240,255,.04);font-size:.8rem;line-height:1.55}
+.sheet-foot{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+.err{color:#ff8b96;font-size:.8rem;min-height:18px;margin-top:10px}
+.modal{width:min(420px,100%);background:#101b29;border:1px solid rgba(184,222,234,.16);border-radius:20px;padding:22px;margin:auto 0}
+.modal p{color:var(--muted);font-size:.86rem;line-height:1.55;margin:8px 0 0}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b1220;border:1px solid rgba(0,255,136,.4);color:#fff;padding:11px 18px;border-radius:12px;font-size:.84rem;z-index:6000;max-width:calc(100% - 28px);display:none}
+.toast.on{display:block}
+.toast.bad{border-color:rgba(255,71,87,.5)}
+
+@media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}.card{padding:16px}}
+@media(max-width:520px){.two{grid-template-columns:1fr}.courses{grid-template-columns:1fr}.sheet{padding:18px 16px}.sheet-foot .btn{flex:1}.stat .v{font-size:1.35rem}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<link rel="stylesheet" href="glime-app-shell.css">
+<script src="glime-app-shell.js" defer></script>
+</head>
+<body data-gas-title="Creator">
+<main class="main-content" data-gas-content>
+  <h1>Creator</h1>
+  <p class="lead">Upload your courses, set a price and sell them through your Instagram and WhatsApp chats. Buyers pay straight into your own account.</p>
+
+  <div id="loading" class="banner preview">Loading your creator account…</div>
+
+  <!-- shown when the client is not an approved creator -->
+  <section id="locked" class="card hide">
+    <h2 id="lockedTitle">Creator access is not active</h2>
+    <p class="lead" id="lockedText"></p>
+    <p style="margin-top:16px"><a class="btn" href="ai-connections.html">Open AI connections</a></p>
+  </section>
+
+  <div id="app" class="hide">
+    <div id="previewBanner" class="banner preview hide">Preview mode: the courses, sales and balances below are sample data. Nothing you do here is saved yet.</div>
+    <div id="walletAlert" class="banner warn hide"></div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Earned this month</div><div class="v" id="stEarn">–</div><div class="s">Paid directly to your account</div></div>
+      <div class="stat"><div class="k">Students</div><div class="v" id="stStudents">–</div><div class="s" id="stCourses"></div></div>
+      <div class="stat"><div class="k">GLIME wallet</div><div class="v" id="stWallet">–</div><div class="s"><a href="billing.html">Add money</a> · the sale fee is taken from here</div></div>
+      <div class="stat"><div class="k">Plan</div><div class="v" id="stPlan">–</div><div class="s" id="stPlanSub"></div></div>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2>Course storage</h2><a class="btn ghost sm" href="billing.html">Get more storage</a></div>
+      <div class="meter-top"><span><b id="stUsed">0 MB</b> <span class="muted small" id="stQuota"></span></span><span class="muted small" id="stLeft"></span></div>
+      <div class="meter" id="meter" role="img" aria-label="Storage used by each course"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Your courses</h2><button type="button" class="btn" id="newCourse">New course</button></div>
+      <div class="courses" id="courses"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Recent sales</h2></div>
+      <div class="tablewrap" id="sales"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>What GLIME charges</h2></div>
+      <p class="lead" style="margin:0 0 14px">One small fee for each sale, based on the course price. We never take a percentage of what you earn. The fee is taken from your GLIME wallet when a buyer pays.</p>
+      <div class="slabs" id="slabs"></div>
+      <p class="muted small" style="margin:12px 0 0">If your wallet has less than the fee, buying is paused for that course and you get a message so you can add money. Buyers are never charged when a sale is paused.</p>
+    </section>
+  </div>
+</main>
+
+<!-- course editor -->
+<div class="ov" id="edOv" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <div class="sheet">
+    <div class="sheet-head"><h2 id="edTitle">New course</h2><button type="button" class="iconbtn" id="edClose" aria-label="Close">✕</button></div>
+
+    <div class="field"><label for="fTitle">Course name</label><input type="text" id="fTitle" maxlength="80" placeholder="e.g. Yoga for beginners: 21-day plan"></div>
+    <div class="two">
+      <div class="field"><label for="fCat">Category</label><select id="fCat"></select></div>
+      <div class="field"><label for="fPrice">Price (₹)</label><input type="number" id="fPrice" min="0" max="100000" step="1" inputmode="numeric" placeholder="0 for a free course"></div>
+    </div>
+    <div class="field"><label for="fDesc">What students will learn</label><textarea id="fDesc" maxlength="600" placeholder="Describe the course in a few lines. Your AI assistant uses this to answer buyer questions."></textarea></div>
+    <div class="field"><span class="lab">Cover image</span>
+      <div class="thumb-pick"><div class="thumb" id="fThumb">+</div>
+        <div><input type="file" id="fThumbFile" accept="image/png,image/jpeg,image/webp" class="hide"><button type="button" class="btn ghost sm" id="fThumbBtn">Choose image</button><div class="help" style="margin-top:6px">JPG, PNG or WebP, up to 2 MB.</div></div>
+      </div>
+    </div>
+
+    <div class="field"><span class="lab">Lessons</span>
+      <div class="lessons" id="lessons"></div>
+      <input type="file" id="fLessonFile" class="hide" multiple accept="video/*,audio/*,application/pdf">
+      <div><button type="button" class="btn ghost sm" id="fAddLesson">Add video, audio or PDF</button></div>
+      <div class="help">Video up to 500 MB, audio up to 100 MB, PDF up to 50 MB per file. Files count towards your course storage.</div>
+    </div>
+
+    <div class="fee-note" id="feeNote"></div>
+    <div class="err" id="edErr" role="alert"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn ghost" id="edSave">Save draft</button>
+      <button type="button" class="btn" id="edPublish">Publish course</button>
+    </div>
+  </div>
+</div>
+
+<!-- confirm -->
+<div class="ov" id="cfOv" role="alertdialog" aria-modal="true" aria-labelledby="cfTitle">
+  <div class="modal">
+    <h2 id="cfTitle">Delete this course?</h2>
+    <p id="cfText"></p>
+    <div class="sheet-foot"><button type="button" class="btn ghost" id="cfNo">Keep it</button><button type="button" class="btn danger" id="cfYes">Delete course</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const SUPABASE_URL='https://ufoulgbiqgjriwapuopc.supabase.co';
+const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+window.supabaseClient=sb;
+
+/* ------------------------------------------------------------------
+   Settings. Change these in one place.
+   DEMO = true  -> courses, sales, wallet and storage are sample data.
+   DEMO = false -> the page calls CFG.API (the creator backend, to be built).
+------------------------------------------------------------------- */
+const MB=1024*1024, GB=1024*MB;
+const CFG={
+  DEMO:true,
+  API:SUPABASE_URL+'/functions/v1/creator-api',
+  COURSE_URL:'https://glime.online/c/',
+  MAX_BYTES:{video:500*MB,audio:100*MB,pdf:50*MB,image:2*MB},
+  /* Fee per sale in rupees, by course price. Free courses pay nothing. */
+  SLABS:[{upTo:499,fee:20,label:'Up to ₹499'},{upTo:1999,fee:100,label:'₹500 to ₹1,999'},{upTo:Infinity,fee:200,label:'₹2,000 and above'}],
+  CATEGORIES:['Yoga','Fitness','Music','Dance','Cooking','Art and craft','Language','Business','Other']
+};
+const COLORS=['#00ff88','#00f0ff','#a78bfa','#fbbf24','#fb7185','#60a5fa'];
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN');
+const fmtDate=d=>new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+function fmtSize(b){b=Number(b)||0;return b>=GB?(b/GB).toFixed(2).replace(/\.?0+$/,'')+' GB':b>=MB?Math.round(b/MB)+' MB':Math.max(1,Math.round(b/1024))+' KB';}
+function feeFor(price){price=Number(price)||0;if(price<=0)return 0;return CFG.SLABS.find(s=>price<=s.upTo).fee;}
+let tmr;function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className='toast on'+(bad?' bad':'');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on'),3200);}
+const uid=()=>'x'+Math.random().toString(36).slice(2,10);
+
+const state={ctx:null,data:null,ed:null,busyUploads:0};
+
+/* ------------------------------------------------------------------
+   Data layer. The live calls are what the backend must provide.
+   Every call sends the signed-in user's access token; the backend must
+   check approval and ownership itself, because this page is only a screen.
+   overview     -> { plan:{name,endsAt}, quotaBytes, wallet, courses[], sales[], alerts[] }
+   saveCourse   -> course (with id, slug, status)         { course, publish }
+   deleteCourse -> { ok:true }                            { id }
+   uploadUrl    -> { url, fileId }  (short-lived upload link, backend checks storage limit)
+   uploadDone   -> { ok:true }      { fileId }
+------------------------------------------------------------------- */
+async function call(action,payload){
+  const s=(await sb.auth.getSession()).data.session;
+  if(!s)throw new Error('signed-out');
+  const r=await fetch(CFG.API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token,apikey:SUPABASE_KEY},body:JSON.stringify({action,...payload})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||'Request failed');
+  return j;
+}
+
+function demoData(){
+  const day=n=>new Date(Date.now()-n*864e5).toISOString();
+  const L=(t,type,mb,free)=>({id:uid(),title:t,type,size:Math.round(mb*MB),free:!!free,status:'ready',progress:1});
+  return{
+    plan:{name:'Growth',endsAt:new Date(Date.now()+23*864e5).toISOString(),free:true},
+    quotaBytes:10*GB,
+    wallet:150,
+    courses:[
+      {id:'c1',title:'Yoga for beginners: 21-day plan',category:'Yoga',price:499,description:'A gentle 21-day routine for stiff backs and tired shoulders. No equipment needed.',status:'published',students:34,slug:'yoga-21-day',thumb:'',
+        lessons:[L('Welcome and how to use this course','video',210,true),L('Day 1: Waking up the spine','video',410),L('Day 2: Hips and hamstrings','video',385),L('Breathing guide','pdf',6),L('Daily checklist','pdf',2)]},
+      {id:'c2',title:'Morning breathing audio pack',category:'Yoga',price:199,description:'Seven short audio sessions to start the day calm.',status:'published',students:12,slug:'morning-breathing',thumb:'',
+        lessons:[L('Session 1: Slow breathing','audio',38,true),L('Session 2: Alternate nostril','audio',41),L('Session 3: Box breathing','audio',36)]},
+      {id:'c3',title:'Advanced Surya Namaskar masterclass',category:'Yoga',price:2499,description:'Build flow, strength and control with the full sun salutation series.',status:'published',students:3,slug:'surya-namaskar',thumb:'',
+        lessons:[L('Masterclass part 1','video',480,true),L('Masterclass part 2','video',470),L('Masterclass part 3','video',455)]},
+      {id:'c4',title:'Weight loss meal planner',category:'Fitness',price:1499,description:'',status:'draft',students:0,slug:'',thumb:'',lessons:[L('Meal planner','pdf',9)]}
+    ],
+    sales:[
+      {id:'s1',buyer:'Riya K.',course:'Yoga for beginners: 21-day plan',amount:499,at:day(0),channel:'Instagram'},
+      {id:'s2',buyer:'Ananya M.',course:'Morning breathing audio pack',amount:199,at:day(1),channel:'WhatsApp'},
+      {id:'s3',buyer:'Omar K.',course:'Yoga for beginners: 21-day plan',amount:499,at:day(2),channel:'WhatsApp'},
+      {id:'s4',buyer:'Meera J.',course:'Advanced Surya Namaskar masterclass',amount:2499,at:day(5),channel:'Instagram'}
+    ],
+    earnedThisMonth:3696,
+    alerts:[]
+  };
+}
+
+const API={
+  async overview(){
+    if(CFG.DEMO)return demoData();
+    return call('overview',{});
+  },
+  async saveCourse(course,publish){
+    if(CFG.DEMO){
+      const d=state.data,saved={...course,status:publish?'published':(course.status==='published'?'published':'draft'),students:course.students||0};
+      if(!saved.id||saved.id.startsWith('new'))saved.id=uid();
+      if(publish&&!saved.slug)saved.slug=saved.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||saved.id;
+      const i=d.courses.findIndex(c=>c.id===saved.id);
+      if(i>=0)d.courses[i]=saved;else d.courses.unshift(saved);
+      return saved;
+    }
+    return call('saveCourse',{course:stripFiles(course),publish});
+  },
+  async deleteCourse(id){
+    if(CFG.DEMO){state.data.courses=state.data.courses.filter(c=>c.id!==id);return{ok:true};}
+    return call('deleteCourse',{id});
+  },
+  async upload(file,onProgress){
+    if(CFG.DEMO){
+      return new Promise(res=>{let p=0;const t=setInterval(()=>{p+=.12+Math.random()*.12;if(p>=1){clearInterval(t);onProgress(1);res({fileId:uid()});}else onProgress(p);},250);});
+    }
+    const t=await call('uploadUrl',{name:file.name,type:file.type,size:file.size});
+    await new Promise((res,rej)=>{
+      const x=new XMLHttpRequest();x.open('PUT',t.url);x.setRequestHeader('Content-Type',file.type||'application/octet-stream');
+      x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded/e.total);};
+      x.onload=()=>x.status<300?res():rej(new Error('Upload failed'));x.onerror=()=>rej(new Error('Upload failed'));x.send(file);
+    });
+    await call('uploadDone',{fileId:t.fileId});
+    return{fileId:t.fileId};
+  }
+};
+function stripFiles(c){return{...c,lessons:c.lessons.map(l=>{const {file,...rest}=l;return rest;})};}
+
+/* ------------------------------------------------------------------
+   Derived numbers
+------------------------------------------------------------------- */
+const courseBytes=c=>c.lessons.reduce((n,l)=>n+(l.status==='ready'||l.status==='uploading'?l.size:0),0);
+const usedBytes=()=>state.data.courses.reduce((n,c)=>n+courseBytes(c),0);
+const isPaused=c=>c.status==='published'&&feeFor(c.price)>state.data.wallet;
+
+/* ------------------------------------------------------------------
+   Render dashboard
+------------------------------------------------------------------- */
+function render(){
+  const d=state.data,courses=d.courses;
+  $('previewBanner').classList.toggle('hide',!CFG.DEMO);
+  $('stEarn').textContent=inr(d.earnedThisMonth);
+  $('stStudents').textContent=courses.reduce((n,c)=>n+(c.students||0),0).toLocaleString('en-IN');
+  const pub=courses.filter(c=>c.status==='published').length;
+  $('stCourses').textContent=pub+' published, '+(courses.length-pub)+' draft';
+  $('stWallet').textContent=inr(d.wallet);
+  $('stPlan').textContent=(d.plan&&d.plan.name)||'–';
+  const left=d.plan&&d.plan.endsAt?Math.max(0,Math.ceil((new Date(d.plan.endsAt)-Date.now())/864e5)):0;
+  $('stPlanSub').textContent=d.plan&&d.plan.free?(left?'Free for you · '+left+' day'+(left>1?'s':'')+' left':'Free period has ended'):'';
+
+  /* wallet alert */
+  const paused=courses.filter(isPaused);
+  const wa=$('walletAlert');
+  if(paused.length){
+    const need=Math.max(...paused.map(c=>feeFor(c.price)));
+    wa.innerHTML='<div class="row"><div><strong>Buying is paused for '+paused.length+' course'+(paused.length>1?'s':'')+'.</strong> '+
+      'Your wallet has '+inr(d.wallet)+' and the fee for '+(paused.length>1?'these courses goes up to ':'this course is ')+inr(need)+
+      '. Buyers who try to purchase are told it is not available right now, and you get a message. Add money to start selling again.</div>'+
+      '<a class="btn sm" href="billing.html">Add money</a></div>';
+    wa.classList.remove('hide');
+  }else wa.classList.add('hide');
+
+  renderStorage();
+  renderCourses();
+  renderSales();
+  $('slabs').innerHTML=CFG.SLABS.map(s=>'<div class="slab"><b>'+inr(s.fee)+'</b><span>per sale · '+esc(s.label)+'</span></div>').join('')+
+    '<div class="slab"><b>₹0</b><span>per sale · Free courses</span></div>';
+}
+
+function renderStorage(){
+  const d=state.data,used=usedBytes(),q=d.quotaBytes||1;
+  $('stUsed').textContent=fmtSize(used);
+  $('stQuota').textContent='of '+fmtSize(q)+' used';
+  $('stLeft').textContent=fmtSize(Math.max(0,q-used))+' free';
+  const segs=d.courses.map((c,i)=>({c,b:courseBytes(c),color:COLORS[i%COLORS.length]})).filter(s=>s.b>0);
+  $('meter').innerHTML=segs.map(s=>'<i style="width:'+(s.b/q*100).toFixed(2)+'%;background:'+s.color+'" title="'+esc(s.c.title)+': '+fmtSize(s.b)+'"></i>').join('');
+  $('legend').innerHTML=segs.length?segs.map(s=>'<span><em style="background:'+s.color+'"></em>'+esc(s.c.title)+' · '+fmtSize(s.b)+'</span>').join(''):'<span>No files uploaded yet.</span>';
+}
+
+function renderCourses(){
+  const list=state.data.courses;
+  if(!list.length){$('courses').innerHTML='<div class="empty" style="grid-column:1/-1"><b>No courses yet</b>Create your first course, upload your lessons and publish it. Your AI assistant will then offer it to people who message you.</div>';return;}
+  $('courses').innerHTML=list.map(c=>{
+    const paused=isPaused(c);
+    const status=c.status==='published'?(paused?'<span class="pill stop">Paused: wallet low</span>':'<span class="pill ok">Published</span>'):'<span class="pill draft">Draft</span>';
+    const thumb=c.thumb?'<div class="thumb" style="background-image:url(\''+esc(c.thumb)+'\')"></div>':'<div class="thumb">'+esc((c.title||'?').trim().charAt(0).toUpperCase())+'</div>';
+    return '<article class="course" data-id="'+esc(c.id)+'">'+thumb+'<div class="course-body">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div class="course-title">'+esc(c.title)+'</div>'+status+'</div>'+
+      '<div class="meta"><span>'+(c.price>0?inr(c.price):'Free')+'</span><span>'+c.lessons.length+' lesson'+(c.lessons.length===1?'':'s')+'</span><span>'+fmtSize(courseBytes(c))+'</span><span>'+(c.students||0)+' student'+(c.students===1?'':'s')+'</span></div>'+
+      '<div class="course-foot"><button type="button" class="btn ghost sm" data-act="edit">Edit</button>'+
+      (c.status==='published'&&c.slug?'<button type="button" class="btn ghost sm" data-act="copy">Copy link</button>':'')+
+      '<button type="button" class="btn danger sm" data-act="del">Delete</button></div></div></article>';
+  }).join('');
+}
+
+function renderSales(){
+  const s=state.data.sales;
+  if(!s.length){$('sales').innerHTML='<div class="empty"><b>No sales yet</b>When someone buys a course, it shows up here.</div>';return;}
+  $('sales').innerHTML='<table class="sales"><thead><tr><th>Buyer</th><th>Course</th><th>Date</th><th class="amt">Amount</th></tr></thead><tbody>'+
+    s.map(x=>'<tr><td>'+esc(x.buyer)+'<div class="muted small">'+esc(x.channel||'')+'</div></td><td>'+esc(x.course)+'</td><td>'+fmtDate(x.at)+'</td><td class="amt">'+inr(x.amount)+'</td></tr>').join('')+'</tbody></table>';
+}
+
+/* ------------------------------------------------------------------
+   Course editor
+------------------------------------------------------------------- */
+function openEditor(id){
+  const src=id?state.data.courses.find(c=>c.id===id):null;
+  state.ed=src?JSON.parse(JSON.stringify(src)):{id:'new'+uid(),title:'',category:CFG.CATEGORIES[0],price:'',description:'',thumb:'',status:'draft',students:0,slug:'',lessons:[]};
+  state.ed.lessons.forEach(l=>{if(l.status==='uploading'){l.status='ready';l.progress=1;}});
+  $('edTitle').textContent=src?'Edit course':'New course';
+  $('fTitle').value=state.ed.title;$('fPrice').value=state.ed.price===''?'':state.ed.price;$('fDesc').value=state.ed.description||'';
+  $('fCat').innerHTML=CFG.CATEGORIES.map(c=>'<option'+(c===state.ed.category?' selected':'')+'>'+esc(c)+'</option>').join('');
+  $('edErr').textContent='';
+  paintThumb();renderLessons();feeNote();
+  $('edPublish').textContent=state.ed.status==='published'?'Save changes':'Publish course';
+  $('edOv').classList.add('on');$('fTitle').focus();
+}
+function closeEditor(){
+  if(state.busyUploads>0&&!confirm('Files are still uploading. Close and cancel them?'))return;
+  state.ed=null;state.busyUploads=0;$('edOv').classList.remove('on');
+}
+function paintThumb(){
+  const t=$('fThumb'),e=state.ed;
+  if(e.thumb){t.textContent='';t.style.backgroundImage='url("'+e.thumb+'")';}
+  else{t.style.backgroundImage='';t.textContent='+';}
+}
+function feeNote(){
+  const p=Number($('fPrice').value)||0,fee=feeFor(p);
+  $('feeNote').innerHTML=p<=0?'This is a free course, so GLIME charges no fee. People still need to be in your chats to get access.':
+    'Buyers pay <b>'+inr(p)+'</b> straight into your account. GLIME takes <b>'+inr(fee)+'</b> from your wallet for each sale.';
+}
+const TYPE_LABEL={video:'Video',audio:'Audio',pdf:'PDF'};
+function renderLessons(){
+  const ls=state.ed.lessons;
+  if(!ls.length){$('lessons').innerHTML='<div class="muted small">No lessons yet. Add your first file below.</div>';return;}
+  $('lessons').innerHTML=ls.map((l,i)=>'<div class="lesson" data-i="'+i+'">'+
+    '<div class="lesson-top"><span class="pill">'+TYPE_LABEL[l.type]+'</span><input type="text" data-f="title" maxlength="90" value="'+esc(l.title)+'" aria-label="Lesson name">'+
+    '<button type="button" class="iconbtn" data-act="up" aria-label="Move up"'+(i===0?' disabled':'')+'>↑</button>'+
+    '<button type="button" class="iconbtn" data-act="down" aria-label="Move down"'+(i===ls.length-1?' disabled':'')+'>↓</button>'+
+    '<button type="button" class="iconbtn" data-act="rm" aria-label="Remove lesson">✕</button></div>'+
+    (l.status==='uploading'?'<div class="bar"><i style="width:'+Math.round(l.progress*100)+'%"></i></div>':'')+
+    '<div class="lesson-row"><span>'+fmtSize(l.size)+(l.status==='uploading'?' · uploading '+Math.round(l.progress*100)+'%':l.status==='error'?' · upload failed':'')+'</span>'+
+    '<label><input type="checkbox" data-f="free"'+(l.free?' checked':'')+'> Free preview</label></div></div>').join('');
+}
+function paintProgress(l){
+  const i=state.ed&&state.ed.lessons.indexOf(l);if(i==null||i<0)return;
+  const row=$('lessons').querySelector('[data-i="'+i+'"]');if(!row)return;
+  const b=row.querySelector('.bar i');if(b)b.style.width=Math.round(l.progress*100)+'%';
+  const s=row.querySelector('.lesson-row span');if(s)s.textContent=fmtSize(l.size)+' · uploading '+Math.round(l.progress*100)+'%';
+}
+function kindOf(f){
+  if(f.type.startsWith('video/'))return'video';
+  if(f.type.startsWith('audio/'))return'audio';
+  if(f.type==='application/pdf'||/\.pdf$/i.test(f.name))return'pdf';
+  return null;
+}
+function addFiles(files){
+  const err=$('edErr');err.textContent='';
+  const others=usedBytes()-courseBytes(state.data.courses.find(c=>c.id===state.ed.id)||{lessons:[]});
+  let draftBytes=courseBytes(state.ed);
+  [...files].forEach(f=>{
+    const k=kindOf(f);
+    if(!k){err.textContent='"'+f.name+'" is not a video, audio or PDF file.';return;}
+    if(f.size>CFG.MAX_BYTES[k]){err.textContent='"'+f.name+'" is '+fmtSize(f.size)+'. The limit for '+TYPE_LABEL[k].toLowerCase()+' files is '+fmtSize(CFG.MAX_BYTES[k])+'.';return;}
+    if(others+draftBytes+f.size>state.data.quotaBytes){err.textContent='Not enough storage for "'+f.name+'". You have '+fmtSize(Math.max(0,state.data.quotaBytes-others-draftBytes))+' free. Delete a file or get more storage.';return;}
+    draftBytes+=f.size;
+    const l={id:uid(),title:f.name.replace(/\.[^.]+$/,'').slice(0,90),type:k,size:f.size,free:false,status:'uploading',progress:0};
+    state.ed.lessons.push(l);state.busyUploads++;renderLessons();
+    API.upload(f,p=>{l.progress=p;paintProgress(l);}).then(r=>{l.status='ready';l.progress=1;l.fileId=r.fileId;}).catch(()=>{l.status='error';err.textContent='"'+f.name+'" could not be uploaded. Remove it and try again.';}).finally(()=>{state.busyUploads=Math.max(0,state.busyUploads-1);if(state.ed)renderLessons();});
+  });
+}
+function readEditor(){
+  const e=state.ed;
+  e.title=$('fTitle').value.trim();e.category=$('fCat').value;
+  e.price=$('fPrice').value===''?'':Math.max(0,Math.round(Number($('fPrice').value)||0));
+  e.description=$('fDesc').value.trim();return e;
+}
+async function saveEditor(publish){
+  const e=readEditor(),err=$('edErr');err.textContent='';
+  if(!e.title){err.textContent='Give your course a name.';$('fTitle').focus();return;}
+  if(state.busyUploads>0){err.textContent='Wait for the uploads to finish.';return;}
+  if(e.lessons.some(l=>l.status==='error')){err.textContent='Remove the lessons that failed to upload.';return;}
+  if(publish){
+    if(e.price===''){err.textContent='Set a price. Enter 0 for a free course.';$('fPrice').focus();return;}
+    if(!e.lessons.length){err.textContent='Add at least one lesson before publishing.';return;}
+    if(!e.description){err.textContent='Add a short description so buyers know what they get.';$('fDesc').focus();return;}
+  }
+  e.price=e.price===''?0:e.price;
+  $('edSave').disabled=$('edPublish').disabled=true;
+  try{
+    await API.saveCourse(e,publish);
+    state.ed=null;$('edOv').classList.remove('on');render();
+    toast(publish?(e.status==='published'?'Changes saved':'Course published'):'Draft saved');
+  }catch(x){err.textContent=x.message||'Could not save. Please try again.';}
+  finally{$('edSave').disabled=$('edPublish').disabled=false;}
+}
+
+/* ------------------------------------------------------------------
+   Events
+------------------------------------------------------------------- */
+$('newCourse').onclick=()=>openEditor(null);
+$('edClose').onclick=closeEditor;
+$('edOv').addEventListener('mousedown',e=>{if(e.target===$('edOv'))closeEditor();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('cfOv').classList.contains('on'))$('cfOv').classList.remove('on');else if($('edOv').classList.contains('on'))closeEditor();}});
+$('fPrice').addEventListener('input',feeNote);
+$('fThumbBtn').onclick=()=>$('fThumbFile').click();
+$('fThumbFile').onchange=e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(!/^image\/(png|jpe?g|webp)$/.test(f.type)){$('edErr').textContent='Cover image must be JPG, PNG or WebP.';return;}
+  if(f.size>CFG.MAX_BYTES.image){$('edErr').textContent='Cover image must be under 2 MB.';return;}
+  $('edErr').textContent='';
+  const r=new FileReader();r.onload=()=>{state.ed.thumb=r.result;paintThumb();};r.readAsDataURL(f);
+};
+$('fAddLesson').onclick=()=>$('fLessonFile').click();
+$('fLessonFile').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(fs.length)addFiles(fs);};
+$('lessons').addEventListener('input',e=>{
+  const row=e.target.closest('[data-i]');if(!row)return;const l=state.ed.lessons[+row.dataset.i];
+  if(e.target.dataset.f==='title')l.title=e.target.value;
+});
+$('lessons').addEventListener('change',e=>{
+  const row=e.target.closest('[data-i]');if(!row)return;const l=state.ed.lessons[+row.dataset.i];
+  if(e.target.dataset.f==='free')l.free=e.target.checked;
+});
+$('lessons').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const row=b.closest('[data-i]'),i=+row.dataset.i,ls=state.ed.lessons;
+  if(b.dataset.act==='up'&&i>0){[ls[i-1],ls[i]]=[ls[i],ls[i-1]];}
+  else if(b.dataset.act==='down'&&i<ls.length-1){[ls[i+1],ls[i]]=[ls[i],ls[i+1]];}
+  else if(b.dataset.act==='rm'){if(ls[i].status==='uploading')state.busyUploads=Math.max(0,state.busyUploads-1);ls.splice(i,1);}
+  renderLessons();
+});
+$('edSave').onclick=()=>saveEditor(false);
+$('edPublish').onclick=()=>saveEditor(true);
+
+let pendingDelete=null;
+$('courses').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const id=b.closest('.course').dataset.id,c=state.data.courses.find(x=>x.id===id);if(!c)return;
+  if(b.dataset.act==='edit')openEditor(id);
+  else if(b.dataset.act==='copy'){
+    const url=CFG.COURSE_URL+c.slug;
+    (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link copied'),()=>toast(url));
+  }else if(b.dataset.act==='del'){
+    pendingDelete=c;$('cfText').textContent=(c.students?'"'+c.title+'" has '+c.students+' student'+(c.students>1?'s':'')+'. They will lose access to it. ':'"'+c.title+'" and its files will be removed. ')+'This cannot be undone.';
+    $('cfOv').classList.add('on');
+  }
+});
+$('cfNo').onclick=()=>{pendingDelete=null;$('cfOv').classList.remove('on');};
+$('cfYes').onclick=async()=>{
+  const c=pendingDelete;if(!c)return;$('cfYes').disabled=true;
+  try{await API.deleteCourse(c.id);$('cfOv').classList.remove('on');render();toast('Course deleted');}
+  catch(x){toast(x.message||'Could not delete the course.',true);}
+  finally{$('cfYes').disabled=false;pendingDelete=null;}
+};
+
+/* ------------------------------------------------------------------
+   Boot: sign-in check, approval check, then load.
+   Approval is read from the signed-in user's own creator_applications row.
+   The backend must enforce approval again; this only decides what to show.
+------------------------------------------------------------------- */
+async function handleLogout(){
+  try{await sb.auth.signOut({scope:'local'});}catch(e){}
+  try{localStorage.removeItem('glime_client_email');}catch(e){}
+  location.replace('login.html');
+}
+window.handleLogout=handleLogout;
+
+function showLocked(title,text){
+  $('loading').classList.add('hide');$('app').classList.add('hide');
+  $('lockedTitle').textContent=title;$('lockedText').textContent=text;$('locked').classList.remove('hide');
+}
+
+async function init(){
+  try{
+    const r=await sb.auth.getSession();const sess=r.data&&r.data.session;
+    if(!sess||!sess.user){location.replace('login.html');return;}
+    const u=sess.user;
+    const cd=await sb.from('client_data').select('id,client_id,business_name,full_name').eq('auth_user_id',u.id).limit(1);
+    const row=cd.data&&cd.data[0];
+    if(!row||!row.client_id){showLocked('Account not found','We could not find your GLIME account. Please refresh or sign in again.');return;}
+    state.ctx={userId:u.id,clientId:String(row.client_id)};
+    const ident={name:row.business_name||row.full_name||'',clientId:state.ctx.clientId};
+    if(window.GlimeAppShell)window.GlimeAppShell.setIdentity(ident);
+    else window.addEventListener('load',()=>window.GlimeAppShell&&window.GlimeAppShell.setIdentity(ident));
+
+    const ap=await sb.from('creator_applications').select('status,reject_reason').eq('auth_user_id',u.id).limit(1);
+    const app=ap.data&&ap.data[0];
+    const st=app?String(app.status).toLowerCase():'';
+    if(st!=='approved'){
+      if(st==='rejected')showLocked('Creator application was not approved',app.reject_reason?app.reject_reason:'You can review your application and apply again from AI connections.');
+      else if(st)showLocked('Creator application is under review','The GLIME team is reviewing your application. This page opens as soon as you are approved.');
+      else showLocked('You have not applied as a creator','Apply from AI connections. Once the GLIME team approves you, this page opens.');
+      return;
+    }
+    state.data=await API.overview();
+    $('loading').classList.add('hide');$('app').classList.remove('hide');
+    render();
+  }catch(e){
+    console.error('[GLIME] creator load failed',e);
+    $('loading').textContent='Could not load your creator page. Please refresh.';
+  }
+}
+sb.auth.onAuthStateChange((ev,s)=>{if(ev==='SIGNED_OUT'||!s){try{localStorage.removeItem('glime_client_email');}catch(e){}location.replace('login.html');}});
+init();
+</script>
+</body>
+</html>
