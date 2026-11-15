@@ -20,6 +20,8 @@
    - Media upload is locked only while the Step 3 -> 4 save runs,
      so the saved media list cannot be overwritten.
    - Save draft and Publish wait for any pending background save.
+   - The Category dropdown keeps the chosen category when the
+     catalogue is redrawn (it used to jump back to "No category").
 
    Load order: LAST, after every other services-*.js file.
    No backend changes.
@@ -117,6 +119,29 @@
     await chain;
     return baseOpenWizard.apply(this, arguments);
   };
+
+  /* ---------- keep the chosen category when the catalogue redraws ----------
+     fillCategorySelect() rebuilds the dropdown, which reset it to
+     "No category" and made the next save write an empty category. */
+
+  if (typeof fillCategorySelect === 'function') {
+    var baseFillCategorySelect = fillCategorySelect;
+
+    fillCategorySelect = function () {
+      var el = byId('fCategory');
+      var keep = el ? el.value : '';
+
+      var result = baseFillCategorySelect.apply(this, arguments);
+
+      el = byId('fCategory');
+
+      if (el && keep) {
+        try { el.value = keep; } catch (_) { /* option no longer exists */ }
+      }
+
+      return result;
+    };
+  }
 
   /* ---------- media lock (only while Step 3 -> 4 is saving) ---------- */
 
