@@ -47,6 +47,7 @@
   ======================================================= */
 
   var S = fresh();
+  var repaintTimer = null;
 
   function fresh() {
     return {
@@ -537,6 +538,7 @@
     return byName;
   }
 
+  /* S.photos is kept sorted by file name (see addPhotos) */
   function photosFor(r, byName) {
     var out = [];
     var seen = new Set();
@@ -559,14 +561,11 @@
     var rk = nameKey(r.name);
 
     if (rk) {
-      S.photos
-        .slice()
-        .sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); })
-        .forEach(function (f) {
-          var k = nameKey(fileBase(f.name));
-          var k2 = k.replace(/\d+$/, '');
-          if (k === rk || k2 === rk) add({ id: 'f:' + f.name + ':' + f.size, file: f });
-        });
+      S.photos.forEach(function (f) {
+        var k = nameKey(fileBase(f.name));
+        var k2 = k.replace(/\d+$/, '');
+        if (k === rk || k2 === rk) add({ id: 'f:' + f.name + ':' + f.size, file: f });
+      });
     }
 
     return out;
@@ -682,6 +681,7 @@
 
     S.busy = true;
     S.alert = '';
+    S.method = 'ai';
     S.stage = 'reading';
     render();
 
@@ -713,8 +713,8 @@
         return;
       }
 
-      S.method = 'ai';
       S.rows = rowsFromAi(items);
+      S.sheetNote = '';
       S.busy = false;
       S.stage = 'preview';
       validateAll();
@@ -747,6 +747,7 @@
 
     S.alert = '';
     S.busy = true;
+    S.method = 'sheet';
     S.stage = 'reading';
     render();
 
@@ -763,7 +764,6 @@
         return;
       }
 
-      S.method = 'sheet';
       S.rows = res.rows;
       S.aiTokens = 0;
       S.aiNote = '';
@@ -1033,6 +1033,8 @@
       return;
     }
 
+    if (repaintTimer) { clearTimeout(repaintTimer); repaintTimer = null; }
+
     S.busy = true;
     S.alert = '';
     S.stage = 'running';
@@ -1145,6 +1147,7 @@
       '.ci-row.bad{border-color:rgba(255,100,114,.55)}',
       '.ci-row>input[type=checkbox]{width:22px;height:22px;margin-top:10px;accent-color:#00ff88}',
       '.ci-fields{display:grid;grid-template-columns:1fr;gap:8px;min-width:0}',
+      '.ci-fields input{min-height:44px;border-radius:11px;border:1px solid rgba(255,255,255,.2);background:#101823;color:#fff;padding:0 12px;font-size:.92rem;font-family:inherit;width:100%;box-sizing:border-box}',
       '@media(min-width:640px){.ci-fields{grid-template-columns:1fr 150px}}',
       '.ci-meta{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;font-size:.72rem}',
       '.ci-chip{padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.86)}',
@@ -1243,6 +1246,8 @@
   function closeImport() {
     if (S.busy || !ov) return;
 
+    if (repaintTimer) { clearTimeout(repaintTimer); repaintTimer = null; }
+
     ov.classList.add('hidden');
 
     var wiz = byId('wizardOverlay');
@@ -1281,11 +1286,12 @@
       html += chooseHtml();
       footHtml = '<button class="ci-btn" type="button" data-act="close">Cancel</button>';
     } else if (S.stage === 'reading') {
+      var ai = S.method === 'ai';
       if (sub) sub.textContent = 'Please wait…';
       html += '<div class="ci-center"><div class="ci-spin"></div><strong>' +
-        (S.method === 'sheet' || !S.aiFiles.length ? 'Reading your file…' : 'GLIME AI is reading your catalogue…') +
+        (ai ? 'GLIME AI is reading your catalogue…' : 'Reading your file…') +
         '</strong><span style="font-size:.82rem;color:rgba(255,255,255,.72)">' +
-        (S.aiFiles.length && S.stage === 'reading' && S.busy && S.method !== 'sheet' ? 'This can take up to a minute. Please keep this window open.' : '') +
+        (ai ? 'This can take up to a minute. Please keep this window open.' : '') +
         '</span></div>';
     } else if (S.stage === 'preview') {
       if (sub) sub.textContent = 'Check the list, fix anything that looks wrong, then import.';
@@ -1442,7 +1448,8 @@
     '</div>';
   }
 
-  function paintCount() {
+  /* light = skip the photo-match count (it loops over every row) */
+  function paintCount(light) {
     var n = S.rows.filter(function (r) { return r.include && r.valid; }).length;
     var c = byId('ciCount');
     var b = byId('ciImportBtn');
@@ -1457,7 +1464,7 @@
       b.textContent = n ? 'Import ' + n + ' service' + (n === 1 ? '' : 's') : 'Import';
     }
 
-    paintPhotoNote();
+    if (!light) paintPhotoNote();
   }
 
   function paintPhotoNote() {
@@ -1476,6 +1483,8 @@
     Array.prototype.forEach.call(list || [], function (f) {
       if (/^image\//i.test(f.type) && S.photos.length < 300) S.photos.push(f);
     });
+
+    S.photos.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
 
     paintPhotoNote();
   }
@@ -1547,6 +1556,8 @@
     }
   }
 
+  /* Typing stays instant: only the edited row is refreshed right away.
+     Duplicate checks and the other rows catch up a moment later. */
   function onInput(e) {
     var f = e.target.dataset && e.target.dataset.f;
     if (!f || (f !== 'name' && f !== 'price')) return;
@@ -1554,16 +1565,27 @@
     var r = rowOf(e.target);
     if (!r) return;
 
-    if (f === 'name') r.name = e.target.value;
-    else r.price = cleanPrice(e.target.value) === '' && e.target.value.trim() !== '' ? e.target.value.trim() : cleanPrice(e.target.value);
+    if (f === 'name') {
+      r.name = e.target.value;
+    } else {
+      var typed = e.target.value.trim();
+      var num = cleanPrice(typed);
+      r.price = num === '' && typed !== '' ? typed : num;
+    }
 
-    validateAll();
-    repaintAllMeta();
-    paintCount();
-  }
+    validateRow(r);
+    repaintRow(r);
+    paintCount(true);
 
-  function repaintAllMeta() {
-    S.rows.forEach(repaintRow);
+    if (repaintTimer) clearTimeout(repaintTimer);
+
+    repaintTimer = setTimeout(function () {
+      repaintTimer = null;
+      if (S.stage !== 'preview') return;
+      validateAll();
+      S.rows.forEach(repaintRow);
+      paintCount();
+    }, 350);
   }
 
   function onChange(e) {
