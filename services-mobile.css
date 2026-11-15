@@ -1,0 +1,110 @@
+/* =========================================================
+   GLIME SERVICES — MOBILE FIXES + NEW CONTROLS
+   Mobile first. Load AFTER services.css, services-premium.css
+   and services-industry.css.
+========================================================= */
+
+/* ---------- Top buttons: Search | Import | Add (one row on phones) ---------- */
+@media (max-width:599.98px){
+  .topbar{position:static;backdrop-filter:none;background:transparent;border-bottom:0;padding-bottom:6px}
+  .top-actions{grid-template-columns:var(--tap) minmax(0,1fr) minmax(0,1.1fr);gap:8px}
+  .top-actions .primary-btn,
+  .top-actions .ghost-btn{padding:0 10px;font-size:.82rem;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .top-actions #addServiceBtn{grid-column:auto}
+  .top-actions .command-btn{padding:0}
+}
+@media (min-width:600px) and (max-width:899.98px){
+  .top-actions{grid-template-columns:repeat(3,auto)}
+}
+
+/* ---------- Search palette: readable dark rows ---------- */
+.command-results{display:flex;flex-direction:column;gap:4px}
+button.command-item{
+  width:100%;background:transparent;border:0;color:#fff;text-align:left;
+  font:inherit;border-radius:12px;min-height:52px;cursor:pointer;
+}
+button.command-item:hover,
+button.command-item:active,
+button.command-item:focus-visible{background:rgba(255,255,255,.08);outline:0}
+.command-item strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:#fff}
+.command-item small{flex:none;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+
+/* ---------- Service cards on phones ---------- */
+@media (max-width:599.98px){
+  body .service-card.sv-card .service-media{height:auto;aspect-ratio:16/9}
+}
+body .service-card.sv-card .card-actions{grid-template-columns:1fr 1fr 46px 46px}
+body .service-card.sv-card .sv-arc{
+  display:grid;place-items:center;padding:0;height:44px;border-radius:12px;cursor:pointer;
+  border:1px solid rgba(0,240,255,.3);background:rgba(0,240,255,.07);color:#6fe9f5;
+  transition:background .15s,color .15s,transform .12s;
+}
+body .service-card.sv-card .sv-arc:hover,
+body .service-card.sv-card .sv-arc:active{background:#00e5ff;color:#03181c}
+body .service-card.sv-card .sv-arc:active{transform:scale(.95)}
+body .service-card.sv-card .sv-arc:disabled{opacity:.5;pointer-events:none}
+
+.sv-pending{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;
+  padding:8px 10px;border:1px solid rgba(255,200,87,.35);background:rgba(255,200,87,.07);
+  border-radius:10px;font-size:.76rem;color:#ffc857;
+}
+.sv-pending button{
+  min-height:36px;padding:0 12px;border:1px solid rgba(255,200,87,.45);background:transparent;
+  color:#ffc857;border-radius:8px;font-size:.74rem;font-weight:700;cursor:pointer;
+}
+.sv-pending button:disabled{opacity:.5}
+.sv-pending-hint{color:var(--muted);font-size:.72rem}
+
+/* ---------- Category sidebar extras ---------- */
+.category-manage{margin-top:8px}
+
+/* ---------- Custom field button (Step 1) ---------- */
+.sv-addfield{margin-top:14px}
+.sv-addfield .secondary-btn{width:100%}
+@media (min-width:720px){.sv-addfield .secondary-btn{width:auto}}
+
+/* ---------- Small sheet (manage categories, new custom field) ---------- */
+.sv-sheet-ov{
+  position:fixed;inset:0;z-index:700;background:rgba(2,5,8,.82);backdrop-filter:blur(8px);
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.sv-sheet{
+  width:100%;max-width:560px;max-height:92vh;max-height:92dvh;display:flex;flex-direction:column;
+  background:#0b111a;color:#fff;border:1px solid var(--border);border-bottom:0;
+  border-radius:20px 20px 0 0;box-shadow:var(--shadow);
+}
+.sv-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+.sv-sheet-head h3{margin:0;font-size:1.05rem}
+.sv-sheet-x{width:var(--tap);height:var(--tap);flex:none;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.05);color:#fff;font-size:1.4rem;cursor:pointer}
+.sv-sheet-body{flex:1;min-height:0;overflow:auto;padding:16px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.sv-sheet-foot{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px calc(12px + var(--safe-b));border-top:1px solid var(--border)}
+.sv-sheet-foot>button{flex:1}
+@media (min-width:720px){
+  .sv-sheet-ov{align-items:center;padding:20px}
+  .sv-sheet{border-bottom:1px solid var(--border);border-radius:20px}
+  .sv-sheet-foot>button{flex:none;min-width:120px}
+}
+
+.sv-crow{display:grid;gap:8px;padding:12px;margin-bottom:10px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}
+.sv-crow input{width:100%;min-height:var(--tap);background:#0e1925;border:1px solid rgba(255,255,255,.14);color:#fff;border-radius:12px;padding:10px 12px;outline:0}
+.sv-crow input:focus{border-color:rgba(0,240,255,.55)}
+.sv-crow-actions{display:grid;grid-template-columns:1.3fr 1fr 1fr 1.3fr;gap:8px}
+.sv-crow-actions button{min-height:44px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;border-radius:10px;font-weight:700;font-size:.84rem;cursor:pointer}
+.sv-crow-actions button:disabled{opacity:.35;cursor:not-allowed}
+.sv-crow-actions .danger{border-color:rgba(255,100,114,.35);background:rgba(255,100,114,.08);color:#ff8f9a}
+.sv-crow small{color:var(--muted);font-size:.74rem}
+.sv-empty{margin:0 0 12px;padding:14px;border:1px dashed rgba(255,255,255,.18);border-radius:12px;color:var(--muted);font-size:.84rem;text-align:center}
+.sv-sub{margin:18px 0 8px;font-size:.8rem;color:var(--muted);letter-spacing:.06em}
+.sv-chips{display:flex;flex-wrap:wrap;gap:6px}
+.sv-chips span{padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);font-size:.76rem}
+.sv-check{display:flex;align-items:center;gap:10px;min-height:var(--tap);font-size:.88rem;cursor:pointer}
+.sv-check input{width:22px;height:22px;accent-color:#00ff88;flex:none}
+.sv-note{display:block;color:var(--muted);font-size:.76rem;line-height:1.5}
+
+/* ---------- Creator course card (shown only to approved creators) ---------- */
+.sv-creator{display:flex;flex-direction:column;gap:12px;margin:0 0 14px;padding:14px;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.06);border-radius:14px}
+.sv-creator strong{color:#00ff88;font-size:.92rem}
+.sv-creator p{margin:4px 0 0;color:var(--muted);font-size:.84rem;line-height:1.5}
+.sv-creator .primary-btn{width:100%}
+@media (min-width:720px){.sv-creator{flex-direction:row;align-items:center;justify-content:space-between}.sv-creator .primary-btn{width:auto;flex:none}}
