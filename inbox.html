@@ -7,7 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="inbox.css">
+<link rel="stylesheet" href="inbox.css?v=2">
 <link rel="stylesheet" href="glime-app-shell.css">
 <script src="glime-app-shell.js" defer></script>
 </head>
@@ -21,15 +21,15 @@
   <header class="ib-header">
     <div>
       <h1>Shared Inbox</h1>
-      <p>WhatsApp, Instagram and Voice conversations in one place.</p>
+      <p>WhatsApp and Instagram chats together, with who answered each message.</p>
     </div>
     <button id="refreshBtn" class="ib-btn" type="button">↻ Refresh</button>
   </header>
 
   <div id="ibError" class="ib-error hidden" role="alert"></div>
 
-  <div class="ib-layout">
-    <!-- Column 1: conversation list -->
+  <div class="ib-layout" id="layout">
+    <!-- Conversation list: WhatsApp + Instagram together -->
     <section class="ib-col ib-list-col" aria-label="Conversations">
       <div class="ib-list-head">
         <input id="searchInput" class="ib-search" type="search" placeholder="Search name, phone, message…" aria-label="Search conversations" autocomplete="off">
@@ -38,13 +38,12 @@
           <button class="ib-filter" data-filter="needs" type="button">Needs reply <b data-count="needs">0</b></button>
           <button class="ib-filter" data-filter="whatsapp" type="button">WhatsApp <b data-count="whatsapp">0</b></button>
           <button class="ib-filter" data-filter="instagram" type="button">Instagram <b data-count="instagram">0</b></button>
-          <button class="ib-filter" data-filter="voice" type="button">Voice <b data-count="voice">0</b></button>
         </div>
       </div>
       <div id="convList" class="ib-conv-list"></div>
     </section>
 
-    <!-- Column 2: chat -->
+    <!-- Chat -->
     <section class="ib-col ib-chat" aria-label="Conversation">
       <div id="chatEmpty" class="ib-chat-empty">
         <strong>Select a conversation</strong>
@@ -57,11 +56,11 @@
       </div>
     </section>
 
-    <!-- Column 3: customer details -->
+    <!-- Customer details (very wide screens) -->
     <aside class="ib-col ib-contact ib-contact-col" id="contactPanel" aria-label="Customer details"></aside>
   </div>
 </main>
 
-<script src="inbox.js"></script>
+<script src="inbox.js?v=2"></script>
 </body>
 </html>
