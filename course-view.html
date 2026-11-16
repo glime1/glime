@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Your course</title>
+<style>
+:root{--bg:#05080c;--card:#111827;--line:rgba(255,255,255,.1);--text:#fff;--muted:#9ca3af;--green:#00ff88;--cyan:#00f0ff;--bad:#ff8f9a}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px calc(28px + env(safe-area-inset-bottom))}
+h1{font-size:1.35rem;margin:6px 0 4px}
+.muted{color:var(--muted);font-size:.86rem;line-height:1.55}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:16px}
+label{display:block;font-size:.78rem;color:var(--muted);font-weight:600;margin:14px 0 6px}
+input{width:100%;min-height:48px;background:#0b1220;border:1px solid var(--line);color:#fff;border-radius:12px;padding:10px 14px;font-size:1rem;outline:0}
+input:focus{border-color:rgba(0,240,255,.6)}
+#code{letter-spacing:.35em;text-align:center;font-size:1.3rem}
+.btn{display:block;width:100%;min-height:50px;margin-top:18px;border:0;border-radius:12px;font-weight:700;font-size:1rem;color:#061018;background:linear-gradient(135deg,var(--green),var(--cyan));cursor:pointer}
+.btn:disabled{opacity:.55}
+.btn.ghost{background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--line);min-height:44px;margin-top:0;width:auto;padding:0 16px;font-size:.86rem}
+.err{color:var(--bad);font-size:.86rem;min-height:20px;margin-top:12px}
+.hide{display:none!important}
+.lessons{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.lesson{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:56px;padding:10px 14px;background:#0b1220;border:1px solid var(--line);border-radius:12px;color:#fff;font-size:.92rem;cursor:pointer}
+.lesson.on{border-color:rgba(0,255,136,.6);background:rgba(0,255,136,.07)}
+.lesson b{flex:none;font-size:.7rem;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.lesson span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.player{position:relative;margin-top:16px;border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--line);user-select:none;-webkit-user-select:none}
+.player video{display:block;width:100%;max-height:70vh;background:#000}
+.player audio{display:block;width:100%;margin:26px 0}
+.player iframe{display:block;width:100%;height:75vh;border:0;background:#fff}
+.mark{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.mark i{position:absolute;font-style:normal;font-size:.72rem;color:rgba(255,255,255,.34);text-shadow:0 0 3px rgba(0,0,0,.7);white-space:nowrap;transform:rotate(-18deg)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="loading" class="muted">Loading…</div>
+
+  <section id="login" class="hide">
+    <h1 id="lTitle">Open your course</h1>
+    <p class="muted">Enter the mobile number you used to buy, and the 6-digit code you received in chat. The code works once and expires in 10 minutes.</p>
+    <div class="card">
+      <label for="phone">Mobile number</label>
+      <input id="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="16" placeholder="10-digit number">
+      <label for="code">Code</label>
+      <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••">
+      <button class="btn" id="go" type="button">Open course</button>
+      <div class="err" id="err" role="alert"></div>
+      <p class="muted" style="margin:6px 0 0">No code? Message the same chat where you bought and ask for your code.</p>
+    </div>
+  </section>
+
+  <section id="view" class="hide">
+    <div class="top"><div><h1 id="vTitle"></h1><div class="muted" id="vDesc"></div></div><button class="btn ghost" id="out" type="button">Sign out</button></div>
+    <div class="player hide" id="player"></div>
+    <div class="lessons" id="lessons"></div>
+    <p class="muted" style="margin-top:18px">This course is personal to you and opens on up to 2 devices. Please do not share it.</p>
+  </section>
+</div>
+
+<script>
+/* Put your Cloudflare Worker address here (no slash at the end). */
+const WORKER='https://glime-creator.REPLACE-ME.workers.dev';
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const slug=(new URLSearchParams(location.search).get('c')||'').trim().slice(0,80);
+const KEY='glime_cv_'+slug;
+let token='',meta=null;
+
+const ERR={
+  BAD_CODE:'That number or code is not right, or the code has expired. Ask for a new code in chat.',
+  LOCKED:'Too many wrong tries. Please wait 15 minutes and ask for a new code.',
+  ACCESS_EXPIRED:'Your access to this course has ended.',
+  DEVICE_LIMIT:'This course is already open on 2 devices. Contact the creator to switch a device.',
+  COURSE_NOT_FOUND:'This course is not available right now.',
+  INVALID_INPUT:'Enter your 10-digit mobile number and the 6-digit code.'
+};
+
+function deviceId(){
+  let d='';try{d=localStorage.getItem('glime_dev')||'';}catch(e){}
+  if(d.length<16){
+    const a=new Uint8Array(16);(crypto||window.msCrypto).getRandomValues(a);
+    d=[...a].map(x=>x.toString(16).padStart(2,'0')).join('');
+    try{localStorage.setItem('glime_dev',d);}catch(e){}
+  }
+  return d;
+}
+function deviceLabel(){
+  const u=navigator.userAgent;
+  const os=/Android/i.test(u)?'Android':/iPhone|iPad|iPod/i.test(u)?'iPhone/iPad':/Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':/Linux/i.test(u)?'Linux':'Device';
+  const br=/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'Browser';
+  return os+' · '+br;
+}
+async function api(path,opt){
+  const r=await fetch(WORKER+path,opt);
+  const j=await r.json().catch(()=>({ok:false,error:'INTERNAL_ERROR'}));
+  j._status=r.status;return j;
+}
+function show(which){['loading','login','view'].forEach(k=>$(k).classList.toggle('hide',k!==which));}
+
+async function boot(){
+  if(!slug){$('loading').textContent='This link is not complete. Please open the link you were sent.';return;}
+  try{token=localStorage.getItem(KEY)||'';}catch(e){}
+  if(token){
+    const c=await api('/course?slug='+encodeURIComponent(slug)+'&token='+encodeURIComponent(token));
+    if(c.ok){showCourse(c);return;}
+    clearSession();
+  }
+  show('login');
+}
+function clearSession(){token='';try{localStorage.removeItem(KEY);}catch(e){}}
+
+$('go').onclick=async()=>{
+  const phone=$('phone').value.replace(/\D/g,''),code=$('code').value.replace(/\D/g,'');
+  $('err').textContent='';
+  if(phone.length<10||code.length!==6){$('err').textContent=ERR.INVALID_INPUT;return;}
+  $('go').disabled=true;
+  try{
+    const r=await api('/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,phone,code,device_hash:deviceId(),label:deviceLabel()})});
+    if(!r.ok){$('err').textContent=ERR[r.error]||'Something went wrong. Please try again.';return;}
+    token=r.token;try{localStorage.setItem(KEY,token);}catch(e){}
+    const c=await api('/course?slug='+encodeURIComponent(slug)+'&token='+encodeURIComponent(token));
+    if(c.ok){$('code').value='';showCourse(c);}else $('err').textContent='Could not open the course. Please try again.';
+  }catch(e){$('err').textContent='No internet connection. Please try again.';}
+  finally{$('go').disabled=false;}
+};
+$('out').onclick=()=>{clearSession();$('player').innerHTML='';$('player').classList.add('hide');show('login');};
+
+const KIND={video:'Video',audio:'Audio',pdf:'PDF'};
+function showCourse(c){
+  meta=c;document.title=c.title||'Your course';
+  $('vTitle').textContent=c.title||'';$('vDesc').textContent=c.description||'';
+  const ls=c.lessons||[];
+  $('lessons').innerHTML=ls.length?ls.map((l,i)=>'<button type="button" class="lesson" data-i="'+i+'"><b>'+esc(KIND[l.kind]||l.kind)+'</b><span>'+esc(l.title)+'</span></button>').join(''):'<div class="muted">No lessons yet.</div>';
+  show('view');
+}
+
+function markHtml(){
+  const t=esc((meta.viewer&&meta.viewer.name?meta.viewer.name+' · ':'')+'•••• '+(meta.viewer&&meta.viewer.phone_tail||''));
+  let h='';for(let i=0;i<6;i++)h+='<i style="left:'+((i%3)*34-4)+'%;top:'+(10+Math.floor(i/3)*44+(i%2)*10)+'%">'+t+'</i>';
+  return '<div class="mark" aria-hidden="true">'+h+'</div>';
+}
+$('lessons').addEventListener('click',e=>{
+  const b=e.target.closest('.lesson');if(!b)return;
+  const l=meta.lessons[+b.dataset.i];
+  document.querySelectorAll('.lesson').forEach(x=>x.classList.toggle('on',x===b));
+  const src=WORKER+'/stream?lesson='+encodeURIComponent(l.id)+'&token='+encodeURIComponent(token);
+  const p=$('player');p.classList.remove('hide');
+  if(l.kind==='video')p.innerHTML='<video controls playsinline controlsList="nodownload noremoteplayback" disablePictureInPicture src="'+src+'"></video>'+markHtml();
+  else if(l.kind==='audio')p.innerHTML='<audio controls controlsList="nodownload" src="'+src+'"></audio>'+markHtml();
+  else p.innerHTML='<iframe src="'+src+'" title="'+esc(l.title)+'"></iframe>'+markHtml();
+  const m=p.querySelector('video,audio');
+  if(m)m.addEventListener('error',async()=>{
+    const c=await api('/course?slug='+encodeURIComponent(slug)+'&token='+encodeURIComponent(token));
+    if(!c.ok){clearSession();p.innerHTML='';p.classList.add('hide');show('login');$('err').textContent='Your session ended. Ask for a new code in chat.';}
+  });
+  p.scrollIntoView({behavior:'smooth',block:'start'});
+});
+$('player').addEventListener('contextmenu',e=>e.preventDefault());
+boot();
+</script>
+</body>
+</html>

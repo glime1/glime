@@ -39,7 +39,9 @@
     const el = byId(id);
     if (el) el.addEventListener(type, fn, !!capture);
   };
-  const sym = () => (val('fCurrency') === 'USD' ? '$' : '₹');
+  /* Same currencies as the Currency select in services.html. */
+  const CURRENCY_SYMBOLS = { INR: '₹', USD: '$', GBP: '£', EUR: '€', AED: 'AED' };
+  const sym = () => CURRENCY_SYMBOLS[val('fCurrency')] || '₹';
   const todayStr = () => new Date().toLocaleDateString('en-CA');
   const shortDate = s => {
     const d = new Date(s + 'T00:00:00');

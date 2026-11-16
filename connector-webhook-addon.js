@@ -1,11 +1,20 @@
 /* =========================================================
    GLIME — WEBHOOK CONNECTOR (Connector Hub)
    ---------------------------------------------------------
-   Frontend only. Lets a client send GLIME events (new lead, new order,
-   payment, message ...) to Zapier, Make, n8n or their own server.
-   No third-party approval is needed, so it works for every client.
+   Frontend only. The Webhooks card has two tabs:
 
-   Backend contract (to be built by GLIME, see GLIME_Webhook_Backend_Spec.md):
+   1) Send events      Lets a client send GLIME events (new lead, new order,
+                       payment, message ...) to Zapier, Make, n8n or their own
+                       server. No third-party approval is needed.
+   2) Receive payments Lets a client mark GLIME orders as PAID from THEIR OWN
+                       payment gateway. One sub-tab per gateway (Generic, Stripe,
+                       Cashfree, PhonePe, PayPal). Each endpoint has its own URL
+                       and its own signing secret. The money goes straight to the
+                       client's account; GLIME only listens.
+                       Backend: edge function client-payment-webhook and the SQL
+                       functions in setup.sql (called with sb.rpc, signed-in user).
+
+   Backend contract for "Send events" (to be built by GLIME, see GLIME_Webhook_Backend_Spec.md):
      glime-webhook-gateway   (verify_jwt = true)
        GET  ?action=webhook.status
               -> {connected, enabled, url, events[], secret_last4, auto_paused,
@@ -22,8 +31,8 @@
        POST ?action=webhook.disconnect    {}
 
    Rules:
-   - The signing secret is returned once, kept in memory only, shown masked,
-     and dropped when the panel is closed. It is never put in localStorage.
+   - Signing secrets are kept in memory only, shown masked, and dropped when the
+     panel is closed. They are never put in localStorage.
    - Never shows "On" unless the gateway status says so.
    - If the gateway is not deployed yet (HTTP 404) the card shows "Coming soon"
      and the rest of the Connector page is unaffected.
@@ -56,6 +65,53 @@ const BADGE={
 };
 const ICON='<path d="M10 13a4 4 0 0 1 0-5.7l2-2a4 4 0 0 1 5.7 5.7l-1 1"/><path d="M14 11a4 4 0 0 1 0 5.7l-2 2a4 4 0 0 1-5.7-5.7l1-1"/>';
 const SAMPLE='{\n  "id": "evt_01H...",\n  "event": "lead.created",\n  "created_at": "2026-11-04T10:00:00Z",\n  "data": { ... }\n}';
+
+/* ---------- Receive payments: one entry per payment gateway ---------- */
+const RX=[
+  {key:'generic',name:'Generic',secret:false,secretName:'Signing secret',
+   intro:'Works with any platform, through Zapier, Make, n8n or your own server.',
+   steps:[
+     'Create an endpoint below and copy the URL and the signing secret.',
+     'In Zapier, Make or n8n, catch the payment from your gateway, then send a POST to the URL with the JSON below.',
+     'Add the header X-GLIME-Signature: sha256= followed by the HMAC-SHA256 of the raw body, made with your signing secret.'
+   ],
+   ref:'{\n  "event": "payment.paid",\n  "order_number": "GLM-XXXXXXXX",\n  "amount": 299,\n  "currency": "INR",\n  "payment_id": "pay_123"\n}'},
+  {key:'stripe',name:'Stripe',secret:true,secretName:'Stripe signing secret',secretLabel:'Stripe signing secret (starts with whsec_)',
+   intro:'Stripe tells GLIME when a customer has paid.',
+   steps:[
+     'Create an endpoint below and copy its URL.',
+     'In Stripe open Developers, then Webhooks, then Add endpoint. Paste the URL and choose checkout.session.completed (and payment_intent.succeeded if you use it).',
+     'Copy the signing secret that Stripe shows and paste it in the box below.'
+   ],
+   ref:'Put the GLIME order number (GLM-...) in client_reference_id, or in metadata.glime_order_number.'},
+  {key:'cashfree',name:'Cashfree',secret:true,secretName:'Cashfree secret key',secretLabel:'Cashfree secret key',
+   intro:'Cashfree tells GLIME when a customer has paid.',
+   warn:'Cashfree signs webhooks with your Cashfree secret key. Use this only if you are comfortable giving GLIME that key. Otherwise use the Generic tab.',
+   steps:[
+     'Create an endpoint below and copy its URL.',
+     'In the Cashfree dashboard add the URL as a webhook for payment success.',
+     'Paste your Cashfree secret key in the box below.'
+   ],
+   ref:'Use the GLIME order number (GLM-...) as the Cashfree order id, or put it in order_tags.glime_order_number.'},
+  {key:'phonepe',name:'PhonePe',secret:true,secretName:'Webhook username:password',secretLabel:'Webhook username:password (for example myuser:MyPass123)',
+   intro:'PhonePe tells GLIME when a customer has paid.',
+   steps:[
+     'In the PhonePe business dashboard create a webhook and choose the option that uses a username and password. Set any username and password.',
+     'Create an endpoint below, enter that username and password as username:password, and copy its URL.',
+     'Paste the URL into the PhonePe webhook and save.'
+   ],
+   ref:'Use the GLIME order number (GLM-...) as the merchant order id. GLIME acts on the checkout.order.completed event.'},
+  {key:'paypal',name:'PayPal',secret:true,secretName:'PayPal Webhook ID',secretLabel:'PayPal Webhook ID',
+   intro:'PayPal tells GLIME when a customer has paid.',
+   steps:[
+     'Create an endpoint below and copy its URL.',
+     'In PayPal Developer open your app, add a webhook with this URL and choose Payment capture completed.',
+     'Copy the Webhook ID that PayPal shows and paste it in the box below.'
+   ],
+   ref:'Put the GLIME order number (GLM-...) in custom_id or invoice_id of the payment.'},
+  {key:'other',name:'PayU / Paytm',other:true}
+];
+const RX_OTHER='PayU and Paytm sign their webhooks with the merchant key or salt that is also used to start payments, so GLIME does not take them directly. Use the Generic tab: in Zapier, Make or n8n catch the payment from PayU or Paytm and send it to your Generic URL.';
 
 function esc(v){
   return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -112,7 +168,18 @@ function checkUrl(raw){
   return '';
 }
 
-/* ---------- API client ---------- */
+function injectRxStyles(){
+  if(document.getElementById('gcx-rx-style'))return;
+  const s=document.createElement('style');
+  s.id='gcx-rx-style';
+  s.textContent='.gcx-tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px;-webkit-overflow-scrolling:touch}'+
+    '.gcx-tab{flex:0 0 auto;padding:8px 12px;border-radius:999px;border:1px solid var(--gcx-bd);background:transparent;color:var(--gcx-mu);font:inherit;font-size:.8rem;font-weight:600;cursor:pointer}'+
+    '.gcx-tab.on{color:#04120c;background:linear-gradient(90deg,#4ef2a8,#4de8f5);border-color:transparent}'+
+    '.gcx-rx-item{border:1px solid var(--gcx-bd);border-radius:12px;padding:12px;margin-bottom:12px}';
+  document.head.appendChild(s);
+}
+
+/* ---------- API client: Send events ---------- */
 function createApi(sb,cfg){
   cfg=cfg||{};
   const base=String(cfg.supabaseUrl||sb.supabaseUrl||'').replace(/\/$/,'');
@@ -151,7 +218,36 @@ function createApi(sb,cfg){
   };
 }
 
-/* ---------- Rendering ---------- */
+/* ---------- API client: Receive payments (SQL functions from setup.sql, run as the signed-in user) ---------- */
+function rxFriendly(raw){
+  const m=String(raw||'');
+  if(m.indexOf('TOO_MANY_ENDPOINTS')>=0)return 'You can have up to 10 active endpoints. Delete one first.';
+  if(m.indexOf('PHONEPE_USER_PASSWORD_REQUIRED')>=0)return 'Enter it as username:password.';
+  if(m.indexOf('SIGNING_SECRET_REQUIRED')>=0)return 'Paste the secret from your payment provider (at least 8 characters).';
+  if(m.indexOf('NOT_FOUND')>=0)return 'This endpoint no longer exists. Refresh the list.';
+  if(m.indexOf('CLIENT_NOT_FOUND')>=0)return 'Your account could not be found. Please sign in again.';
+  if(/could not find the function|does not exist|PGRST202|42883/i.test(m))return 'Payment webhooks are not set up yet.';
+  return 'Request failed. Please try again.';
+}
+function createRxApi(sb){
+  async function rpc(name,args){
+    let r;
+    try{r=await sb.rpc(name,args||{});}
+    catch(e){throw mkErr('Unable to reach GLIME right now. Please try again.','NETWORK');}
+    if(r&&r.error)throw mkErr(rxFriendly(r.error.message||r.error.code||''),r.error.code||'RPC');
+    return r?r.data:null;
+  }
+  return {
+    list:()=>rpc('list_client_payment_webhooks'),
+    create:(p,label,secret)=>rpc('create_client_payment_webhook',{p_provider:p,p_label:label||null,p_signing_secret:secret||null}),
+    reveal:(id)=>rpc('get_client_payment_webhook_secret',{p_id:id}),
+    rotate:(id)=>rpc('rotate_client_payment_webhook_secret',{p_id:id}),
+    setStatus:(id,s)=>rpc('set_client_payment_webhook_status',{p_id:id,p_status:s}),
+    remove:(id)=>rpc('delete_client_payment_webhook',{p_id:id})
+  };
+}
+
+/* ---------- Rendering: Send events ---------- */
 function secretBlock(secret){
   return `
     <div class="gcx-status ok" role="status">Copy your signing secret now. For safety it is shown only once.</div>
@@ -233,7 +329,84 @@ function panelHtml(st){
     </div>`;
 }
 
-function cardHtml(st){
+/* ---------- Rendering: Receive payments ---------- */
+function rxItemHtml(rx,w,def,base){
+  const url=base+String(w.webhook_path||'');
+  const shown=rx.revealed[w.id];
+  const paused=w.status!=='active';
+  const dis=rx.busy?'disabled':'';
+  const hint=String(w.secret_hint||'').replace(/^\.+/,'');
+  return `
+    <div class="gcx-rx-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+        <b>${esc(w.label||(def.name+' endpoint'))}</b>
+        <span class="gcx-badge ${paused?'':'on'}">${paused?'Paused':'Active'}</span>
+      </div>
+      <div class="gcx-label">Webhook URL</div>
+      <div class="gcx-ep" style="margin-bottom:10px">
+        <code>${esc(url)}</code>
+        <button type="button" class="gcx-btn" data-rx-act="copy" data-rx-copy="${esc(url)}" aria-label="Copy webhook URL">Copy</button>
+      </div>
+      <div class="gcx-label">${esc(def.secretName)}</div>
+      ${shown
+        ?`<div class="gcx-ep" style="margin-bottom:8px"><code>${esc(shown)}</code><button type="button" class="gcx-btn" data-rx-act="copy" data-rx-copy="${esc(shown)}" aria-label="Copy secret">Copy</button></div>`
+        :`<p class="gcx-small" style="margin-top:0">Ends in <b>${esc(hint)}</b></p>`}
+      <p class="gcx-small">${w.last_event_at?'Last payment '+esc(fmtTime(w.last_event_at)):'No payment received yet.'}</p>
+      <div class="gcx-cal-bar" style="margin-bottom:0">
+        <button type="button" class="gcx-btn" data-rx-act="reveal" data-rx-id="${esc(w.id)}" ${dis}>${shown?'Hide secret':'Show secret'}</button>
+        <button type="button" class="gcx-btn" data-rx-act="status" data-rx-id="${esc(w.id)}" data-rx-to="${paused?'active':'disabled'}" ${dis}>${paused?'Resume':'Pause'}</button>
+        ${def.key==='generic'?`<button type="button" class="gcx-btn" data-rx-act="rotate" data-rx-id="${esc(w.id)}" ${dis}>New secret</button>`:''}
+        <button type="button" class="gcx-btn danger" data-rx-act="delete" data-rx-id="${esc(w.id)}" ${dis}>Delete</button>
+      </div>
+    </div>`;
+}
+
+function rxPanelHtml(st,base){
+  const rx=st.rx;
+  const def=RX.find(p=>p.key===rx.provider)||RX[0];
+  const tabs='<div class="gcx-tabs" role="tablist" aria-label="Payment gateways">'+RX.map(p=>
+    `<button type="button" class="gcx-tab${p.key===def.key?' on':''}" role="tab" aria-selected="${p.key===def.key?'true':'false'}" data-rx-tab="${esc(p.key)}">${esc(p.name)}</button>`).join('')+'</div>';
+  const msg=rx.msg?`<div class="gcx-status ${rx.msg.type==='ok'?'ok':'err'}" role="${rx.msg.type==='ok'?'status':'alert'}">${esc(rx.msg.text)}</div>`:'';
+
+  if(def.other){
+    return `<div class="gcx-panel" id="gcx-panel-webhook">${tabs}<div class="gcx-status" role="status">${esc(RX_OTHER)}</div></div>`;
+  }
+
+  const dis=rx.busy?'disabled':'';
+  const mine=rx.list.filter(w=>w.provider===def.key);
+  let list='';
+  if(rx.loading&&!rx.loaded)list='<div class="gcx-status" role="status">Loading…</div>';
+  else if(rx.err)list=`<div class="gcx-status err" role="alert">${esc(rx.err)}</div><div class="gcx-cal-bar"><button type="button" class="gcx-btn" data-rx-act="reload">Retry</button></div>`;
+  else list=mine.map(w=>rxItemHtml(rx,w,def,base)).join('');
+
+  return `
+    <div class="gcx-panel" id="gcx-panel-webhook">
+      ${tabs}
+      <p class="gcx-small" style="margin-top:0">${esc(def.intro)} The money goes straight to your own account. GLIME only marks the order as paid.</p>
+      ${def.warn?`<div class="gcx-status err" role="note">${esc(def.warn)}</div>`:''}
+      <ol class="gcx-steps">${def.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+      <p class="gcx-small">${def.key==='generic'?'':'Each payment must carry your GLIME order number. '}</p>
+      <pre style="margin:0 0 12px;padding:10px 12px;border-radius:9px;background:#090d13;border:1px solid var(--gcx-bd);font-size:.7rem;color:#cbd5e1;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-family:ui-monospace,Consolas,monospace">${esc(def.ref)}</pre>
+      ${msg}
+      ${list}
+      <p class="gcx-panel-title" style="margin-top:12px">Add an endpoint</p>
+      <label class="gcx-field"><span class="gcx-label">Name (optional)</span><input class="gcx-input" data-rx-field="label" type="text" maxlength="80" autocomplete="off" placeholder="For example: My ${esc(def.name)} shop" value="${esc(rx.form.label)}" ${dis}></label>
+      ${def.secret?`<label class="gcx-field"><span class="gcx-label">${esc(def.secretLabel)}</span><input class="gcx-input" data-rx-field="secret" type="password" maxlength="500" autocomplete="off" spellcheck="false" value="${esc(rx.form.secret)}" ${dis}></label>`:''}
+      <div class="gcx-cal-bar" style="margin-bottom:0">
+        <button type="button" class="gcx-btn primary" data-rx-act="create" ${dis}>${rx.busy==='create'?'Creating…':'Create endpoint'}</button>
+      </div>
+      <p class="gcx-small">Anyone with the secret can only check messages. It cannot charge, refund or read anything in your payment account.</p>
+    </div>`;
+}
+
+function tabsHtml(st){
+  return '<div class="gcx-tabs" role="tablist" aria-label="Webhook type">'+
+    `<button type="button" class="gcx-tab${st.tab==='send'?' on':''}" role="tab" aria-selected="${st.tab==='send'?'true':'false'}" data-wh-tab="send">Send events</button>`+
+    `<button type="button" class="gcx-tab${st.tab==='receive'?' on':''}" role="tab" aria-selected="${st.tab==='receive'?'true':'false'}" data-wh-tab="receive">Receive payments</button>`+
+    '</div>';
+}
+
+function cardHtml(st,base){
   const state=st.state;
   const b=BADGE[state]||BADGE.error;
   const stable=state==='connected'||state==='paused'||state==='not_connected';
@@ -265,7 +438,7 @@ function cardHtml(st){
     meta=`<p class="gcx-meta warn">${esc(st.loadErr||'Status could not be loaded.')}</p>`;
   }
 
-  const panel=(st.open&&stable)?panelHtml(st):'';
+  const panel=(st.open&&stable)?tabsHtml(st)+(st.tab==='receive'?rxPanelHtml(st,base):panelHtml(st)):'';
   return `
   <article class="gcx-card${st.open&&stable?' wide':''}" data-provider="webhook" data-state="${esc(state)}">
     <div class="gcx-top">
@@ -275,7 +448,7 @@ function cardHtml(st){
         <span class="gcx-badge ${b[1]}">${esc(b[0])}</span>
       </div>
     </div>
-    <p class="gcx-desc">Send new leads, orders, payments and messages from GLIME to Zapier, Make, n8n or your own server, so you can connect thousands of other apps.</p>
+    <p class="gcx-desc">Send new leads, orders, payments and messages from GLIME to Zapier, Make, n8n or your own server, so you can connect thousands of other apps. You can also receive payments from your own payment gateway.</p>
     ${meta}
     <div class="gcx-actions">${action}</div>
     ${panel}
@@ -291,13 +464,18 @@ function mount(container,opts){
   if(!sb||!UI)return;
   container._gcxWh=true;
   UI.injectStyles();
+  injectRxStyles();
   container.classList.add('gcx');
 
+  const base=String(opts.supabaseUrl||sb.supabaseUrl||'').replace(/\/$/,'');
   const api=createApi(sb,{supabaseUrl:opts.supabaseUrl,apiKey:opts.apiKey});
+  const rxApi=createRxApi(sb);
   const st={
     state:'loading',info:null,loadErr:'',open:false,busy:'',msg:null,banner:null,
     form:{url:'',events:DEFAULT_EVENTS.slice()},secret:null,
-    deliveries:null,delLoading:false,delErr:''
+    deliveries:null,delLoading:false,delErr:'',
+    tab:'send',
+    rx:{loaded:false,loading:false,list:[],err:'',provider:'generic',busy:'',msg:null,revealed:{},form:{label:'',secret:''}}
   };
   const alive=()=>container.isConnected;
 
@@ -308,7 +486,7 @@ function mount(container,opts){
       <section class="gcx-group" aria-label="Automation">
         <h3 class="gcx-group-title">Automation</h3>
         ${banner}
-        <div class="gcx-grid">${cardHtml(st)}</div>
+        <div class="gcx-grid">${cardHtml(st,base)}</div>
       </section>`;
   }
 
@@ -354,9 +532,30 @@ function mount(container,opts){
     st.delLoading=false;draw();
   }
 
+  /* Receive payments: list of the client's endpoints. */
+  async function rxLoad(quiet){
+    const rx=st.rx;
+    if(rx.loading)return;
+    rx.loading=true;rx.err='';
+    if(!quiet)draw();
+    try{
+      const rows=await rxApi.list();
+      rx.list=Array.isArray(rows)?rows:[];
+      rx.loaded=true;
+    }catch(e){
+      console.error('GLIME payment webhooks list error:',e);
+      rx.err=cleanMsg(e);
+    }
+    rx.loading=false;draw();
+  }
+
   container.addEventListener('input',ev=>{
     const t=ev.target;
     if(t&&t.matches&&t.matches('[data-wh-field="url"]'))st.form.url=t.value;
+    if(t&&t.matches&&t.matches('[data-rx-field]')){
+      const k=t.dataset.rxField;
+      if(k==='label'||k==='secret')st.rx.form[k]=t.value;
+    }
   });
 
   container.addEventListener('change',ev=>{
@@ -366,6 +565,131 @@ function mount(container,opts){
     const i=st.form.events.indexOf(key);
     if(t.checked&&i<0)st.form.events.push(key);
     if(!t.checked&&i>=0)st.form.events.splice(i,1);
+  });
+
+  /* Tabs and everything on the Receive payments tab. */
+  container.addEventListener('click',async ev=>{
+    const top=ev.target.closest('[data-wh-tab]');
+    if(top&&container.contains(top)){
+      st.tab=top.dataset.whTab==='receive'?'receive':'send';
+      st.rx.msg=null;st.msg=null;
+      draw();
+      if(st.tab==='receive'&&!st.rx.loaded)rxLoad(false);
+      return;
+    }
+    const pt=ev.target.closest('[data-rx-tab]');
+    if(pt&&container.contains(pt)){
+      st.rx.provider=pt.dataset.rxTab;
+      st.rx.msg=null;
+      st.rx.form={label:'',secret:''};
+      draw();
+      return;
+    }
+    const b=ev.target.closest('[data-rx-act]');
+    if(!b||!container.contains(b))return;
+    const rx=st.rx;
+    const act=b.dataset.rxAct;
+    const id=b.dataset.rxId||'';
+
+    if(act==='copy'){
+      const ok=await copyText(b.dataset.rxCopy||'');
+      const old=b.textContent;
+      b.textContent=ok?'Copied':'Copy failed';
+      setTimeout(()=>{if(b.isConnected)b.textContent=old;},1600);
+      return;
+    }
+    if(act==='reload'){await rxLoad(false);return;}
+    if(rx.busy)return;
+
+    if(act==='create'){
+      const def=RX.find(p=>p.key===rx.provider);
+      if(!def||def.other)return;
+      const label=rx.form.label.trim();
+      const secret=rx.form.secret.trim();
+      if(def.secret){
+        if(secret.length<8){rx.msg={type:'err',text:'Paste the secret from your payment provider (at least 8 characters).'};draw();return;}
+        if(def.key==='phonepe'&&secret.indexOf(':')<1){rx.msg={type:'err',text:'Enter it as username:password.'};draw();return;}
+      }
+      rx.busy='create';rx.msg=null;draw();
+      try{
+        const r=await rxApi.create(def.key,label,def.secret?secret:null);
+        rx.busy='';
+        if(r&&r.id&&r.signing_secret)rx.revealed[r.id]=String(r.signing_secret);
+        rx.form={label:'',secret:''};
+        rx.msg={type:'ok',text:def.secret?'Endpoint created. Copy the URL into your payment provider.':'Endpoint created. Copy the URL and your signing secret now.'};
+        rx.loading=false;
+        await rxLoad(true);
+      }catch(e){
+        console.error('GLIME payment webhook create error:',e);
+        rx.busy='';rx.msg={type:'err',text:cleanMsg(e)};draw();
+      }
+      return;
+    }
+
+    if(act==='reveal'){
+      if(!id)return;
+      if(rx.revealed[id]){delete rx.revealed[id];draw();return;}
+      rx.busy='reveal';rx.msg=null;draw();
+      try{
+        const s=await rxApi.reveal(id);
+        rx.revealed[id]=String(s||'');
+      }catch(e){
+        console.error('GLIME payment webhook reveal error:',e);
+        rx.msg={type:'err',text:cleanMsg(e)};
+      }
+      rx.busy='';draw();
+      return;
+    }
+
+    if(act==='status'){
+      if(!id)return;
+      const to=b.dataset.rxTo==='active'?'active':'disabled';
+      rx.busy='status';rx.msg=null;draw();
+      try{
+        await rxApi.setStatus(id,to);
+        rx.msg={type:'ok',text:to==='active'?'Endpoint resumed.':'Endpoint paused. Payments sent to it are ignored until you resume it.'};
+        rx.busy='';rx.loading=false;
+        await rxLoad(true);
+      }catch(e){
+        console.error('GLIME payment webhook status error:',e);
+        rx.busy='';rx.msg={type:'err',text:cleanMsg(e)};draw();
+      }
+      return;
+    }
+
+    if(act==='rotate'){
+      if(!id)return;
+      if(!(await gdConfirm('Create a new signing secret? The old secret stops working right away, so update your Zapier, Make or server before the next payment.',{title:'Create new secret',confirmText:'Create new secret',danger:true})))return;
+      rx.busy='rotate';rx.msg=null;draw();
+      try{
+        const s=await rxApi.rotate(id);
+        rx.revealed[id]=String(s||'');
+        rx.msg={type:'ok',text:'New signing secret created. Copy it now.'};
+        rx.busy='';rx.loading=false;
+        await rxLoad(true);
+      }catch(e){
+        console.error('GLIME payment webhook rotate error:',e);
+        rx.busy='';rx.msg={type:'err',text:cleanMsg(e)};draw();
+      }
+      return;
+    }
+
+    if(act==='delete'){
+      if(!id)return;
+      if(!(await gdConfirm('Delete this endpoint? Its URL stops working at once, so remove it from your payment provider too.',{title:'Delete endpoint',confirmText:'Delete',danger:true})))return;
+      rx.busy='delete';rx.msg=null;draw();
+      try{
+        await rxApi.remove(id);
+        delete rx.revealed[id];
+        rx.msg={type:'ok',text:'Endpoint deleted.'};
+        rx.busy='';rx.loading=false;
+        await rxLoad(true);
+      }catch(e){
+        console.error('GLIME payment webhook delete error:',e);
+        rx.busy='';rx.msg={type:'err',text:cleanMsg(e)};draw();
+      }
+      return;
+    }
   });
 
   container.addEventListener('click',async ev=>{
@@ -385,11 +709,12 @@ function mount(container,opts){
     if(act==='refresh-log'){await loadDeliveries();return;}
 
     if(act==='toggle'){
-      st.open=!st.open;st.msg=null;st.banner=null;
+      st.open=!st.open;st.msg=null;st.banner=null;st.rx.msg=null;
       if(st.open){resetForm();}
-      else{st.secret=null;}
+      else{st.secret=null;st.rx.revealed={};st.rx.form={label:'',secret:''};}
       draw();
-      if(st.open&&saved&&!st.deliveries)loadDeliveries();
+      if(st.open&&st.tab==='receive'&&!st.rx.loaded)rxLoad(false);
+      if(st.open&&st.tab==='send'&&saved&&!st.deliveries)loadDeliveries();
       const again=container.querySelector('[data-wh-act="toggle"]');
       if(again)again.focus();
       return;

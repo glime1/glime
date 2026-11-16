@@ -19,7 +19,28 @@
 
    Storage = the same tables the Services wizard uses:
    offers, offer_versions, offer_prices, offer_media,
-   offer_categories. No schema changes.
+   offer_categories, offer_variants. No schema changes.
+
+   Language policy: English is the main language (template and
+   headings). Only a small set of Hindi headings is also
+   recognised (see HINDI_ALIASES, easy to delete).
+
+   v2 changes
+   - Column headings: exact match in alias priority order
+     (English first), then "Item Name (required)" style
+     headings, optional small Hindi set, clearer error that
+     lists the headings it found.
+   - CSV encoding: UTF-8 / UTF-16 detected; non-UTF-8 files
+     get a clear warning instead of silent broken text.
+   - Currency: INR, USD, GBP, AED and EUR (same list as the
+     Services wizard). Anything else is blocked with a clear
+     message instead of being saved as INR. Note: payment links
+     (order-payment-link) still support INR only.
+   - Product columns (Amazon style): sku, stock, sizes,
+     colors, brand. Sizes/colours become variants and are
+     added to the description; sku and stock are kept in
+     offer_versions.metadata.catalogue_import (stock is a
+     snapshot, NOT live-synced).
 
    Load order: after services.js and the other services addons.
 ========================================================= */
@@ -37,8 +58,14 @@
   var AI_MAX_FILES = 8;
   var AI_MAX_BYTES = 10 * 1024 * 1024;
   var MAX_PHOTOS_PER_ROW = 5;
+  var MAX_VARIANTS_PER_ROW = 30;
   var CONCURRENCY = 4;
   var XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+
+  /* Same currencies as the Services wizard (#fCurrency in services.html).
+     To add one more: add it here, in the services.html select and in
+     CURRENCY_SYMBOLS in services-industry-addon.js. */
+  var SUPPORTED_CURRENCIES = ['INR', 'USD', 'GBP', 'AED', 'EUR'];
 
   var byId = function (id) { return document.getElementById(id); };
 
@@ -82,6 +109,13 @@
 
   function hkey(s) {
     return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, '');
+  }
+
+  /* heading text -> comparison key (keeps Devanagari for the small Hindi set) */
+  function hkeyH(s) {
+    var t = String(s == null ? '' : s);
+    try { t = t.normalize('NFC'); } catch (_) {}
+    return t.toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/g, '');
   }
 
   /* keeps Devanagari so Hindi names still match */
@@ -150,6 +184,36 @@
     });
   }
 
+  /* Reads a CSV as text and works out its encoding.
+     UTF-8 (with or without BOM) and UTF-16 are read correctly.
+     Anything else (usually Excel's plain "CSV" on Windows, which is
+     ANSI) is read as Windows-1252 and flagged as lossy, because
+     Hindi letters are already lost inside such a file. */
+  async function readAsTextSmart(file) {
+    if (typeof TextDecoder === 'undefined') {
+      return { text: await readAsText(file), lossy: false };
+    }
+
+    var u8 = new Uint8Array(await readAsArrayBuffer(file));
+    var enc = 'utf-8';
+    var lossy = false;
+
+    if (u8.length >= 2 && u8[0] === 0xFF && u8[1] === 0xFE) {
+      enc = 'utf-16le';
+    } else if (u8.length >= 2 && u8[0] === 0xFE && u8[1] === 0xFF) {
+      enc = 'utf-16be';
+    } else {
+      try {
+        new TextDecoder('utf-8', { fatal: true }).decode(u8);
+      } catch (_) {
+        enc = 'windows-1252';
+        lossy = true;
+      }
+    }
+
+    return { text: new TextDecoder(enc).decode(u8), lossy: lossy };
+  }
+
   function blobToBase64(blob) {
     return new Promise(function (resolve, reject) {
       var r = new FileReader();
@@ -196,12 +260,13 @@
 
   /* =======================================================
      COLUMN ALIASES (Excel / CSV)
+     English first. Order inside a list = priority.
   ======================================================= */
 
   var ALIASES = {
     name: ['name', 'servicename', 'service', 'productname', 'product', 'itemname', 'item', 'title', 'offering', 'servicetitle', 'producttitle'],
-    price: ['price', 'amount', 'rate', 'cost', 'sellingprice', 'saleprice', 'fee', 'fees', 'charges', 'priceinr', 'pricerupees', 'rs', 'inr'],
-    description: ['description', 'details', 'fulldescription', 'about', 'desc', 'longdescription'],
+    price: ['price', 'amount', 'rate', 'cost', 'sellingprice', 'saleprice', 'fee', 'fees', 'charges', 'priceinr', 'pricerupees', 'rs', 'inr', 'yourprice', 'offerprice', 'listprice', 'mrp'],
+    description: ['description', 'details', 'fulldescription', 'about', 'desc', 'longdescription', 'itemdescription', 'productdescription'],
     short: ['shortdescription', 'shortdesc', 'summary', 'tagline', 'shortdetails'],
     category: ['category', 'categoryname', 'group', 'section', 'collection'],
     type: ['type', 'catalogtype', 'itemtype', 'kind'],
@@ -210,20 +275,70 @@
     price_max: ['pricemax', 'maxprice', 'maximumprice', 'priceto', 'maxamount'],
     billing: ['billingperiod', 'billing', 'period', 'recurring'],
     duration: ['duration', 'durationminutes', 'minutes', 'durationmin', 'durationinminutes'],
+    sku: ['sku', 'sellersku', 'merchantsku', 'itemsku', 'productsku', 'productcode', 'itemcode', 'code', 'asin', 'productid'],
+    stock: ['stock', 'quantity', 'qty', 'stockquantity', 'stockqty', 'inventory', 'availablestock', 'unitsinstock', 'available'],
+    sizes: ['sizes', 'size', 'sizeoptions', 'availablesizes', 'variantsize'],
+    colors: ['colors', 'colours', 'color', 'colour', 'coloroptions', 'colouroptions', 'availablecolors', 'availablecolours'],
+    brand: ['brand', 'brandname', 'manufacturer', 'make'],
     photos: ['photos', 'photo', 'image', 'images', 'imageurl', 'imageurls', 'picture', 'pictures', 'img', 'photourl', 'photourls', 'media', 'imagelink', 'imagelinks']
   };
+
+  /* Small optional Hindi set. English stays the standard.
+     Delete this block if you do not want Hindi headings. */
+  var HINDI_ALIASES = {
+    name: ['नाम', 'सेवा', 'सेवाकानाम', 'उत्पाद', 'प्रोडक्ट', 'आइटम'],
+    price: ['कीमत', 'क़ीमत', 'मूल्य', 'दाम', 'रेट', 'शुल्क'],
+    description: ['विवरण', 'जानकारी', 'डिस्क्रिप्शन'],
+    category: ['श्रेणी', 'कैटेगरी', 'केटेगरी'],
+    duration: ['अवधि'],
+    sizes: ['साइज़', 'साइज', 'आकार'],
+    colors: ['रंग', 'कलर'],
+    stock: ['स्टॉक', 'मात्रा'],
+    brand: ['ब्रांड'],
+    photos: ['फोटो', 'तस्वीर', 'इमेज']
+  };
+
+  var ALIAS_KEYS = {};
+
+  Object.keys(ALIASES).forEach(function (f) {
+    ALIAS_KEYS[f] = ALIASES[f].concat(HINDI_ALIASES[f] || []).map(hkeyH).filter(Boolean);
+  });
 
   function mapColumns(headerRow) {
     var map = {};
     var used = {};
+    var keys = (headerRow || []).map(hkeyH);
+    var fields = Object.keys(ALIAS_KEYS);
 
-    Object.keys(ALIASES).forEach(function (field) {
-      for (var i = 0; i < headerRow.length; i++) {
-        if (used[i]) continue;
-        if (ALIASES[field].indexOf(hkey(headerRow[i])) !== -1) {
-          map[field] = i;
-          used[i] = true;
-          break;
+    /* pass 1: exact heading, in alias priority order (English first) */
+    fields.forEach(function (field) {
+      var list = ALIAS_KEYS[field];
+
+      for (var a = 0; a < list.length && map[field] === undefined; a++) {
+        for (var i = 0; i < keys.length; i++) {
+          if (!used[i] && keys[i] === list[a]) {
+            map[field] = i;
+            used[i] = true;
+            break;
+          }
+        }
+      }
+    });
+
+    /* pass 2: headings like "Item Name (required)" start with a known alias */
+    fields.forEach(function (field) {
+      if (map[field] !== undefined) return;
+      var list = ALIAS_KEYS[field];
+
+      for (var a = 0; a < list.length && map[field] === undefined; a++) {
+        if (list[a].length < 5) continue;
+
+        for (var i = 0; i < keys.length; i++) {
+          if (!used[i] && keys[i].length > list[a].length && keys[i].indexOf(list[a]) === 0) {
+            map[field] = i;
+            used[i] = true;
+            break;
+          }
         }
       }
     });
@@ -285,11 +400,19 @@
     return rows;
   }
 
+  /* returns { matrix, notes } */
   async function readSheetFile(file) {
     var name = String(file.name || '').toLowerCase();
 
     if (/\.csv$|\.txt$/.test(name) || file.type === 'text/csv') {
-      return parseCsv(await readAsText(file));
+      var t = await readAsTextSmart(file);
+      var notes = [];
+
+      if (t.lossy) {
+        notes.push('This CSV is not saved as UTF-8, so Hindi letters may already be lost inside it. English text is fine. For Hindi, save it as "CSV UTF-8" in Excel, or upload the .xlsx file instead.');
+      }
+
+      return { matrix: parseCsv(t.text), notes: notes };
     }
 
     if (/\.xlsx$|\.xls$|\.xlsm$/.test(name)) {
@@ -306,7 +429,7 @@
 
       if (!ws) throw new Error('The Excel file has no sheets.');
 
-      return lib.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+      return { matrix: lib.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' }), notes: [] };
     }
 
     throw new Error('Please upload an Excel (.xlsx, .xls) or CSV file.');
@@ -319,7 +442,7 @@
     var s = String(v).trim();
     if (!s) return '';
 
-    s = s.replace(/₹|rs\.?|inr|\/-|\$|usd/gi, '').replace(/,/g, '').trim();
+    s = s.replace(/₹|rs\.?|inr|\/-|\$|usd|£|€|gbp|eur|aed|د\.إ/gi, '').replace(/,/g, '').trim();
 
     var m = s.match(/-?\d+(\.\d+)?/);
     return m ? m[0] : '';
@@ -334,10 +457,38 @@
     return '';
   }
 
-  function normCurrency(v) {
-    var s = String(v || '').toLowerCase();
-    if (/usd|\$|dollar/.test(s)) return 'USD';
-    return 'INR';
+  /* Currency text -> ISO code.
+     strict = true is used on price cells: only clear symbols/codes count,
+     so plain numbers never produce a currency. */
+  function currencyFromText(v, strict) {
+    var s = String(v == null ? '' : v).trim();
+    if (!s) return '';
+
+    var code = s.match(/(?:^|[^a-z])(inr|usd|gbp|eur|aed)(?![a-z])/i);
+    if (code) return code[1].toUpperCase();
+
+    if (/₹|(?:^|[^a-z])rs(?![a-z])/i.test(s)) return 'INR';
+    if (/\$/.test(s)) return 'USD';
+    if (/£/.test(s)) return 'GBP';
+    if (/€/.test(s)) return 'EUR';
+    if (/د\.إ/.test(s)) return 'AED';
+
+    if (strict) return '';
+
+    if (/rupee/i.test(s)) return 'INR';
+    if (/dollar/i.test(s)) return 'USD';
+    if (/pound/i.test(s)) return 'GBP';
+    if (/euro/i.test(s)) return 'EUR';
+    if (/dirham/i.test(s)) return 'AED';
+
+    if (/^[a-z]{3}$/i.test(s)) return s.toUpperCase();
+
+    return s.toUpperCase().slice(0, 12);
+  }
+
+  /* empty currency column -> look at the price cell ("$20", "£15"), else INR */
+  function detectCurrency(rawCurrency, rawPrice) {
+    return currencyFromText(rawCurrency, false) || currencyFromText(rawPrice, true) || 'INR';
   }
 
   function normBilling(v) {
@@ -369,6 +520,36 @@
       .filter(Boolean);
   }
 
+  /* "S, M / L; XL" -> ['S','M','L','XL'] (no repeats, max 20) */
+  function splitList(v) {
+    var seen = {};
+
+    return String(v == null ? '' : v)
+      .split(/[,;|\/\n]+/)
+      .map(function (x) { return x.trim(); })
+      .filter(function (x) {
+        var k = x.toLowerCase();
+        if (!x || seen[k]) return false;
+        seen[k] = true;
+        return true;
+      })
+      .slice(0, 20)
+      .map(function (x) { return x.slice(0, 40); });
+  }
+
+  function cleanStock(v) {
+    if (v == null) return '';
+    if (typeof v === 'number') return isFinite(v) && v >= 0 ? Math.floor(v) : '';
+
+    var s = String(v).trim();
+    if (!s) return '';
+    if (/out\s*of\s*stock|sold\s*out|unavailable/i.test(s)) return 0;
+    if (/^-/.test(s)) return '';
+
+    var m = s.replace(/,/g, '').match(/\d+/);
+    return m ? Number(m[0]) : '';
+  }
+
   function rowFromRaw(raw) {
     var r = {
       id: randomId(),
@@ -377,13 +558,18 @@
       price: cleanPrice(raw.price),
       price_max: cleanPrice(raw.price_max),
       price_type: normPriceType(raw.price_type),
-      currency: normCurrency(raw.currency),
+      currency: detectCurrency(raw.currency, raw.price),
       billing: normBilling(raw.billing),
       category: String(raw.category || '').trim().slice(0, 60),
       type: normType(raw.type),
       short: String(raw.short || '').trim().slice(0, 300),
       description: String(raw.description || '').trim().slice(0, 4000),
       duration: cleanPrice(raw.duration),
+      sku: String(raw.sku == null ? '' : raw.sku).trim().slice(0, 80),
+      stock: cleanStock(raw.stock),
+      sizes: splitList(raw.sizes),
+      colors: splitList(raw.colors),
+      brand: String(raw.brand == null ? '' : raw.brand).trim().slice(0, 80),
       photos: splitPhotos(raw.photos),
       issues: [],
       valid: true,
@@ -422,9 +608,16 @@
     var map = mapColumns(data[headerIdx]);
 
     if (map.name === undefined) {
+      var found = data[headerIdx]
+        .map(function (c) { return String(c == null ? '' : c).trim(); })
+        .filter(Boolean)
+        .slice(0, 8)
+        .join(', ');
+
       return {
         rows: [],
-        error: 'Could not find a "name" column. Please use the template: the first row must have headings like name, price, description.'
+        error: 'Could not find a "name" column' + (found ? ' (headings found: ' + found + ')' : '') +
+          '. Please use the template: the first row must have headings like name, price, description.'
       };
     }
 
@@ -446,7 +639,13 @@
       out.push(rowFromRaw(raw));
     }
 
-    return { rows: out, cut: cut, missing: map.price === undefined ? 'No "price" column was found. Items will be created without a price.' : '' };
+    return {
+      rows: out,
+      cut: cut,
+      missing: map.price === undefined ? 'No "price" column was found. Items will be created without a price.' : '',
+      productLike: ['sku', 'stock', 'sizes', 'colors', 'brand'].some(function (f) { return map[f] !== undefined; }),
+      hasTypeCol: map.type !== undefined
+    };
   }
 
   function rowsFromAi(items) {
@@ -465,6 +664,41 @@
         photos: ''
       });
     });
+  }
+
+  /* description + brand / sizes / colours, so the AI can answer from it */
+  function withExtras(base, r) {
+    var out = String(base || '').trim();
+    var extra = [];
+
+    if (r.brand) extra.push('Brand: ' + r.brand);
+    if (r.sizes && r.sizes.length) extra.push('Available sizes: ' + r.sizes.join(', '));
+    if (r.colors && r.colors.length) extra.push('Available colours: ' + r.colors.join(', '));
+
+    if (!extra.length) return out.slice(0, 4000);
+
+    var tail = extra.join('\n');
+    var room = Math.max(0, 4000 - tail.length - 2);
+
+    if (out.length > room) out = out.slice(0, room);
+
+    return (out ? out + '\n\n' : '') + tail;
+  }
+
+  function variantCombos(r) {
+    var sizes = r.sizes || [];
+    var colors = r.colors || [];
+    var out = [];
+
+    if (sizes.length && colors.length) {
+      sizes.forEach(function (s) {
+        colors.forEach(function (c) { out.push(s + ' / ' + c); });
+      });
+    } else {
+      out = sizes.length ? sizes.slice() : colors.slice();
+    }
+
+    return out.slice(0, MAX_VARIANTS_PER_ROW);
   }
 
   /* =======================================================
@@ -514,6 +748,11 @@
       issues.push({ t: 'No price: will be saved as a draft without a price', c: 'warn' });
     }
 
+    if (SUPPORTED_CURRENCIES.indexOf(r.currency) === -1) {
+      issues.push({ t: 'Currency ' + r.currency + ' is not supported yet. Use ' + SUPPORTED_CURRENCIES.join(', ') + ' in your file', c: 'bad' });
+      valid = false;
+    }
+
     if (r.price_type === 'range' && valid && r.price !== '') {
       var mx = Number(r.price_max);
       if (!isFinite(mx) || mx <= Number(r.price)) {
@@ -523,6 +762,14 @@
 
     if (!String(r.description).trim() && !String(r.short).trim()) {
       issues.push({ t: 'No description yet', c: 'info' });
+    }
+
+    if (r.stock === 0) {
+      issues.push({ t: 'Stock is 0: customers may ask for something that is unavailable', c: 'warn' });
+    }
+
+    if ((r.sizes || []).length && (r.colors || []).length && r.sizes.length * r.colors.length > MAX_VARIANTS_PER_ROW) {
+      issues.push({ t: 'Too many size/colour combinations: only the first ' + MAX_VARIANTS_PER_ROW + ' become variants', c: 'warn' });
     }
 
     if (r.dup === 'exists') issues.push({ t: 'Already in your catalogue', c: 'warn' });
@@ -584,11 +831,12 @@
      TEMPLATE
   ======================================================= */
 
-  var TEMPLATE_HEAD = ['name', 'price', 'description', 'short_description', 'category', 'type', 'currency', 'price_type', 'price_max', 'billing_period', 'duration_minutes', 'photos'];
+  var TEMPLATE_HEAD = ['name', 'price', 'description', 'short_description', 'category', 'type', 'currency', 'price_type', 'price_max', 'billing_period', 'duration_minutes', 'sku', 'stock', 'sizes', 'colors', 'brand', 'photos'];
 
   var TEMPLATE_ROWS = [
-    ['Bridal Makeup', 15000, 'Full bridal makeup with hairstyling and draping.', 'Complete bridal look', 'Bridal', 'service', 'INR', 'starting_from', '', '', 180, 'bridal-makeup.jpg'],
-    ['Monthly Yoga Plan', 1999, 'Daily group classes with a certified trainer.', 'Unlimited group classes', 'Fitness', 'membership', 'INR', 'fixed', '', 'monthly', '', 'https://example.com/yoga.jpg']
+    ['Bridal Makeup', 15000, 'Full bridal makeup with hairstyling and draping.', 'Complete bridal look', 'Bridal', 'service', 'INR', 'starting_from', '', '', 180, '', '', '', '', '', 'bridal-makeup.jpg'],
+    ['Monthly Yoga Plan', 1999, 'Daily group classes with a certified trainer.', 'Unlimited group classes', 'Fitness', 'membership', 'INR', 'fixed', '', 'monthly', '', '', '', '', '', '', 'https://example.com/yoga.jpg'],
+    ['Blue Cotton Kurta', 1299, 'Soft cotton kurta with a relaxed fit.', 'Everyday cotton kurta', 'Fashion', 'product', 'INR', 'fixed', '', '', '', 'KUR-BLU-01', 25, 'S, M, L, XL', 'Blue', 'Example Brand', 'blue-cotton-kurta.jpg']
   ];
 
   async function downloadTemplate() {
@@ -608,12 +856,19 @@
         ['short_description', 'One line (optional).'],
         ['category', 'Any category name. New categories are created for you.'],
         ['type', 'service, product, course, appointment, rental, membership or package (optional).'],
-        ['currency', 'INR or USD (optional, default INR).'],
+        ['currency', 'INR, USD, GBP, AED or EUR (optional, default INR).'],
         ['price_type', 'fixed, starting_from or range (optional).'],
         ['price_max', 'Only for range prices: the highest price.'],
         ['billing_period', 'monthly or yearly for recurring items, otherwise empty.'],
         ['duration_minutes', 'Minutes, e.g. 60 (optional).'],
-        ['photos', 'Photo links (https://...) or photo file names, separated by commas. You can also name photo files like the service and add them in the next step.']
+        ['sku', 'Your product code (optional).'],
+        ['stock', 'Units in stock, e.g. 25 (optional). This is saved as it is today. GLIME does not update it automatically.'],
+        ['sizes', 'Separate with commas, e.g. S, M, L, XL (optional). Each size becomes a variant and is added to the description.'],
+        ['colors', 'Separate with commas, e.g. Blue, Black (optional).'],
+        ['brand', 'Brand name (optional).'],
+        ['photos', 'Photo links (https://...) or photo file names, separated by commas. You can also name photo files like the service and add them in the next step.'],
+        ['', ''],
+        ['Tip', 'If you save as CSV, choose "CSV UTF-8" so special letters stay correct. An .xlsx file is always safe.']
       ]);
       help['!cols'] = [{ wch: 20 }, { wch: 90 }];
       lib.utils.book_append_sheet(wb, help, 'How to fill');
@@ -752,8 +1007,8 @@
     render();
 
     try {
-      var matrix = await readSheetFile(file);
-      var res = matrixToRows(matrix);
+      var read = await readSheetFile(file);
+      var res = matrixToRows(read.matrix);
 
       S.busy = false;
 
@@ -764,12 +1019,22 @@
         return;
       }
 
+      var typeNote = '';
+
+      /* SKU / stock / size / brand columns => these are products */
+      if (res.productLike && !res.hasTypeCol && typeKeys().indexOf('product') !== -1) {
+        S.defaultType = 'product';
+        typeNote = 'Catalog type is set to Product because the file has SKU, stock, size, colour or brand columns. You can change it below.';
+      }
+
       S.rows = res.rows;
       S.aiTokens = 0;
       S.aiNote = '';
       S.sheetNote = [
         res.cut ? 'Only the first ' + MAX_ROWS + ' rows were read.' : '',
-        res.missing || ''
+        res.missing || '',
+        read.notes.join(' '),
+        typeNote
       ].filter(Boolean).join(' ');
       S.stage = 'preview';
       validateAll();
@@ -880,7 +1145,7 @@
           name: name,
           slug: (slugify(name) || 'service') + '-' + Math.random().toString(36).slice(2, 8),
           short_description: r.short || null,
-          description: r.description || null,
+          description: withExtras(r.description, r) || null,
           category_id: catId,
           status: 'draft',
           current_version_id: null
@@ -898,6 +1163,18 @@
         metadata.offer_details = { schema: 1, blocks: {}, duration_minutes: dur, faqs: [], facts: [] };
       }
 
+      /* sku / stock / brand as they were in the file (stock is a snapshot) */
+      var ci = {};
+      if (r.sku) ci.sku = r.sku;
+      if (r.stock !== '') ci.stock = r.stock;
+      if (r.brand) ci.brand = r.brand;
+
+      if (Object.keys(ci).length) {
+        ci.source = 'catalogue_import';
+        ci.imported_at = new Date().toISOString();
+        metadata.catalogue_import = ci;
+      }
+
       var v = await supabaseClient
         .from('offer_versions')
         .insert({
@@ -905,7 +1182,7 @@
           version_number: 1,
           status: 'draft',
           title: name,
-          description: r.description || r.short || null,
+          description: withExtras(r.description || r.short, r) || null,
           metadata: metadata
         })
         .select('id')
@@ -924,7 +1201,7 @@
         var p = await supabaseClient.from('offer_prices').insert({
           offer_version_id: versionId,
           amount: amount,
-          currency: r.currency === 'USD' ? 'USD' : 'INR',
+          currency: SUPPORTED_CURRENCIES.indexOf(r.currency) !== -1 ? r.currency : 'INR',
           price_type: ptype,
           min_amount: ptype === 'range' ? amount : null,
           max_amount: ptype === 'range' ? mx : null,
@@ -933,6 +1210,31 @@
         });
 
         if (p.error) throw p.error;
+      }
+
+      /* sizes / colours -> variants (same table the wizard uses) */
+      var variantNote = '';
+      var combos = variantCombos(r);
+
+      if (combos.length) {
+        var vrows = combos.map(function (label, idx) {
+          return {
+            offer_version_id: versionId,
+            name: label,
+            sku: combos.length === 1 && r.sku ? r.sku : null,
+            description: null,
+            attributes: { price: null },
+            is_active: true,
+            sort_order: idx
+          };
+        });
+
+        var vi = await supabaseClient.from('offer_variants').insert(vrows);
+
+        if (vi.error) {
+          variantNote = 'sizes / colours could not be saved as variants';
+          console.warn('[GLIME IMPORT] variants failed:', vi.error);
+        }
       }
 
       var mediaNote = '';
@@ -1011,7 +1313,7 @@
         }
       }
 
-      return { ok: true, name: name, published: published, note: [mediaNote, publishNote].filter(Boolean).join('; ') };
+      return { ok: true, name: name, published: published, note: [variantNote, mediaNote, publishNote].filter(Boolean).join('; ') };
     } catch (e) {
       /* do not leave a half-created service behind */
       if (offerId) {
@@ -1324,7 +1626,7 @@
       '<section class="ci-card">' +
         '<span class="ci-badge ok">RECOMMENDED · NO AI TOKENS</span>' +
         '<h3>Excel / CSV file</h3>' +
-        '<p>Fill our simple template with names, prices, descriptions, categories and photo links, then upload it. Fast and exact.</p>' +
+        '<p>Fill our simple template with names, prices, descriptions, categories and photo links, then upload it. Fast and exact. Selling products? The template also has SKU, stock, sizes, colours and brand.</p>' +
         '<button class="ci-btn" type="button" data-act="template">⬇ Download template</button>' +
         '<label class="ci-drop" data-drop="sheet"><input id="ciSheet" type="file" accept=".xlsx,.xls,.csv,text/csv" hidden>' +
           '<b>Choose Excel / CSV file</b><span>or drop it here</span></label>' +
@@ -1433,10 +1735,19 @@
     var t = (state.types || []).find(function (x) { return x.type_key === r.type; });
     if (t) typeLabel = '<span class="ci-chip">' + esc(t.label || t.type_key) + '</span>';
 
+    var sizes = r.sizes || [];
+    var colors = r.colors || [];
+
     var info = (r.category ? '<span class="ci-chip">' + esc(r.category) + '</span>' : '') + typeLabel +
       (r.price_type === 'starting_from' ? '<span class="ci-chip">starting from</span>' : '') +
       (r.price_type === 'range' && r.price_max ? '<span class="ci-chip">up to ' + esc(r.price_max) + '</span>' : '') +
-      (r.billing ? '<span class="ci-chip">' + esc(r.billing) + '</span>' : '');
+      (r.billing ? '<span class="ci-chip">' + esc(r.billing) + '</span>' : '') +
+      (r.currency && r.currency !== 'INR' ? '<span class="ci-chip">' + esc(r.currency) + '</span>' : '') +
+      (r.brand ? '<span class="ci-chip">' + esc(r.brand) + '</span>' : '') +
+      (r.sku ? '<span class="ci-chip">SKU ' + esc(r.sku) + '</span>' : '') +
+      (r.stock !== '' && r.stock != null ? '<span class="ci-chip">Stock ' + esc(r.stock) + '</span>' : '') +
+      (sizes.length ? '<span class="ci-chip">' + sizes.length + ' size' + (sizes.length === 1 ? '' : 's') + '</span>' : '') +
+      (colors.length ? '<span class="ci-chip">' + colors.length + ' colour' + (colors.length === 1 ? '' : 's') + '</span>' : '');
 
     return '<div class="ci-row' + (r.include ? '' : ' off') + (r.valid ? '' : ' bad') + '" data-row="' + esc(r.id) + '">' +
       '<input type="checkbox" data-f="include" aria-label="Import this service"' + (r.include && r.valid ? ' checked' : '') + (r.valid ? '' : ' disabled') + '>' +

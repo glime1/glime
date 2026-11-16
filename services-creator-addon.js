@@ -36,6 +36,7 @@
   }
 
   const KEY = 'creator_course';
+  const COURSE_URL = 'https://glime.online/course-view.html?c=';
   const MAX_ROWS = 15;
   const byId = id => document.getElementById(id);
   const safe = s => (typeof esc === 'function' ? esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])));
@@ -60,6 +61,7 @@
     fields: [
       S('format', 'Course format', [['recorded', 'Recorded videos'], ['live', 'Live classes'], ['mixed', 'Recorded + live'], ['pdf', 'PDF / notes']]),
       S('delivery', 'How does the buyer get the course? *', [
+        ['secure_code', 'GLIME secure course page (link + 10-minute code, 2 devices)'],
         ['link_chat', 'Course link sent on chat'],
         ['app', 'Access inside an app / platform'],
         ['group', 'Invite to a WhatsApp / Telegram group'],
@@ -112,6 +114,7 @@
   ].join('\n');
 
   const AI_RULES = [
+    'If the course opens with a code, never send the course link or make up a code yourself. After payment the system sends the link, and it sends the code when the buyer writes the word "code". Tell the buyer to write "code" in this chat.',
     'Share the course link only as set in the course details. Never share it earlier.',
     'Do not promise income, jobs, rankings or guaranteed results.',
     'Do not offer discounts, refunds or extra access beyond what is written here.'
@@ -192,6 +195,7 @@
   ======================================================= */
 
   const HOW = {
+    secure_code: 'a private course link; to open it the buyer asks for a code in this chat',
     link_chat: 'a course link on chat',
     app: 'access inside the course app or platform',
     group: 'an invite to the course group',
@@ -204,7 +208,8 @@
 
     if (HOW[v.delivery]) {
       let a = 'You get ' + HOW[v.delivery] + '.';
-      if (v.share_link === 'after_payment') a += ' It is shared once your payment is confirmed.';
+      if (v.delivery === 'secure_code') a += ' The link is sent after payment. Then write the word code here to get your code: it is valid for 10 minutes and the course opens on up to 2 of your devices.';
+      else if (v.share_link === 'after_payment') a += ' It is shared once your payment is confirmed.';
       else if (v.share_link === 'on_request') a += ' Just ask and we will share it.';
       else if (v.share_link === 'never') a += ' Please contact us directly to get access.';
       faq['How will I get the course?'] = a;
@@ -430,6 +435,47 @@
     }
   }
 
+  /* ?creator_course=<id> (from the Creator page "Add to Services") */
+  let prefillDone = false;
+  async function prefillFromUrl() {
+    if (prefillDone) return;
+    let id = '';
+    try { id = new URLSearchParams(location.search).get('creator_course') || ''; } catch (_) { /* ignore */ }
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+    prefillDone = true;
+    try { history.replaceState(null, '', location.pathname); } catch (_) { /* ignore */ }
+
+    await refresh();
+    if (!approved) { say(NOT_APPROVED, 'bad'); return; }
+
+    const r = await supabaseClient.from('creator_courses')
+      .select('id,title,description,price_inr,slug,status').eq('id', id).limit(1);
+    const c = r && r.data && r.data[0];
+    if (!c || c.status !== 'published' || !c.slug) { say('Publish the course on the Creator page first.', 'bad'); return; }
+
+    const link = COURSE_URL + c.slug;
+    const dup = (state.services || []).some(s => s && s.status !== 'archived' && s.sdDetails &&
+      s.sdDetails.blocks && s.sdDetails.blocks[KEY] && s.sdDetails.blocks[KEY].access_link === link);
+    if (dup) { say('This course is already added to Services.'); return; }
+
+    const desc = String(c.description || '').trim();
+    await openWizard({
+      id: null, current_version_id: null, status: 'draft', version: null, pending: null,
+      name: String(c.title || '').slice(0, 120),
+      short_description: desc.slice(0, 140),
+      description: desc,
+      offer_type: 'course',
+      price: Number(c.price_inr) > 0 ? { amount: Number(c.price_inr), currency: 'INR', price_type: 'fixed' } : null,
+      sdDetails: {
+        schema: 1, profile: KEY, faqs: [], facts: [],
+        blocks: { [KEY]: { format: 'recorded', delivery: 'secure_code', share_link: 'after_payment', access_link: link } }
+      }
+    });
+    const t = byId('wizardTitle');
+    if (t) t.textContent = 'Add creator course';
+    seedAi();
+  }
+
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-cr-add]');
     if (!b) return;
@@ -448,6 +494,7 @@
     await refresh();
     paintBanner();
     paintWarnings();
+    try { await prefillFromUrl(); } catch (e) { console.warn('[GLIME CREATOR] prefill failed:', e); }
     return out;
   };
 
