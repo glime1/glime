@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Courses</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#0b0f14;--card:#121923;--card2:#17202c;--text:#eef3f8;--muted:#8fa0b3;--border:rgba(255,255,255,.09);--accent:#00c46a;--accent2:#00b7d4;--onacc:#04120b;--input:#0e141c;--danger:#ff6b6b}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f4f7fa;--card:#fff;--card2:#f1f5f9;--text:#0f1722;--muted:#5b6b7d;--border:rgba(15,23,34,.1);--onacc:#fff;--input:#fff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 60px}
+.hero{padding:44px 0 26px;text-align:center}
+.avatar{width:76px;height:76px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;font-size:1.9rem;font-weight:800;color:var(--onacc);background:linear-gradient(135deg,var(--accent),var(--accent2))}
+h1{margin:0;font-size:1.65rem;line-height:1.2}
+.bio{margin:10px auto 0;max-width:520px;color:var(--muted)}
+.soc{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.soc a{padding:8px 14px;border:1px solid var(--border);border-radius:999px;color:var(--text);text-decoration:none;font-size:.84rem;background:var(--card)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px;margin-top:8px}
+.course{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
+.cover{aspect-ratio:16/9;background:linear-gradient(135deg,rgba(0,196,106,.25),rgba(0,183,212,.25)) center/cover;display:grid;place-items:center;font-size:2.2rem}
+.cb{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.tag{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.course h2{margin:0;font-size:1.05rem;line-height:1.3}
+.desc{margin:0;color:var(--muted);font-size:.86rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:10px}
+.price{font-size:1.2rem;font-weight:800}
+.price small{font-weight:500;color:var(--muted);font-size:.74rem;margin-left:6px}
+.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:.92rem;cursor:pointer;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--onacc);text-decoration:none;display:inline-block;text-align:center}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn:disabled{opacity:.6;cursor:default}
+.empty,.err{text-align:center;color:var(--muted);padding:60px 10px}
+.trust{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:.8rem;margin-top:30px}
+.foot{text-align:center;color:var(--muted);font-size:.74rem;margin-top:34px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.ov.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:460px;border-radius:22px 22px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom));border:1px solid var(--border)}
+@media(min-width:600px){.ov{align-items:center}.sheet{border-radius:22px}}
+.sheet h3{margin:0 0 4px;font-size:1.15rem}
+.sheet p{margin:0 0 6px;color:var(--muted);font-size:.86rem}
+label{display:block;font-size:.78rem;color:var(--muted);font-weight:600;margin:14px 0 6px}
+input{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:13px;font-size:1rem;outline:none}
+input:focus{border-color:var(--accent)}
+.msg{color:var(--danger);font-size:.82rem;min-height:1.1em;margin-top:10px}
+.row{display:flex;gap:10px;margin-top:16px}.row .btn{flex:1}
+.ok{font-size:2.4rem;text-align:center}
+.steps{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.steps li{display:flex;gap:10px;align-items:flex-start;font-size:.9rem}
+.steps b.n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--card2);display:grid;place-items:center;font-size:.78rem;border:1px solid var(--border)}
+.banner{margin:0 0 14px;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card);display:none}
+.banner.on{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero" id="hero" hidden>
+    <div class="avatar" id="av"></div>
+    <h1 id="ttl"></h1>
+    <p class="bio" id="bio"></p>
+    <div class="soc" id="soc"></div>
+  </div>
+  <div class="banner" id="banner"></div>
+  <div id="list"><div class="empty">Loading…</div></div>
+  <div class="trust" id="trust" hidden><span>🔒 Secure payment by Razorpay</span><span>📱 Opens on up to 2 of your devices</span><span>⚡ Instant access after payment</span></div>
+  <div class="foot">Powered by GLIME</div>
+</div>
+
+<div class="ov" id="ov" role="dialog" aria-modal="true">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+const API='https://ufoulgbiqgjriwapuopc.supabase.co/functions/v1/creator-api';
+const KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN');
+const HANDLE=(new URLSearchParams(location.search).get('u')||'').toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,30);
+const LS='glime_store_order_'+HANDLE;
+let store=null,pick=null,pollT=null;
+
+async function api(action,payload){
+  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY},body:JSON.stringify(Object.assign({action,handle:HANDLE},payload||{}))});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||'Something went wrong. Please try again.');
+  return j;
+}
+const safeUrl=u=>{try{const x=new URL(u);return x.protocol==='https:'||x.protocol==='http:'?x.href:'';}catch(_){return '';}};
+const ls={get(){try{return JSON.parse(localStorage.getItem(LS)||'null');}catch(_){return null;}},set(v){try{localStorage.setItem(LS,JSON.stringify(v));}catch(_){}},del(){try{localStorage.removeItem(LS);}catch(_){}}};
+
+async function load(){
+  if(!HANDLE){$('list').innerHTML='<div class="err">This store link is not valid.</div>';return;}
+  try{store=await api('store');}catch(e){$('list').innerHTML='<div class="err">'+esc(e.message)+'</div>';return;}
+  document.title=store.title;
+  $('hero').hidden=false;
+  $('av').textContent=(store.title||'C').trim().charAt(0).toUpperCase();
+  $('ttl').textContent=store.title;
+  $('bio').textContent=store.bio||'';$('bio').hidden=!store.bio;
+  const soc=[];
+  const ig=safeUrl(store.instagram),yt=safeUrl(store.youtube);
+  if(ig)soc.push('<a href="'+esc(ig)+'" target="_blank" rel="noopener">Instagram</a>');
+  if(yt)soc.push('<a href="'+esc(yt)+'" target="_blank" rel="noopener">YouTube</a>');
+  $('soc').innerHTML=soc.join('');
+  if(!store.courses.length){$('list').innerHTML='<div class="empty">No courses are available right now. Please check back soon.</div>';}
+  else{
+    $('trust').hidden=false;
+    $('list').innerHTML='<div class="grid">'+store.courses.map((c,i)=>
+      '<article class="course"><div class="cover"'+(c.thumb?' style="background-image:url(\''+esc(c.thumb)+'\')"':'')+'>'+(c.thumb?'':'🎓')+'</div><div class="cb">'+
+      (c.category?'<span class="tag">'+esc(c.category)+(c.lessons?' · '+c.lessons+' lesson'+(c.lessons===1?'':'s'):'')+'</span>':'')+
+      '<h2>'+esc(c.title)+'</h2><p class="desc">'+esc(c.description)+'</p>'+
+      '<div class="meta"><span class="price">'+(c.price>0?inr(c.price):'Free')+'</span><button class="btn" data-buy="'+i+'">'+(c.price>0?'Buy now':'Get access')+'</button></div></div></article>').join('')+'</div>';
+  }
+  resume();
+}
+
+function openSheet(html){$('sheet').innerHTML=html;$('ov').classList.add('on');}
+function closeSheet(){$('ov').classList.remove('on');pick=null;}
+
+function buySheet(c){
+  pick=c;
+  openSheet('<h3>'+esc(c.title)+'</h3><p>'+(c.price>0?inr(c.price)+' · one-time payment':'Free course')+'</p>'+
+    '<label for="fN">Your name</label><input id="fN" autocomplete="name" maxlength="80" placeholder="Full name">'+
+    '<label for="fP">WhatsApp mobile number</label><input id="fP" type="tel" inputmode="numeric" autocomplete="tel" maxlength="14" placeholder="10-digit number">'+
+    '<p style="margin-top:8px">Use the number you will message from. Your course code is sent on WhatsApp.</p>'+
+    '<div class="msg" id="fM"></div>'+
+    '<div class="row"><button class="btn ghost" id="fX" type="button">Cancel</button><button class="btn" id="fGo" type="button">'+(c.price>0?'Continue to pay':'Get access')+'</button></div>');
+  $('fN').focus();
+}
+
+async function go(){
+  const name=$('fN').value.trim(),phone=$('fP').value.replace(/\D/g,'').slice(-10);
+  const m=$('fM');m.textContent='';
+  if(name.length<2){m.textContent='Please enter your name.';return;}
+  if(!/^[6-9]\d{9}$/.test(phone)){m.textContent='Please enter a valid 10-digit mobile number.';return;}
+  const b=$('fGo');b.disabled=true;b.textContent='Please wait…';
+  try{
+    const r=await api('checkout',{slug:pick.slug,name,phone});
+    if(r.already||r.free){done(r);return;}
+    ls.set({id:r.order_id,course:r.course,wa:r.wa,t:Date.now()});
+    location.href=r.pay_url;
+  }catch(e){m.textContent=e.message;b.disabled=false;b.textContent=pick&&pick.price>0?'Continue to pay':'Get access';}
+}
+
+function waLink(wa){return wa?'https://wa.me/'+wa+'?text='+encodeURIComponent('code'):'';}
+function done(r){
+  const wa=waLink(r.wa);
+  openSheet('<div class="ok">✅</div><h3 style="text-align:center">'+(r.already?'You already have this course':'You are in!')+'</h3>'+
+    '<p style="text-align:center">'+esc(r.course||'')+'</p>'+
+    '<ol class="steps"><li><b class="n">1</b><span>Send the word <b>code</b> on WhatsApp'+(wa?'':' to the creator')+'. You will get a code that works for 10 minutes.</span></li>'+
+    '<li><b class="n">2</b><span>Open your course page and enter your mobile number and the code.</span></li></ol>'+
+    '<div class="row" style="flex-direction:column">'+(wa?'<a class="btn" href="'+esc(wa)+'" target="_blank" rel="noopener">Send “code” on WhatsApp</a>':'')+
+    (r.link?'<a class="btn ghost" href="'+esc(r.link)+'">Open my course page</a>':'')+'<button class="btn ghost" id="fX" type="button">Close</button></div>');
+  ls.del();
+}
+
+function banner(h){const b=$('banner');b.innerHTML=h;b.classList.add('on');}
+async function resume(){
+  let o=ls.get();
+  const qo=new URLSearchParams(location.search).get('o')||'';
+  if(/^[0-9a-f-]{36}$/i.test(qo)){o={id:qo,t:Date.now()};try{history.replaceState(null,'','store.html?u='+HANDLE);}catch(_){}}
+  if(!o||!o.id||Date.now()-o.t>48*3600e3){ls.del();return;}
+  banner('Checking your payment…');
+  let n=0;
+  const tick=async()=>{
+    n++;
+    try{
+      const r=await api('orderStatus',{order_id:o.id});
+      if(r.paid){$('banner').classList.remove('on');done(r);return;}
+    }catch(_){}
+    if(n>=40){banner('Payment not confirmed yet. If you paid, wait a minute and <a href="" onclick="location.reload();return false">refresh</a>.<br><button class="btn ghost" id="bX" style="margin-top:10px">Dismiss</button>');return;}
+    pollT=setTimeout(tick,n<10?3000:6000);
+  };
+  tick();
+}
+
+document.addEventListener('click',e=>{
+  const t=e.target;
+  const buy=t.closest&&t.closest('[data-buy]');
+  if(buy){buySheet(store.courses[Number(buy.dataset.buy)]);return;}
+  if(t.id==='fGo'){go();return;}
+  if(t.id==='fX'){closeSheet();return;}
+  if(t.id==='bX'){ls.del();$('banner').classList.remove('on');return;}
+  if(t===$('ov'))closeSheet();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement&&document.activeElement.id&&/^f[NP]$/.test(document.activeElement.id))go();});
+load();
+</script>
+</body>
+</html>

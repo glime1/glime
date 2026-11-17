@@ -297,6 +297,14 @@ input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.6)}
 
     <!-- SELL -->
     <section class="pane" data-pane="sell" role="tabpanel">
+      <section class="card" style="margin-top:18px" id="storeCard">
+        <div class="card-head"><div><h2>Your store link</h2><div class="muted small">Put this one link in your Instagram bio or YouTube description. Buyers see all your courses and pay there.</div></div></div>
+        <div class="field"><label for="stHandle">Store name in the link</label><input type="text" id="stHandle" maxlength="30" placeholder="e.g. yogawithriya" autocapitalize="off" autocomplete="off"><div class="help" id="stPreview">glime.online/store.html?u=…</div></div>
+        <div class="field"><label for="stTitle">Page title (optional)</label><input type="text" id="stTitle" maxlength="80" placeholder="Yoga with Riya"></div>
+        <div class="field"><label for="stBio">Short intro (optional)</label><textarea id="stBio" maxlength="400" rows="2" placeholder="Learn yoga at home, step by step."></textarea></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button type="button" class="btn" id="stSave">Save store</button><button type="button" class="btn ghost" id="stCopy" disabled>Copy store link</button><a class="btn ghost" id="stOpen" target="_blank" rel="noopener" style="display:none">Open store</a></div>
+        <p class="muted small" style="margin:12px 0 0">After payment the buyer is asked to send the word <b>code</b> on your WhatsApp, and the code arrives there. Only published courses show in your store.</p>
+      </section>
       <section class="card" style="margin-top:18px">
         <div class="card-head"><h2>How a buyer gets your course</h2></div>
         <div class="flow">
@@ -538,6 +546,7 @@ function render(){
   $('steps').innerHTML=st.map((x,i)=>'<li class="'+(x[0]?'done':'')+'"><span class="dot">'+(x[0]?'✓':(i+1))+'</span><b>'+esc(x[1])+'</b>'+(x[0]?'':(x[2]==='billing'?'<a class="btn ghost sm go" href="billing.html">Add money</a>':'<button type="button" class="btn ghost sm go" data-tab="'+x[2]+'">Open</button>'))+'</li>').join('');
 
   renderStorage();renderCourses();renderStudents();renderEarnings();renderSell();paintTabs();setTab(state.tab,true);
+  if(!window.__stLoaded){window.__stLoaded=true;loadStore();}
 }
 
 function renderStorage(){
@@ -609,6 +618,37 @@ function renderEarnings(){
   $('revenue').innerHTML=rows.length?'<table class="t"><thead><tr><th>Course</th><th>Price</th><th>Sales</th><th class="r">Earned</th><th class="r">GLIME fee</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.c.title)+'</td><td>'+(r.c.price>0?inr(r.c.price):'Free')+'</td><td>'+r.n+'</td><td class="r">'+inr(r.rev)+'</td><td class="r">'+inr(r.fee)+'</td></tr>').join('')+'</tbody></table>':'<div class="empty"><b>No sales yet</b>Your revenue per course will show here.</div>';
   $('slabs').innerHTML=CFG.SLABS.map(s=>'<div class="slab"><b>'+inr(s.fee)+'</b><span>per sale · '+esc(s.label)+'</span></div>').join('')+'<div class="slab"><b>₹0</b><span>per sale · Free courses</span></div>';
 }
+
+
+/* ---------- public store link ---------- */
+const STORE_URL='https://glime.online/store.html?u=';
+let storeHandle='';
+function paintStore(){
+  const h=($('stHandle').value||'').trim().toLowerCase();
+  $('stPreview').textContent='glime.online/store.html?u='+(h||'…');
+  $('stCopy').disabled=!storeHandle;
+  const o=$('stOpen');if(storeHandle){o.href=STORE_URL+storeHandle;o.style.display='';}else o.style.display='none';
+}
+async function loadStore(){
+  try{
+    const r=await call('getStore',{});
+    if(r.store){storeHandle=r.store.handle;$('stHandle').value=r.store.handle;$('stTitle').value=r.store.title||'';$('stBio').value=r.store.bio||'';}
+    else if(r.name&&!$('stHandle').value){$('stHandle').value=r.name.toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,30);}
+    if(!$('stTitle').value&&r.name)$('stTitle').placeholder=r.name;
+  }catch(e){/* store card still usable */}
+  paintStore();
+}
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='stHandle')paintStore();});
+document.addEventListener('click',async e=>{
+  const t=e.target.closest&&e.target.closest('#stSave,#stCopy');if(!t)return;
+  if(t.id==='stCopy'){copy(STORE_URL+storeHandle,'Store link copied');return;}
+  t.disabled=true;
+  try{
+    const r=await call('saveStore',{handle:$('stHandle').value,title:$('stTitle').value,bio:$('stBio').value});
+    storeHandle=r.handle;$('stHandle').value=r.handle;toast('Store saved');
+  }catch(er){toast(er.message,true);}
+  t.disabled=false;paintStore();
+});
 
 function renderSell(){
   const pub=state.data.courses.filter(c=>c.status==='published'&&c.slug);
