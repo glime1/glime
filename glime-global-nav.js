@@ -235,6 +235,20 @@
   })();
 
 
+  /* Creator Program link in the public navigation (right after Agency Program) */
+  (function () {
+    function addCreatorLink(nav) {
+      if (!nav || nav.querySelector('a[href="creator-program.html"]')) return;
+      const a = document.createElement("a");
+      a.href = "creator-program.html";
+      a.textContent = "Creator Program";
+      nav.insertBefore(a, nav.querySelector('a[href="contact.html"]'));
+    }
+    addCreatorLink(document.querySelector(".glime-desktop-nav"));
+    addCreatorLink(document.getElementById("glime-mobile-nav"));
+  })();
+
+
   /* Sign Up link next to Login in the public navigation */
   (function () {
     function addSignupLink(nav) {
