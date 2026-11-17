@@ -136,13 +136,17 @@
     <loc>https://glime.online/help.html</loc>
   </url>
 
-  <!-- Partner Program and Agency -->
+  <!-- Partner Program, Creator Program and Agency -->
   <url>
     <loc>https://glime.online/partner.html</loc>
   </url>
 
   <url>
     <loc>https://glime.online/partner-docs.html</loc>
+  </url>
+
+  <url>
+    <loc>https://glime.online/creator-program.html</loc>
   </url>
 
   <url>
