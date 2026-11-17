@@ -1,11 +1,12 @@
 
 /*
- * GLIME Website Analytics — v3.0.0
+ * GLIME Website Analytics — v3.1.0
  * Website: https://glime.online
  *
  * Tracks:
  * - Unique visitors and sessions
  * - Page views and visitor journey
+ * - Page URL + actual document title
  * - UTM traffic attribution
  * - Referrer and landing page
  * - Device, browser and OS (server-side)
@@ -195,6 +196,14 @@
     return result || null;
   }
 
+  // Actual browser document title, with URL fallback.
+  function getPageTitle() {
+    return cleanText(
+      document.title || '',
+      MAX_PAGE_LENGTH
+    ) || getPagePath();
+  }
+
   function getReferrerHost() {
     try {
       if (!document.referrer) return null;
@@ -372,7 +381,10 @@
 
       session_id: session.id,
 
-      page: getPagePath()
+      page: getPagePath(),
+
+      // New: send actual page title to Backend.
+      page_title: getPageTitle()
     };
   }
 
@@ -592,73 +604,72 @@
 
     engagementInFlight = true;
 
-    collectActiveSeconds();
+    try {
+      collectActiveSeconds();
 
-    const clicks = pendingClicks.splice(0, 25);
+      const clicks = pendingClicks.splice(0, 25);
 
-    const conversions =
-      pendingConversions.splice(0, 10);
+      const conversions =
+        pendingConversions.splice(0, 10);
 
-    const activeDelta = Math.min(
-      activeSecondsPending,
-      120
-    );
+      const activeDelta = Math.min(
+        activeSecondsPending,
+        120
+      );
 
-    const scroll =
-      maxScrollPending > lastScrollSent
-        ? maxScrollPending
-        : null;
+      const scroll =
+        maxScrollPending > lastScrollSent
+          ? maxScrollPending
+          : null;
 
-    if (
-      !clicks.length &&
-      !conversions.length &&
-      !activeDelta &&
-      scroll === null
-    ) {
-      engagementInFlight = false;
-      return;
-    }
+      if (
+        !clicks.length &&
+        !conversions.length &&
+        !activeDelta &&
+        scroll === null
+      ) {
+        return;
+      }
 
-    activeSecondsPending = Math.max(
-      0,
-      activeSecondsPending - activeDelta
-    );
+      activeSecondsPending = Math.max(
+        0,
+        activeSecondsPending - activeDelta
+      );
 
-    if (scroll !== null) {
-      lastScrollSent = scroll;
-    }
+      if (scroll !== null) {
+        lastScrollSent = scroll;
+      }
 
-    const state = getSessionState();
+      const state = getSessionState();
 
-    if (state.isNew) {
-      const startPayload = basePayload(
-        'start',
+      if (state.isNew) {
+        const startPayload = basePayload(
+          'start',
+          state.session
+        );
+
+        startPayload.attribution =
+          getAttribution();
+
+        await post(startPayload);
+      }
+
+      const payload = basePayload(
+        'engagement',
         state.session
       );
 
-      startPayload.attribution =
-        getAttribution();
+      payload.click_events = clicks;
 
-      await post(startPayload);
-    }
+      payload.conversions = conversions;
 
-    const payload = basePayload(
-      'engagement',
-      state.session
-    );
+      payload.active_seconds_delta =
+        activeDelta;
 
-    payload.click_events = clicks;
+      if (scroll !== null) {
+        payload.max_scroll = scroll;
+      }
 
-    payload.conversions = conversions;
-
-    payload.active_seconds_delta =
-      activeDelta;
-
-    if (scroll !== null) {
-      payload.max_scroll = scroll;
-    }
-
-    try {
       await post(payload);
 
     } finally {
@@ -666,10 +677,21 @@
     }
   }
 
-  // Initial page tracking
-  sendPageView();
+  // Initial page tracking after the document title is available.
+  function startInitialTracking() {
+    sendPageView();
+    updateScrollDepth();
+  }
 
-  updateScrollDepth();
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      startInitialTracking,
+      { once: true }
+    );
+  } else {
+    startInitialTracking();
+  }
 
   // Click tracking
   document.addEventListener(
@@ -740,6 +762,7 @@
 
     lastTrackedPath = currentPath;
 
+    // Page title is read after the SPA has updated its document.
     sendPageView();
 
     updateScrollDepth();
@@ -750,14 +773,11 @@
 
     routeCheckQueued = true;
 
-    if (
-      typeof window.queueMicrotask === 'function'
-    ) {
-      window.queueMicrotask(checkRouteChange);
-
-    } else {
-      Promise.resolve().then(checkRouteChange);
-    }
+    // Small delay allows SPA frameworks to update document.title.
+    window.setTimeout(
+      checkRouteChange,
+      120
+    );
   }
 
   // History API
@@ -811,9 +831,11 @@
   window.GLIME_WEBSITE_ANALYTICS =
     Object.freeze({
 
-      version: '3.0.0',
+      version: '3.1.0',
 
       getPagePath,
+
+      getPageTitle,
 
       trackConversion(name) {
         return queueConversion(name);
@@ -847,4 +869,4 @@
     });
 
 })();
-    
+        
