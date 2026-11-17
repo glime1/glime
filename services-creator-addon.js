@@ -360,7 +360,7 @@
 
   function paintBanner() {
     let box = byId('svCreatorBanner');
-    const show = approved && app && !hasCourse();
+    const show = !!(approved && app);
 
     if (!show) {
       if (box) box.remove();
@@ -377,11 +377,12 @@
       anchor.parentNode.insertBefore(box, anchor);
     }
 
-    const name = String(app.course_name || '').trim();
     box.innerHTML =
       '<div><strong>Creator approved ✓</strong>' +
-      '<p>Add ' + (name ? '“' + safe(name) + '”' : 'your course') +
-      ' as a service so your AI can tell buyers how to get it, send the link and answer payment and refund questions.</p></div>' +
+      '<p>' + (hasCourse()
+        ? 'Add another course as a service. You can add as many courses as you have.'
+        : 'Add your course as a service so your AI can tell buyers how to get it, send the link and answer payment and refund questions.') +
+      '</p></div>' +
       '<button type="button" class="primary-btn" data-cr-add>＋ Add course</button>';
   }
 
@@ -407,27 +408,65 @@
     });
   }
 
+  function addedLinks() {
+    const set = {};
+    (state.services || []).forEach(s => {
+      const b = s && s.status !== 'archived' && s.sdDetails && s.sdDetails.blocks && s.sdDetails.blocks[KEY];
+      if (b && b.access_link) set[b.access_link] = 1;
+    });
+    return set;
+  }
+
+  async function openCourse(c) {
+    const desc = String(c.description || '').trim();
+    await openWizard({
+      id: null, current_version_id: null, status: 'draft', version: null, pending: null,
+      name: String(c.title || '').slice(0, 120),
+      short_description: desc.slice(0, 140),
+      description: desc,
+      offer_type: 'course',
+      price: Number(c.price_inr) > 0 ? { amount: Number(c.price_inr), currency: 'INR', price_type: 'fixed' } : null,
+      sdDetails: {
+        schema: 1, profile: KEY, faqs: [], facts: [],
+        blocks: { [KEY]: { format: 'recorded', delivery: 'secure_code', share_link: 'after_payment', access_link: COURSE_URL + c.slug } }
+      }
+    });
+    const t = byId('wizardTitle');
+    if (t) t.textContent = 'Add creator course';
+    seedAi();
+  }
+
+  function pickCourse(list) {
+    const old = byId('svCrPicker');
+    if (old) old.remove();
+    const w = document.createElement('div');
+    w.id = 'svCrPicker';
+    w.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    w.innerHTML = '<div style="background:var(--card,#fff);color:var(--text,#111);border-radius:16px;max-width:420px;width:100%;max-height:80vh;overflow:auto;padding:16px">' +
+      '<h3 style="margin:0 0 4px">Which course?</h3><p style="margin:0 0 12px;opacity:.7;font-size:13px">Pick a course to add as a service.</p>' +
+      list.map((c, k) => '<button type="button" data-k="' + k + '" style="display:block;width:100%;text-align:left;padding:12px;margin-bottom:8px;border:1px solid rgba(128,128,128,.35);border-radius:12px;background:transparent;color:inherit;cursor:pointer"><strong>' +
+        safe(c.title || 'Untitled') + '</strong><br><span style="opacity:.7;font-size:12px">' + (Number(c.price_inr) > 0 ? '₹' + Number(c.price_inr) : 'Free') + '</span></button>').join('') +
+      '<button type="button" data-x style="width:100%;padding:10px;border:0;background:transparent;color:inherit;opacity:.7;cursor:pointer">Cancel</button></div>';
+    w.addEventListener('click', e => {
+      const t = e.target.closest && e.target.closest('button');
+      if (e.target === w || (t && t.hasAttribute('data-x'))) { w.remove(); return; }
+      if (t && t.dataset.k != null) { const c = list[Number(t.dataset.k)]; w.remove(); openCourse(c).catch(er => say((er && er.message) || 'Could not open the course form.', 'bad')); }
+    });
+    document.body.appendChild(w);
+  }
+
   async function addCourse(btn) {
     if (btn) btn.disabled = true;
     try {
       await refresh();
       if (!approved || !app) { say(NOT_APPROVED, 'bad'); return; }
-
-      await openWizard({
-        id: null,
-        current_version_id: null,
-        name: String(app.course_name || '').trim(),
-        offer_type: 'course',
-        status: 'draft',
-        version: null,
-        pending: null,
-        sdDetails: { schema: 1, profile: KEY, blocks: {}, faqs: [], facts: [] }
-      });
-
-      const t = byId('wizardTitle');
-      if (t) t.textContent = 'Add creator course';
-
-      seedAi();
+      const r = await supabaseClient.from('creator_courses')
+        .select('id,title,description,price_inr,slug,status').eq('status', 'published').order('created_at', { ascending: false });
+      const have = addedLinks();
+      const list = ((r && r.data) || []).filter(c => c.slug && !have[COURSE_URL + c.slug]);
+      if (!list.length) { say(((r && r.data) || []).length ? 'All your published courses are already added to Services.' : 'Publish a course on the Creator page first.', ((r && r.data) || []).length ? '' : 'bad'); return; }
+      if (list.length === 1) { await openCourse(list[0]); return; }
+      pickCourse(list);
     } catch (e) {
       say((e && e.message) || 'Could not open the course form.', 'bad');
     } finally {
@@ -452,28 +491,8 @@
       .select('id,title,description,price_inr,slug,status').eq('id', id).limit(1);
     const c = r && r.data && r.data[0];
     if (!c || c.status !== 'published' || !c.slug) { say('Publish the course on the Creator page first.', 'bad'); return; }
-
-    const link = COURSE_URL + c.slug;
-    const dup = (state.services || []).some(s => s && s.status !== 'archived' && s.sdDetails &&
-      s.sdDetails.blocks && s.sdDetails.blocks[KEY] && s.sdDetails.blocks[KEY].access_link === link);
-    if (dup) { say('This course is already added to Services.'); return; }
-
-    const desc = String(c.description || '').trim();
-    await openWizard({
-      id: null, current_version_id: null, status: 'draft', version: null, pending: null,
-      name: String(c.title || '').slice(0, 120),
-      short_description: desc.slice(0, 140),
-      description: desc,
-      offer_type: 'course',
-      price: Number(c.price_inr) > 0 ? { amount: Number(c.price_inr), currency: 'INR', price_type: 'fixed' } : null,
-      sdDetails: {
-        schema: 1, profile: KEY, faqs: [], facts: [],
-        blocks: { [KEY]: { format: 'recorded', delivery: 'secure_code', share_link: 'after_payment', access_link: link } }
-      }
-    });
-    const t = byId('wizardTitle');
-    if (t) t.textContent = 'Add creator course';
-    seedAi();
+    if (addedLinks()[COURSE_URL + c.slug]) { say('This course is already added to Services.'); return; }
+    await openCourse(c);
   }
 
   document.addEventListener('click', e => {

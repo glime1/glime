@@ -7,115 +7,199 @@
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
 <meta http-equiv="Pragma" content="no-cache">
-<title>Creator | Glime AI Automation</title>
+<title>Creator Studio | Glime AI Automation</title>
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* Every colour is a variable, so dark and light mode both work. */
-:root{--bg:#05080c;--card:#111827;--card2:#0b1220;--sheet:#101b29;--input:#0b1220;--soft:rgba(255,255,255,.05);--soft2:rgba(255,255,255,.08);--green:#00ff88;--cyan:#00f0ff;--text:#fff;--muted:#9ca3af;--border:rgba(255,255,255,.07);--line2:rgba(184,222,234,.16);--ov:rgba(3,8,12,.82);--note-t:#fde68a;--warn-t:#ffc2c8;--danger-t:#ffb3ba;--ok-t:#00ff88;--link:#00f0ff;--toast-bg:#0b1220}
-html[data-theme="light"]{--bg:#ffffff;--card:#ffffff;--card2:#f9fafb;--sheet:#ffffff;--input:#ffffff;--soft:rgba(0,0,0,.04);--soft2:rgba(0,0,0,.08);--text:#000000;--muted:#4b5563;--border:#e5e7eb;--line2:#d1d5db;--ov:rgba(255,255,255,.82);--note-t:#92400e;--warn-t:#b91c1c;--danger-t:#c62828;--ok-t:#0a7a4a;--link:#0e7490;--toast-bg:#ffffff}
+:root{--bg:#05080c;--card:#0e1623;--card2:#0b1220;--sheet:#101b29;--input:#0b1220;--soft:rgba(255,255,255,.05);--soft2:rgba(255,255,255,.09);--green:#00ff88;--cyan:#00f0ff;--violet:#8b6cf0;--amber:#f5b942;--text:#fff;--muted:#9ca3af;--border:rgba(255,255,255,.08);--line2:rgba(184,222,234,.16);--ov:rgba(3,8,12,.84);--note-t:#fde68a;--warn-t:#ffc2c8;--danger-t:#ffb3ba;--ok-t:#00ff88;--link:#00f0ff;--toast-bg:#0b1220;--glow:0 18px 50px rgba(0,240,255,.07);--hero:linear-gradient(135deg,rgba(0,255,136,.16),rgba(0,240,255,.10) 55%,rgba(139,108,240,.14))}
+html[data-theme="light"]{--bg:#f5f8fb;--card:#ffffff;--card2:#f6f9fc;--sheet:#ffffff;--input:#ffffff;--soft:rgba(0,0,0,.04);--soft2:rgba(0,0,0,.08);--text:#0b1220;--muted:#566173;--border:#e3e8ef;--line2:#d1d9e2;--ov:rgba(255,255,255,.85);--note-t:#92400e;--warn-t:#b91c1c;--danger-t:#c62828;--ok-t:#0a7a4a;--link:#0e7490;--toast-bg:#ffffff;--glow:0 14px 40px rgba(15,60,90,.08);--hero:linear-gradient(135deg,rgba(0,196,106,.14),rgba(0,183,212,.10) 55%,rgba(139,108,240,.10))}
 *{box-sizing:border-box;font-family:Poppins,sans-serif}
+html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}
-.main-content{flex:1;padding:36px;max-width:1100px;min-width:0;color:var(--text)}
-h1{margin:0;font-size:1.7rem}
-h2{margin:0;font-size:1.05rem}
-.lead{color:var(--muted);margin:8px 0 0;line-height:1.6;font-size:.9rem}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(600px 300px at 90% -5%,rgba(0,240,255,.08),transparent 70%),radial-gradient(500px 300px at -5% 20%,rgba(0,255,136,.06),transparent 70%)}
+.main-content{position:relative;z-index:1;flex:1;padding:30px 34px 60px;max-width:1180px;min-width:0;color:var(--text)}
+h1{margin:0;font-size:1.65rem;letter-spacing:-.01em}
+h2{margin:0;font-size:1.02rem}
+h3{margin:0;font-size:.92rem}
+.lead{color:var(--muted);margin:6px 0 0;line-height:1.6;font-size:.88rem}
 .hide{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:.78rem;line-height:1.55}
+.row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 
-.banner{margin-top:18px;padding:13px 16px;border-radius:12px;font-size:.82rem;line-height:1.55}
+/* page head */
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ok-t);margin-bottom:8px}
+.eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(0,255,136,.16)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:12px;border:0;font-weight:700;font-size:.86rem;cursor:pointer;color:#04140c;background:linear-gradient(135deg,var(--green),var(--cyan));text-decoration:none;text-align:center;transition:transform .12s,box-shadow .15s;box-shadow:0 8px 22px rgba(0,230,170,.22)}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:scale(.98)}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.btn.ghost{background:var(--soft);color:var(--text);border:1px solid var(--border);box-shadow:none}
+.btn.danger{background:rgba(255,71,87,.10);color:var(--danger-t);border:1px solid rgba(255,71,87,.32);box-shadow:none}
+.btn.sm{padding:8px 13px;font-size:.75rem;border-radius:10px}
+.btn svg{width:16px;height:16px}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.68rem;font-weight:700;border:1px solid var(--border);background:var(--soft);color:var(--text);white-space:nowrap}
+.pill.ok{color:var(--ok-t);border-color:rgba(0,255,136,.45);background:rgba(0,255,136,.10)}
+.pill.draft{color:var(--muted)}
+.pill.stop{color:var(--danger-t);border-color:rgba(255,71,87,.4);background:rgba(255,71,87,.09)}
+
+.banner{margin-top:16px;padding:13px 16px;border-radius:14px;font-size:.82rem;line-height:1.55}
 .banner.note{border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.08);color:var(--note-t)}
 .banner.warn{border:1px solid rgba(255,71,87,.35);background:rgba(255,71,87,.07);color:var(--warn-t)}
 .banner.warn strong{color:var(--text)}
-.banner .row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 
-.card{margin-top:22px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+/* tabs */
+.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;margin:22px -4px 0;padding:8px 4px;overflow-x:auto;scrollbar-width:none;background:linear-gradient(var(--bg) 78%,transparent)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-weight:600;font-size:.8rem;cursor:pointer;transition:all .15s}
+.tab svg{width:16px;height:16px}
+.tab .n{min-width:20px;padding:1px 6px;border-radius:999px;background:var(--soft2);font-size:.68rem;color:var(--text)}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{color:#04140c;border-color:transparent;background:linear-gradient(135deg,var(--green),var(--cyan));box-shadow:0 8px 22px rgba(0,230,170,.2)}
+.tab[aria-selected="true"] .n{background:rgba(0,0,0,.14);color:#04140c}
+.pane{display:none;animation:rise .25s ease both}
+.pane.on{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* cards */
+.card{margin-top:18px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;box-shadow:var(--glow)}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-.muted{color:var(--muted)}
-.small{font-size:.78rem;line-height:1.55}
-.btn{display:inline-block;padding:12px 20px;border-radius:12px;border:0;font-weight:700;font-size:.88rem;cursor:pointer;color:#061018;background:linear-gradient(135deg,var(--green),var(--cyan));text-decoration:none;text-align:center}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
-.btn.ghost{background:var(--soft);color:var(--text);border:1px solid var(--border)}
-.btn.danger{background:rgba(255,71,87,.12);color:var(--danger-t);border:1px solid rgba(255,71,87,.35)}
-.btn.sm{padding:7px 13px;font-size:.76rem;border-radius:10px}
-.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:700;border:1px solid var(--border);background:var(--soft);color:var(--text);white-space:nowrap}
-.pill.ok{color:var(--ok-t);border-color:rgba(0,255,136,.45);background:rgba(0,255,136,.09)}
-.pill.draft{color:var(--muted)}
-.pill.stop{color:var(--danger-t);border-color:rgba(255,71,87,.4);background:rgba(255,71,87,.08)}
-:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.hero{margin-top:18px;border-radius:24px;padding:24px;border:1px solid var(--line2);background:var(--hero);position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(0,240,255,.22),transparent 70%);pointer-events:none}
+.hero h2{font-size:1.2rem;margin-bottom:6px}
+.hero .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;position:relative;z-index:1}
 
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:22px}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px}
-.stat .k{font-size:.76rem;color:var(--muted)}
-.stat .v{font-size:1.55rem;font-weight:700;margin-top:4px}
-.stat .s{font-size:.74rem;color:var(--muted);margin-top:2px}
-.stat .s a{color:var(--link);text-decoration:none;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:18px}
+.kpi{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--glow)}
+.ico{flex:0 0 auto;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:var(--c,#00ff88);background:color-mix(in srgb,var(--c,#00ff88) 14%,transparent);border:1px solid color-mix(in srgb,var(--c,#00ff88) 30%,transparent)}
+.ico svg{width:21px;height:21px}
+.kpi .k{font-size:.74rem;color:var(--muted)}
+.kpi .v{font-size:1.5rem;font-weight:700;line-height:1.25;margin-top:2px}
+.kpi .s{font-size:.72rem;color:var(--muted);margin-top:2px}
+.kpi .s a{color:var(--link);text-decoration:none;font-weight:600}
 
-.meter{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--soft2);margin:6px 0 12px}
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.grid2 .card{margin-top:18px}
+
+/* storage ring */
+.ringwrap{display:flex;gap:18px;align-items:center}
+.ring{--p:0;flex:0 0 auto;width:112px;height:112px;border-radius:50%;background:conic-gradient(var(--green),var(--cyan) calc(var(--p)*1%),var(--soft2) 0);display:grid;place-items:center}
+.ring b{width:84px;height:84px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:1.05rem}
+.meter{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--soft2);margin:12px 0}
 .meter i{display:block;height:100%;min-width:2px}
-.meter-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
-.meter-top b{font-size:1.25rem}
-.legend{display:flex;flex-wrap:wrap;gap:6px 16px}
-.legend span{display:flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px}
+.legend span{display:flex;align-items:center;gap:7px;font-size:.74rem;color:var(--muted)}
 .legend em{width:10px;height:10px;border-radius:3px;display:inline-block;flex:0 0 auto}
 
-.courses{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.course{background:var(--card2);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
-.thumb{height:130px;background:linear-gradient(135deg,rgba(0,255,136,.16),rgba(0,240,255,.12));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:var(--muted);background-size:cover;background-position:center}
-.course-body{padding:14px;display:flex;flex-direction:column;gap:9px;flex:1}
-.course-title{font-weight:700;font-size:.95rem;line-height:1.4}
-.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.76rem;color:var(--muted)}
+/* checklist */
+.steps{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.steps li{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card2)}
+.steps .dot{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.74rem;font-weight:700;border:1.5px solid var(--line2);color:var(--muted)}
+.steps li.done .dot{background:linear-gradient(135deg,var(--green),var(--cyan));border-color:transparent;color:#04140c}
+.steps li.done b{text-decoration:line-through;opacity:.6}
+.steps b{font-size:.84rem;font-weight:600}
+.steps .go{margin-left:auto}
+
+/* courses */
+.courses{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.course{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--glow);transition:transform .15s,border-color .15s}
+.course:hover{transform:translateY(-2px);border-color:var(--line2)}
+.cover{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,rgba(0,255,136,.2),rgba(0,240,255,.14) 55%,rgba(139,108,240,.2));display:flex;align-items:center;justify-content:center;font-size:2.4rem;font-weight:700;color:var(--muted);background-size:cover;background-position:center}
+.cover .pill{position:absolute;left:12px;top:12px;backdrop-filter:blur(6px)}
+.cover .price{position:absolute;right:12px;bottom:12px;padding:5px 12px;border-radius:999px;background:rgba(5,10,16,.72);color:#fff;font-weight:700;font-size:.78rem;backdrop-filter:blur(6px)}
+.course-body{padding:15px;display:flex;flex-direction:column;gap:11px;flex:1}
+.course-title{font-weight:700;font-size:.96rem;line-height:1.4}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{font-size:.7rem;padding:4px 10px;border-radius:999px;background:var(--soft);border:1px solid var(--border);color:var(--muted)}
 .course-foot{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap}
-.empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:.86rem;line-height:1.6}
-.empty b{display:block;color:var(--text);font-size:1rem;margin-bottom:4px}
+.course-foot .btn{flex:1 1 auto}
+.empty{padding:36px 14px;text-align:center;color:var(--muted);font-size:.86rem;line-height:1.6}
+.empty b{display:block;color:var(--text);font-size:1.02rem;margin-bottom:6px}
+.empty .btn{margin-top:14px}
 
-.sales{width:100%;border-collapse:collapse;font-size:.82rem}
-.sales th{font-weight:600;color:var(--muted);text-align:left;padding:0 10px 10px 0;font-size:.74rem}
-.sales td{padding:11px 10px 11px 0;border-top:1px solid var(--border);vertical-align:top}
-.sales td.amt,.sales th.amt{text-align:right;padding-right:0;white-space:nowrap}
-.tablewrap{overflow-x:auto}
+/* students */
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.search{flex:1 1 220px;position:relative}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.search input{padding-left:40px}
+.stu{display:grid;grid-template-columns:44px 1.4fr 1.2fr 1fr auto;gap:14px;align-items:center;padding:13px 4px;border-top:1px solid var(--border)}
+.stu:first-child{border-top:0}
+.av{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:700;color:#04140c;background:linear-gradient(135deg,var(--green),var(--cyan))}
+.stu .nm{font-weight:600;font-size:.88rem}
+.stu a{color:var(--link);text-decoration:none;font-weight:500}
+.stu .amt{font-weight:700;text-align:right;white-space:nowrap}
+.wa{display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:.68rem;font-weight:700;color:#04140c!important;background:linear-gradient(135deg,var(--green),#7affc4)}
 
+/* earnings */
 .slabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
-.slab{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
-.slab b{font-size:1.15rem;display:block;color:var(--text)}
+.slab{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px}
+.slab b{font-size:1.2rem;display:block}
 .slab span{font-size:.76rem;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:.82rem}
+table.t th{font-weight:600;color:var(--muted);text-align:left;padding:0 10px 10px 0;font-size:.74rem}
+table.t td{padding:11px 10px 11px 0;border-top:1px solid var(--border)}
+table.t .r{text-align:right;padding-right:0;white-space:nowrap}
 
-.ov{position:fixed;inset:0;z-index:5000;background:var(--ov);display:none;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto}
+/* sell tab */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.flow>div{position:relative;padding:16px;border-radius:16px;background:var(--card2);border:1px solid var(--border)}
+.flow .no{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--green),var(--cyan));color:#04140c;font-weight:700;font-size:.8rem;margin-bottom:10px}
+.flow b{display:block;font-size:.88rem;margin-bottom:4px}
+.flow p{margin:0;font-size:.78rem;color:var(--muted);line-height:1.55}
+.linkrow{display:flex;gap:10px;align-items:center;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card2);margin-top:10px}
+.linkrow .t{flex:1;min-width:0}
+.linkrow .t b{display:block;font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linkrow .t span{display:block;font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* forms / sheet */
+.ov{position:fixed;inset:0;z-index:5000;background:var(--ov);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto}
 .ov.on{display:flex}
-.sheet{width:min(720px,100%);background:var(--sheet);border:1px solid var(--line2);border-radius:20px;padding:22px;margin:auto 0;color:var(--text)}
+.sheet{width:min(720px,100%);background:var(--sheet);border:1px solid var(--line2);border-radius:22px;padding:22px;margin:auto 0;color:var(--text);box-shadow:0 30px 80px rgba(0,0,0,.4)}
 .sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
 .field{display:flex;flex-direction:column;gap:6px;margin-top:14px}
 .field>label,.field>.lab{font-size:.78rem;color:var(--muted);font-weight:600}
 .field .help{font-size:.72rem;color:var(--muted);line-height:1.5}
-input[type=text],input[type=number],select,textarea{background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 12px;font-size:.9rem;outline:none;width:100%}
-html[data-theme="light"] input[type=text],html[data-theme="light"] input[type=number],html[data-theme="light"] select,html[data-theme="light"] textarea{border-color:var(--line2)}
+input[type=text],input[type=number],input[type=search],select,textarea{background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px;font-size:.9rem;outline:none;width:100%}
+html[data-theme="light"] input[type=text],html[data-theme="light"] input[type=number],html[data-theme="light"] input[type=search],html[data-theme="light"] select,html[data-theme="light"] textarea{border-color:var(--line2)}
 textarea{resize:vertical;min-height:90px;line-height:1.5}
 input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.6)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .thumb-pick{display:flex;gap:12px;align-items:center}
-.thumb-pick .thumb{width:112px;height:64px;border-radius:10px;font-size:1.2rem;flex:0 0 auto}
+.thumb{height:64px;background:linear-gradient(135deg,rgba(0,255,136,.16),rgba(0,240,255,.12));display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:var(--muted);background-size:cover;background-position:center}
+.thumb-pick .thumb{width:112px;border-radius:12px;flex:0 0 auto}
 .lessons{display:flex;flex-direction:column;gap:9px}
-.lesson{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:8px}
+.lesson{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:11px 12px;display:flex;flex-direction:column;gap:8px}
 .lesson-top{display:flex;gap:8px;align-items:center}
 .lesson-top input[type=text]{padding:8px 10px;font-size:.84rem}
 .lesson-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
 .lesson-row label{display:flex;gap:6px;align-items:center;cursor:pointer}
 .lesson-row input[type=checkbox]{accent-color:#00c46a;width:16px;height:16px;margin:0}
-.iconbtn{background:var(--soft);border:1px solid var(--border);color:var(--text);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:.8rem;flex:0 0 auto}
+.iconbtn{background:var(--soft);border:1px solid var(--border);color:var(--text);border-radius:9px;width:32px;height:32px;cursor:pointer;font-size:.8rem;flex:0 0 auto}
 .iconbtn[disabled]{opacity:.35;cursor:not-allowed}
 .bar{height:6px;border-radius:999px;background:var(--soft2);overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));width:0}
-.fee-note{margin-top:16px;padding:12px 14px;border-radius:12px;border:1px dashed rgba(0,160,190,.45);background:rgba(0,240,255,.05);font-size:.8rem;line-height:1.55}
+.fee-note{margin-top:16px;padding:12px 14px;border-radius:14px;border:1px dashed rgba(0,160,190,.45);background:rgba(0,240,255,.05);font-size:.8rem;line-height:1.55}
 .sheet-foot{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
 .err{color:var(--danger-t);font-size:.8rem;min-height:18px;margin-top:10px}
-.modal{width:min(420px,100%);background:var(--sheet);border:1px solid var(--line2);border-radius:20px;padding:22px;margin:auto 0;color:var(--text)}
+.modal{width:min(420px,100%);background:var(--sheet);border:1px solid var(--line2);border-radius:22px;padding:22px;margin:auto 0;color:var(--text)}
 .modal p{color:var(--muted);font-size:.86rem;line-height:1.55;margin:8px 0 0}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--toast-bg);color:var(--text);border:1px solid rgba(0,200,110,.5);padding:11px 18px;border-radius:12px;font-size:.84rem;z-index:6000;max-width:calc(100% - 28px);display:none;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--toast-bg);color:var(--text);border:1px solid rgba(0,200,110,.5);padding:11px 18px;border-radius:12px;font-size:.84rem;z-index:6000;max-width:calc(100% - 28px);display:none;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .toast.on{display:block}
 .toast.bad{border-color:rgba(255,71,87,.55)}
 
-@media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}.card{padding:16px}}
-@media(max-width:520px){.two{grid-template-columns:1fr}.courses{grid-template-columns:1fr}.sheet{padding:18px 16px}.sheet-foot .btn{flex:1}.stat .v{font-size:1.35rem}}
+@media(max-width:900px){body{display:block}.main-content{padding:20px 14px 60px}h1{font-size:1.4rem}.grid2{grid-template-columns:1fr}.card{padding:16px}.hero{padding:18px}}
+@media(max-width:620px){
+  .stu{grid-template-columns:42px 1fr auto;grid-template-areas:"av who amt" "av cr cr" "av dt dt";row-gap:2px}
+  .stu .av{grid-area:av;align-self:start}.stu .who{grid-area:who}.stu .cr{grid-area:cr}.stu .dt{grid-area:dt}.stu .amt{grid-area:amt}
+}
+@media(max-width:520px){.two{grid-template-columns:1fr}.courses{grid-template-columns:1fr}.sheet{padding:18px 16px}.sheet-foot .btn{flex:1}.kpi .v{font-size:1.3rem}.ringwrap{flex-direction:column;align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 <link rel="stylesheet" href="glime-app-shell.css">
@@ -123,10 +207,16 @@ input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.6)}
 </head>
 <body data-gas-title="Creator">
 <main class="main-content" data-gas-content>
-  <h1>Creator</h1>
-  <p class="lead">Upload your courses, set a price and sell them through your Instagram and WhatsApp chats. Buyers pay straight into your own account.</p>
+  <div class="head">
+    <div>
+      <div class="eyebrow"><i></i>Creator Studio</div>
+      <h1>Sell your courses on autopilot</h1>
+      <p class="lead">Upload once. Your AI sells it in Instagram and WhatsApp chats, takes payment into your own account and gives every buyer private, 2-device access.</p>
+    </div>
+    <button type="button" class="btn hide" id="headNew"></button>
+  </div>
 
-  <div id="loading" class="banner note">Loading your creator account…</div>
+  <div id="loading" class="banner note">Loading your creator studio…</div>
 
   <section id="locked" class="card hide">
     <h2 id="lockedTitle">Creator access is not active</h2>
@@ -135,38 +225,100 @@ input:focus,select:focus,textarea:focus{border-color:rgba(0,240,255,.6)}
   </section>
 
   <div id="app" class="hide">
-    <div id="setupBanner" class="banner note hide">Course uploads and sales are still being set up for creators. You can look around, but nothing can be saved yet.</div>
+    <div id="loadErr" class="banner warn hide"></div>
     <div id="walletAlert" class="banner warn hide"></div>
 
-    <div class="stats">
-      <div class="stat"><div class="k">Earned this month</div><div class="v" id="stEarn">–</div><div class="s">Paid directly to your account</div></div>
-      <div class="stat"><div class="k">Students</div><div class="v" id="stStudents">–</div><div class="s" id="stCourses"></div></div>
-      <div class="stat"><div class="k">GLIME wallet</div><div class="v" id="stWallet">–</div><div class="s"><a href="billing.html">Add money</a> · the sale fee is taken from here</div></div>
-      <div class="stat hide" id="stPlanCard"><div class="k">Plan</div><div class="v" id="stPlan">–</div><div class="s" id="stPlanSub"></div></div>
-    </div>
+    <nav class="tabs" role="tablist" aria-label="Creator sections" id="tabs"></nav>
 
-    <section class="card">
-      <div class="card-head"><h2>Course storage</h2><a class="btn ghost sm" href="billing.html">Get more storage</a></div>
-      <div class="meter-top"><span><b id="stUsed">0 MB</b> <span class="muted small" id="stQuota"></span></span><span class="muted small" id="stLeft"></span></div>
-      <div class="meter" id="meter" role="img" aria-label="Storage used by each course"></div>
-      <div class="legend" id="legend"></div>
+    <!-- OVERVIEW -->
+    <section class="pane" data-pane="overview" role="tabpanel">
+      <div class="hero">
+        <h2 id="heroTitle">Welcome to your studio</h2>
+        <p class="lead" id="heroText" style="max-width:560px"></p>
+        <div class="actions" id="heroActions"></div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid2">
+        <section class="card">
+          <div class="card-head"><h2>Get your first sale</h2><span class="pill" id="progPill"></span></div>
+          <ol class="steps" id="steps"></ol>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2>Course storage</h2><a class="btn ghost sm" href="billing.html">Get more</a></div>
+          <div class="ringwrap">
+            <div class="ring" id="ring"><b id="ringPct">0%</b></div>
+            <div style="flex:1;min-width:0">
+              <div><b id="stUsed" style="font-size:1.25rem">0 MB</b> <span class="muted small" id="stQuota"></span></div>
+              <div class="muted small" id="stLeft"></div>
+            </div>
+          </div>
+          <div class="meter" id="meter" role="img" aria-label="Storage used by each course"></div>
+          <div class="legend" id="legend"></div>
+        </section>
+      </div>
     </section>
 
-    <section class="card">
-      <div class="card-head"><h2>Your courses</h2><button type="button" class="btn" id="newCourse">New course</button></div>
-      <div class="courses" id="courses"></div>
+    <!-- COURSES -->
+    <section class="pane" data-pane="courses" role="tabpanel">
+      <div class="card" style="margin-top:18px">
+        <div class="card-head"><div><h2>Your courses</h2><div class="muted small">Edit lessons, copy the buyer link or add a course to Services so your AI can sell it.</div></div><button type="button" class="btn" id="newCourse"></button></div>
+        <div class="courses" id="courses"></div>
+      </div>
     </section>
 
-    <section class="card">
-      <div class="card-head"><h2>Recent sales</h2></div>
-      <div class="tablewrap" id="sales"></div>
+    <!-- STUDENTS -->
+    <section class="pane" data-pane="students" role="tabpanel">
+      <div class="card" style="margin-top:18px">
+        <div class="card-head">
+          <div><h2>Students</h2><div class="muted small" id="stuSub"></div></div>
+          <div class="tools">
+            <div class="search"><span id="searchIco"></span><input type="search" id="stuSearch" placeholder="Search name, number or course" aria-label="Search students"></div>
+            <button type="button" class="btn ghost sm" id="csvBtn"></button>
+          </div>
+        </div>
+        <div id="students"></div>
+      </div>
     </section>
 
-    <section class="card">
-      <div class="card-head"><h2>What GLIME charges</h2></div>
-      <p class="lead" style="margin:0 0 14px">One small fee for each sale, based on the course price. We never take a percentage of what you earn. The fee is taken from your GLIME wallet when a buyer pays.</p>
-      <div class="slabs" id="slabs"></div>
-      <p class="muted small" style="margin:12px 0 0">If your wallet has less than the fee, buying is paused for that course and you get a message so you can add money. Buyers are never charged when a sale is paused.</p>
+    <!-- EARNINGS -->
+    <section class="pane" data-pane="earnings" role="tabpanel">
+      <div class="kpis" id="earnKpis"></div>
+      <section class="card">
+        <div class="card-head"><h2>Revenue by course</h2></div>
+        <div class="tablewrap" id="revenue"></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>What GLIME charges</h2><a class="btn ghost sm" href="billing.html">Add money</a></div>
+        <p class="lead" style="margin:0 0 14px">One small fee for each sale, based on the course price. We never take a percentage of what you earn. The fee is taken from your GLIME wallet when a buyer pays.</p>
+        <div class="slabs" id="slabs"></div>
+        <p class="muted small" style="margin:12px 0 0">If your wallet has less than the fee, buying is paused for that course and you get a message so you can add money. Buyers are never charged when a sale is paused.</p>
+      </section>
+    </section>
+
+    <!-- SELL -->
+    <section class="pane" data-pane="sell" role="tabpanel">
+      <section class="card" style="margin-top:18px">
+        <div class="card-head"><h2>How a buyer gets your course</h2></div>
+        <div class="flow">
+          <div><span class="no">1</span><b>Chat</b><p>A buyer messages you on Instagram or WhatsApp. Your AI answers and shares the price.</p></div>
+          <div><span class="no">2</span><b>Pay</b><p>The AI sends a secure payment link. Money goes straight to your own account.</p></div>
+          <div><span class="no">3</span><b>Link</b><p>After payment the buyer automatically gets the private course link in the chat.</p></div>
+          <div><span class="no">4</span><b>Code</b><p>The buyer writes <b style="display:inline">code</b> and gets a 10-minute code. It opens the course on up to 2 devices.</p></div>
+        </div>
+      </section>
+      <section class="card">
+        <div class="card-head"><div><h2>Let your AI sell it</h2><div class="muted small">Add each published course to Services once. Choose delivery “GLIME secure course page”.</div></div></div>
+        <div id="sellLinks"></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Good to know</h2></div>
+        <ul class="small muted" style="margin:0;padding-left:18px;display:grid;gap:6px">
+          <li>The course link only works with the buyer's mobile number and a fresh code, so a shared link alone cannot open it.</li>
+          <li>Every video, audio and PDF carries the buyer's number as a watermark, so a leak can be traced.</li>
+          <li>A course with paying students cannot be deleted. Remove lessons you no longer need instead.</li>
+          <li>Screen recording cannot be fully stopped by any website. The 2-device limit and the watermark discourage sharing.</li>
+        </ul>
+      </section>
     </section>
   </div>
 </main>
@@ -218,49 +370,42 @@ const SUPABASE_KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 window.supabaseClient=sb;
 
-/* ------------------------------------------------------------------
-   Settings. Change these in one place.
-   BACKEND_READY = false -> the page shows only what already exists for the
-                            client (wallet, storage). Saving and uploading are off.
-   BACKEND_READY = true  -> the page also loads courses and sales from CFG.API
-                            and can save, upload and delete.
-------------------------------------------------------------------- */
 const MB=1024*1024, GB=1024*MB;
 const CFG={
-  BACKEND_READY:false,
   API:SUPABASE_URL+'/functions/v1/creator-api',
-  COURSE_URL:'https://glime.online/c/',
+  COURSE_URL:'https://glime.online/course-view.html?c=',
   MAX_BYTES:{video:500*MB,audio:100*MB,pdf:50*MB,image:2*MB},
   /* Fee per sale in rupees, by course price. Free courses pay nothing. */
   SLABS:[{upTo:499,fee:20,label:'Up to ₹499'},{upTo:1999,fee:100,label:'₹500 to ₹1,999'},{upTo:Infinity,fee:200,label:'₹2,000 and above'}],
   CATEGORIES:['Yoga','Fitness','Music','Dance','Cooking','Art and craft','Language','Business','Other']
 };
 const COLORS=['#00c46a','#00b7d4','#8b6cf0','#f0a500','#e8506f','#4f8cf0'];
-const OFF_MSG='Saving and uploading are not switched on yet. They will work once creator courses are set up.';
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
-const fmtDate=d=>new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
 function fmtSize(b){b=Number(b)||0;return b>=GB?(b/GB).toFixed(2).replace(/\.?0+$/,'')+' GB':b>=MB?Math.round(b/MB)+' MB':b>0?Math.max(1,Math.round(b/1024))+' KB':'0 MB';}
 function feeFor(price){price=Number(price)||0;if(price<=0)return 0;return CFG.SLABS.find(s=>price<=s.upTo).fee;}
-let tmr;function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className='toast on'+(bad?' bad':'');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on'),3400);}
+let tmr;function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className='toast on'+(bad?' bad':'');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on'),3600);}
 const uid=()=>'x'+Math.random().toString(36).slice(2,10);
+const svg=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+const IC={
+  home:svg('<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>'),
+  book:svg('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/>'),
+  users:svg('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14.4c1.8.8 3 2.6 3 5.6"/>'),
+  coin:svg('<circle cx="12" cy="12" r="9"/><path d="M9 8h6M9 12h6M9 8c4 0 4 4 0 4l4 4"/>'),
+  share:svg('<circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8.2 11l7.6-4M8.2 13l7.6 4"/>'),
+  wallet:svg('<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>'),
+  disk:svg('<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>'),
+  plus:svg('<path d="M12 5v14M5 12h14"/>'),
+  search:svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
+  down:svg('<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>'),
+  trend:svg('<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>')
+};
 
-const state={ctx:null,data:null,ed:null,busyUploads:0};
+const state={ctx:null,data:null,ed:null,busyUploads:0,tab:'overview',q:''};
 
-/* ------------------------------------------------------------------
-   Data. Everything shown is the signed-in client's own data.
-   Wallet and storage are read straight from the client's own rows.
-   When BACKEND_READY is true, these actions go to CFG.API:
-   overview     -> { courses[], sales[], earnedThisMonth, plan:{name,endsAt,free} }
-   saveCourse   -> course            { course, publish }
-   deleteCourse -> { ok:true }       { id }
-   uploadUrl    -> { url, fileId }   short-lived upload link; backend checks the storage limit
-   uploadDone   -> { ok:true }       { fileId }
-   The backend must check creator approval, ownership, storage and the fee
-   by itself. This page is only a screen.
-------------------------------------------------------------------- */
 async function call(action,payload){
   const s=(await sb.auth.getSession()).data.session;
   if(!s)throw new Error('You are signed out. Please sign in again.');
@@ -271,34 +416,42 @@ async function call(action,payload){
 }
 const first=r=>(r&&r.data&&r.data[0])||null;
 
+/* ---------- storage cleanup: files uploaded but never saved into a course ---------- */
+const pending=new Set();let upSession=0;
+function discardFile(id){if(!id)return;pending.delete(id);call('discard',{fileId:id}).catch(()=>{});}
+
 const API={
   async overview(){
     const u=state.ctx.userId,k=state.ctx.clientId;
-    const [w,q,us]=await Promise.all([
+    const [w,q,us,by]=await Promise.all([
       sb.from('glime_billing_wallets').select('balance').eq('auth_user_id',u).limit(1),
       sb.from('client_storage_quotas').select('quota_bytes').eq('client_id',k).limit(1),
-      sb.from('client_storage_usage').select('used_bytes,reserved_bytes').eq('client_id',k).limit(1)
+      sb.from('client_storage_usage').select('used_bytes,reserved_bytes').eq('client_id',k).limit(1),
+      sb.from('creator_buyers').select('id,course_id,buyer_name,buyer_phone,channel,amount_paise,fee_inr,paid_at,created_at,access_expires_at').eq('status','paid').order('paid_at',{ascending:false,nullsFirst:false}).limit(500)
     ]);
     const wr=first(w),qr=first(q),ur=first(us);
     const d={
       wallet:Number(wr&&wr.balance)||0,
       quotaBytes:Number(qr&&qr.quota_bytes)||0,
       usedBytes:(Number(ur&&ur.used_bytes)||0)+(Number(ur&&ur.reserved_bytes)||0),
-      courses:[],sales:[],earnedThisMonth:0,plan:null
+      courses:[],sales:[],buyers:[],earnedThisMonth:0,loadError:''
     };
-    if(CFG.BACKEND_READY)Object.assign(d,await call('overview',{}));
+    try{Object.assign(d,await call('overview',{}));}catch(e){d.loadError=(e&&e.message)||'Could not load your courses.';}
+    const title={};(d.courses||[]).forEach(c=>{title[c.id]=c.title;});
+    d.buyers=((by&&by.data)||[]).map(b=>({
+      name:b.buyer_name||'Buyer',phone:b.buyer_phone||'',channel:b.channel||'',course:title[b.course_id]||'Course',courseId:b.course_id,
+      at:b.paid_at||b.created_at,until:b.access_expires_at,amount:Number(b.amount_paise||0)/100,fee:Number(b.fee_inr||0)
+    }));
     return d;
   },
   async saveCourse(course,publish){
-    if(!CFG.BACKEND_READY)throw new Error(OFF_MSG);
-    return call('saveCourse',{course:stripFiles(course),publish});
+    const r=await call('saveCourse',{course:stripFiles(course),publish});
+    (course.lessons||[]).forEach(l=>{if(l.fileId)pending.delete(l.fileId);});
+    return r;
   },
-  async deleteCourse(id){
-    if(!CFG.BACKEND_READY)throw new Error(OFF_MSG);
-    return call('deleteCourse',{id});
-  },
+  async deleteCourse(id){return call('deleteCourse',{id});},
   async upload(file,onProgress){
-    if(!CFG.BACKEND_READY)throw new Error(OFF_MSG);
+    const mine=upSession;
     const t=await call('uploadUrl',{name:file.name,type:file.type,size:file.size});
     await new Promise((res,rej)=>{
       const x=new XMLHttpRequest();x.open('PUT',t.url);x.setRequestHeader('Content-Type',file.type||'application/octet-stream');
@@ -306,6 +459,8 @@ const API={
       x.onload=()=>x.status<300?res():rej(new Error('Upload failed'));x.onerror=()=>rej(new Error('Upload failed'));x.send(file);
     });
     await call('uploadDone',{fileId:t.fileId});
+    if(mine!==upSession){discardFile(t.fileId);throw new Error('Cancelled');}
+    pending.add(t.fileId);
     return{fileId:t.fileId};
   }
 };
@@ -313,41 +468,82 @@ function stripFiles(c){return{...c,lessons:c.lessons.map(l=>{const {file,...rest
 
 const courseBytes=c=>(c.lessons||[]).reduce((n,l)=>n+(l.status==='ready'||l.status==='uploading'?l.size:0),0);
 const isPaused=c=>c.status==='published'&&feeFor(c.price)>state.data.wallet;
+const linkOf=c=>CFG.COURSE_URL+c.slug;
+const waLink=p=>{const d=String(p||'').replace(/\D/g,'');return d.length>=10?'https://wa.me/'+(d.length===10?'91'+d:d):'';};
+function copy(text,msg){(navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>toast(msg||'Copied'),()=>toast(text));}
 
 /* ------------------------------------------------------------------
-   Dashboard
+   Tabs
 ------------------------------------------------------------------- */
+const TABS=[['overview','Overview','home'],['courses','Courses','book'],['students','Students','users'],['earnings','Earnings','coin'],['sell','Sell','share']];
+function paintTabs(){
+  const d=state.data;
+  const count={courses:d.courses.length,students:d.buyers.length};
+  $('tabs').innerHTML=TABS.map(t=>'<button type="button" class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(state.tab===t[0])+'">'+IC[t[2]]+t[1]+(count[t[0]]?'<span class="n">'+count[t[0]]+'</span>':'')+'</button>').join('');
+}
+function setTab(name,noHash){
+  if(!TABS.some(t=>t[0]===name))name='overview';
+  state.tab=name;
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.dataset.pane===name));
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===name)));
+  if(!noHash){try{history.replaceState(null,'','#'+name);}catch(e){}}
+}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab);});
+window.addEventListener('hashchange',()=>{if(state.data)setTab((location.hash||'').slice(1),true);});
+
+/* ------------------------------------------------------------------
+   Render
+------------------------------------------------------------------- */
+function kpi(color,icon,k,v,s){return '<div class="kpi"><span class="ico" style="--c:'+color+'">'+IC[icon]+'</span><div><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div></div>';}
+
 function render(){
   const d=state.data,courses=d.courses;
-  $('setupBanner').classList.toggle('hide',CFG.BACKEND_READY);
-  $('stEarn').textContent=inr(d.earnedThisMonth);
-  $('stStudents').textContent=courses.reduce((n,c)=>n+(c.students||0),0).toLocaleString('en-IN');
-  const pub=courses.filter(c=>c.status==='published').length;
-  $('stCourses').textContent=courses.length?pub+' published, '+(courses.length-pub)+' draft':'No courses yet';
-  $('stWallet').textContent=inr(d.wallet);
-  if(d.plan&&d.plan.name){
-    $('stPlanCard').classList.remove('hide');$('stPlan').textContent=d.plan.name;
-    const left=d.plan.endsAt?Math.max(0,Math.ceil((new Date(d.plan.endsAt)-Date.now())/864e5)):0;
-    $('stPlanSub').textContent=d.plan.free?(left?'Free for you · '+left+' day'+(left>1?'s':'')+' left':'Free period has ended'):'';
-  }else $('stPlanCard').classList.add('hide');
-
-  const paused=courses.filter(isPaused),wa=$('walletAlert');
+  const le=$('loadErr');le.textContent=d.loadError||'';le.classList.toggle('hide',!d.loadError);
+  const pub=courses.filter(c=>c.status==='published');
+  const students=d.buyers.length;
+  const wa=$('walletAlert'),paused=courses.filter(isPaused);
   if(paused.length){
     const need=Math.max(...paused.map(c=>feeFor(c.price)));
-    wa.innerHTML='<div class="row"><div><strong>Buying is paused for '+paused.length+' course'+(paused.length>1?'s':'')+'.</strong> '+
-      'Your wallet has '+inr(d.wallet)+' and the fee for '+(paused.length>1?'these courses goes up to ':'this course is ')+inr(need)+
-      '. Buyers who try to purchase are told it is not available right now, and you get a message. Add money to start selling again.</div>'+
-      '<a class="btn sm" href="billing.html">Add money</a></div>';
+    wa.innerHTML='<div class="row"><div><strong>Buying is paused for '+paused.length+' course'+(paused.length>1?'s':'')+'.</strong> Your wallet has '+inr(d.wallet)+' and the fee for '+(paused.length>1?'these courses goes up to ':'this course is ')+inr(need)+'. Buyers who try to purchase are told it is not available right now. Add money to start selling again.</div><a class="btn sm" href="billing.html">Add money</a></div>';
     wa.classList.remove('hide');
   }else wa.classList.add('hide');
 
-  renderStorage();renderCourses();renderSales();
-  $('slabs').innerHTML=CFG.SLABS.map(s=>'<div class="slab"><b>'+inr(s.fee)+'</b><span>per sale · '+esc(s.label)+'</span></div>').join('')+
-    '<div class="slab"><b>₹0</b><span>per sale · Free courses</span></div>';
+  /* head button */
+  const hb=$('headNew');hb.innerHTML=IC.plus+'New course';hb.classList.remove('hide');
+
+  /* hero */
+  $('heroTitle').textContent=!courses.length?'Create your first course':!pub.length?'Publish your first course':students?students+' student'+(students>1?'s':'')+' are learning from you':'Your course is live';
+  $('heroText').textContent=!courses.length?'Upload your lessons, set a price and publish. It takes a few minutes, and your AI starts selling it right away.':!pub.length?'Your course is saved as a draft. Publish it so buyers can get access.':students?'You earned '+inr(d.earnedThisMonth)+' this month. Keep adding lessons to keep students coming back.':'Add it to Services so your AI can offer it in every chat.';
+  $('heroActions').innerHTML='<button type="button" class="btn" data-go="new">'+IC.plus+(courses.length?'New course':'Create course')+'</button>'+
+    (pub.length?'<a class="btn ghost" href="services.html?creator_course='+encodeURIComponent(pub[0].id)+'">'+IC.share+'Add to Services</a>':'')+
+    '<button type="button" class="btn ghost" data-tab="sell">How selling works</button>';
+
+  /* kpis */
+  $('kpis').innerHTML=
+    kpi('#00ff88','trend','Earned this month',inr(d.earnedThisMonth),'Paid directly to your account')+
+    kpi('#00f0ff','users','Students',students.toLocaleString('en-IN'),courses.length?pub.length+' published, '+(courses.length-pub.length)+' draft':'No courses yet')+
+    kpi('#f5b942','wallet','GLIME wallet',inr(d.wallet),'<a href="billing.html">Add money</a> · sale fee is taken from here')+
+    kpi('#8b6cf0','disk','Storage left',fmtSize(Math.max(0,d.quotaBytes-d.usedBytes)),fmtSize(d.usedBytes)+' of '+fmtSize(d.quotaBytes)+' used');
+
+  /* checklist */
+  const lowWallet=d.wallet<feeFor(pub.length?pub[0].price:20);
+  const st=[
+    [courses.length>0,'Create a course and add lessons','courses'],
+    [pub.length>0,'Publish it','courses'],
+    [d.wallet>=20,'Keep money in your GLIME wallet for the sale fee','billing'],
+    [students>0,'Get your first student','sell']
+  ];
+  const done=st.filter(x=>x[0]).length;
+  $('progPill').textContent=done+' of '+st.length+' done';
+  $('steps').innerHTML=st.map((x,i)=>'<li class="'+(x[0]?'done':'')+'"><span class="dot">'+(x[0]?'✓':(i+1))+'</span><b>'+esc(x[1])+'</b>'+(x[0]?'':(x[2]==='billing'?'<a class="btn ghost sm go" href="billing.html">Add money</a>':'<button type="button" class="btn ghost sm go" data-tab="'+x[2]+'">Open</button>'))+'</li>').join('');
+
+  renderStorage();renderCourses();renderStudents();renderEarnings();renderSell();paintTabs();setTab(state.tab,true);
 }
 
 function renderStorage(){
   const d=state.data,used=d.usedBytes||0,q=d.quotaBytes||0;
+  const pct=q>0?Math.min(100,Math.round(used/q*100)):0;
+  $('ring').style.setProperty('--p',pct);$('ringPct').textContent=pct+'%';
   $('stUsed').textContent=fmtSize(used);
   $('stQuota').textContent=q>0?'of '+fmtSize(q)+' used':'No course storage assigned yet';
   $('stLeft').textContent=q>0?fmtSize(Math.max(0,q-used))+' free':'';
@@ -361,26 +557,62 @@ function renderStorage(){
 
 function renderCourses(){
   const list=state.data.courses;
-  if(!list.length){$('courses').innerHTML='<div class="empty" style="grid-column:1/-1"><b>No courses yet</b>Create your first course, upload your lessons and publish it. Your AI assistant will then offer it to people who message you.</div>';return;}
+  $('newCourse').innerHTML=IC.plus+'New course';
+  if(!list.length){$('courses').innerHTML='<div class="empty" style="grid-column:1/-1"><b>No courses yet</b>Create your first course, upload your lessons and publish it. Your AI assistant will then offer it to people who message you.<br><button type="button" class="btn" data-go="new">'+IC.plus+'Create your first course</button></div>';return;}
   $('courses').innerHTML=list.map(c=>{
     const paused=isPaused(c);
-    const status=c.status==='published'?(paused?'<span class="pill stop">Paused: wallet low</span>':'<span class="pill ok">Published</span>'):'<span class="pill draft">Draft</span>';
-    const thumb=c.thumb?'<div class="thumb" style="background-image:url(\''+esc(c.thumb)+'\')"></div>':'<div class="thumb">'+esc((c.title||'?').trim().charAt(0).toUpperCase())+'</div>';
-    const n=(c.lessons||[]).length;
-    return '<article class="course" data-id="'+esc(c.id)+'">'+thumb+'<div class="course-body">'+
-      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div class="course-title">'+esc(c.title)+'</div>'+status+'</div>'+
-      '<div class="meta"><span>'+(c.price>0?inr(c.price):'Free')+'</span><span>'+n+' lesson'+(n===1?'':'s')+'</span><span>'+fmtSize(courseBytes(c))+'</span><span>'+(c.students||0)+' student'+(c.students===1?'':'s')+'</span></div>'+
+    const status=c.status==='published'?(paused?'<span class="pill stop">Paused: wallet low</span>':'<span class="pill ok">Live</span>'):'<span class="pill draft">Draft</span>';
+    const cover=c.thumb?'<div class="cover" style="background-image:url(\''+esc(c.thumb)+'\')">':'<div class="cover">'+esc((c.title||'?').trim().charAt(0).toUpperCase());
+    const n=(c.lessons||[]).length,rev=(c.students||0)*(c.price||0);
+    return '<article class="course" data-id="'+esc(c.id)+'">'+cover+status+'<span class="price">'+(c.price>0?inr(c.price):'Free')+'</span></div>'+
+      '<div class="course-body"><div class="course-title">'+esc(c.title)+'</div>'+
+      '<div class="chips"><span>'+n+' lesson'+(n===1?'':'s')+'</span><span>'+fmtSize(courseBytes(c))+'</span><span>'+(c.students||0)+' student'+(c.students===1?'':'s')+'</span>'+(rev>0?'<span>'+inr(rev)+' earned</span>':'')+'<span>'+esc(c.category||'')+'</span></div>'+
       '<div class="course-foot"><button type="button" class="btn ghost sm" data-act="edit">Edit</button>'+
-      (c.status==='published'&&c.slug?'<button type="button" class="btn ghost sm" data-act="copy">Copy link</button>':'')+
+      (c.status==='published'&&c.slug?'<button type="button" class="btn ghost sm" data-act="copy">Copy link</button><a class="btn ghost sm" href="services.html?creator_course='+encodeURIComponent(c.id)+'">Add to Services</a>':'')+
       '<button type="button" class="btn danger sm" data-act="del">Delete</button></div></div></article>';
   }).join('');
 }
 
-function renderSales(){
-  const s=state.data.sales;
-  if(!s.length){$('sales').innerHTML='<div class="empty"><b>No sales yet</b>When someone buys a course, it shows up here.</div>';return;}
-  $('sales').innerHTML='<table class="sales"><thead><tr><th>Buyer</th><th>Course</th><th>Date</th><th class="amt">Amount</th></tr></thead><tbody>'+
-    s.map(x=>'<tr><td>'+esc(x.buyer)+'<div class="muted small">'+esc(x.channel||'')+'</div></td><td>'+esc(x.course)+'</td><td>'+fmtDate(x.at)+'</td><td class="amt">'+inr(x.amount)+'</td></tr>').join('')+'</tbody></table>';
+function filteredBuyers(){
+  const q=state.q.trim().toLowerCase();
+  return state.data.buyers.filter(b=>!q||(b.name+' '+b.phone+' '+b.course).toLowerCase().includes(q));
+}
+function renderStudents(){
+  const all=state.data.buyers,list=filteredBuyers();
+  $('searchIco').innerHTML=IC.search;$('csvBtn').innerHTML=IC.down+'Download list';
+  $('stuSub').textContent=all.length?all.length+' paying student'+(all.length>1?'s':'')+'. Their numbers are also saved in your leads.':'Buyers show up here with their name and mobile number.';
+  if(!all.length){$('students').innerHTML='<div class="empty"><b>No students yet</b>When someone buys a course, they appear here with their name and mobile number.</div>';return;}
+  if(!list.length){$('students').innerHTML='<div class="empty"><b>No match</b>Try a different name, number or course.</div>';return;}
+  $('students').innerHTML=list.map(b=>{
+    const wl=waLink(b.phone);
+    return '<div class="stu"><span class="av">'+esc((b.name||'?').trim().charAt(0).toUpperCase())+'</span>'+
+      '<div class="who"><div class="nm">'+esc(b.name)+'</div><div class="small">'+(b.phone?'<a href="tel:'+esc(b.phone)+'">'+esc(b.phone)+'</a>'+(wl?'<a class="wa" href="'+esc(wl)+'" target="_blank" rel="noopener">WhatsApp</a>':''):'<span class="muted">No number</span>')+'</div></div>'+
+      '<div class="cr small">'+esc(b.course)+(b.channel?'<div class="muted">via '+esc(b.channel)+'</div>':'')+'</div>'+
+      '<div class="dt small muted">'+fmtDate(b.at)+(b.until?'<div>Access till '+fmtDate(b.until)+'</div>':'<div>Lifetime access</div>')+'</div>'+
+      '<div class="amt">'+inr(b.amount)+'</div></div>';
+  }).join('');
+}
+function csv(){
+  const rows=[['Name','Mobile','Course','Paid (INR)','Date','Access till','Channel']].concat(state.data.buyers.map(b=>[b.name,b.phone,b.course,b.amount,fmtDate(b.at),b.until?fmtDate(b.until):'Lifetime',b.channel]));
+  const txt=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+txt],{type:'text/csv'}));a.download='students.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+
+function renderEarnings(){
+  const d=state.data,all=d.buyers.reduce((n,b)=>n+b.amount,0),fees=d.buyers.reduce((n,b)=>n+b.fee,0);
+  $('earnKpis').innerHTML=
+    kpi('#00ff88','trend','This month',inr(d.earnedThisMonth),'Paid directly to your account')+
+    kpi('#00f0ff','coin','All time',inr(all),d.buyers.length+' sale'+(d.buyers.length===1?'':'s'))+
+    kpi('#f5b942','wallet','GLIME fees paid',inr(fees),'Taken from your wallet')+
+    kpi('#8b6cf0','wallet','Wallet balance',inr(d.wallet),'<a href="billing.html">Add money</a>');
+  const rows=d.courses.map(c=>{const sold=d.buyers.filter(b=>b.courseId===c.id);return{c,n:sold.length,rev:sold.reduce((x,b)=>x+b.amount,0),fee:sold.reduce((x,b)=>x+b.fee,0)};}).filter(r=>r.n>0||r.c.status==='published');
+  $('revenue').innerHTML=rows.length?'<table class="t"><thead><tr><th>Course</th><th>Price</th><th>Sales</th><th class="r">Earned</th><th class="r">GLIME fee</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.c.title)+'</td><td>'+(r.c.price>0?inr(r.c.price):'Free')+'</td><td>'+r.n+'</td><td class="r">'+inr(r.rev)+'</td><td class="r">'+inr(r.fee)+'</td></tr>').join('')+'</tbody></table>':'<div class="empty"><b>No sales yet</b>Your revenue per course will show here.</div>';
+  $('slabs').innerHTML=CFG.SLABS.map(s=>'<div class="slab"><b>'+inr(s.fee)+'</b><span>per sale · '+esc(s.label)+'</span></div>').join('')+'<div class="slab"><b>₹0</b><span>per sale · Free courses</span></div>';
+}
+
+function renderSell(){
+  const pub=state.data.courses.filter(c=>c.status==='published'&&c.slug);
+  $('sellLinks').innerHTML=pub.length?pub.map(c=>'<div class="linkrow"><div class="t"><b>'+esc(c.title)+'</b><span>'+esc(linkOf(c))+'</span></div><button type="button" class="btn ghost sm" data-copy="'+esc(c.id)+'">Copy link</button><a class="btn sm" href="services.html?creator_course='+encodeURIComponent(c.id)+'">Add to Services</a></div>').join('')+'<p class="muted small" style="margin:12px 0 0">This link is for your buyers. The AI sends it after payment. It opens only with the buyer\'s number and a fresh code.</p>':'<div class="empty"><b>Nothing to sell yet</b>Publish a course first.<br><button type="button" class="btn" data-tab="courses">Go to courses</button></div>';
 }
 
 /* ------------------------------------------------------------------
@@ -393,9 +625,7 @@ function openEditor(id){
   $('edTitle').textContent=src?'Edit course':'New course';
   $('fTitle').value=state.ed.title;$('fPrice').value=state.ed.price===''?'':state.ed.price;$('fDesc').value=state.ed.description||'';
   $('fCat').innerHTML=CFG.CATEGORIES.map(c=>'<option'+(c===state.ed.category?' selected':'')+'>'+esc(c)+'</option>').join('');
-  const off=!CFG.BACKEND_READY;
-  $('edSave').disabled=$('edPublish').disabled=$('fAddLesson').disabled=off;
-  $('edErr').textContent=off?OFF_MSG:'';
+  $('edErr').textContent='';$('edSave').disabled=$('edPublish').disabled=$('fAddLesson').disabled=false;
   paintThumb();renderLessons();feeNote();
   $('edPublish').textContent=state.ed.status==='published'?'Save changes':'Publish course';
   $('edOv').classList.add('on');$('fTitle').focus();
@@ -403,6 +633,7 @@ function openEditor(id){
 function closeEditor(){
   if(state.busyUploads>0&&!confirm('Files are still uploading. Close and cancel them?'))return;
   state.ed=null;state.busyUploads=0;$('edOv').classList.remove('on');
+  upSession++;[...pending].forEach(discardFile);
 }
 function paintThumb(){
   const t=$('fThumb'),e=state.ed;
@@ -452,7 +683,7 @@ function addFiles(files){
     draftBytes+=f.size;
     const l={id:uid(),title:f.name.replace(/\.[^.]+$/,'').slice(0,90),type:k,size:f.size,free:false,status:'uploading',progress:0};
     state.ed.lessons.push(l);state.busyUploads++;renderLessons();
-    API.upload(f,p=>{l.progress=p;paintProgress(l);}).then(r=>{l.status='ready';l.progress=1;l.fileId=r.fileId;}).catch(x=>{l.status='error';err.textContent='"'+f.name+'" could not be uploaded. '+(x&&x.message?x.message:'')+' Remove it and try again.';}).finally(()=>{state.busyUploads=Math.max(0,state.busyUploads-1);if(state.ed)renderLessons();});
+    API.upload(f,p=>{l.progress=p;paintProgress(l);}).then(r=>{l.status='ready';l.progress=1;l.fileId=r.fileId;}).catch(x=>{l.status='error';if(x&&x.message!=='Cancelled')err.textContent='"'+f.name+'" could not be uploaded. '+(x&&x.message?x.message:'')+' Remove it and try again.';}).finally(()=>{state.busyUploads=Math.max(0,state.busyUploads-1);if(state.ed)renderLessons();});
   });
 }
 function readEditor(){
@@ -479,13 +710,19 @@ async function saveEditor(publish){
     state.data=await API.overview();
     state.ed=null;$('edOv').classList.remove('on');render();
     toast(publish?(wasPublished?'Changes saved':'Course published'):'Draft saved');
+    if(publish&&!wasPublished)setTab('sell');
   }catch(x){err.textContent=x.message||'Could not save. Please try again.';}
-  finally{const off=!CFG.BACKEND_READY;$('edSave').disabled=$('edPublish').disabled=off;}
+  finally{$('edSave').disabled=$('edPublish').disabled=false;}
 }
 
 /* ------------------------------------------------------------------
    Events
 ------------------------------------------------------------------- */
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go="new"]');if(g){openEditor(null);return;}
+  const t=e.target.closest('[data-tab]');if(t&&!t.closest('#tabs'))setTab(t.dataset.tab);
+});
+$('headNew').onclick=()=>openEditor(null);
 $('newCourse').onclick=()=>openEditor(null);
 $('edClose').onclick=closeEditor;
 $('edOv').addEventListener('mousedown',e=>{if(e.target===$('edOv'))closeEditor();});
@@ -496,7 +733,7 @@ $('fThumbFile').onchange=e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
   if(!/^image\/(png|jpe?g|webp)$/.test(f.type)){$('edErr').textContent='Cover image must be JPG, PNG or WebP.';return;}
   if(f.size>CFG.MAX_BYTES.image){$('edErr').textContent='Cover image must be under 2 MB.';return;}
-  $('edErr').textContent=CFG.BACKEND_READY?'':OFF_MSG;
+  $('edErr').textContent='';
   const r=new FileReader();r.onload=()=>{state.ed.thumb=r.result;paintThumb();};r.readAsDataURL(f);
 };
 $('fAddLesson').onclick=()=>$('fLessonFile').click();
@@ -514,22 +751,31 @@ $('lessons').addEventListener('click',e=>{
   const row=b.closest('[data-i]'),i=+row.dataset.i,ls=state.ed.lessons;
   if(b.dataset.act==='up'&&i>0){[ls[i-1],ls[i]]=[ls[i],ls[i-1]];}
   else if(b.dataset.act==='down'&&i<ls.length-1){[ls[i+1],ls[i]]=[ls[i],ls[i+1]];}
-  else if(b.dataset.act==='rm'){if(ls[i].status==='uploading')state.busyUploads=Math.max(0,state.busyUploads-1);ls.splice(i,1);}
+  else if(b.dataset.act==='rm'){
+    if(ls[i].status==='uploading')state.busyUploads=Math.max(0,state.busyUploads-1);
+    if(ls[i].fileId&&ls[i].status==='ready')discardFile(ls[i].fileId);
+    ls.splice(i,1);
+  }
   renderLessons();
 });
 $('edSave').onclick=()=>saveEditor(false);
 $('edPublish').onclick=()=>saveEditor(true);
+$('stuSearch').addEventListener('input',e=>{state.q=e.target.value;renderStudents();});
+$('csvBtn').onclick=()=>{if(!state.data.buyers.length)return toast('No students to download yet.',true);csv();};
+$('sellLinks').addEventListener('click',e=>{
+  const b=e.target.closest('[data-copy]');if(!b)return;
+  const c=state.data.courses.find(x=>x.id===b.dataset.copy);if(c)copy(linkOf(c),'Link copied');
+});
 
 let pendingDelete=null;
 $('courses').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const id=b.closest('.course').dataset.id,c=state.data.courses.find(x=>x.id===id);if(!c)return;
   if(b.dataset.act==='edit')openEditor(id);
-  else if(b.dataset.act==='copy'){
-    const url=CFG.COURSE_URL+c.slug;
-    (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link copied'),()=>toast(url));
-  }else if(b.dataset.act==='del'){
-    pendingDelete=c;$('cfText').textContent=(c.students?'"'+c.title+'" has '+c.students+' student'+(c.students>1?'s':'')+'. They will lose access to it. ':'"'+c.title+'" and its files will be removed. ')+'This cannot be undone.';
+  else if(b.dataset.act==='copy')copy(linkOf(c),'Link copied');
+  else if(b.dataset.act==='del'){
+    if(c.students>0){toast('This course has '+c.students+' paying student'+(c.students>1?'s':'')+', so it cannot be deleted. Remove lessons you no longer need instead.',true);return;}
+    pendingDelete=c;$('cfText').textContent='"'+c.title+'" and its files will be removed. This cannot be undone.';
     $('cfOv').classList.add('on');
   }
 });
@@ -543,8 +789,7 @@ $('cfYes').onclick=async()=>{
 
 /* ------------------------------------------------------------------
    Boot: sign-in check, approval check, then load the client's own data.
-   Approval is read from the signed-in user's own creator_applications row.
-   The backend must enforce approval again; this only decides what to show.
+   The backend enforces approval again; this only decides what to show.
 ------------------------------------------------------------------- */
 async function handleLogout(){
   try{await sb.auth.signOut({scope:'local'});}catch(e){}
@@ -554,7 +799,7 @@ async function handleLogout(){
 window.handleLogout=handleLogout;
 
 function showLocked(title,text){
-  $('loading').classList.add('hide');$('app').classList.add('hide');
+  $('loading').classList.add('hide');$('app').classList.add('hide');$('headNew').classList.add('hide');
   $('lockedTitle').textContent=title;$('lockedText').textContent=text;$('locked').classList.remove('hide');
 }
 
@@ -580,6 +825,7 @@ async function init(){
       else showLocked('You have not applied as a creator','Apply from AI connections. Once the GLIME team approves you, this page opens.');
       return;
     }
+    state.tab=(location.hash||'').slice(1)||'overview';
     state.data=await API.overview();
     $('loading').classList.add('hide');$('app').classList.remove('hide');
     render();
