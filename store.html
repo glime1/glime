@@ -12,7 +12,7 @@
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-text-size-adjust:100%}
 .wrap{max-width:980px;margin:0 auto;padding:0 16px 60px}
 .hero{padding:44px 0 26px;text-align:center}
-.avatar{width:76px;height:76px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;font-size:1.9rem;font-weight:800;color:var(--onacc);background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.avatar{width:76px;height:76px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;font-size:1.9rem;font-weight:800;color:var(--onacc);background:linear-gradient(135deg,var(--accent),var(--accent2));background-size:cover;background-position:center}
 h1{margin:0;font-size:1.65rem;line-height:1.2}
 .bio{margin:10px auto 0;max-width:520px;color:var(--muted)}
 .soc{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
@@ -33,6 +33,7 @@ h1{margin:0;font-size:1.65rem;line-height:1.2}
 .empty,.err{text-align:center;color:var(--muted);padding:60px 10px}
 .trust{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:.8rem;margin-top:30px}
 .foot{text-align:center;color:var(--muted);font-size:.74rem;margin-top:34px}
+.foot a{color:inherit;font-weight:700;text-decoration:underline}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:50}
 .ov.on{display:flex}
 .sheet{background:var(--card);width:100%;max-width:460px;border-radius:22px 22px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom));border:1px solid var(--border)}
@@ -63,7 +64,7 @@ input:focus{border-color:var(--accent)}
   <div class="banner" id="banner"></div>
   <div id="list"><div class="empty">Loading…</div></div>
   <div class="trust" id="trust" hidden><span>🔒 Secure payment by Razorpay</span><span>📱 Opens on up to 2 of your devices</span><span>⚡ Instant access after payment</span></div>
-  <div class="foot">Powered by GLIME</div>
+  <div class="foot">Powered by <a href="https://glime.online" target="_blank" rel="noopener">GLIME</a></div>
 </div>
 
 <div class="ov" id="ov" role="dialog" aria-modal="true">
@@ -95,6 +96,8 @@ async function load(){
   document.title=store.title;
   $('hero').hidden=false;
   $('av').textContent=(store.title||'C').trim().charAt(0).toUpperCase();
+  const ph=safeUrl(store.photo);
+  if(ph){$('av').style.backgroundImage='url("'+ph.replace(/"/g,'%22')+'")';$('av').textContent='';}
   $('ttl').textContent=store.title;
   $('bio').textContent=store.bio||'';$('bio').hidden=!store.bio;
   const soc=[];
