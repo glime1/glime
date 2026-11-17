@@ -223,34 +223,43 @@
 
 /* =========================================================
    PREMIUM LOGO ANIMATION
-   A soft breathing halo behind the logo, a glow on the logo
-   itself, and a bright shine that sweeps across the logo shape
-   every few seconds. The logo file itself is not changed.
+   Calm and refined, the way large-company logos behave:
+   1. a soft reveal when the page loads (fade + gentle scale)
+   2. a very slow, quiet glow behind the logo (opacity only)
+   3. one soft light sweep across the logo shape every 7 seconds
+   No flashing, no hard white lines, no jumping.
+   The logo file itself is not changed.
 ========================================================= */
 .glime-brand{
   position:relative;
   isolation:isolate;
   -webkit-tap-highlight-color:transparent;
-  transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  transition:transform .35s cubic-bezier(.2,.8,.2,1);
 }
-.glime-brand:active{transform:scale(.94)}
+.glime-brand:hover{transform:translateY(-1px) scale(1.04)}
+.glime-brand:active{transform:scale(.95)}
 
+/* quiet ambient glow */
 .glime-brand::before{
   content:"";
   position:absolute;
-  inset:-6px;
+  inset:10%;
   z-index:-1;
   border-radius:50%;
-  background:radial-gradient(circle at 50% 50%,rgba(67,224,196,.30),rgba(82,232,255,.10) 45%,transparent 70%);
-  opacity:.5;
+  background:radial-gradient(circle,rgba(67,224,196,.34) 0,rgba(82,232,255,.12) 50%,transparent 74%);
+  filter:blur(10px);
+  opacity:.4;
   pointer-events:none;
-  animation:glime-brand-halo 3.6s ease-in-out infinite;
+  animation:glime-brand-breathe 5.5s ease-in-out infinite;
 }
 
+/* logo: soft reveal on load, then a steady subtle glow */
 .glime-brand img{
-  animation:glime-brand-glow 3.6s ease-in-out infinite;
+  filter:drop-shadow(0 0 6px rgba(67,224,196,.38));
+  animation:glime-brand-reveal 1s cubic-bezier(.2,.8,.2,1) both;
 }
 
+/* soft light sweep, clipped to the logo shape */
 .glime-brand::after{
   content:"";
   position:absolute;
@@ -258,21 +267,32 @@
   pointer-events:none;
   -webkit-mask:url("glime_logo_clean.svg") center/contain no-repeat;
   mask:url("glime_logo_clean.svg") center/contain no-repeat;
-  background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.55) 46%,rgba(255,255,255,.95) 50%,rgba(255,255,255,.55) 54%,transparent 62%) 100% 0/300% 100% no-repeat;
-  animation:glime-brand-shine 3.6s cubic-bezier(.45,0,.2,1) 1.4s infinite;
+  background:linear-gradient(110deg,transparent 38%,rgba(255,255,255,.12) 45%,rgba(255,255,255,.45) 50%,rgba(255,255,255,.12) 55%,transparent 62%) 100% 0/260% 100% no-repeat;
+  opacity:0;
+  animation:glime-brand-sweep 7s cubic-bezier(.4,0,.2,1) 1.8s infinite;
 }
 
-@keyframes glime-brand-shine{
-  0%{background-position:100% 0}
-  55%,100%{background-position:0 0}
+@keyframes glime-brand-reveal{
+  from{
+    opacity:0;
+    transform:scale(.84);
+    filter:blur(8px) drop-shadow(0 0 0 rgba(67,224,196,0));
+  }
+  to{
+    opacity:1;
+    transform:none;
+    filter:blur(0) drop-shadow(0 0 6px rgba(67,224,196,.38));
+  }
 }
-@keyframes glime-brand-glow{
-  0%,100%{filter:drop-shadow(0 0 2px rgba(67,224,196,.25))}
-  50%{filter:drop-shadow(0 0 9px rgba(82,232,255,.65)) drop-shadow(0 0 3px rgba(125,255,196,.4))}
+@keyframes glime-brand-breathe{
+  0%,100%{opacity:.28}
+  50%{opacity:.6}
 }
-@keyframes glime-brand-halo{
-  0%,100%{opacity:.35;transform:scale(.92)}
-  50%{opacity:.85;transform:scale(1.08)}
+@keyframes glime-brand-sweep{
+  0%{background-position:100% 0;opacity:0}
+  5%{opacity:1}
+  28%{background-position:0 0;opacity:1}
+  33%,100%{background-position:0 0;opacity:0}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -281,4 +301,5 @@
   .glime-brand::after,
   .glime-brand img{animation:none;transition:none}
   .glime-brand::after{display:none}
+  .glime-brand::before{opacity:.4}
 }
