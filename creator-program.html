@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GLIME Creator Program: how creators sell courses through Instagram and WhatsApp with GLIME, how approval works, fees, refunds, buyer protection, privacy, terms and enforcement.">
+  <title>Creator Program, Terms &amp; Privacy | GLIME</title>
+  <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+  <link rel="stylesheet" href="privacy.css">
+  <style>
+    .cp-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+    .cp-btn{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:12px;border:1px solid rgba(24,201,193,.45);background:linear-gradient(135deg,rgba(11,143,140,.55),rgba(24,201,193,.22));color:var(--text);font-size:13px;font-weight:800;text-decoration:none;transition:.2s ease}
+    .cp-btn:hover{border-color:var(--brand-bright);transform:translateY(-1px)}
+    .cp-btn.ghost{background:rgba(11,22,28,.68);border-color:var(--line);color:var(--muted)}
+    .cp-btn.ghost:hover{color:var(--text);border-color:var(--line-strong)}
+    .cp-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:30px}
+    .cp-stat{padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:rgba(11,22,28,.68)}
+    .cp-stat b{display:block;font-size:23px;line-height:1.2;letter-spacing:-.02em;color:var(--text)}
+    .cp-stat span{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;line-height:1.5}
+    .cp-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:rgba(7,17,22,.58)}
+    .cp-table{width:100%;border-collapse:collapse;font-size:13px}
+    .cp-table th{padding:13px 18px;text-align:left;color:var(--dim);font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+    .cp-table td{padding:14px 18px;color:var(--muted);border-bottom:1px solid var(--line)}
+    .cp-table tr:last-child td{border-bottom:0}
+    .cp-table td strong{color:var(--text)}
+    .cp-table td.fee{color:var(--brand-bright);font-weight:800;white-space:nowrap}
+    .cp-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .cp-flow>div{padding:18px;border:1px solid var(--line);border-radius:16px;background:rgba(7,17,22,.58)}
+    .cp-flow .no{display:inline-grid;place-items:center;width:28px;height:28px;margin-bottom:12px;border-radius:9px;color:var(--text);background:var(--brand);font:800 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .cp-flow h3{margin:0;font-size:15px}
+    .cp-flow p{margin:7px 0 0;color:var(--muted);font-size:12.5px;line-height:1.65}
+    .cp-danger{display:flex;gap:16px;padding:20px;border:1px solid rgba(255,107,129,.34);border-radius:16px;background:linear-gradient(120deg,rgba(255,107,129,.10),rgba(255,107,129,.03)),rgba(6,17,22,.72)}
+    .cp-danger .mark{flex:0 0 48px;width:48px;height:48px;display:grid;place-items:center;border-radius:13px;color:#fff;background:#d6455d;font:800 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .cp-danger strong{font-size:15px}
+    .cp-danger p{margin:5px 0 0;color:var(--muted);font-size:12.5px}
+    .cp-faq{display:grid;gap:9px}
+    .cp-faq details{border:1px solid var(--line);border-radius:14px;background:rgba(7,17,22,.58);padding:0 18px}
+    .cp-faq summary{cursor:pointer;list-style:none;padding:16px 0;font-size:14px;font-weight:700;display:flex;justify-content:space-between;gap:14px;align-items:center}
+    .cp-faq summary::-webkit-details-marker{display:none}
+    .cp-faq summary::after{content:"+";color:var(--brand-bright);font-size:19px;font-weight:500}
+    .cp-faq details[open] summary::after{content:"\2212"}
+    .cp-faq details p{margin:0 0 16px;color:var(--muted);font-size:12.5px;line-height:1.7}
+    .cp-pill{display:inline-block;margin-left:8px;padding:2px 9px;border:1px solid rgba(24,201,193,.4);border-radius:999px;color:var(--brand-bright);font-size:10px;font-weight:800;letter-spacing:.08em;vertical-align:middle}
+    code.cp-code{padding:2px 8px;border:1px solid var(--line-strong);border-radius:7px;background:rgba(11,143,140,.10);color:var(--brand-bright);font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace}
+    .policy-section a.inl{color:var(--brand-bright)}
+    @media (max-width:900px){.cp-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:680px){.cp-stats,.cp-flow{grid-template-columns:1fr}.cp-danger{flex-direction:column}.cp-actions .cp-btn{width:100%;justify-content:center}}
+  </style>
+</head>
+
+<body>
+  <div class="page-glow glow-one" aria-hidden="true"></div>
+  <div class="page-glow glow-two" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html" aria-label="GLIME home">
+        <img src="glime_logo_clean.svg" alt="GLIME logo">
+        <span>GLIME</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="index.html">Home</a>
+        <a href="services.html">Services</a>
+        <a href="help.html">Help</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a class="active" href="creator-program.html" aria-current="page">Creators</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container">
+      <div class="eyebrow"><span></span> GLIME CREATOR PROGRAM</div>
+      <h1>Sell your courses on autopilot.</h1>
+      <p class="hero-copy">
+        The GLIME Creator Program lets verified creators sell video, audio and PDF courses through
+        Instagram and WhatsApp chats. GLIME AI answers buyers, shares the payment link, delivers the
+        private course and protects access. This single page explains how to join, what it costs,
+        how refunds work, how buyer data is handled, and the rules every creator agrees to.
+      </p>
+
+      <div class="cp-actions">
+        <a class="cp-btn" href="ai-connections.html">Apply as a creator <span aria-hidden="true">&rarr;</span></a>
+        <a class="cp-btn ghost" href="#join">How approval works</a>
+        <a class="cp-btn ghost" href="#fees">See fees</a>
+      </div>
+
+      <div class="cp-stats">
+        <div class="cp-stat"><b>2 months</b><span>GLIME Growth plan free when your application is approved</span></div>
+        <div class="cp-stat"><b>0% cut</b><span>GLIME never takes a percentage of what you earn</span></div>
+        <div class="cp-stat"><b>From &#8377;20</b><span>flat fee per sale, taken from your GLIME wallet</span></div>
+        <div class="cp-stat"><b>2 devices</b><span>per buyer, with the buyer&rsquo;s number as a watermark</span></div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-card">
+          <span>Effective date</span>
+          <strong>17 November 2026</strong>
+        </div>
+        <div class="meta-card">
+          <span>Applies to</span>
+          <strong>Creators and course buyers</strong>
+        </div>
+        <div class="meta-card">
+          <span>Contact</span>
+          <a href="mailto:connect@glime.online">connect@glime.online</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="container policy-layout">
+      <aside class="policy-nav" aria-label="Creator Program sections">
+        <div class="nav-title">On this page</div>
+        <a href="#overview">Program overview</a>
+        <a href="#join">How to join &amp; verification</a>
+        <a href="#benefits">What approved creators get</a>
+        <a href="#selling">How selling works</a>
+        <a href="#fees">Fees &amp; payments</a>
+        <a href="#conduct">Creator standards</a>
+        <a href="#refunds">Refunds &amp; creator policies</a>
+        <a href="#buyers">Buyer access &amp; protection</a>
+        <a href="#enforcement">Fraud &amp; enforcement</a>
+        <a href="#privacy">Privacy &amp; data</a>
+        <a href="#terms">Program terms</a>
+        <a href="#faq">Questions</a>
+        <a href="#contact">Contact &amp; reporting</a>
+      </aside>
+
+      <article class="policy-content">
+
+        <section class="policy-section" id="overview">
+          <div class="section-number">01</div>
+          <h2>Program overview</h2>
+          <p>
+            Creators are people who teach something &mdash; yoga, fitness, music, cooking, languages,
+            business skills and more &mdash; and want to sell it without handling every chat, payment
+            and delivery by hand. Creator Studio is the private workspace inside your GLIME client
+            account where you build courses, see students and track earnings.
+          </p>
+
+          <div class="data-grid">
+            <div class="data-card">
+              <span class="data-icon">01</span>
+              <h3>Creator Studio</h3>
+              <p>Upload lessons, set a price, publish, and see your students, revenue and storage in one place.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">02</span>
+              <h3>AI that sells for you</h3>
+              <p>GLIME AI answers buyer questions on Instagram and WhatsApp, shares the price and sends the secure payment link.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">03</span>
+              <h3>Your own store link</h3>
+              <p>One link for your Instagram bio or YouTube description that shows all your published courses.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">04</span>
+              <h3>Protected delivery</h3>
+              <p>Courses open only with the buyer&rsquo;s mobile number and a fresh code, on up to 2 devices, with a traceable watermark.</p>
+            </div>
+          </div>
+
+          <p class="small-note">
+            You are the seller of your course. GLIME provides the software and infrastructure; the course,
+            its price, its claims and its refund policy are yours.
+          </p>
+        </section>
+
+        <section class="policy-section" id="join">
+          <div class="section-number">02</div>
+          <h2>How to join &amp; verification</h2>
+          <p>
+            Any GLIME client can apply. Every application is checked by the GLIME team so buyers can trust
+            that the person behind a course is real.
+          </p>
+
+          <div class="use-list">
+            <div class="use-item">
+              <span>01</span>
+              <div>
+                <h3>Open the Creator card</h3>
+                <p>Sign in to your GLIME account, go to Settings &rarr; Connector and open the Creator card to start your application.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>02</span>
+              <div>
+                <h3>Add your public profile</h3>
+                <p>Give at least one of your Instagram or YouTube links. You may give both. This is how the team confirms who you are.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>03</span>
+              <div>
+                <h3>Receive your passcode</h3>
+                <p>The system generates a one-time passcode in the format <code class="cp-code">GLIME-XXXXXX</code> for your account.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>04</span>
+              <div>
+                <h3>Place it in your bio or description</h3>
+                <p>Put the passcode in your Instagram bio or YouTube channel description and keep it there for 1&ndash;2 days so the GLIME team can see it on the profile you submitted.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>05</span>
+              <div>
+                <h3>GLIME team review</h3>
+                <p>The team opens your profile, matches the passcode and checks that you are a real person with a real presence. The admin then approves or rejects the application.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>06</span>
+              <div>
+                <h3>Decision</h3>
+                <p>If approved, Creator Studio opens in your account. If not approved, you receive the written reason and may correct the issue and apply again.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="highlight-box" style="margin-top:16px;">
+            <div class="highlight-mark">ID</div>
+            <div>
+              <strong>Only real people, only their own profiles</strong>
+              <p>
+                You must apply with profiles that you own and control. Applying with someone else&rsquo;s
+                profile, a fake or borrowed identity, or a passcode placed by a third party is grounds for
+                rejection, and for removal if it is found after approval.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="benefits">
+          <div class="section-number">03</div>
+          <h2>What approved creators get</h2>
+          <p>
+            Approval is a decision by the GLIME team. Once you are approved, you receive:
+          </p>
+
+          <div class="authorization-grid">
+            <div class="auth-card">
+              <div class="auth-label">01 / WELCOME GIFT</div>
+              <h3>2 months of GLIME Growth plan, free</h3>
+              <p>Every creator approved by the GLIME team receives two months of the GLIME Growth plan at no charge, as a one-time benefit for that creator.</p>
+            </div>
+            <div class="auth-card">
+              <div class="auth-label">02 / STUDIO</div>
+              <h3>Full Creator Studio access</h3>
+              <p>Courses, students, earnings, storage and your public store link, available from your own client account.</p>
+            </div>
+            <div class="auth-card">
+              <div class="auth-label">03 / AI SALES</div>
+              <h3>AI selling in your chats</h3>
+              <p>Add a published course to Services once and GLIME AI can offer it in every Instagram and WhatsApp conversation.</p>
+            </div>
+          </div>
+
+          <p class="small-note">
+            The free plan period is a promotional benefit. If approval was obtained with false information,
+            GLIME may withdraw the benefit along with the creator status.
+          </p>
+        </section>
+
+        <section class="policy-section" id="selling">
+          <div class="section-number">04</div>
+          <h2>How selling works</h2>
+          <p>
+            From the first message to the first lesson, the buyer journey is automatic and protected.
+          </p>
+
+          <div class="cp-flow">
+            <div><span class="no">1</span><h3>Chat</h3><p>A buyer messages you on Instagram or WhatsApp. GLIME AI answers using your course details and shares the price.</p></div>
+            <div><span class="no">2</span><h3>Pay</h3><p>The AI sends a secure payment link. The buyer&rsquo;s payment goes straight to your own account.</p></div>
+            <div><span class="no">3</span><h3>Link</h3><p>After payment, the buyer automatically receives the private course link in the same chat.</p></div>
+            <div><span class="no">4</span><h3>Code</h3><p>The buyer sends the word <b>code</b> on your WhatsApp and gets a 10-minute code that opens the course on up to 2 devices.</p></div>
+          </div>
+
+          <p class="small-note">
+            Only published courses appear in your store. Lesson limits: video up to 500 MB, audio up to 100 MB,
+            PDF up to 50 MB per file, within your course storage.
+          </p>
+        </section>
+
+        <section class="policy-section" id="fees">
+          <div class="section-number">05</div>
+          <h2>Fees &amp; payments</h2>
+          <p>
+            GLIME charges one small flat fee for each sale, based on the course price. We never take a
+            percentage of what you earn. The fee is deducted from your GLIME wallet when a buyer pays.
+          </p>
+
+          <div class="cp-table-wrap">
+            <table class="cp-table">
+              <thead>
+                <tr><th>Course price</th><th>GLIME fee per sale</th><th>You receive from the buyer</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Free courses</strong></td><td class="fee">&#8377;0</td><td>No payment involved</td></tr>
+                <tr><td><strong>Up to &#8377;499</strong></td><td class="fee">&#8377;20</td><td>100% of the course price, in your own account</td></tr>
+                <tr><td><strong>&#8377;500 to &#8377;1,999</strong></td><td class="fee">&#8377;100</td><td>100% of the course price, in your own account</td></tr>
+                <tr><td><strong>&#8377;2,000 and above</strong></td><td class="fee">&#8377;200</td><td>100% of the course price, in your own account</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="use-list" style="margin-top:16px;">
+            <div class="use-item">
+              <span>01</span>
+              <div>
+                <h3>Wallet balance</h3>
+                <p>If your wallet has less than the fee, buying is paused for that course and you are told so you can add money. Buyers are never charged for a sale that is paused.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>02</span>
+              <div>
+                <h3>Your account, your money</h3>
+                <p>Course payments are made into the payment account you connected. GLIME does not hold, pool or pay out your course earnings.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>03</span>
+              <div>
+                <h3>Taxes and invoices</h3>
+                <p>You are responsible for your own taxes, GST where applicable, invoices and legal registrations related to selling your courses.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>04</span>
+              <div>
+                <h3>Fee changes</h3>
+                <p>The fee shown in Creator Studio at the time of a sale applies to that sale. GLIME may update fees for future sales and will show the change in Creator Studio or billing.</p>
+              </div>
+            </div>
+          </div>
+
+          <p class="small-note">
+            Payment processing is handled by the payment provider you connect, under that provider&rsquo;s own terms.
+            GLIME&rsquo;s own subscription and wallet payments are covered by the
+            <a class="inl" href="refund-cancellation.html">Refund &amp; Cancellation Policy</a>.
+          </p>
+        </section>
+
+        <section class="policy-section" id="conduct">
+          <div class="section-number">06</div>
+          <h2>Creator standards</h2>
+          <p>
+            Buyers trust the GLIME name when they pay a creator. These standards apply to every course,
+            description, cover image, message and AI reply connected to your account, together with the
+            <a class="inl" href="acceptable-use.html">Acceptable Use Policy</a>.
+          </p>
+
+          <div class="data-grid">
+            <div class="data-card">
+              <span class="data-icon">01</span>
+              <h3>Sell only what you own</h3>
+              <p>Upload only content you created or have the written right to sell. Pirated, resold or copied courses are not allowed.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">02</span>
+              <h3>Describe it honestly</h3>
+              <p>Course titles, descriptions and AI answers must match what the buyer actually receives. No fake results, fake testimonials or guaranteed income or health outcomes.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">03</span>
+              <h3>Deliver what you sell</h3>
+              <p>Publish only complete courses you are ready to deliver. Keep lessons available and working for as long as buyers have access.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">04</span>
+              <h3>Stay within the law and platform rules</h3>
+              <p>No illegal, adult, hateful, deceptive or dangerous content, and no content that Meta, YouTube or payment providers prohibit.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">05</span>
+              <h3>Respect buyers&rsquo; data</h3>
+              <p>Use buyer names and numbers only to deliver the course, support the buyer and run your own business, never to spam, sell or share.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">06</span>
+              <h3>Be a real, reachable person</h3>
+              <p>Keep your profile, contact details and payment account accurate, and answer buyer problems promptly.</p>
+            </div>
+          </div>
+
+          <p class="small-note">
+            For health, fitness, finance and similar subjects, courses are educational. Do not present them as
+            licensed medical, legal or financial advice unless you are properly qualified and say so clearly.
+          </p>
+        </section>
+
+        <section class="policy-section" id="refunds">
+          <div class="section-number">07</div>
+          <h2>Refunds &amp; creator policies</h2>
+          <p>
+            Each creator is the seller of their own course, so each creator decides and publishes their own
+            refund, cancellation and support policy for it. These policies are set by the creator through
+            their own client account, not by GLIME.
+          </p>
+
+          <div class="deletion-grid">
+            <div>
+              <h3>What every creator must do</h3>
+              <ul>
+                <li>Set a clear refund and cancellation policy for your courses and keep it easy for buyers to find.</li>
+                <li>Tell buyers the policy before they pay, including through your AI&rsquo;s answers.</li>
+                <li>Follow your own policy and the consumer-protection laws that apply to you.</li>
+                <li>Handle refunds and complaints promptly from your own payment account.</li>
+                <li>Never refuse a refund that your own policy or the law entitles the buyer to.</li>
+              </ul>
+            </div>
+            <div>
+              <h3>GLIME&rsquo;s role</h3>
+              <p>
+                GLIME is not the seller and does not set course refund terms. The fee GLIME charges the creator is
+                separate from the buyer&rsquo;s purchase. If a creator ignores buyers or breaks their own promises,
+                GLIME may act under the enforcement section below.
+              </p>
+            </div>
+          </div>
+
+          <p class="small-note">
+            Buyers: contact the creator first, using the number or Instagram or YouTube profile you bought from.
+            If a creator does not respond or you believe you were cheated, report it to GLIME using the contact
+            details at the end of this page.
+          </p>
+        </section>
+
+        <section class="policy-section" id="buyers">
+          <div class="section-number">08</div>
+          <h2>Buyer access &amp; protection</h2>
+          <p>
+            Course content belongs to the creator. These controls protect both creators and buyers.
+          </p>
+
+          <div class="security-grid">
+            <div class="security-card">
+              <strong>Number-bound access</strong>
+              <span>A course link alone cannot open the course. It needs the buyer&rsquo;s mobile number and a fresh 10-minute code.</span>
+            </div>
+            <div class="security-card">
+              <strong>2-device limit</strong>
+              <span>Each purchase opens on up to 2 devices, which discourages account sharing.</span>
+            </div>
+            <div class="security-card">
+              <strong>Traceable watermark</strong>
+              <span>Videos, audio and PDFs carry the buyer&rsquo;s number as a watermark so a leak can be traced.</span>
+            </div>
+          </div>
+
+          <div class="use-list" style="margin-top:16px;">
+            <div class="use-item">
+              <span>01</span>
+              <div>
+                <h3>Access period</h3>
+                <p>Each buyer&rsquo;s access runs for the period set for that purchase, shown in Creator Studio as an end date or lifetime access.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>02</span>
+              <div>
+                <h3>Courses with paying students</h3>
+                <p>A course that has paying students cannot be deleted. A creator may remove individual lessons they no longer need.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>03</span>
+              <div>
+                <h3>No technology is perfect</h3>
+                <p>No website can fully stop screen recording. GLIME&rsquo;s limits and watermark discourage and trace misuse but cannot guarantee that content will never be copied.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>04</span>
+              <div>
+                <h3>Buyer obligations</h3>
+                <p>Buyers may use a course only for their own learning. Sharing codes, accounts or content, or recording and reselling it, may lead to access being withdrawn.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="enforcement">
+          <div class="section-number">09</div>
+          <h2>Fraud &amp; enforcement</h2>
+          <p>
+            Buyers and honest creators come first. If a creator cheats a buyer or abuses the program,
+            GLIME may remove their access and may suspend or permanently remove their entire GLIME client
+            account. GLIME may do this through automated safeguards, manual review by the GLIME team, or both.
+          </p>
+
+          <div class="cp-danger">
+            <div class="mark">ZERO</div>
+            <div>
+              <strong>Zero tolerance for buyer fraud</strong>
+              <p>
+                Taking payment without delivering the course, selling fake or stolen content, using a false
+                identity, or misleading buyers can lead to immediate action, without prior notice, to protect
+                buyers, other creators and the platform.
+              </p>
+            </div>
+          </div>
+
+          <div class="deletion-grid" style="margin-top:16px;">
+            <div>
+              <h3>Examples of conduct that can lead to action</h3>
+              <ul>
+                <li>Collecting payment and not delivering the course, or delivering something materially different from what was sold.</li>
+                <li>Selling pirated, copied or unauthorised content.</li>
+                <li>Fake identity, a profile that is not yours, or a passcode verification obtained dishonestly.</li>
+                <li>False or misleading claims, fake testimonials, or promises of guaranteed income or results.</li>
+                <li>Ignoring buyer complaints or refusing refunds the creator&rsquo;s own policy or the law requires.</li>
+                <li>Repeated buyer complaints, payment disputes or chargebacks that point to unfair dealing.</li>
+                <li>Misusing buyer names, numbers or other data.</li>
+                <li>Trying to bypass fees, limits, access controls or verification.</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Who is affected</h3>
+              <p>
+                Creator status is attached to your GLIME client account. When we act against a creator for
+                fraud or serious misuse, the action can extend to the whole account and the channels
+                connected to it.
+              </p>
+            </div>
+          </div>
+
+          <h3 style="margin:24px 0 10px;font-size:16px;">Actions GLIME may take</h3>
+          <div class="retention-timeline">
+            <div class="retention-step">
+              <span>01</span>
+              <div>
+                <h3>Warn and ask for a fix</h3>
+                <p>For minor or first-time issues, we may tell you what is wrong and give you time to correct it.</p>
+              </div>
+            </div>
+            <div class="retention-step">
+              <span>02</span>
+              <div>
+                <h3>Pause or unpublish</h3>
+                <p>Pause sales, unpublish a course, disable your store link or turn off AI selling while we investigate.</p>
+              </div>
+            </div>
+            <div class="retention-step">
+              <span>03</span>
+              <div>
+                <h3>Revoke creator status</h3>
+                <p>Remove Creator Studio access, and withdraw any free plan benefit that was given on the basis of the creator approval.</p>
+              </div>
+            </div>
+            <div class="retention-step">
+              <span>04</span>
+              <div>
+                <h3>Suspend or remove the client account</h3>
+                <p>For fraud, harm to buyers or repeated or serious violations, suspend or permanently remove the creator&rsquo;s GLIME client account and disconnect connected channels.</p>
+              </div>
+            </div>
+            <div class="retention-step">
+              <span>05</span>
+              <div>
+                <h3>Cooperate with authorities and providers</h3>
+                <p>Share relevant information with payment providers, Meta, and law enforcement or other authorities where the law allows or requires, and support affected buyers.</p>
+              </div>
+            </div>
+          </div>
+
+          <p class="small-note">
+            GLIME may take these steps in any order that fits the risk, and immediately where needed for buyer
+            safety, legal or platform reasons. Where possible we will tell you why. If you believe we made a
+            mistake, write to connect@glime.online and we will review it. Removal of an account does not cancel
+            money a creator owes to buyers, and GLIME is not responsible for that liability.
+          </p>
+        </section>
+
+        <section class="policy-section" id="privacy">
+          <div class="section-number">10</div>
+          <h2>Privacy &amp; data in the Creator Program</h2>
+          <p>
+            This section adds to the GLIME <a class="inl" href="privacy.html">Privacy Policy</a>, which also applies.
+            It explains the extra information the Creator Program handles.
+          </p>
+
+          <div class="data-grid">
+            <div class="data-card">
+              <span class="data-icon">01</span>
+              <h3>Creator application data</h3>
+              <p>Your account and client ID, business name, Instagram and YouTube links, the generated passcode, review status and, if rejected, the reason. Used to verify you and run the program.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">02</span>
+              <h3>Course content</h3>
+              <p>Lessons, descriptions, cover images and files you upload, and the storage they use. Used to host and deliver your courses.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">03</span>
+              <h3>Buyer data</h3>
+              <p>Buyer name, mobile number, channel, course, amount paid, payment and access dates. Used to deliver the course, show the creator their students and prevent fraud.</p>
+            </div>
+            <div class="data-card">
+              <span class="data-icon">04</span>
+              <h3>Security data</h3>
+              <p>Access codes, device checks and the watermark that carries the buyer&rsquo;s number. Used to protect content and trace leaks.</p>
+            </div>
+          </div>
+
+          <div class="use-list" style="margin-top:16px;">
+            <div class="use-item">
+              <span>01</span>
+              <div>
+                <h3>What the creator sees</h3>
+                <p>A creator can see the names and mobile numbers of their own paying students, and those numbers are also saved in the creator&rsquo;s leads. The creator receives this data only to serve those buyers.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>02</span>
+              <div>
+                <h3>Creators must protect it</h3>
+                <p>Creators must keep buyer data confidential, use it only for the course and lawful support, and follow applicable Indian data-protection law, including the Digital Personal Data Protection Act, 2023, where it applies.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>03</span>
+              <div>
+                <h3>We do not sell it</h3>
+                <p>GLIME does not sell creator or buyer personal data. We share it only with service providers that help us run the program, with payment providers and Meta as needed for the service, and with authorities where the law requires or fraud investigation needs it.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>04</span>
+              <div>
+                <h3>Verification is public by design</h3>
+                <p>Your passcode is placed on your own public profile for the team to check. Only place the passcode, never passwords, codes or private details, in your bio or description.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>05</span>
+              <div>
+                <h3>Retention and deletion</h3>
+                <p>We keep program data as long as the account is active and as needed for payments, disputes, fraud prevention and legal duties. You can request deletion through the <a class="inl" href="data-deletion.html">Data Deletion Instructions</a>. Records needed to resolve fraud or legal claims may be kept for as long as the law and those purposes require.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>06</span>
+              <div>
+                <h3>Buyer rights</h3>
+                <p>Buyers can ask the creator, or GLIME at connect@glime.online, to access, correct or delete their information, as the law allows.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="terms">
+          <div class="section-number">11</div>
+          <h2>Program terms</h2>
+          <p>
+            By applying to or using the Creator Program, you agree to the following, together with the
+            <a class="inl" href="terms.html">Terms of Service</a>, the
+            <a class="inl" href="acceptable-use.html">Acceptable Use Policy</a> and the
+            <a class="inl" href="privacy.html">Privacy Policy</a>.
+          </p>
+
+          <div class="use-list">
+            <div class="use-item">
+              <span>01</span>
+              <div>
+                <h3>Eligibility</h3>
+                <p>You are an adult with legal capacity to contract, you own or control the profiles and payment account you submit, and the information you give is true and kept up to date.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>02</span>
+              <div>
+                <h3>Independent seller</h3>
+                <p>You are an independent seller. You are not an employee, agent, partner or representative of GLIME, and you may not speak or sign for GLIME.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>03</span>
+              <div>
+                <h3>Your content, your rights</h3>
+                <p>You keep ownership of your courses. You give GLIME a limited, non-exclusive licence to host, store, process, display and deliver your content to your buyers and to operate, secure and improve the program.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>04</span>
+              <div>
+                <h3>Your responsibility</h3>
+                <p>You are solely responsible for your courses, claims, prices, refunds, taxes, buyer communication and compliance with law. You will compensate GLIME for losses and claims that arise from your content, your breach of these terms, or your dealings with buyers, to the extent the law allows.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>05</span>
+              <div>
+                <h3>No earnings promise</h3>
+                <p>GLIME does not promise any number of sales, students or income. Results depend on your course, your audience and your effort. Examples shown by GLIME are illustrations, not guarantees.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>06</span>
+              <div>
+                <h3>Third-party dependence</h3>
+                <p>The program depends on Meta, payment providers, hosting and other third parties. Their changes, outages or decisions may affect selling, and GLIME is not responsible for them.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>07</span>
+              <div>
+                <h3>Storage and limits</h3>
+                <p>Courses use your assigned course storage and the file limits shown in Creator Studio. GLIME may change limits with notice shown in your account.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>08</span>
+              <div>
+                <h3>Leaving the program</h3>
+                <p>You may stop selling at any time by unpublishing your courses. Buyers who already paid keep the access they bought, so you must continue to honour it. GLIME may end or change the program with reasonable notice where practicable.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>09</span>
+              <div>
+                <h3>Liability</h3>
+                <p>The limitations of liability in the <a class="inl" href="terms.html#liability">Terms of Service</a> apply to the Creator Program. GLIME is not liable for a creator&rsquo;s content, promises or conduct towards buyers.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>10</span>
+              <div>
+                <h3>Order of precedence</h3>
+                <p>For matters about the Creator Program, this page prevails over the general Terms of Service where they differ. In every other matter, the Terms of Service apply.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>11</span>
+              <div>
+                <h3>Governing law</h3>
+                <p>This page is governed by the laws of India. Subject to applicable law, disputes are subject to the jurisdiction of the competent courts in Rajasthan, India.</p>
+              </div>
+            </div>
+            <div class="use-item">
+              <span>12</span>
+              <div>
+                <h3>Changes</h3>
+                <p>We may update this page as the program, the law or platform rules change. Material changes will update the effective date above, and continued use after the change means you accept it.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="faq">
+          <div class="section-number">12</div>
+          <h2>Questions creators ask</h2>
+
+          <div class="cp-faq">
+            <details>
+              <summary>Who can become a creator?</summary>
+              <p>Any GLIME client who teaches a skill and has a real Instagram or YouTube presence can apply from Settings &rarr; Connector. The GLIME team approves each application after checking the passcode on your profile.</p>
+            </details>
+            <details>
+              <summary>How long does the passcode need to stay in my bio?</summary>
+              <p>Keep it in your Instagram bio or YouTube description for 1&ndash;2 days, or until the team confirms the check. After approval you can remove it.</p>
+            </details>
+            <details>
+              <summary>Is the free Growth plan really free?</summary>
+              <p>Yes. Approved creators get two months of the GLIME Growth plan at no charge. It is a one-time benefit for approved creators and may be withdrawn if approval was gained with false information.</p>
+            </details>
+            <details>
+              <summary>Does GLIME take a commission on my sales?</summary>
+              <p>No. GLIME charges only the flat fee per sale shown in the fees table, taken from your GLIME wallet. The buyer&rsquo;s full payment goes to your own account.</p>
+            </details>
+            <details>
+              <summary>Who decides the refund policy for my course?</summary>
+              <p>You do. You set it for your own courses through your client account, share it with buyers before they pay, and honour it.</p>
+            </details>
+            <details>
+              <summary>What happens if a creator cheats a buyer?</summary>
+              <p>GLIME can pause sales, remove the creator status and suspend or remove the creator&rsquo;s whole GLIME client account, and can cooperate with payment providers and authorities. See Fraud &amp; enforcement above.</p>
+            </details>
+            <details>
+              <summary>Can I delete a course that already has students?</summary>
+              <p>No. A course with paying students cannot be deleted. You can remove individual lessons you no longer need.</p>
+            </details>
+          </div>
+        </section>
+
+        <section class="policy-section" id="contact">
+          <div class="section-number">13</div>
+          <h2>Contact &amp; reporting</h2>
+          <p>
+            For questions about the Creator Program, an application decision, or to report a creator you
+            believe has cheated or misled buyers, write to us. For reports, include the creator&rsquo;s name or
+            profile link, the course, the date and payment details, and a screenshot where possible.
+          </p>
+
+          <div class="contact-panel">
+            <div>
+              <span class="contact-kicker">CREATOR PROGRAM</span>
+              <h3>Questions and creator reports</h3>
+              <p>We take buyer reports seriously and look into every one.</p>
+            </div>
+
+            <a href="mailto:connect@glime.online?subject=Creator%20Program" class="contact-button">
+              connect@glime.online
+              <span>&rarr;</span>
+            </a>
+          </div>
+
+          <a class="deletion-email" href="mailto:connect@glime.online?subject=Report%20a%20creator">
+            <span>Buyer or creator concern</span>
+            <strong>Report a creator</strong>
+            <b aria-hidden="true">&rarr;</b>
+          </a>
+
+          <p class="small-note">
+            See also the <a class="inl" href="terms.html">Terms of Service</a>,
+            <a class="inl" href="privacy.html">Privacy Policy</a>,
+            <a class="inl" href="acceptable-use.html">Acceptable Use Policy</a> and
+            <a class="inl" href="refund-cancellation.html">Refund &amp; Cancellation Policy</a>.
+          </p>
+        </section>
+
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <a class="footer-brand" href="index.html">
+        <img src="glime_logo_clean.svg" alt="GLIME logo">
+        <span>GLIME</span>
+      </a>
+
+      <p>AI-powered business communication infrastructure.</p>
+
+      <div class="footer-links">
+        <a href="help.html">Help Center</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms</a>
+        <a href="acceptable-use.html">Acceptable Use</a>
+        <a href="creator-program.html" aria-current="page">Creator Program</a>
+        <a href="security.html">Security</a>
+        <a href="data-deletion.html">Data Deletion</a>
+        <a href="refund-cancellation.html">Refund &amp; Cancellation</a>
+        <a href="mailto:connect@glime.online">Contact</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
