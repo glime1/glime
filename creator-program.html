@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="GLIME Creator Program: how creators sell courses through Instagram and WhatsApp with GLIME, how approval works, fees, refunds, buyer protection, privacy, terms and enforcement.">
+  <meta name="description" content="GLIME sells your course for you. The GLIME Creator Program turns Instagram and WhatsApp chats into sales: AI answers buyers 24x7, collects payment into your account and delivers your course securely. Fees, approval, refunds, privacy and terms on one page.">
   <title>Creator Program, Terms &amp; Privacy | GLIME</title>
   <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
   <link rel="stylesheet" href="privacy.css">
@@ -17,18 +17,33 @@
     .cp-stat{padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:rgba(11,22,28,.68)}
     .cp-stat b{display:block;font-size:23px;line-height:1.2;letter-spacing:-.02em;color:var(--text)}
     .cp-stat span{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;line-height:1.5}
+    .cp-lead{max-width:850px;margin:0 0 22px;color:var(--text);font-size:16px;line-height:1.6;font-weight:600;letter-spacing:-.01em}
+    .cp-lead em{font-style:normal;color:var(--brand-bright)}
     .cp-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:rgba(7,17,22,.58)}
     .cp-table{width:100%;border-collapse:collapse;font-size:13px}
     .cp-table th{padding:13px 18px;text-align:left;color:var(--dim);font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;border-bottom:1px solid var(--line)}
-    .cp-table td{padding:14px 18px;color:var(--muted);border-bottom:1px solid var(--line)}
+    .cp-table td{padding:14px 18px;color:var(--muted);border-bottom:1px solid var(--line);vertical-align:top}
     .cp-table tr:last-child td{border-bottom:0}
     .cp-table td strong{color:var(--text)}
     .cp-table td.fee{color:var(--brand-bright);font-weight:800;white-space:nowrap}
+    .cp-table td.win{color:var(--text);background:rgba(11,143,140,.08)}
+    .cp-table td.win::before{content:"\2713\00a0";color:var(--brand-bright);font-weight:800}
+    .cp-table td.lose::before{content:"\2715\00a0";color:#ff6b81;font-weight:800}
+    .cp-table th.win{color:var(--brand-bright)}
     .cp-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
     .cp-flow>div{padding:18px;border:1px solid var(--line);border-radius:16px;background:rgba(7,17,22,.58)}
     .cp-flow .no{display:inline-grid;place-items:center;width:28px;height:28px;margin-bottom:12px;border-radius:9px;color:var(--text);background:var(--brand);font:800 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
     .cp-flow h3{margin:0;font-size:15px}
     .cp-flow p{margin:7px 0 0;color:var(--muted);font-size:12.5px;line-height:1.65}
+    .cp-night{display:grid;gap:10px}
+    .cp-night .step{display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;padding:15px 16px;border-left:2px solid rgba(24,201,193,.5);border-radius:0 13px 13px 0;background:rgba(7,17,22,.52)}
+    .cp-night .time{color:var(--brand-bright);font:600 11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}
+    .cp-night h3{margin:0;font-size:14.5px}
+    .cp-night p{margin:5px 0 0;color:var(--muted);font-size:12.5px;line-height:1.65}
+    .cp-night .step.done{border-left-color:var(--green);background:linear-gradient(120deg,rgba(80,245,168,.10),rgba(7,17,22,.52))}
+    .cp-cta{display:flex;align-items:center;justify-content:space-between;gap:22px;margin-bottom:24px;padding:34px;border:1px solid rgba(24,201,193,.4);border-radius:var(--radius);background:radial-gradient(520px 240px at 0% 50%,rgba(11,143,140,.22),transparent 72%),linear-gradient(145deg,rgba(17,31,39,.92),rgba(9,20,26,.88));box-shadow:0 18px 60px rgba(0,0,0,.22)}
+    .cp-cta h2{margin:0 0 8px;font-size:clamp(24px,3.2vw,36px);line-height:1.12;letter-spacing:-.04em}
+    .cp-cta p{margin:0;max-width:560px;color:var(--muted);font-size:14px}
     .cp-danger{display:flex;gap:16px;padding:20px;border:1px solid rgba(255,107,129,.34);border-radius:16px;background:linear-gradient(120deg,rgba(255,107,129,.10),rgba(255,107,129,.03)),rgba(6,17,22,.72)}
     .cp-danger .mark{flex:0 0 48px;width:48px;height:48px;display:grid;place-items:center;border-radius:13px;color:#fff;background:#d6455d;font:800 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
     .cp-danger strong{font-size:15px}
@@ -40,11 +55,10 @@
     .cp-faq summary::after{content:"+";color:var(--brand-bright);font-size:19px;font-weight:500}
     .cp-faq details[open] summary::after{content:"\2212"}
     .cp-faq details p{margin:0 0 16px;color:var(--muted);font-size:12.5px;line-height:1.7}
-    .cp-pill{display:inline-block;margin-left:8px;padding:2px 9px;border:1px solid rgba(24,201,193,.4);border-radius:999px;color:var(--brand-bright);font-size:10px;font-weight:800;letter-spacing:.08em;vertical-align:middle}
     code.cp-code{padding:2px 8px;border:1px solid var(--line-strong);border-radius:7px;background:rgba(11,143,140,.10);color:var(--brand-bright);font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace}
     .policy-section a.inl{color:var(--brand-bright)}
     @media (max-width:900px){.cp-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:680px){.cp-stats,.cp-flow{grid-template-columns:1fr}.cp-danger{flex-direction:column}.cp-actions .cp-btn{width:100%;justify-content:center}}
+    @media (max-width:680px){.cp-stats,.cp-flow{grid-template-columns:1fr}.cp-danger{flex-direction:column}.cp-actions .cp-btn{width:100%;justify-content:center}.cp-night .step{grid-template-columns:1fr;gap:4px}.cp-cta{flex-direction:column;align-items:flex-start;padding:23px 18px}.cp-cta .cp-btn{width:100%;justify-content:center}}
   </style>
 </head>
 
@@ -73,25 +87,25 @@
   <main>
     <section class="hero container">
       <div class="eyebrow"><span></span> GLIME CREATOR PROGRAM</div>
-      <h1>Sell your courses on autopilot.</h1>
+      <h1>You create. GLIME sells.</h1>
       <p class="hero-copy">
-        The GLIME Creator Program lets verified creators sell video, audio and PDF courses through
-        Instagram and WhatsApp chats. GLIME AI answers buyers, shares the payment link, delivers the
-        private course and protects access. This single page explains how to join, what it costs,
-        how refunds work, how buyer data is handled, and the rules every creator agrees to.
+        Stop chasing buyers in your DMs. GLIME&rsquo;s AI answers every question on Instagram and WhatsApp,
+        closes the sale, collects payment straight into your own account and delivers your course through a
+        private, protected link &mdash; around the clock, while you focus on what only you can do: teach.
+        Verified by the GLIME team. Built for creators who are ready to scale.
       </p>
 
       <div class="cp-actions">
-        <a class="cp-btn" href="ai-connections.html">Apply as a creator <span aria-hidden="true">&rarr;</span></a>
-        <a class="cp-btn ghost" href="#join">How approval works</a>
-        <a class="cp-btn ghost" href="#fees">See fees</a>
+        <a class="cp-btn" href="ai-connections.html">Become a GLIME creator <span aria-hidden="true">&rarr;</span></a>
+        <a class="cp-btn ghost" href="#why">Why creators choose GLIME</a>
+        <a class="cp-btn ghost" href="#fees">See the fees</a>
       </div>
 
       <div class="cp-stats">
-        <div class="cp-stat"><b>2 months</b><span>GLIME Growth plan free when your application is approved</span></div>
-        <div class="cp-stat"><b>0% cut</b><span>GLIME never takes a percentage of what you earn</span></div>
-        <div class="cp-stat"><b>From &#8377;20</b><span>flat fee per sale, taken from your GLIME wallet</span></div>
-        <div class="cp-stat"><b>2 devices</b><span>per buyer, with the buyer&rsquo;s number as a watermark</span></div>
+        <div class="cp-stat"><b>24&times;7</b><span>AI selling in your Instagram and WhatsApp chats</span></div>
+        <div class="cp-stat"><b>100%</b><span>of the course price lands in your own account</span></div>
+        <div class="cp-stat"><b>From &#8377;20</b><span>flat fee per sale &mdash; never a percentage of your earnings</span></div>
+        <div class="cp-stat"><b>2 months free</b><span>GLIME Growth plan for every creator we approve</span></div>
       </div>
 
       <div class="meta-row">
@@ -114,6 +128,7 @@
       <aside class="policy-nav" aria-label="Creator Program sections">
         <div class="nav-title">On this page</div>
         <a href="#overview">Program overview</a>
+        <a href="#why">GLIME sells for you</a>
         <a href="#join">How to join &amp; verification</a>
         <a href="#benefits">What approved creators get</a>
         <a href="#selling">How selling works</a>
@@ -133,6 +148,9 @@
         <section class="policy-section" id="overview">
           <div class="section-number">01</div>
           <h2>Program overview</h2>
+          <p class="cp-lead">
+            Your knowledge is the product. <em>GLIME is the sales team, the cashier, the delivery desk and the security guard</em> &mdash; all working in your chats, all day, every day.
+          </p>
           <p>
             Creators are people who teach something &mdash; yoga, fitness, music, cooking, languages,
             business skills and more &mdash; and want to sell it without handling every chat, payment
@@ -144,7 +162,7 @@
             <div class="data-card">
               <span class="data-icon">01</span>
               <h3>Creator Studio</h3>
-              <p>Upload lessons, set a price, publish, and see your students, revenue and storage in one place.</p>
+              <p>Upload lessons, set a price, publish, and command your students, revenue and storage from one clean workspace.</p>
             </div>
             <div class="data-card">
               <span class="data-icon">02</span>
@@ -154,7 +172,7 @@
             <div class="data-card">
               <span class="data-icon">03</span>
               <h3>Your own store link</h3>
-              <p>One link for your Instagram bio or YouTube description that shows all your published courses.</p>
+              <p>One link for your Instagram bio or YouTube description that puts every published course in front of buyers.</p>
             </div>
             <div class="data-card">
               <span class="data-icon">04</span>
@@ -169,12 +187,72 @@
           </p>
         </section>
 
-        <section class="policy-section" id="join">
+        <section class="policy-section" id="why">
           <div class="section-number">02</div>
+          <h2>GLIME sells your course for you</h2>
+          <p class="cp-lead">
+            Every unanswered DM is a lost sale. <em>GLIME answers all of them.</em> Add your course once and your AI turns conversations into students &mdash; instantly, consistently, at any hour.
+          </p>
+
+          <div class="cp-table-wrap">
+            <table class="cp-table">
+              <thead>
+                <tr><th>What it takes to sell a course</th><th>On your own</th><th class="win">With GLIME</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Answering buyers</strong></td><td class="lose">Replying to every DM by hand, often late</td><td class="win">AI replies in seconds, day and night, using your course details</td></tr>
+                <tr><td><strong>Closing the sale</strong></td><td class="lose">Chasing buyers who went quiet</td><td class="win">The AI shares the price, handles questions and sends the payment link in the same chat</td></tr>
+                <tr><td><strong>Collecting payment</strong></td><td class="lose">Screenshots, bank details, manual checking</td><td class="win">A secure payment link that pays straight into your own account</td></tr>
+                <tr><td><strong>Delivering the course</strong></td><td class="lose">Sending files and links one buyer at a time</td><td class="win">The private course link reaches the buyer automatically after payment</td></tr>
+                <tr><td><strong>Protecting your content</strong></td><td class="lose">Links forwarded to anyone</td><td class="win">Number-bound access, a fresh code, a 2-device limit and a traceable watermark</td></tr>
+                <tr><td><strong>Knowing your students</strong></td><td class="lose">Scattered chats and notes</td><td class="win">Every buyer listed with name, number, course and date, and saved to your leads</td></tr>
+                <tr><td><strong>Cost</strong></td><td class="lose">Your time, every single day</td><td class="win">A flat fee per sale from &#8377;20 &mdash; never a cut of your earnings</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style="margin:26px 0 6px;font-size:17px;">A night in the life of a GLIME creator</h3>
+          <p style="margin:0 0 14px;color:var(--muted);font-size:13px;">An illustration of how the flow works while you sleep.</p>
+
+          <div class="cp-night">
+            <div class="step"><span class="time">11:47 PM</span><div><h3>A buyer finds your reel</h3><p>She messages you on Instagram asking what the course covers and what it costs.</p></div></div>
+            <div class="step"><span class="time">11:47 PM</span><div><h3>GLIME AI answers instantly</h3><p>It explains your course using the details you wrote, answers her questions and shares the price.</p></div></div>
+            <div class="step"><span class="time">11:51 PM</span><div><h3>She pays securely</h3><p>The AI sends a payment link. Her payment goes straight into your own account.</p></div></div>
+            <div class="step"><span class="time">11:52 PM</span><div><h3>The course is delivered</h3><p>Her private course link arrives in the chat. A fresh code opens it on her devices, watermarked with her number.</p></div></div>
+            <div class="step done"><span class="time">7:30 AM</span><div><h3>You wake up to a new student</h3><p>Creator Studio shows the sale, the student and the earnings. You did not type a single reply.</p></div></div>
+          </div>
+
+          <div class="authorization-grid" style="margin-top:18px;">
+            <div class="auth-card">
+              <div class="auth-label">01 / NEVER MISS A BUYER</div>
+              <h3>Instant, every time</h3>
+              <p>Interest cools in minutes. GLIME responds the moment a buyer writes, so warm leads become students.</p>
+            </div>
+            <div class="auth-card">
+              <div class="auth-label">02 / SCALE WITHOUT EFFORT</div>
+              <h3>10 chats or 1,000</h3>
+              <p>Your AI handles each conversation the same careful way, so your income is not limited by your typing speed.</p>
+            </div>
+            <div class="auth-card">
+              <div class="auth-label">03 / OWN YOUR BUSINESS</div>
+              <h3>Your students, your money</h3>
+              <p>Payments go to your account and your buyers are saved to your leads. The relationship stays yours.</p>
+            </div>
+          </div>
+
+          <p class="small-note">
+            This is an illustration of how the product works, not a promise of sales or income. Results depend on
+            your course, your audience and your effort. GLIME AI sells the courses you add to Services; accuracy
+            depends on the information you provide.
+          </p>
+        </section>
+
+        <section class="policy-section" id="join">
+          <div class="section-number">03</div>
           <h2>How to join &amp; verification</h2>
           <p>
             Any GLIME client can apply. Every application is checked by the GLIME team so buyers can trust
-            that the person behind a course is real.
+            that the person behind a course is real &mdash; which protects the value of every creator&rsquo;s name.
           </p>
 
           <div class="use-list">
@@ -236,7 +314,7 @@
         </section>
 
         <section class="policy-section" id="benefits">
-          <div class="section-number">03</div>
+          <div class="section-number">04</div>
           <h2>What approved creators get</h2>
           <p>
             Approval is a decision by the GLIME team. Once you are approved, you receive:
@@ -267,7 +345,7 @@
         </section>
 
         <section class="policy-section" id="selling">
-          <div class="section-number">04</div>
+          <div class="section-number">05</div>
           <h2>How selling works</h2>
           <p>
             From the first message to the first lesson, the buyer journey is automatic and protected.
@@ -287,7 +365,7 @@
         </section>
 
         <section class="policy-section" id="fees">
-          <div class="section-number">05</div>
+          <div class="section-number">06</div>
           <h2>Fees &amp; payments</h2>
           <p>
             GLIME charges one small flat fee for each sale, based on the course price. We never take a
@@ -347,7 +425,7 @@
         </section>
 
         <section class="policy-section" id="conduct">
-          <div class="section-number">06</div>
+          <div class="section-number">07</div>
           <h2>Creator standards</h2>
           <p>
             Buyers trust the GLIME name when they pay a creator. These standards apply to every course,
@@ -395,7 +473,7 @@
         </section>
 
         <section class="policy-section" id="refunds">
-          <div class="section-number">07</div>
+          <div class="section-number">08</div>
           <h2>Refunds &amp; creator policies</h2>
           <p>
             Each creator is the seller of their own course, so each creator decides and publishes their own
@@ -432,7 +510,7 @@
         </section>
 
         <section class="policy-section" id="buyers">
-          <div class="section-number">08</div>
+          <div class="section-number">09</div>
           <h2>Buyer access &amp; protection</h2>
           <p>
             Course content belongs to the creator. These controls protect both creators and buyers.
@@ -486,12 +564,13 @@
         </section>
 
         <section class="policy-section" id="enforcement">
-          <div class="section-number">09</div>
+          <div class="section-number">10</div>
           <h2>Fraud &amp; enforcement</h2>
           <p>
-            Buyers and honest creators come first. If a creator cheats a buyer or abuses the program,
-            GLIME may remove their access and may suspend or permanently remove their entire GLIME client
-            account. GLIME may do this through automated safeguards, manual review by the GLIME team, or both.
+            A creator network is only as strong as the trust inside it. Buyers and honest creators come first.
+            If a creator cheats a buyer or abuses the program, GLIME may remove their access and may suspend or
+            permanently remove their entire GLIME client account. GLIME may do this through automated
+            safeguards, manual review by the GLIME team, or both.
           </p>
 
           <div class="cp-danger">
@@ -578,7 +657,7 @@
         </section>
 
         <section class="policy-section" id="privacy">
-          <div class="section-number">10</div>
+          <div class="section-number">11</div>
           <h2>Privacy &amp; data in the Creator Program</h2>
           <p>
             This section adds to the GLIME <a class="inl" href="privacy.html">Privacy Policy</a>, which also applies.
@@ -655,7 +734,7 @@
         </section>
 
         <section class="policy-section" id="terms">
-          <div class="section-number">11</div>
+          <div class="section-number">12</div>
           <h2>Program terms</h2>
           <p>
             By applying to or using the Creator Program, you agree to the following, together with the
@@ -753,10 +832,14 @@
         </section>
 
         <section class="policy-section" id="faq">
-          <div class="section-number">12</div>
+          <div class="section-number">13</div>
           <h2>Questions creators ask</h2>
 
           <div class="cp-faq">
+            <details>
+              <summary>Does GLIME really sell my course for me?</summary>
+              <p>Yes. Once you add a published course to Services, GLIME AI answers buyer questions in your Instagram and WhatsApp chats, shares the price, sends the secure payment link and delivers the private course link after payment. How well it sells depends on your course and the details you give it, and GLIME does not promise a number of sales.</p>
+            </details>
             <details>
               <summary>Who can become a creator?</summary>
               <p>Any GLIME client who teaches a skill and has a real Instagram or YouTube presence can apply from Settings &rarr; Connector. The GLIME team approves each application after checking the passcode on your profile.</p>
@@ -788,8 +871,16 @@
           </div>
         </section>
 
+        <section class="cp-cta" aria-label="Apply as a creator">
+          <div>
+            <h2>Ready to let GLIME sell for you?</h2>
+            <p>Apply from your client account, place your passcode, and start building your course business with the GLIME team behind you.</p>
+          </div>
+          <a class="cp-btn" href="ai-connections.html">Become a GLIME creator <span aria-hidden="true">&rarr;</span></a>
+        </section>
+
         <section class="policy-section" id="contact">
-          <div class="section-number">13</div>
+          <div class="section-number">14</div>
           <h2>Contact &amp; reporting</h2>
           <p>
             For questions about the Creator Program, an application decision, or to report a creator you
