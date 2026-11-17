@@ -1,16 +1,16 @@
 /* =========================================================
-   GLIME SHARED INBOX  (WhatsApp + Instagram)
+   GLIME SHARED INBOX  (WhatsApp | Instagram, side by side)
    ---------------------------------------------------------
-   One list, one thread per customer.
-   - If the same customer chatted on both WhatsApp and Instagram
-     (same lead / customer record), both chats are shown as ONE
-     conversation. Every message carries its channel, and every
-     reply shows WHO answered (WhatsApp AI, Instagram AI, Business).
+   Two panels on one screen, like a multi-assistant view:
+   - WhatsApp panel and Instagram panel stay separate, but both
+     are always visible together.
+   - Each panel has its own list and its own open chat. Opening a
+     chat in one panel never closes or changes the other panel.
+   - Every reply shows WHO answered (WhatsApp AI, Instagram AI,
+     or the Business).
    - Read-only: this page only SELECTs data (RLS limits every
      query to the logged-in client). Nothing is written.
-   - Opening a chat never stops the list from updating. On a
-     narrow screen the chat opens full-screen; Back (button or
-     phone back) returns to the list exactly as it was.
+   - Both lists keep refreshing while a chat is open.
 ========================================================= */
 (() => {
   "use strict";
@@ -23,7 +23,7 @@
       refreshMs: 15000,
       convLimit: 300,
       msgLimit: 500,
-      singlePaneQuery: "(max-width: 1100px)"
+      stackedQuery: "(max-width: 1000px)"
     },
     window.GLIME_INBOX_CONFIG || {}
   );
@@ -36,24 +36,30 @@
   const db = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey);
 
   const CHANNELS = {
-    whatsapp: { label: "WhatsApp" },
-    instagram: { label: "Instagram" }
+    whatsapp: { label: "WhatsApp", table: "whatsapp_messages" },
+    instagram: { label: "Instagram", table: "instagram_messages" }
   };
 
   const state = {
     clientId: null,
-    groups: [],
-    filter: "all",
     search: "",
-    selectedKey: null,
-    selectedConvIds: [],
-    threadToken: 0,
-    contactToken: 0,
-    busy: false
+    busy: false,
+    openStack: [],
+    panes: {
+      whatsapp: { convs: [], loaded: false, failed: false, selectedId: null, token: 0 },
+      instagram: { convs: [], loaded: false, failed: false, selectedId: null, token: 0 }
+    }
   };
 
   const $ = (id) => document.getElementById(id);
-  const single = () => !!(window.matchMedia && window.matchMedia(CFG.singlePaneQuery).matches);
+  const stacked = () => !!(window.matchMedia && window.matchMedia(CFG.stackedQuery).matches);
+
+  function paneEl(ch) {
+    return document.querySelector('.ib-pane[data-ch="' + ch + '"]');
+  }
+  function role(ch, name) {
+    return paneEl(ch).querySelector('[data-role="' + name + '"]');
+  }
 
   function h(tag, cls, text) {
     const e = document.createElement(tag);
@@ -92,19 +98,6 @@
     y.setDate(now.getDate() - 1);
     if (isSameDay(d, y)) return "Yesterday";
     return d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
-  }
-
-  function fmtDateTime(iso) {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
   }
 
   function initials(name) {
@@ -179,164 +172,78 @@
     return state.clientId;
   }
 
-  /* ---------- data: conversation list ---------- */
+  /* ---------- data ---------- */
 
-  function rowsOf(result) {
-    return result.status === "fulfilled" && !result.value.error ? result.value.data || [] : null;
-  }
-
-  function firstPerConversation(rows) {
-    const map = new Map();
-    (rows || []).forEach((r) => {
-      if (!map.has(r.conversation_id)) map.set(r.conversation_id, r);
-    });
-    return map;
-  }
-
-  /* One group = one customer. Same lead (or customer) on both channels = one group. */
-  function groupKeyOf(c) {
-    if (c.lead_id) return "l:" + c.lead_id;
-    if (c.customer_id) return "c:" + c.customer_id;
-    return c.channel + ":" + c.id;
-  }
-
-  function buildGroups(convs) {
-    const map = new Map();
-    convs.forEach((c) => {
-      const k = groupKeyOf(c);
-      if (!map.has(k)) map.set(k, []);
-      map.get(k).push(c);
-    });
-
-    const groups = [];
-    map.forEach((list, key) => {
-      list.sort((a, b) => ts(b.lastAt) - ts(a.lastAt));
-      const latest = list[0];
-      const wa = list.find((c) => c.channel === "whatsapp");
-      const ig = list.find((c) => c.channel === "instagram");
-      const channels = [];
-      if (wa) channels.push("whatsapp");
-      if (ig) channels.push("instagram");
-
-      groups.push({
-        key,
-        convs: list,
-        channels,
-        name: (wa && wa.name) || (ig && ig.name) || latest.name,
-        handles: list.map((c) => ({ channel: c.channel, text: c.handle })).filter((x) => x.text),
-        preview: latest.preview,
-        previewOut: latest.previewOut,
-        previewChannel: latest.channel,
-        lastAt: latest.lastAt,
-        needsReply: latest.needsReply,
-        status: list.some((c) => String(c.status).toLowerCase() === "open") ? "open" : latest.status,
-        customer_id: (list.find((c) => c.customer_id) || {}).customer_id || null,
-        lead_id: (list.find((c) => c.lead_id) || {}).lead_id || null
-      });
-    });
-
-    groups.sort((a, b) => ts(b.lastAt) - ts(a.lastAt));
-    return groups;
-  }
-
-  async function fetchGroups() {
-    const cid = await ensureClient();
-    if (!cid) return null;
-
-    const [wa, ig] = await Promise.allSettled([
-      db
-        .from("whatsapp_conversations")
-        .select(
-          "id,customer_id,lead_id,customer_phone,customer_name,status,last_message_at,last_message_preview,last_message_direction,created_at"
-        )
-        .eq("client_id", cid)
-        .order("last_message_at", { ascending: false, nullsFirst: false })
-        .limit(CFG.convLimit),
-      db
-        .from("instagram_conversations")
-        .select(
-          "id,customer_id,lead_id,instagram_user_id,username,status,last_message_at,last_inbound_at,last_outbound_at,created_at"
-        )
-        .eq("client_id", cid)
-        .order("last_message_at", { ascending: false, nullsFirst: false })
-        .limit(CFG.convLimit)
-    ]);
-
-    const waRows = rowsOf(wa);
-    const igRows = rowsOf(ig);
-    const failed = [];
-    if (!waRows) failed.push("WhatsApp");
-    if (!igRows) failed.push("Instagram");
-
-    // Instagram has no preview column, so read the latest message of each chat.
-    const igIds = (igRows || []).map((r) => r.id);
-    const igMsgs = igIds.length
-      ? await Promise.allSettled([
-          db
-            .from("instagram_messages")
-            .select("conversation_id,text_body,message_type,direction,created_at")
-            .eq("client_id", cid)
-            .in("conversation_id", igIds)
-            .order("created_at", { ascending: false })
-            .limit(600)
-        ])
-      : [{ status: "fulfilled", value: { data: [], error: null } }];
-    const igLast = firstPerConversation(rowsOf(igMsgs[0]));
-
-    const convs = [];
-
-    (waRows || []).forEach((r) => {
-      convs.push({
-        channel: "whatsapp",
-        id: r.id,
-        name: String(r.customer_name || "").trim() || r.customer_phone || "Unknown",
-        handle: r.customer_phone || "",
-        preview: r.last_message_preview || "",
-        previewOut: r.last_message_direction === "outbound",
-        lastAt: r.last_message_at || r.created_at,
-        needsReply: r.last_message_direction === "inbound",
-        status: r.status || "open",
-        customer_id: r.customer_id,
-        lead_id: r.lead_id,
-        raw: r
-      });
-    });
-
-    (igRows || []).forEach((r) => {
-      const last = igLast.get(r.id);
-      const inAt = ts(r.last_inbound_at);
-      const outAt = ts(r.last_outbound_at);
-      convs.push({
-        channel: "instagram",
-        id: r.id,
-        name: r.username ? "@" + r.username : r.instagram_user_id || "Unknown",
-        handle: r.username ? "@" + r.username : "",
-        preview: last ? messageText(last.text_body, last.message_type) : "",
-        previewOut: last ? last.direction === "outbound" : false,
-        lastAt: r.last_message_at || r.created_at,
-        needsReply: inAt > 0 && inAt > outAt,
-        status: r.status || "open",
-        customer_id: r.customer_id,
-        lead_id: r.lead_id,
-        raw: r
-      });
-    });
-
-    return { groups: buildGroups(convs), failed };
-  }
-
-  /* ---------- data: thread (all channels of one customer, merged) ---------- */
-
-  async function fetchConvMessages(conv) {
-    const cid = await ensureClient();
-    const table = conv.channel === "whatsapp" ? "whatsapp_messages" : "instagram_messages";
+  async function fetchWhatsapp(cid) {
     const { data, error } = await db
-      .from(table)
+      .from("whatsapp_conversations")
       .select(
-        "id,direction,message_type,text_body,media_id,status,created_at,provider_timestamp,specialist_module_slug"
+        "id,customer_phone,customer_name,status,last_message_at,last_message_preview,last_message_direction,created_at"
       )
       .eq("client_id", cid)
-      .eq("conversation_id", conv.id)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(CFG.convLimit);
+    if (error) throw error;
+
+    return (data || []).map((r) => ({
+      id: r.id,
+      name: String(r.customer_name || "").trim() || r.customer_phone || "Unknown",
+      sub: r.customer_phone || "",
+      preview: r.last_message_preview || "",
+      previewOut: r.last_message_direction === "outbound",
+      lastAt: r.last_message_at || r.created_at,
+      needsReply: r.last_message_direction === "inbound",
+      status: r.status || "open"
+    }));
+  }
+
+  async function fetchInstagram(cid) {
+    const { data, error } = await db
+      .from("instagram_conversations")
+      .select("id,instagram_user_id,username,status,last_message_at,last_inbound_at,last_outbound_at,created_at")
+      .eq("client_id", cid)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(CFG.convLimit);
+    if (error) throw error;
+
+    const rows = data || [];
+    // Instagram has no preview column, so read the latest message of each chat.
+    const last = new Map();
+    if (rows.length) {
+      const { data: msgs, error: mErr } = await db
+        .from("instagram_messages")
+        .select("conversation_id,text_body,message_type,direction,created_at")
+        .eq("client_id", cid)
+        .in("conversation_id", rows.map((r) => r.id))
+        .order("created_at", { ascending: false })
+        .limit(600);
+      if (!mErr) (msgs || []).forEach((m) => { if (!last.has(m.conversation_id)) last.set(m.conversation_id, m); });
+    }
+
+    return rows.map((r) => {
+      const m = last.get(r.id);
+      const inAt = ts(r.last_inbound_at);
+      const outAt = ts(r.last_outbound_at);
+      return {
+        id: r.id,
+        name: r.username ? "@" + r.username : r.instagram_user_id || "Unknown",
+        sub: "",
+        preview: m ? messageText(m.text_body, m.message_type) : "",
+        previewOut: m ? m.direction === "outbound" : false,
+        lastAt: r.last_message_at || r.created_at,
+        needsReply: inAt > 0 && inAt > outAt,
+        status: r.status || "open"
+      };
+    });
+  }
+
+  async function fetchMessages(ch, convId) {
+    const cid = await ensureClient();
+    const { data, error } = await db
+      .from(CHANNELS[ch].table)
+      .select("id,direction,message_type,text_body,media_id,status,created_at,provider_timestamp,specialist_module_slug")
+      .eq("client_id", cid)
+      .eq("conversation_id", convId)
       .order("created_at", { ascending: false })
       .limit(CFG.msgLimit);
     if (error) throw error;
@@ -345,8 +252,7 @@
       const out = m.direction !== "inbound";
       const by = out ? answeredBy(m.specialist_module_slug) : null;
       return {
-        id: conv.channel + ":" + m.id,
-        channel: conv.channel,
+        id: m.id,
         dir: out ? "out" : "in",
         byLabel: by ? by.label : "",
         byKind: by ? by.kind : "customer",
@@ -359,200 +265,158 @@
     });
   }
 
-  async function fetchThread(group) {
-    const parts = await Promise.all(group.convs.map(fetchConvMessages));
-    return [].concat(...parts);
-  }
-
-  /* ---------- data: contact panel ---------- */
-
-  async function fetchContact(group) {
+  async function fetchControl(convId) {
     const cid = await ensureClient();
-    const ids = group.convs.map((c) => c.id);
-    const [cust, lead, ctl] = await Promise.allSettled([
-      group.customer_id
-        ? db
-            .from("customers")
-            .select("id,name,mobile,house_no,village_locality,district,state,pincode,landmark,created_at")
-            .eq("id", group.customer_id)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-      group.lead_id
-        ? db
-            .from("leads")
-            .select("id,name,status,priority,interest,source,next_follow_up_at,created_at")
-            .eq("id", group.lead_id)
-            .eq("client_id", cid)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-      db
-        .from("client_conversation_controls")
-        .select("conversation_id,ai_enabled,human_takeover_enabled,ai_mode")
-        .eq("client_id", cid)
-        .in("conversation_id", ids)
-    ]);
-
-    const one = (r) => (r.status === "fulfilled" && !r.value.error ? r.value.data : null);
-    const ctlRows = one(ctl);
-    return {
-      customer: one(cust),
-      lead: one(lead),
-      controls: Array.isArray(ctlRows) ? ctlRows : []
-    };
+    const { data, error } = await db
+      .from("client_conversation_controls")
+      .select("conversation_id,ai_enabled,human_takeover_enabled")
+      .eq("client_id", cid)
+      .eq("conversation_id", convId)
+      .limit(1);
+    if (error || !Array.isArray(data) || !data.length) return null;
+    return data[0];
   }
 
   /* ---------- render: list ---------- */
 
-  function visibleGroups() {
+  function visibleConvs(ch) {
     const q = state.search.trim().toLowerCase();
-    return state.groups.filter((g) => {
-      if (state.filter === "needs") {
-        if (!g.needsReply) return false;
-      } else if (state.filter !== "all" && !g.channels.includes(state.filter)) {
-        return false;
-      }
-      if (!q) return true;
-      return (
-        g.name.toLowerCase().includes(q) ||
-        g.preview.toLowerCase().includes(q) ||
-        g.handles.some((x) => x.text.toLowerCase().includes(q))
-      );
-    });
+    const list = state.panes[ch].convs;
+    if (!q) return list;
+    return list.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.sub.toLowerCase().includes(q) ||
+        c.preview.toLowerCase().includes(q)
+    );
   }
 
-  function renderCounts() {
-    const counts = { all: state.groups.length, whatsapp: 0, instagram: 0, needs: 0 };
-    state.groups.forEach((g) => {
-      g.channels.forEach((c) => {
-        counts[c] += 1;
-      });
-      if (g.needsReply) counts.needs += 1;
-    });
-    document.querySelectorAll("[data-count]").forEach((el) => {
-      el.textContent = String(counts[el.getAttribute("data-count")] ?? 0);
-    });
+  function renderPaneHead(ch) {
+    const p = state.panes[ch];
+    role(ch, "count").textContent = String(p.convs.length);
+    const need = p.convs.filter((c) => c.needsReply).length;
+    role(ch, "need").textContent = need ? need + " need reply" : "";
   }
 
-  function channelPills(channels) {
-    const wrap = h("span", "ib-pills");
-    channels.forEach((c) => wrap.appendChild(h("span", "ib-pill ch-" + c, CHANNELS[c].label)));
-    return wrap;
-  }
+  function renderList(ch) {
+    const box = role(ch, "list");
+    const p = state.panes[ch];
+    const keepTop = box.scrollTop;
+    box.textContent = "";
+    renderPaneHead(ch);
 
-  function avatarFor(g, cls) {
-    const kind = g.channels.length > 1 ? "both" : g.channels[0];
-    return h("span", "ib-avatar " + (cls || "") + " ch-" + kind, initials(g.name));
-  }
+    if (p.failed && !p.convs.length) {
+      const e = h("div", "ib-empty");
+      e.appendChild(h("strong", "", "Could not load " + CHANNELS[ch].label));
+      e.appendChild(h("span", "", "Please press Refresh to try again."));
+      box.appendChild(e);
+      return;
+    }
 
-  function renderList() {
-    const list = $("convList");
-    const keepTop = list.scrollTop;
-    list.textContent = "";
-    renderCounts();
-
-    const items = visibleGroups();
+    const items = visibleConvs(ch);
     if (!items.length) {
-      const empty = h("div", "ib-empty");
-      empty.appendChild(h("strong", "", state.groups.length ? "No matching conversations" : "No conversations yet"));
-      empty.appendChild(
-        h(
-          "span",
-          "",
-          state.groups.length
-            ? "Try a different filter or search."
-            : "Messages from WhatsApp and Instagram will appear here."
-        )
+      const e = h("div", "ib-empty");
+      e.appendChild(
+        h("strong", "", p.convs.length ? "No matching conversations" : "No " + CHANNELS[ch].label + " conversations yet")
       );
-      list.appendChild(empty);
+      e.appendChild(
+        h("span", "", p.convs.length ? "Try a different search." : "New messages will appear here.")
+      );
+      box.appendChild(e);
       return;
     }
 
     const frag = document.createDocumentFragment();
-    items.forEach((g) => {
-      const btn = h("button", "ib-conv" + (g.key === state.selectedKey ? " active" : ""));
+    items.forEach((c) => {
+      const btn = h("button", "ib-conv" + (c.id === p.selectedId ? " active" : ""));
       btn.type = "button";
-      btn.dataset.key = g.key;
+      btn.dataset.id = c.id;
 
       const body = h("span", "ib-conv-body");
-
       const top = h("span", "ib-conv-top");
-      top.appendChild(h("span", "ib-conv-name", g.name));
-      top.appendChild(h("span", "ib-conv-time", fmtListTime(g.lastAt)));
+      top.appendChild(h("span", "ib-conv-name", c.name));
+      top.appendChild(h("span", "ib-conv-time", fmtListTime(c.lastAt)));
 
       const bottom = h("span", "ib-conv-bottom");
       const prev = h("span", "ib-conv-preview");
-      if (g.previewOut && g.preview) prev.appendChild(h("em", "", "You: "));
-      prev.appendChild(document.createTextNode(g.preview || "No messages"));
+      if (c.previewOut && c.preview) prev.appendChild(h("em", "", "You: "));
+      prev.appendChild(document.createTextNode(c.preview || "No messages"));
       bottom.appendChild(prev);
-      if (g.needsReply) {
+      if (c.needsReply) {
         const dot = h("span", "ib-dot");
         dot.title = "Waiting for a reply";
         bottom.appendChild(dot);
       }
 
-      const meta = h("span", "ib-conv-meta");
-      meta.appendChild(channelPills(g.channels));
-      const wa = g.handles.find((x) => x.channel === "whatsapp");
-      if (wa && g.channels.length === 1) meta.appendChild(h("span", "ib-conv-sub", wa.text));
-
       body.appendChild(top);
       body.appendChild(bottom);
-      body.appendChild(meta);
-      btn.appendChild(avatarFor(g));
+      if (c.sub) body.appendChild(h("span", "ib-conv-sub", c.sub));
+
+      btn.appendChild(h("span", "ib-avatar ch-" + ch, initials(c.name)));
       btn.appendChild(body);
       frag.appendChild(btn);
     });
-    list.appendChild(frag);
-    list.scrollTop = keepTop;
+    box.appendChild(frag);
+    box.scrollTop = keepTop;
   }
 
-  /* ---------- render: thread ---------- */
+  /* ---------- render: chat ---------- */
 
-  function renderChatHeader(g) {
-    const head = $("chatHead");
+  function renderChatHead(ch, c) {
+    const head = role(ch, "head");
     head.textContent = "";
-    if (!g) {
-      head.classList.add("hidden");
-      return;
-    }
-    head.classList.remove("hidden");
 
     const back = h("button", "ib-back");
     back.type = "button";
-    back.id = "backBtn";
-    back.setAttribute("aria-label", "Back to conversations");
+    back.setAttribute("aria-label", "Back to " + CHANNELS[ch].label + " conversations");
     back.textContent = "‹";
     head.appendChild(back);
 
-    head.appendChild(avatarFor(g, "big"));
+    head.appendChild(h("span", "ib-avatar ch-" + ch, initials(c.name)));
     const info = h("div", "ib-chat-info");
-    info.appendChild(h("strong", "", g.name));
-    const sub = h("span", "");
-    sub.appendChild(channelPills(g.channels));
-    const phone = g.handles.find((x) => x.channel === "whatsapp");
-    if (phone) sub.appendChild(h("span", "ib-conv-sub", phone.text));
-    info.appendChild(sub);
+    info.appendChild(h("strong", "", c.name));
+    if (c.sub) info.appendChild(h("span", "ib-conv-sub", c.sub));
     head.appendChild(info);
 
     const right = h("div", "ib-chat-right");
-    if (g.status) right.appendChild(h("span", "ib-status st-" + String(g.status).toLowerCase(), g.status));
+    if (c.status) right.appendChild(h("span", "ib-status st-" + String(c.status).toLowerCase(), c.status));
     const badge = h("span", "ib-ctl hidden");
-    badge.id = "ctlBadge";
+    badge.setAttribute("data-role", "ctl");
     right.appendChild(badge);
     head.appendChild(right);
   }
 
-  function renderThread(msgs, keepScroll, multi) {
-    const box = $("thread");
+  function applyControl(ch, control) {
+    const badge = role(ch, "ctl");
+    if (!badge) return;
+    badge.className = "ib-ctl";
+    if (!control) {
+      badge.classList.add("hidden");
+      return;
+    }
+    if (control.human_takeover_enabled) {
+      badge.textContent = "Human takeover";
+      badge.classList.add("human");
+    } else if (control.ai_enabled === false) {
+      badge.textContent = "AI off";
+      badge.classList.add("off");
+    } else {
+      badge.textContent = "AI replying";
+      badge.classList.add("on");
+    }
+  }
+
+  function renderThread(ch, msgs, keepScroll) {
+    const box = role(ch, "thread");
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
     const prevTop = box.scrollTop;
     box.textContent = "";
 
     const sorted = msgs.slice().sort((a, b) => ts(a.at) - ts(b.at));
     if (!sorted.length) {
-      const empty = h("div", "ib-empty");
-      empty.appendChild(h("strong", "", "No messages in this conversation"));
-      box.appendChild(empty);
+      const e = h("div", "ib-empty");
+      e.appendChild(h("strong", "", "No messages in this conversation"));
+      box.appendChild(e);
       return;
     }
 
@@ -565,26 +429,15 @@
         frag.appendChild(h("div", "ib-day", fmtDayLabel(m.at)));
       }
       const row = h("div", "ib-row " + m.dir);
-      const bubble = h("div", "ib-bubble by-" + m.byKind + " ch-" + m.channel);
+      const bubble = h("div", "ib-bubble by-" + m.byKind);
 
-      if (m.dir === "out") {
-        const who = h("span", "ib-who");
-        who.appendChild(h("i", "ib-chdot ch-" + m.channel));
-        who.appendChild(document.createTextNode(m.byLabel));
-        bubble.appendChild(who);
-      }
+      if (m.dir === "out") bubble.appendChild(h("span", "ib-who", m.byLabel));
       if (m.type && ["comment", "comment_reply"].includes(String(m.type))) {
         bubble.appendChild(h("span", "ib-tag", m.type === "comment" ? "Comment" : "Comment reply"));
       }
       bubble.appendChild(h("div", "ib-text" + (m.isMedia || !m.text ? " media" : ""), m.text));
 
       const foot = h("div", "ib-foot");
-      if (multi || m.dir === "in") {
-        const ch = h("span", "ib-footch");
-        ch.appendChild(h("i", "ib-chdot ch-" + m.channel));
-        ch.appendChild(document.createTextNode(CHANNELS[m.channel].label));
-        foot.appendChild(ch);
-      }
       foot.appendChild(h("span", "", fmtClock(m.at)));
       if (m.status) foot.appendChild(h("span", "ib-msg-status", m.status));
       bubble.appendChild(foot);
@@ -598,103 +451,72 @@
     else box.scrollTop = box.scrollHeight;
   }
 
-  /* ---------- render: contact ---------- */
+  /* ---------- open / close one panel (the other panel is never touched) ---------- */
 
-  function kv(label, value) {
-    const row = h("div", "ib-kv");
-    row.appendChild(h("span", "", label));
-    row.appendChild(h("strong", "", value || "—"));
-    return row;
+  async function loadThread(ch, convId, silent) {
+    const p = state.panes[ch];
+    const token = ++p.token;
+    if (!silent) {
+      const box = role(ch, "thread");
+      box.textContent = "";
+      box.appendChild(h("div", "ib-empty small", "Loading messages…"));
+    }
+    try {
+      const [msgs, control] = await Promise.all([fetchMessages(ch, convId), fetchControl(convId)]);
+      if (token !== p.token || p.selectedId !== convId) return;
+      renderThread(ch, msgs, silent);
+      applyControl(ch, control);
+    } catch (err) {
+      if (token !== p.token) return;
+      console.error("[GLIME Inbox] thread failed:", err);
+      if (!silent) {
+        const box = role(ch, "thread");
+        box.textContent = "";
+        box.appendChild(h("div", "ib-empty small", "Messages could not be loaded. Please refresh."));
+      }
+    }
   }
 
-  function renderContact(g, info) {
-    const box = $("contactPanel");
-    box.textContent = "";
-    if (!g) {
-      box.appendChild(h("div", "ib-empty small", "Select a conversation to see the customer details."));
+  function openChat(ch, convId) {
+    const p = state.panes[ch];
+    const c = p.convs.find((x) => x.id === convId);
+    if (!c) return;
+    p.selectedId = convId;
+    paneEl(ch).classList.add("chat-open");
+    renderChatHead(ch, c);
+    renderList(ch);
+    loadThread(ch, convId, false);
+
+    if (stacked()) {
+      try {
+        history.pushState({ ibOpen: ch }, "");
+        state.openStack.push(ch);
+      } catch (e) {
+        /* history unavailable: the Back button still works */
+      }
+    }
+  }
+
+  function closeChat(ch) {
+    const p = state.panes[ch];
+    p.selectedId = null;
+    p.token++;
+    paneEl(ch).classList.remove("chat-open");
+    renderList(ch);
+  }
+
+  function goBack(ch) {
+    const top = state.openStack[state.openStack.length - 1];
+    if (stacked() && top === ch && history.state && history.state.ibOpen === ch) {
+      history.back(); // popstate closes it
       return;
     }
-
-    const top = h("div", "ib-contact-top");
-    top.appendChild(avatarFor(g, "xl"));
-    top.appendChild(h("strong", "", g.name));
-    top.appendChild(channelPills(g.channels));
-    box.appendChild(top);
-
-    const chat = h("section", "ib-card");
-    chat.appendChild(h("h3", "", "Conversation"));
-    chat.appendChild(kv("Status", g.status || "—"));
-    chat.appendChild(kv("Last activity", fmtDateTime(g.lastAt)));
-    g.convs.forEach((c) => {
-      if (c.channel === "whatsapp") chat.appendChild(kv("WhatsApp", c.handle));
-      else chat.appendChild(kv("Instagram", c.handle || c.raw.instagram_user_id));
-    });
-    box.appendChild(chat);
-
-    if (!info) {
-      box.appendChild(h("div", "ib-empty small", "Loading details…"));
-      return;
-    }
-
-    const cust = info.customer;
-    const custCard = h("section", "ib-card");
-    custCard.appendChild(h("h3", "", "Customer"));
-    if (cust) {
-      custCard.appendChild(kv("Name", cust.name));
-      custCard.appendChild(kv("Mobile", cust.mobile));
-      const addr = [cust.house_no, cust.village_locality, cust.landmark, cust.district, cust.state, cust.pincode]
-        .map((v) => String(v || "").trim())
-        .filter(Boolean)
-        .join(", ");
-      custCard.appendChild(kv("Address", addr));
-      custCard.appendChild(kv("Customer since", fmtDateTime(cust.created_at)));
-    } else {
-      custCard.appendChild(h("p", "ib-note", "No customer record linked yet."));
-    }
-    box.appendChild(custCard);
-
-    const lead = info.lead;
-    const leadCard = h("section", "ib-card");
-    leadCard.appendChild(h("h3", "", "Lead"));
-    if (lead) {
-      leadCard.appendChild(kv("Status", lead.status));
-      leadCard.appendChild(kv("Priority", lead.priority));
-      leadCard.appendChild(kv("Interest", lead.interest));
-      leadCard.appendChild(kv("Next follow-up", lead.next_follow_up_at ? fmtDateTime(lead.next_follow_up_at) : ""));
-      const link = h("a", "ib-link", "Open Leads →");
-      link.href = "leads.html";
-      leadCard.appendChild(link);
-    } else {
-      leadCard.appendChild(h("p", "ib-note", "No lead linked yet."));
-    }
-    box.appendChild(leadCard);
+    const i = state.openStack.lastIndexOf(ch);
+    if (i >= 0) state.openStack.splice(i, 1);
+    closeChat(ch);
   }
 
-  function applyControlBadge(controls) {
-    const badge = $("ctlBadge");
-    if (!badge) return;
-    badge.className = "ib-ctl";
-    if (!controls || !controls.length) {
-      badge.classList.add("hidden");
-      return;
-    }
-    if (controls.some((c) => c.human_takeover_enabled)) {
-      badge.textContent = "Human takeover";
-      badge.classList.add("human");
-    } else if (controls.every((c) => c.ai_enabled === false)) {
-      badge.textContent = "AI off";
-      badge.classList.add("off");
-    } else {
-      badge.textContent = "AI replying";
-      badge.classList.add("on");
-    }
-  }
-
-  /* ---------- selection / navigation ---------- */
-
-  function currentGroup() {
-    return state.groups.find((g) => g.key === state.selectedKey) || null;
-  }
+  /* ---------- refresh ---------- */
 
   function showError(msg) {
     const el = $("ibError");
@@ -707,118 +529,46 @@
     el.classList.remove("hidden");
   }
 
-  async function loadThread(g, silent) {
-    const token = ++state.threadToken;
-    if (!silent) {
-      const box = $("thread");
-      box.textContent = "";
-      box.appendChild(h("div", "ib-empty small", "Loading messages…"));
-    }
-    try {
-      const msgs = await fetchThread(g);
-      if (token !== state.threadToken) return;
-      renderThread(msgs, silent, g.channels.length > 1);
-    } catch (err) {
-      if (token !== state.threadToken) return;
-      console.error("[GLIME Inbox] thread failed:", err);
-      if (!silent) {
-        const box = $("thread");
-        box.textContent = "";
-        box.appendChild(h("div", "ib-empty small", "Messages could not be loaded. Please refresh."));
-      }
-    }
-  }
-
-  async function loadContact(g) {
-    const token = ++state.contactToken;
-    renderContact(g, null);
-    try {
-      const info = await fetchContact(g);
-      if (token !== state.contactToken) return;
-      renderContact(g, info);
-      applyControlBadge(info.controls);
-    } catch (err) {
-      if (token !== state.contactToken) return;
-      console.error("[GLIME Inbox] contact failed:", err);
-      renderContact(g, { customer: null, lead: null, controls: [] });
-    }
-  }
-
-  function openPane() {
-    $("layout").classList.add("ib-open");
-    if (single() && !(history.state && history.state.ibOpen)) {
-      try {
-        history.pushState({ ibOpen: true }, "");
-      } catch (e) {
-        /* history unavailable: the Back button still works */
-      }
-    }
-  }
-
-  function closePane() {
-    $("layout").classList.remove("ib-open");
-    state.selectedKey = null;
-    state.selectedConvIds = [];
-    state.threadToken++;
-    state.contactToken++;
-    $("chatBody").classList.add("hidden");
-    $("chatEmpty").classList.remove("hidden");
-    renderContact(null, null);
-    renderList();
-  }
-
-  function selectGroup(key) {
-    const g = state.groups.find((x) => x.key === key);
-    if (!g) return;
-    state.selectedKey = key;
-    state.selectedConvIds = g.convs.map((c) => c.id);
-    $("chatEmpty").classList.add("hidden");
-    $("chatBody").classList.remove("hidden");
-    renderList();
-    renderChatHeader(g);
-    loadThread(g, false);
-    loadContact(g);
-    openPane();
-  }
-
-  function goBack() {
-    if (history.state && history.state.ibOpen) history.back();
-    else closePane();
-  }
-
-  /* Keep the open chat selected even if its grouping changes (e.g. a lead gets linked). */
-  function reselect() {
-    if (!state.selectedKey) return;
-    if (state.groups.some((g) => g.key === state.selectedKey)) return;
-    const found = state.groups.find((g) => g.convs.some((c) => state.selectedConvIds.includes(c.id)));
-    if (found) {
-      state.selectedKey = found.key;
-      state.selectedConvIds = found.convs.map((c) => c.id);
-    } else {
-      closePane();
-    }
-  }
-
   async function refresh(opts) {
     if (state.busy) return;
     state.busy = true;
     const btn = $("refreshBtn");
     if (opts && opts.manual) btn.disabled = true;
     try {
-      const res = await fetchGroups();
-      if (!res) return;
-      state.groups = res.groups;
-      showError(
-        res.failed.length ? "Could not load " + res.failed.join(", ") + " conversations. Showing the rest." : ""
-      );
-      reselect();
-      renderList();
-      const g = currentGroup();
-      if (g) {
-        renderChatHeader(g);
-        loadThread(g, true);
-        loadContact(g);
-      }
+      const cid = await ensureClient();
+      if (!cid) return;
+
+      const [wa, ig] = await Promise.allSettled([fetchWhatsapp(cid), fetchInstagram(cid)]);
+      const results = { whatsapp: wa, instagram: ig };
+      const failed = [];
+
+      ["whatsapp", "instagram"].forEach((ch) => {
+        const r = results[ch];
+        const p = state.panes[ch];
+        if (r.status === "fulfilled") {
+          p.convs = r.value;
+          p.failed = false;
+        } else {
+          console.error("[GLIME Inbox] " + ch + " failed:", r.reason);
+          p.failed = true;
+          failed.push(CHANNELS[ch].label);
+        }
+        p.loaded = true;
+
+        if (p.selectedId && !p.convs.some((c) => c.id === p.selectedId) && !p.failed) {
+          closeChat(ch);
+        }
+        renderList(ch);
+        if (p.selectedId) {
+          const c = p.convs.find((x) => x.id === p.selectedId);
+          if (c) {
+            renderChatHead(ch, c);
+            loadThread(ch, p.selectedId, true);
+          }
+        }
+      });
+
+      showError(failed.length ? "Could not load " + failed.join(" and ") + ". Showing the rest." : "");
     } catch (err) {
       console.error("[GLIME Inbox] refresh failed:", err);
       showError(err && err.message ? err.message : "Inbox could not be loaded.");
@@ -832,20 +582,13 @@
   /* ---------- init ---------- */
 
   function bind() {
-    $("convList").addEventListener("click", (e) => {
-      const btn = e.target.closest(".ib-conv");
-      if (btn) selectGroup(btn.dataset.key);
-    });
-
-    $("chatHead").addEventListener("click", (e) => {
-      if (e.target.closest(".ib-back")) goBack();
-    });
-
-    document.querySelectorAll(".ib-filter").forEach((b) => {
-      b.addEventListener("click", () => {
-        state.filter = b.dataset.filter;
-        document.querySelectorAll(".ib-filter").forEach((x) => x.classList.toggle("active", x === b));
-        renderList();
+    ["whatsapp", "instagram"].forEach((ch) => {
+      role(ch, "list").addEventListener("click", (e) => {
+        const b = e.target.closest(".ib-conv");
+        if (b) openChat(ch, b.dataset.id);
+      });
+      role(ch, "head").addEventListener("click", (e) => {
+        if (e.target.closest(".ib-back")) goBack(ch);
       });
     });
 
@@ -854,19 +597,17 @@
       clearTimeout(timer);
       timer = setTimeout(() => {
         state.search = e.target.value;
-        renderList();
+        renderList("whatsapp");
+        renderList("instagram");
       }, 150);
     });
 
     $("refreshBtn").addEventListener("click", () => refresh({ manual: true }));
 
-    // Phone / browser Back: close the open chat, list stays exactly as it was.
+    // Phone / browser Back: close the most recently opened chat only.
     window.addEventListener("popstate", () => {
-      if (single() && $("layout").classList.contains("ib-open")) closePane();
-    });
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && single() && $("layout").classList.contains("ib-open")) goBack();
+      const ch = state.openStack.pop();
+      if (ch) closeChat(ch);
     });
 
     setInterval(() => {
@@ -879,14 +620,13 @@
   }
 
   function start() {
-    // A reload keeps the old history state; the chat is closed after a reload, so clear it.
+    // A reload keeps the old history state; every chat is closed after a reload, so clear it.
     try {
       if (history.state && history.state.ibOpen) history.replaceState(null, "");
     } catch (e) {
       /* ignore */
     }
     bind();
-    renderContact(null, null);
     refresh();
   }
 

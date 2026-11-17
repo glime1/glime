@@ -7,7 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="inbox.css?v=2">
+<link rel="stylesheet" href="inbox.css?v=3">
 <link rel="stylesheet" href="glime-app-shell.css">
 <script src="glime-app-shell.js" defer></script>
 </head>
@@ -19,48 +19,59 @@
 
 <main class="ib-main" data-gas-content>
   <header class="ib-header">
-    <div>
+    <div class="ib-title">
       <h1>Shared Inbox</h1>
-      <p>WhatsApp and Instagram chats together, with who answered each message.</p>
+      <p>WhatsApp and Instagram side by side, with who answered each message.</p>
     </div>
-    <button id="refreshBtn" class="ib-btn" type="button">↻ Refresh</button>
+    <div class="ib-tools">
+      <input id="searchInput" class="ib-search" type="search" placeholder="Search name, phone, message…" aria-label="Search conversations" autocomplete="off">
+      <button id="refreshBtn" class="ib-btn" type="button">↻ Refresh</button>
+    </div>
   </header>
 
   <div id="ibError" class="ib-error hidden" role="alert"></div>
 
   <div class="ib-layout" id="layout">
-    <!-- Conversation list: WhatsApp + Instagram together -->
-    <section class="ib-col ib-list-col" aria-label="Conversations">
-      <div class="ib-list-head">
-        <input id="searchInput" class="ib-search" type="search" placeholder="Search name, phone, message…" aria-label="Search conversations" autocomplete="off">
-        <div class="ib-filters" role="group" aria-label="Filter conversations">
-          <button class="ib-filter active" data-filter="all" type="button">All <b data-count="all">0</b></button>
-          <button class="ib-filter" data-filter="needs" type="button">Needs reply <b data-count="needs">0</b></button>
-          <button class="ib-filter" data-filter="whatsapp" type="button">WhatsApp <b data-count="whatsapp">0</b></button>
-          <button class="ib-filter" data-filter="instagram" type="button">Instagram <b data-count="instagram">0</b></button>
+
+    <!-- WhatsApp -->
+    <section class="ib-pane" data-ch="whatsapp" aria-label="WhatsApp conversations">
+      <header class="ib-pane-head">
+        <i class="ib-chdot ch-whatsapp" aria-hidden="true"></i>
+        <h2>WhatsApp</h2>
+        <span class="ib-count" data-role="count">0</span>
+        <span class="ib-need" data-role="need"></span>
+      </header>
+      <div class="ib-pane-body">
+        <div class="ib-plist" data-role="list"></div>
+        <div class="ib-pchat" data-role="chat">
+          <div class="ib-chat-head" data-role="head"></div>
+          <div class="ib-thread" data-role="thread" aria-live="polite"></div>
+          <div class="ib-readonly">View only. Replies are sent by your GLIME AI agents.</div>
         </div>
       </div>
-      <div id="convList" class="ib-conv-list"></div>
     </section>
 
-    <!-- Chat -->
-    <section class="ib-col ib-chat" aria-label="Conversation">
-      <div id="chatEmpty" class="ib-chat-empty">
-        <strong>Select a conversation</strong>
-        <span>Pick a chat from the list to read the full conversation.</span>
-      </div>
-      <div id="chatBody" class="ib-chat-body hidden">
-        <div id="chatHead" class="ib-chat-head hidden"></div>
-        <div id="thread" class="ib-thread" aria-live="polite"></div>
-        <div class="ib-readonly">View only. Replies are sent by your GLIME AI agents.</div>
+    <!-- Instagram -->
+    <section class="ib-pane" data-ch="instagram" aria-label="Instagram conversations">
+      <header class="ib-pane-head">
+        <i class="ib-chdot ch-instagram" aria-hidden="true"></i>
+        <h2>Instagram</h2>
+        <span class="ib-count" data-role="count">0</span>
+        <span class="ib-need" data-role="need"></span>
+      </header>
+      <div class="ib-pane-body">
+        <div class="ib-plist" data-role="list"></div>
+        <div class="ib-pchat" data-role="chat">
+          <div class="ib-chat-head" data-role="head"></div>
+          <div class="ib-thread" data-role="thread" aria-live="polite"></div>
+          <div class="ib-readonly">View only. Replies are sent by your GLIME AI agents.</div>
+        </div>
       </div>
     </section>
 
-    <!-- Customer details (very wide screens) -->
-    <aside class="ib-col ib-contact ib-contact-col" id="contactPanel" aria-label="Customer details"></aside>
   </div>
 </main>
 
-<script src="inbox.js?v=2"></script>
+<script src="inbox.js?v=3"></script>
 </body>
 </html>
