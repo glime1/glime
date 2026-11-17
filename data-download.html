@@ -290,6 +290,61 @@ function toCsv(rows){const h=headersOf(rows);return '\ufeff'+[h.map(csvCell).joi
 function latin(s,n){s=String(flat(s)).replace(/[^\x20-\x7E\u00A0-\u00FF]/g,'?');return s.length>n?s.slice(0,n-1)+'…':s;}
 function sheetName(label,used){let n=label.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31);let i=2,base=n;while(used.has(n.toLowerCase())){n=base.slice(0,28)+' '+i++;}used.add(n.toLowerCase());return n;}
 
+/* ---------- Excel helpers (clean headers, readable dates, widths, filter) ---------- */
+const XL_FIRST={
+ leads:['name','mobile','whatsapp','email','city_area','address','interest','product_service','budget','budget_currency','status','priority','source','source_ref','notes','next_follow_up_at','last_contacted_at','last_instagram_contacted_at','instagram_follow_up_count'],
+ lead_timeline:['created_at','event_type','title','description','source'],
+ customers:['name','mobile','house_no','village_locality','district','state','pincode','landmark'],
+ enquiries:['created_at','message','status','source'],
+ whatsapp_conversations:['customer_name','customer_phone','status','last_message_preview','last_message_direction','last_message_at','last_inbound_at','last_outbound_at'],
+ whatsapp_messages:['created_at','direction','sender_phone','recipient_phone','message_type','text_body','status'],
+ instagram_conversations:['username','status','last_message_at','last_inbound_at','last_outbound_at'],
+ instagram_messages:['created_at','direction','message_type','text_body','status'],
+ instagram_comments:['created_at','commenter_username','comment_text','ai_reply','status','skip_reason','post_permalink','post_caption'],
+ voice_conversations:['status','started_at','ended_at'],
+ voice_messages:[],
+ orders:['order_number','created_at','product_title','quantity','price_at_order','total_amount','currency','status','payment_status','fulfillment_status','delivery_address','source_channel'],
+ order_items:['product_title_snapshot','quantity','unit_price','discount_amount','tax_amount','line_total','color','size','fabric'],
+ offers:['name','offer_type','status','short_description','description'],
+ knowledge_items:['title','category','content','status','source_type'],
+ invoices:['invoice_number','status','currency','subtotal','usage_amount','credit_amount','total_amount','period_start','period_end','due_at','paid_at']
+};
+const XL_LABELS={client_id:'Client ID',id:'ID',whatsapp:'WhatsApp',city_area:'City / Area',product_service:'Product / Service',budget_currency:'Currency',source_ref:'Source Reference',next_follow_up_at:'Next Follow-up',last_contacted_at:'Last Contacted',last_instagram_contacted_at:'Last Instagram Contacted',instagram_follow_up_count:'Instagram Follow-ups',created_at:'Created',updated_at:'Updated',text_body:'Message',customer_phone:'Customer Phone',customer_name:'Customer Name',ig_comment_id:'Instagram Comment ID',ig_parent_comment_id:'Parent Comment ID',ig_media_id:'Instagram Media ID',price_at_order:'Price At Order',delivery_address_json:'Delivery Address (JSON)'};
+const XL_WORDS={id:'ID',ig:'Instagram',url:'URL',sku:'SKU',ai:'AI',json:'JSON'};
+function xlLabel(k){
+  if(XL_LABELS[k])return XL_LABELS[k];
+  const w=k.replace(/_at$/,'').split('_').filter(Boolean);
+  return w.map(x=>XL_WORDS[x]||x.charAt(0).toUpperCase()+x.slice(1)).join(' ');
+}
+function xlTech(k){return k==='id'||/_id$/.test(k)||['metadata','raw_payload','idempotency_key','variant','delivery_address_json'].indexOf(k)>=0;}
+function xlDate(d){const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());}
+function xlCell(v){
+  if(v===null||v===undefined)return '';
+  if(typeof v==='boolean')return v?'Yes':'No';
+  if(typeof v==='number')return isFinite(v)?v:'';
+  if(typeof v==='object'){
+    const empty=Array.isArray(v)?v.length===0:Object.keys(v).length===0;
+    if(empty)return '';
+    v=JSON.stringify(v);
+  }
+  v=String(v);
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v)){const d=new Date(v);if(!isNaN(d.getTime()))return xlDate(d);}
+  v=v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+  return v.length>32000?v.slice(0,32000):v;
+}
+function xlSheet(d){
+  const first=XL_FIRST[d.key]||[],raw=headersOf(d.rows);
+  const rank=k=>{const i=first.indexOf(k);if(i>=0)return i;if(k==='created_at')return 500;if(k==='updated_at')return 501;if(xlTech(k))return 900;return 100+raw.indexOf(k);};
+  const keys=raw.slice().sort((a,b)=>(rank(a)-rank(b))||(raw.indexOf(a)-raw.indexOf(b)));
+  const used={};
+  const head=keys.map(k=>{const n=xlLabel(k);let c=n,i=2;while(used[c]){c=n+' ('+(i++)+')';}used[c]=1;return c;});
+  const aoa=[head].concat(d.rows.map(r=>keys.map(k=>xlCell(r[k]))));
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=head.map((h,c)=>{let w=h.length;for(let r=1;r<Math.min(aoa.length,201);r++){const l=String(aoa[r][c]).length;if(l>w)w=l;}return{wch:Math.max(10,Math.min(w+2,50))};});
+  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:head.length-1}})};
+  return ws;
+}
+
 async function zipBlob(entries,password){
   const bw=new zip.BlobWriter('application/zip');
   const w=new zip.ZipWriter(bw,password?{password,encryptionStrength:3}:{});
@@ -312,12 +367,14 @@ async function build(datasets,fmt,pw,meta){
   }
   if(fmt==='xlsx'){
     const wb=XLSX.utils.book_new(),used=new Set(['summary']);
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['GLIME data export'],['Client ID',meta.key],['Period',meta.range],['Exported on',new Date().toISOString()],[],['Data','Rows']].concat(datasets.map(d=>[d.label,d.rows.length]))),'Summary');
-    datasets.forEach(d=>{
-      const h=headersOf(d.rows);
-      const aoa=[h].concat(d.rows.map(r=>h.map(k=>{const v=flat(r[k]);return typeof v==='string'&&v.length>32000?v.slice(0,32000):v;})));
-      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),sheetName(d.label,used));
-    });
+    const sheets=datasets.map(d=>({d,name:sheetName(d.label,used)}));
+    const sum=[['GLIME data export'],['Client ID',meta.key],['Period',meta.range],['Exported on',xlDate(new Date())],['Note','Dates and times are shown in your device time'],[],['Data','Rows','Sheet']]
+      .concat(sheets.map(s=>[s.d.label,s.d.rows.length,s.name]))
+      .concat((meta.empty||[]).map(l=>[l,0,'(no data for this period)']));
+    const wsS=XLSX.utils.aoa_to_sheet(sum);
+    wsS['!cols']=[{wch:34},{wch:26},{wch:34}];
+    XLSX.utils.book_append_sheet(wb,wsS,'Summary');
+    sheets.forEach(s=>XLSX.utils.book_append_sheet(wb,xlSheet(s.d),s.name));
     const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
     const xb=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     if(pw)return{blob:await zipBlob([{name:meta.base+'.xlsx',blob:xb}],pw),ext:'zip'};
@@ -411,10 +468,10 @@ async function download(){
   state.busy=true;syncUi();
   try{
     const b=bounds(),chosen=SETS.filter(s=>state.sel.has(s.key));
-    const datasets=[],failed=[];
+    const datasets=[],failed=[],empty=[];
     for(let i=0;i<chosen.length;i++){
       const s=chosen[i];setStatus('Reading '+s.label+' ('+(i+1)+'/'+chosen.length+')…');
-      try{const rows=await fetchAll(s,b,n=>setStatus('Reading '+s.label+' – '+n.toLocaleString('en-IN')+' rows…'));if(rows.length)datasets.push({key:s.key,label:s.label,rows});}
+      try{const rows=await fetchAll(s,b,n=>setStatus('Reading '+s.label+' – '+n.toLocaleString('en-IN')+' rows…'));if(rows.length)datasets.push({key:s.key,label:s.label,rows});else empty.push(s.label);}
       catch(e){failed.push(s.label);}
     }
     if(!datasets.length){setStatus(failed.length?'Could not read the selected data. Please try again.':'No data found for this selection and period.','err');return;}
@@ -422,7 +479,7 @@ async function download(){
     const today=new Date().toISOString().slice(0,10);
     const names=datasets.length===1?datasets[0].key:'multiple-data';
     const base='glime-'+state.ctx.key+'-'+names+'-'+b.label+'-'+today;
-    const out=await build(datasets,fmt,lockOn?pwd:'',{key:state.ctx.key,range:rangeText(b),base});
+    const out=await build(datasets,fmt,lockOn?pwd:'',{key:state.ctx.key,range:rangeText(b),base,empty});
     save(out.blob,base+'.'+out.ext);
     datasets.length=0;
     setStatus('Downloaded ✓'+(lockOn?' (password-locked)':'')+(failed.length?' · Skipped: '+failed.join(', '):''),failed.length?'err':'ok');
