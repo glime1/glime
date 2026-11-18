@@ -41,6 +41,7 @@ input:disabled{opacity:.7;}
 #error-message{color:var(--danger);font-size:.85rem;margin-top:15px;display:none;line-height:1.5;}
 #success-message{color:var(--neon-green);font-size:.85rem;margin-top:15px;display:none;line-height:1.5;}
 .hidden{display:none!important;}
+.code-input{text-align:center;font-size:1.5rem;font-weight:600;letter-spacing:.5em;padding-left:calc(15px + .5em);}
 .contact-help{margin-top:24px;padding:25px 22px;background:linear-gradient(145deg,rgba(0,240,255,.045),rgba(0,255,136,.035));border:1px solid rgba(0,240,255,.12);border-radius:16px;text-align:center;}
 .contact-help h3{font-size:1.05rem;margin-bottom:7px;color:#fff;}
 .contact-help p{color:var(--text-muted);font-size:.82rem;line-height:1.6;margin-bottom:17px;}
@@ -134,6 +135,17 @@ body{padding:20px 15px 45px;}
 <button type="submit" class="btn-primary" id="confirmBtn">Continue</button>
 </form>
 
+<!-- TWO-FACTOR (2FA) CODE FORM
+     Shown only for accounts that turned on 2FA in Settings > Security. -->
+<form id="mfaForm" class="hidden">
+<div class="form-group">
+<label for="mfaCode">6-digit code</label>
+<input type="text" id="mfaCode" class="code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" required>
+</div>
+<button type="submit" class="btn-primary" id="mfaBtn">Verify &amp; Continue</button>
+<a href="#" id="mfaCancelLink" class="secondary-link">← Use a different account</a>
+</form>
+
 <p id="error-message"></p>
 <p id="success-message"></p>
 
@@ -221,7 +233,27 @@ async function provisionClient(){
 }
 
 
+/* TWO-FACTOR (2FA) CHECK
+   If the client turned on 2FA in Settings > Security, the password alone is
+   not enough: the 6-digit authenticator code must be entered first.
+   If this check itself fails it throws, so nobody is let in unchecked. */
+
+async function needsMfaCode(){
+
+  const { data, error } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
+
+  if(error){ throw error; }
+
+  return data.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
+}
+
+
 async function continueToDashboard(){
+
+  if(await needsMfaCode()){
+    showMfaMode();
+    return;
+  }
 
   const provisioned = await provisionClient();
 
@@ -247,6 +279,7 @@ const loginForm = document.getElementById('loginForm');
 const forgotForm = document.getElementById('forgotForm');
 const setupForm = document.getElementById('setupForm');
 const confirmForm = document.getElementById('confirmForm');
+const mfaForm = document.getElementById('mfaForm');
 
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
@@ -258,6 +291,10 @@ const loginBtn = document.getElementById('loginBtn');
 const forgotBtn = document.getElementById('forgotBtn');
 const setupBtn = document.getElementById('setupBtn');
 const confirmBtn = document.getElementById('confirmBtn');
+
+const mfaCodeInput = document.getElementById('mfaCode');
+const mfaBtn = document.getElementById('mfaBtn');
+const mfaCancelLink = document.getElementById('mfaCancelLink');
 
 const forgotPasswordLink = document.getElementById('forgotPasswordLink');
 const backToLoginLink = document.getElementById('backToLoginLink');
@@ -300,6 +337,7 @@ function showLoginMode(){
   forgotForm.classList.add('hidden');
   setupForm.classList.add('hidden');
   confirmForm.classList.add('hidden');
+  mfaForm.classList.add('hidden');
   title.textContent = 'Client Portal';
   subtitle.textContent = 'Log in to view your project status.';
   emailInput.disabled = false;
@@ -310,6 +348,7 @@ function showForgotMode(){
   forgotForm.classList.remove('hidden');
   setupForm.classList.add('hidden');
   confirmForm.classList.add('hidden');
+  mfaForm.classList.add('hidden');
   title.textContent = 'Reset Your Password';
   subtitle.textContent = 'Enter your email and we will send you a reset link.';
   forgotEmailInput.value = emailInput.value || '';
@@ -321,6 +360,7 @@ function showSetupMode(email = ''){
   forgotForm.classList.add('hidden');
   setupForm.classList.remove('hidden');
   confirmForm.classList.add('hidden');
+  mfaForm.classList.add('hidden');
   title.textContent = 'Create New Password';
   subtitle.textContent = email
     ? `Welcome ${email}. Create a new password to continue.`
@@ -374,11 +414,29 @@ function showConfirmMode(type){
   forgotForm.classList.add('hidden');
   setupForm.classList.add('hidden');
   confirmForm.classList.remove('hidden');
+  mfaForm.classList.add('hidden');
   title.textContent = text.title;
   subtitle.textContent = text.subtitle;
   confirmBtn.textContent = text.button;
   confirmBtn.disabled = false;
   clearMessages();
+}
+
+/* Shown after the password step when the account has 2FA turned on. */
+
+function showMfaMode(){
+  loginForm.classList.add('hidden');
+  forgotForm.classList.add('hidden');
+  setupForm.classList.add('hidden');
+  confirmForm.classList.add('hidden');
+  mfaForm.classList.remove('hidden');
+  title.textContent = 'Two-Factor Verification';
+  subtitle.textContent = 'Open your authenticator app and enter the 6-digit code for GLIME.';
+  mfaCodeInput.value = '';
+  mfaBtn.disabled = false;
+  mfaBtn.textContent = 'Verify & Continue';
+  clearMessages();
+  mfaCodeInput.focus();
 }
 
 
@@ -620,6 +678,95 @@ confirmForm.addEventListener('submit', async function(event){
 });
 
 
+/* TWO-FACTOR (2FA) CODE
+   Checks the 6-digit code, then continues exactly like a normal login. */
+
+mfaForm.addEventListener('submit', async function(event){
+
+  event.preventDefault();
+  clearMessages();
+
+  const code = mfaCodeInput.value.replace(/\D/g, '');
+
+  if(code.length !== 6){
+    showError('Please enter the 6-digit code from your authenticator app.');
+    return;
+  }
+
+  mfaBtn.disabled = true;
+  mfaBtn.textContent = 'Verifying...';
+
+  try{
+
+    const { data: factors, error: factorsError } = await supabaseClient.auth.mfa.listFactors();
+
+    if(factorsError){ throw factorsError; }
+
+    const factor = (factors?.totp || []).find(function(f){ return f.status === 'verified'; });
+
+    if(!factor){
+      throw new Error('No authenticator is set up for this account.');
+    }
+
+    const { error } = await supabaseClient.auth.mfa.challengeAndVerify({ factorId: factor.id, code: code });
+
+    if(error){ throw error; }
+
+  }catch(error){
+
+    console.error('2FA verify error:', error);
+
+    const message = String(error?.message || '').toLowerCase();
+
+    if(message.includes('too many') || message.includes('rate limit')){
+      showError('Too many attempts. Please wait a minute and try again.');
+    }else{
+      showError('That code is not correct or has expired. Please use the latest code from your app.');
+    }
+
+    mfaBtn.disabled = false;
+    mfaBtn.textContent = 'Verify & Continue';
+    mfaCodeInput.select();
+    return;
+  }
+
+  showSuccess('Code accepted. Preparing your GLIME account...');
+  mfaBtn.textContent = 'Opening Portal...';
+
+  try{
+
+    await continueToDashboard();
+
+  }catch(error){
+
+    console.error('Account setup error:', error);
+
+    showError(ACCOUNT_SETUP_ERROR_TEXT);
+
+    mfaBtn.disabled = false;
+    mfaBtn.textContent = 'Verify & Continue';
+  }
+});
+
+mfaCancelLink.addEventListener('click', async function(event){
+
+  event.preventDefault();
+
+  /* Only this device is signed out. */
+  try{
+    await supabaseClient.auth.signOut({ scope: 'local' });
+  }catch(error){
+    console.warn('Sign out:', error);
+  }
+
+  passwordInput.value = '';
+  loginBtn.disabled = false;
+  loginBtn.textContent = 'Log In to Portal';
+  showLoginMode();
+  clearMessages();
+});
+
+
 /* CREATE / RESET PASSWORD */
 
 setupForm.addEventListener('submit', async function(event){
@@ -673,7 +820,21 @@ setupForm.addEventListener('submit', async function(event){
 
     cleanAuthUrl();
 
-    setTimeout(function(){
+    setTimeout(async function(){
+
+      /* Accounts with 2FA still need their 6-digit code after a password reset. */
+      try{
+        if(await needsMfaCode()){
+          showMfaMode();
+          return;
+        }
+      }catch(error){
+        console.error('2FA check failed:', error);
+        showLoginMode();
+        showError('Your password was updated. Please log in to continue.');
+        return;
+      }
+
       window.location.href = 'dashboard.html';
     }, 1000);
 
@@ -863,6 +1024,10 @@ passwordInput.addEventListener('input', clearMessages);
 forgotEmailInput.addEventListener('input', clearMessages);
 newPasswordInput.addEventListener('input', clearMessages);
 confirmPasswordInput.addEventListener('input', clearMessages);
+mfaCodeInput.addEventListener('input', function(){
+  mfaCodeInput.value = mfaCodeInput.value.replace(/\D/g, '');
+  clearMessages();
+});
 
 
 /* START */
