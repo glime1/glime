@@ -2,10 +2,13 @@
    1. Templates tab: "24-hour quick replies" (all plans) + "WhatsApp templates" (Omni only, Meta format)
    2. Delete option for follow-up drafts (Smart Tasks list + lead panel)
    3. WhatsApp 24-hour window chip on every WhatsApp draft
+   4. Template header can be None, Text or Image. An Image header lets Settings > Broadcast send a photo
+      (the real photo is chosen when the broadcast is sent; the sample photo is given to Meta in Business Manager).
    Backend it expects (all optional, page works without them):
    - table client_followup_templates(id uuid pk default gen_random_uuid(), client_id, name text, category text,
      language text, header jsonb, body text, footer text, buttons jsonb, samples jsonb, var_map jsonb,
      status text, rejection_reason text, created_at, updated_at) with RLS on client_id. Missing table => saved in this browser only.
+     header jsonb is {type: 'none' | 'text' | 'image', text: ''}.
    - lead-followup-handoff-v2 action "delete_draft" {request_id}. Until it exists the delete dialog says so.
    - Omni = active "ai-connections" module in client_modules (same rule as the Connectors page). */
 (function () {
@@ -29,6 +32,7 @@
   function fill(s, vals) { return String(s || '').replace(/\{\{(\d+)\}\}/g, function (_, n) { return vals[n - 1] || '{{' + n + '}}'; }); }
   function wa(s) { return esc(s).replace(/\*([^*\n]+)\*/g, '<b>$1</b>').replace(/_([^_\n]+)_/g, '<i>$1</i>').replace(/~([^~\n]+)~/g, '<s>$1</s>').replace(/\n/g, '<br>'); }
   function left(ms) { var m = Math.max(0, Math.floor(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
+  function imgPh() { return '<div style="aspect-ratio:16/9;border-radius:8px;background:rgba(127,127,127,.22);display:grid;place-items:center;font-size:.7rem;margin-bottom:6px;opacity:.85">Photo</div>'; }
   function newTpl() { return { id: '', name: '', category: 'utility', language: 'en', header: { type: 'none', text: '' }, body: '', footer: '', buttons: [], samples: [], var_map: [], status: 'draft', rejection_reason: '' }; }
 
   /* ---------- data ---------- */
@@ -133,10 +137,10 @@
       (list.length ? '<div class="fup-cards">' + list.map(cardHtml).join('') + '</div>' : '<div class="empty">' + (ST.tpls.length ? 'No template matches this filter.' : 'No templates yet. Create your first one.') + '</div>');
   }
   function cardHtml(t) {
-    var sv = (t.samples || []);
+    var sv = (t.samples || []), hd = t.header || {};
     return '<article class="fup-card"><header><b>' + esc(t.name) + '</b><span class="fup-st ' + esc(t.status) + '">' + esc(STATUS[t.status] || t.status) + '</span></header>' +
-      '<div class="fup-meta"><span>' + esc(CAT[t.category] || t.category) + '</span><span>' + esc(t.language) + '</span><span>' + vars(t.body).length + ' variables</span></div>' +
-      '<div class="fup-bub">' + (t.header && t.header.type === 'text' ? '<strong>' + wa(fill(t.header.text, sv)) + '</strong>' : '') + wa(fill(t.body, sv)) + (t.footer ? '<small>' + esc(t.footer) + '</small>' : '') + '</div>' +
+      '<div class="fup-meta"><span>' + esc(CAT[t.category] || t.category) + '</span><span>' + esc(t.language) + '</span><span>' + vars(t.body).length + ' variables</span>' + (hd.type === 'image' ? '<span>Photo header</span>' : '') + '</div>' +
+      '<div class="fup-bub">' + (hd.type === 'image' ? imgPh() : '') + (hd.type === 'text' ? '<strong>' + wa(fill(hd.text, sv)) + '</strong>' : '') + wa(fill(t.body, sv)) + (t.footer ? '<small>' + esc(t.footer) + '</small>' : '') + '</div>' +
       (t.buttons || []).map(function (b) { return '<div class="fup-btn">' + esc(b.text) + '</div>'; }).join('') +
       (t.status === 'rejected' && t.rejection_reason ? '<p class="fup-rej">Reason: ' + esc(t.rejection_reason) + '</p>' : '') +
       '<footer><select class="fup-in sm" data-fup-st="' + esc(t.id) + '" aria-label="Status">' + Object.keys(STATUS).map(function (k) { return '<option value="' + k + '"' + (t.status === k ? ' selected' : '') + '>' + STATUS[k] + '</option>'; }).join('') + '</select>' +
@@ -154,11 +158,14 @@
   function closeOv() { var o = $('fupOv'); if (o) o.remove(); ED = null; }
   function openEditor(t) {
     ED = JSON.parse(JSON.stringify(t || newTpl()));
+    if (!ED.header) ED.header = { type: 'none', text: '' };
     var o = overlay('<header><h3>' + (ED.id ? 'Edit template' : 'New WhatsApp template') + '</h3><button class="fup-x" type="button" data-x aria-label="Close">×</button></header><div class="fup-grid"><div class="fup-form">' +
       f('Template name', '<input class="fup-in" id="eName" maxlength="512" placeholder="order_followup_1" value="' + esc(ED.name) + '"><small>Lowercase letters, numbers, underscores</small>') +
       '<div class="fup-two">' + f('Category', '<select class="fup-in" id="eCat">' + Object.keys(CAT).map(function (k) { return '<option value="' + k + '"' + (ED.category === k ? ' selected' : '') + '>' + CAT[k] + '</option>'; }).join('') + '</select>') +
       f('Language', '<select class="fup-in" id="eLang">' + LANG.map(function (l) { return '<option value="' + l[0] + '"' + (ED.language === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select>') + '</div>' +
-      f('Header (optional)', '<input class="fup-in" id="eHead" maxlength="80" placeholder="Short title, up to 60 characters" value="' + esc(ED.header.text) + '">') +
+      f('Header (optional)', '<select class="fup-in" id="eHType"><option value="none"' + (ED.header.type === 'none' ? ' selected' : '') + '>No header</option><option value="text"' + (ED.header.type === 'text' ? ' selected' : '') + '>Text title</option><option value="image"' + (ED.header.type === 'image' ? ' selected' : '') + '>Photo (for broadcasts)</option></select>') +
+      '<div id="eHTextW">' + f('Header text', '<input class="fup-in" id="eHead" maxlength="80" placeholder="Short title, up to 60 characters" value="' + esc(ED.header.text) + '">') + '</div>' +
+      '<p class="fup-note" id="eHImg" style="display:none">The real photo, for example your Diwali poster, is chosen when you send a broadcast in Settings > Broadcast. When you create this template in Meta Business Manager, give Meta a sample photo for review. Photos can be JPG or PNG.</p>' +
       f('Body', '<textarea class="fup-in" id="eBody" rows="6" maxlength="1100" placeholder="Hi {{1}}, thanks for your interest in {{2}}. Reply YES and we will share the details.">' + esc(ED.body) + '</textarea><div class="fup-row"><small id="eCnt"></small><button class="btn sm ghost" type="button" data-fup="addvar">+ Add variable</button></div>') +
       '<div id="eVars"></div>' + f('Footer (optional)', '<input class="fup-in" id="eFoot" maxlength="80" value="' + esc(ED.footer) + '">') +
       '<div class="fup-lab">Buttons (optional)</div><div id="eBtns"></div><div class="fup-row"><button class="btn sm ghost" type="button" data-fup="addbtn" data-t="quick">+ Quick reply</button><button class="btn sm ghost" type="button" data-fup="addbtn" data-t="url">+ Link</button><button class="btn sm ghost" type="button" data-fup="addbtn" data-t="phone">+ Call</button></div>' +
@@ -184,13 +191,15 @@
   function refresh() {
     if (!ED) return; var t = ED, sv = t.samples;
     $('eCnt').textContent = t.body.length + ' / 1024';
-    $('ePrev').innerHTML = (t.header.type === 'text' ? '<strong>' + wa(fill(t.header.text, sv)) + '</strong>' : '') + (t.body ? wa(fill(t.body, sv)) : '<span class="fup-dim">Your message appears here</span>') + (t.footer ? '<small>' + esc(t.footer) + '</small>' : '');
+    $('eHTextW').style.display = t.header.type === 'text' ? '' : 'none';
+    $('eHImg').style.display = t.header.type === 'image' ? '' : 'none';
+    $('ePrev').innerHTML = (t.header.type === 'image' ? imgPh() : '') + (t.header.type === 'text' ? '<strong>' + wa(fill(t.header.text, sv)) + '</strong>' : '') + (t.body ? wa(fill(t.body, sv)) : '<span class="fup-dim">Your message appears here</span>') + (t.footer ? '<small>' + esc(t.footer) + '</small>' : '');
     $('ePrevBtns').innerHTML = t.buttons.map(function (b) { return '<div class="fup-btn">' + esc(b.text || 'Button') + '</div>'; }).join('');
     var c = check(t); $('eIss').innerHTML = c.er.map(function (x) { return '<p class="fup-iss er">' + esc(x) + '</p>'; }).join('') + c.wn.map(function (x) { return '<p class="fup-iss wn">' + esc(x) + '</p>'; }).join('') + (!c.er.length ? '<p class="fup-iss ok">Looks good for Meta review.</p>' : '');
   }
   function readForm() {
     ED.name = $('eName').value.trim(); ED.category = $('eCat').value; ED.language = $('eLang').value; ED.body = $('eBody').value; ED.footer = $('eFoot').value.trim();
-    ED.header = { type: $('eHead').value.trim() ? 'text' : 'none', text: $('eHead').value.trim() }; ED.status = $('eSt').value; ED.rejection_reason = $('eRej').value.trim();
+    var ht = $('eHType').value; ED.header = { type: ht, text: ht === 'text' ? $('eHead').value.trim() : '' }; ED.status = $('eSt').value; ED.rejection_reason = $('eRej').value.trim();
   }
   async function saveEditor(btn) {
     readForm(); var c = check(ED), blocking = ED.status !== 'draft' ? c.er : c.er.filter(function (x) { return /Name|Body is required/.test(x); });
@@ -294,6 +303,7 @@
   });
   document.addEventListener('change', async function (e) {
     var t = e.target; if (t.id === 'fupC') { ST.fc = t.value; renderTpl(); return; }
+    if (t.id === 'eHType' && ED) { readForm(); refresh(); return; }
     if (t.hasAttribute && t.hasAttribute('data-fup-st')) {
       var tp = ST.tpls.filter(function (x) { return x.id === t.getAttribute('data-fup-st'); })[0]; if (!tp) return;
       if (t.value === 'rejected') { var c = JSON.parse(JSON.stringify(tp)); c.status = 'rejected'; openEditor(c); return; }

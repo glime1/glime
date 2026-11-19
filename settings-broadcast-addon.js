@@ -1,12 +1,14 @@
-/* GLIME Settings addon: "Broadcast"
+/* GLIME Settings addon: "Broadcast"  (Omni plan only)
    Lets the client send one Meta-approved WhatsApp template (for example a Diwali offer) to the leads saved in GLIME,
    and see how it performed: sent, delivered, read, replies and the latest replies.
+   - Omni plan only. Growth clients see a locked card with an upgrade button instead (same Omni rule as the Follow-up page:
+     active "ai-connections" module in client_modules). The backend must enforce the same rule, see BROADCAST_BACKEND_SPEC.md.
    - Only approved templates can be used (WhatsApp rule for customers silent for more than 24 hours).
    - Client chooses who gets it (everyone, buyers, hot leads, by status, keyword), how many, and when.
    - If the template has an Image header, the client adds the photo (for example a Diwali poster) here.
    - Frontend only. Nothing is sent from this file: it calls the RPCs described in BROADCAST_BACKEND_SPEC.md
      (create_whatsapp_broadcast, get_whatsapp_broadcast_report, cancel_whatsapp_broadcast).
-   Reads: client_followup_templates, leads, client_broadcasts (history and counts, optional). */
+   Reads: modules, client_modules, client_followup_templates, leads, client_broadcasts (history and counts, optional). */
 (function () {
   'use strict';
   var G = window.GLIME_SETTINGS;
@@ -43,6 +45,13 @@
     '.gbc-prev{margin-top:10px;font-size:.74rem;color:var(--mu);line-height:1.7}' +
     '.gbc-in{background:var(--surf2);color:var(--tx);border:1px solid var(--bd);border-radius:9px;padding:9px 10px;outline:none;max-width:100%}' +
     '.gbc-in.num{width:100px}.gbc-in.txt{width:230px}' +
+    /* lock */
+    '.gbc-lock{text-align:center;padding:26px 18px}' +
+    '.gbc-lock h3{font-size:1.1rem;margin:10px 0 6px}' +
+    '.gbc-lock p{color:var(--mu);font-size:.78rem;max-width:520px;margin:0 auto}' +
+    '.gbc-lock ul{list-style:none;display:inline-block;text-align:left;margin:14px 0;color:var(--mu);font-size:.76rem;line-height:1.9}' +
+    '.gbc-lock li:before{content:"\\2713";color:var(--gr);margin-right:8px;font-weight:800}' +
+    '.gbc-lock .actions{justify-content:center}.gbc-lock .btn{display:inline-block}' +
     /* report */
     '.gbc-rhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}' +
     '.gbc-rhead .select{min-width:0;max-width:100%;flex:1 1 180px}' +
@@ -86,6 +95,26 @@
     el.id = 'gbcStyle';
     el.textContent = STYLE;
     document.head.appendChild(el);
+  }
+
+  /* Omni = active "ai-connections" module for this client (same rule as the Follow-up page). */
+  async function checkOmni(cid) {
+    try {
+      var m = await sb.from('modules').select('id').eq('slug', 'ai-connections').maybeSingle();
+      if (!m.data) return false;
+      var q = await sb.from('client_modules').select('enabled,visible_to_client,status,expires_at').eq('module_id', m.data.id).eq('client_id', cid).maybeSingle();
+      var a = q.data;
+      return !!a && a.enabled === true && a.visible_to_client === true && (a.status === 'active' || a.status === 'trial') && (!a.expires_at || new Date(a.expires_at).getTime() > Date.now());
+    } catch (e) { return false; }
+  }
+
+  function lockHtml() {
+    return '<div class="section-head"><h2>Broadcast</h2><p>Send an offer to your saved leads on WhatsApp.</p></div>' +
+      '<section class="channel-card gbc-lock"><span class="badge on">Omni</span><h3>Broadcast is part of the Omni plan</h3>' +
+      '<p>Send one Meta-approved WhatsApp message, such as a Diwali offer with a photo, to thousands of saved leads at once, and see how many received it, read it and replied.</p>' +
+      '<ul><li>Pick who gets it: all leads, buyers, hot leads, or by status</li><li>Add a photo to your offer</li><li>Live report: sent, delivered, read and replies</li><li>Schedule it for the best time</li></ul>' +
+      '<div class="actions"><a class="btn primary" href="billing.html?plan=omni">Upgrade to Omni</a></div>' +
+      '<p class="note">Everything else in your current plan keeps working.</p></section>';
   }
 
   function phoneOf(l) {
@@ -134,6 +163,8 @@
     var cid = ctx.state.client && ctx.state.client.client_id;
     container.innerHTML = '<div class="section-head"><h2>Broadcast</h2><p>Send an offer to your saved leads on WhatsApp.</p></div><div class="loading">Loading…</div>';
     if (!sb || !cid) { container.innerHTML += '<div class="error">Your account could not be identified. Please refresh the page.</div>'; return; }
+
+    if (!(await checkOmni(cid))) { container.innerHTML = lockHtml(); return; }
 
     var HIST_FULL = 'id,name,status,total_count,sent_count,delivered_count,read_count,reply_count,failed_count,scheduled_at,created_at';
     var HIST_BASIC = 'id,name,status,total_count,sent_count,failed_count,scheduled_at,created_at';
@@ -432,7 +463,7 @@
       var help = $('bcPhotoHelp'), ctl = $('bcPhotoCtl');
       if (!t) { help.textContent = 'Choose a template first.'; ctl.innerHTML = ''; return; }
       if (!isImageHeader(t)) {
-        help.textContent = 'This template has no photo slot, so it is sent as text. A photo can be added only to a template made with an Image header.';
+        help.textContent = 'This template has no photo slot, so it is sent as text. To send a photo, create a template with a Photo header on the Follow-up page (Templates > WhatsApp templates).';
         ctl.innerHTML = '';
         return;
       }
