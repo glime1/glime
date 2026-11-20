@@ -210,23 +210,20 @@
 
   /* ---------- "Generate with AI" (template based; never invents facts or reviews) ---------- */
   function aiFill() {
-    var c = S.cfg, hi = c.lang === 'hi', I = ind() || {}, buy = I.cta === 'buy' || I.cta === 'whatsapp' && /hospitality/.test(c.industry || '');
+    var c = S.cfg, I = ind() || {};
     var name = c.brand.name.trim(), line = (c.brand.line || '').trim();
     var names = (S.offers || []).slice(0, 4).map(function (o) { return o.name; }).filter(Boolean);
-    var tag = I.tag && (I.tag[hi ? 'hi' : 'en'] || I.tag.en);
-    c.brand.tagline = tag || (hi ? 'आपका भरोसेमंद साथी' : 'Your trusted partner');
+    var tag = I.tag && I.tag.en;
+    c.brand.tagline = tag || 'Your trusted partner';
     var parts = [];
-    if (line) parts.push(line.replace(/[.।]*$/, '') + (hi ? '।' : '.'));
-    if (names.length) parts.push(hi ? name + ' में आपको ' + names.join(', ') + ' जैसी चीज़ें मिलती हैं।' : 'At ' + name + ' you will find ' + names.join(', ') + ' and more.');
-    parts.push(hi ? 'कोई भी सवाल हो तो हमें WhatsApp या कॉल करें — हम खुशी से मदद करेंगे।' : 'Have a question? Message us on WhatsApp or call - we are happy to help.');
+    if (line) parts.push(line.replace(/[.]*$/, '') + '.');
+    if (names.length) parts.push('At ' + name + ' you will find ' + names.join(', ') + ' and more.');
+    parts.push('Have a question? Message us on WhatsApp or call - we are happy to help.');
     c.brand.about = parts.join(' ');
-    var shop = buy && I.cta === 'buy' || /hospitality/.test(c.industry || '');
-    c.faq = hi
-      ? (shop ? [{ q: 'क्या आप डिलीवरी करते हैं?', a: 'हाँ, ऑर्डर के लिए WhatsApp पर संपर्क करें, हम डिलीवरी की जानकारी देंगे।' }, { q: 'ऑर्डर कैसे करें?', a: 'पसंद का प्रोडक्ट चुनिए और "अभी खरीदें" दबाइए, चैट में ऑर्डर पूरा हो जाएगा।' }, { q: 'पेमेंट कैसे करें?', a: 'पेमेंट की जानकारी चैट में दी जाती है।' }]
-        : [{ q: 'अपॉइंटमेंट कैसे बुक करें?', a: '"अपॉइंटमेंट बुक करें" बटन दबाइए, चैट में समय तय हो जाएगा।' }, { q: 'आप कब खुले रहते हैं?', a: 'हमारे खुलने का समय संपर्क सेक्शन में दिया है।' }, { q: 'जानकारी कहाँ मिलेगी?', a: 'WhatsApp पर पूछिए, हम तुरंत बताएँगे।' }])
-      : (shop ? [{ q: 'Do you deliver?', a: 'Yes - message us on WhatsApp and we will share delivery details.' }, { q: 'How do I order?', a: 'Pick a product and tap Buy now; the order is completed in chat.' }, { q: 'How do I pay?', a: 'Payment details are shared in the chat.' }]
-        : [{ q: 'How do I book?', a: 'Tap Book appointment and we will confirm the time in chat.' }, { q: 'What are your timings?', a: 'See the opening hours in the contact section.' }, { q: 'Where can I ask questions?', a: 'Message us on WhatsApp - we reply quickly.' }]);
-    if (!c.announce.length && I.ann) c.announce = (I.ann[hi ? 'hi' : 'en'] || I.ann.en || []).slice();
+    var shop = I.cta === 'buy' || /hospitality/.test(c.industry || '');
+    c.faq = shop ? [{ q: 'Do you deliver?', a: 'Yes - message us on WhatsApp and we will share delivery details.' }, { q: 'How do I order?', a: 'Pick a product and tap Buy now; the order is completed in chat.' }, { q: 'How do I pay?', a: 'Payment details are shared in the chat.' }]
+      : [{ q: 'How do I book?', a: 'Tap Book appointment and we will confirm the time in chat.' }, { q: 'What are your timings?', a: 'See the opening hours in the contact section.' }, { q: 'Where can I ask questions?', a: 'Message us on WhatsApp - we reply quickly.' }];
+    if (!c.announce.length && I.ann) c.announce = (I.ann.en || []).slice();
     toast('✨ Done! Edit anything you do not like');
     changed(true);
   }
@@ -236,7 +233,7 @@
     c.cta.actions = { whatsapp: true, call: true, book: I.cta === 'book', buy: I.cta === 'buy' };
     c.cta.actions[I.cta] = true; if (I.cta2 && I.cta2 !== 'none') c.cta.actions[I.cta2] = true;
     c.cta.primary = I.cta; c.cta.secondary = I.cta2;
-    if (!c.announce.length || c.announceAuto) { c.announce = (I.ann ? (I.ann[c.lang === 'en' ? 'en' : 'hi'] || I.ann.en || []) : []).slice(); c.announceAuto = true; }
+    if (!c.announce.length || c.announceAuto) { c.announce = (I.ann ? (I.ann.en || []) : []).slice(); c.announceAuto = true; }
   }
 
   /* ---------- panels ---------- */
@@ -299,8 +296,7 @@
     var c = S.cfg, themes = Object.keys(GS.THEMES), fonts = Object.keys(GS.FONTS);
     var active = GS.activeSections(GS.normalize(c), GS.visibleOffers(GS.normalize(c), previewOffers()));
     var design = '<div class="fld"><span>Colour</span></div><div class="sw">' + themes.map(function (k) { var t = GS.THEMES[k]; return '<button class="' + (c.theme === k ? 'on' : '') + '" data-a="theme" data-v="' + k + '"><i style="background:linear-gradient(135deg,' + t.p + ',' + t.p2 + ');' + (t.dark ? 'outline:2px solid #fff3' : '') + '"></i>' + esc(t.n.en) + '</button>'; }).join('') + '</div>' +
-      '<div class="fld" style="margin-top:14px"><span>Font</span></div><div class="fonts">' + fonts.map(function (k) { var f = GS.FONTS[k]; return '<button class="' + (c.font === k ? 'on' : '') + '" data-a="font" data-v="' + k + '"><em style="font-family:' + f.h + ',serif">Aa</em><small>' + esc(f.n.en) + '</small></button>'; }).join('') + '</div>' +
-      '<div class="fld" style="margin-top:14px"><span>Website language</span></div><div class="seg"><button class="' + (c.lang === 'hi' ? 'on' : '') + '" data-a="lang" data-v="hi">Hindi</button><button class="' + (c.lang === 'en' ? 'on' : '') + '" data-a="lang" data-v="en">English</button></div>';
+      '<div class="fld" style="margin-top:14px"><span>Font</span></div><div class="fonts">' + fonts.map(function (k) { var f = GS.FONTS[k]; return '<button class="' + (c.font === k ? 'on' : '') + '" data-a="font" data-v="' + k + '"><em style="font-family:' + f.h + ',serif">Aa</em><small>' + esc(f.n.en) + '</small></button>'; }).join('') + '</div>';
     var media = '<div class="fld"><span>Logo</span></div><div class="imgs">' + (c.brand.logoUrl ? '<div class="im" style="background-image:url(&quot;' + esc(c.brand.logoUrl) + '&quot;)"><button data-a="rmimg" data-k="logo" data-i="0" aria-label="Remove">×</button></div>' : '<button class="add ' + (S.uploading.logo ? 'busy' : '') + '" data-a="addimg" data-k="logo">＋ Logo</button>') + '</div>' +
       '<div class="fld" style="margin-top:14px"><span>Front / cover photos (up to 3)</span></div>' + imgs(c.banners, 'banners') +
       '<div class="fld" style="margin-top:14px"><span>Your own gallery photos</span></div>' + imgs(c.gallery, 'gallery') +
@@ -323,7 +319,7 @@
     var fq = c.faq.map(function (f, i) { return '<div class="li"><button class="x" data-a="rmfq" data-i="' + i + '">×</button>' + fld('Question', 'faq.' + i + '.q', f.q, { max: 160 }) + fld('Answer', 'faq.' + i + '.a', f.a, { area: true, max: 600 }) + '</div>'; }).join('') + (c.faq.length < 10 ? '<button class="btn ghost sm" data-a="addfq">＋ Add question</button>' : '');
     var ann = c.announce.map(function (a, i) { return '<div class="li"><button class="x" data-a="rman" data-i="' + i + '">×</button>' + fld('Line ' + (i + 1), 'announce.' + i, a, { max: 70 }) + '</div>'; }).join('') + (c.announce.length < 5 ? '<button class="btn ghost sm" data-a="adan">＋ Add offer line</button>' : '') + '<p class="hint" style="margin-top:8px">Shown in the scrolling bar at the top, e.g. "10% off on prepaid orders".</p>';
     return '<h2>Make it yours</h2><p class="sub">Everything is a tap - no code.</p>' +
-      acc('design', '🎨 Colour, font and language', design) + acc('media', '🖼️ Logo and photos', media) + acc('secs', '🧩 Sections on / off and order', secs) +
+      acc('design', '🎨 Colour and font', design) + acc('media', '🖼️ Logo and photos', media) + acc('secs', '🧩 Sections on / off and order', secs) +
       acc('text', '✏️ Text', text) + acc('offs', '🛍️ Services / products', offs) + acc('rv', '⭐ Reviews', rv) + acc('fq', '❓ FAQ', fq) + acc('ann', '📣 Offer bar', ann);
   }
   function step4() {
@@ -405,7 +401,6 @@
       case 'allLay': S.showAll = true; renderPanel(); break;
       case 'theme': c.theme = v; next(); break;
       case 'font': c.font = v; next(); break;
-      case 'lang': c.lang = v; if (c.announceAuto && ind() && ind().ann) c.announce = (ind().ann[v] || ind().ann.en || []).slice(); next(); break;
       case 'mv': var d = +t.getAttribute('data-d'), s = c.sections, tmp = s[i]; s[i] = s[i + d]; s[i + d] = tmp; next(); break;
       case 'stars': c.reviews[i].stars = +v; next(); break;
       case 'addrv': c.reviews.push({ name: '', text: '', stars: 5 }); next(); break;
