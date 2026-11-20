@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <meta name="theme-color" content="#071016">
+  <title>Website Generator | GLIME</title>
+  <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="website-generator.css?v=20261119">
+</head>
+<body>
+  <div id="boot" class="boot"><div class="spin"></div><p>Loading your details…</p></div>
+
+  <header class="top">
+    <a class="back" href="settings.html" aria-label="Back">←</a>
+    <div class="ttl"><b>Website Generator</b><small id="saveState">—</small></div>
+    <div class="tools">
+      <button class="ic" id="undoBtn" title="Undo" aria-label="Undo">↶</button>
+      <button class="ic" id="redoBtn" title="Redo" aria-label="Redo">↷</button>
+    </div>
+  </header>
+
+  <nav class="steps" id="steps" aria-label="Steps"></nav>
+
+  <div class="layout">
+    <main class="edit">
+      <section id="panel" class="panel"></section>
+    </main>
+
+    <aside class="pv" id="pvWrap" aria-label="Live preview">
+      <div class="pv-head">
+        <b>Live preview</b>
+        <div class="seg" id="devSeg">
+          <button data-dev="phone" class="on">📱 Phone</button>
+          <button data-dev="desk">🖥 Desktop</button>
+        </div>
+        <button class="ic only-m" id="pvClose" aria-label="Close">✕</button>
+      </div>
+      <div class="pv-stage" id="pvStage">
+        <div class="phone" id="phone"><iframe id="pvFrame" title="Preview" sandbox="allow-scripts"></iframe></div>
+      </div>
+    </aside>
+  </div>
+
+  <button class="fab only-m" id="pvOpen">👁 Preview</button>
+
+  <footer class="bar" id="bar">
+    <button class="btn ghost" id="prevBtn">← Back</button>
+    <button class="btn" id="nextBtn">Next →</button>
+  </footer>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="glime-site-render.js?v=20261119"></script>
+  <script src="website-generator.js?v=20261119"></script>
+</body>
+</html>
