@@ -15,7 +15,10 @@
     '.pf-photo{width:132px;height:132px;border-radius:50%;margin:16px auto 14px;display:flex;align-items:center;justify-content:center;' +
     'font-size:2.6rem;font-weight:800;color:#fff;border:3px solid rgba(80,245,168,.45);background:linear-gradient(135deg,#1f9d6e,#0b141d)}' +
     '.pf-photo.sq{border-radius:30px}' +
-    '.pf-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}';
+    '.pf-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}' +
+    '.pf-web{margin-top:15px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;text-align:left;background:linear-gradient(135deg,rgba(82,232,255,.10),rgba(80,245,168,.08));border-color:rgba(82,232,255,.28)}' +
+    '.pf-web .pf-ic{font-size:2rem;line-height:1}.pf-web .pf-tx{flex:1;min-width:200px}.pf-web h3{font-size:1.02rem}' +
+    '.pf-web a.btn{text-decoration:none}';
 
   function esc(v) { return window.GLIME_SETTINGS.ui.escapeHtml(v); }
 
@@ -57,6 +60,9 @@
         card('owner', id, 'Owner photo', 'Shown next to your name in the sidebar and top bar on every page.', client.name || biz, false) +
         card('business', id, 'Business logo', 'Your brand mark. Square images work best.', biz, true) +
         '</div>' +
+        '<section class="pf-card pf-web"><div class="pf-ic">🌐</div><div class="pf-tx"><h3>Website Generator</h3>' +
+        '<p>Create your own business website in a few taps. Your services, photos and contact details fill in automatically, then publish and share the link.</p></div>' +
+        '<a class="btn primary" href="website-generator.html">Create / edit website</a></section>' +
         '<p class="note">Photos are stored privately in your GLIME workspace. Only you and your team can see them.</p>';
 
       var P = window.GlimePhoto;
