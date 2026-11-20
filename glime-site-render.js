@@ -23,7 +23,7 @@
      slugify(text)
      waNumber(phone)
 
-   Every text is escaped; only http(s) image links are used.
+   Every text is escaped; only http(s) image links are used. The site is English only.
 ========================================================= */
 (function (root) {
   'use strict';
@@ -65,8 +65,8 @@
   /* Fallback only, used if the database cannot be reached. The real industry looks live in the
      website_industry_looks table (loaded with website_looks_get), so new industries need no code change. */
   var INDUSTRIES = {
-    retail: { ic: '🛍️', label: 'Shop / Retail', n: { en: 'Shop / Retail' }, offers: { en: 'Our products', hi: 'हमारे प्रोडक्ट' }, ratio: '1/1', cta: 'buy', cta2: 'call', theme: 'gold', font: 'luxe', pref: ['luxury', 'showcase', 'classic', 'bold'], sort: 10 },
-    healthcare: { ic: '🩺', label: 'Clinic & Healthcare', n: { en: 'Clinic & Healthcare' }, offers: { en: 'Our services', hi: 'हमारी सेवाएँ' }, ratio: '4/3', cta: 'book', cta2: 'call', theme: 'forest', font: 'luxe', pref: ['editorial', 'classic', 'minimal', 'bold'], sort: 20 }
+    retail: { ic: '🛍️', label: 'Shop / Retail', n: { en: 'Shop / Retail' }, offers: { en: 'Our products' }, ratio: '1/1', cta: 'buy', cta2: 'call', theme: 'gold', font: 'luxe', pref: ['luxury', 'showcase', 'classic', 'bold'], sort: 10 },
+    healthcare: { ic: '🩺', label: 'Clinic & Healthcare', n: { en: 'Clinic & Healthcare' }, offers: { en: 'Our services' }, ratio: '4/3', cta: 'book', cta2: 'call', theme: 'forest', font: 'luxe', pref: ['editorial', 'classic', 'minimal', 'bold'], sort: 20 }
   };
 
   var SECTION_IDS = ['about', 'offers', 'gallery', 'reviews', 'faq', 'contact'];
@@ -83,15 +83,15 @@
     (d.layouts || []).forEach(function (l) {
       if (!l || !/^[a-z][a-z0-9-]{1,30}$/.test(l.id || '')) return;
       var o = LAYOUTS[l.id] || (LAYOUTS[l.id] = {});
-      o.n = { en: l.name, hi: l.name }; o.d = { en: l.description || '', hi: l.description || '' };
+      o.n = { en: l.name }; o.d = { en: l.description || '' };
       if (BUILTIN.indexOf(l.id) < 0) { o.base = BUILTIN.indexOf(l.base) >= 0 ? l.base : 'classic'; o.css = cleanCss(l.css); }
       o.sort = l.sort || 100;
     });
     (d.industries || []).forEach(function (i) {
       if (!i || !/^[a-z][a-z0-9-]{1,40}$/.test(i.slug || '')) return;
       var o = INDUSTRIES[i.slug] || (INDUSTRIES[i.slug] = {});
-      o.ic = i.icon; o.n = { en: i.label, hi: i.label }; o.label = i.label;
-      o.offers = i.offers_label && i.offers_label.en ? i.offers_label : { en: 'Our offerings', hi: 'हमारी पेशकश' };
+      o.ic = i.icon; o.n = { en: i.label }; o.label = i.label;
+      o.offers = i.offers_label && i.offers_label.en ? i.offers_label : { en: 'Our offerings' };
       o.ratio = i.ratio || '4/3'; o.cta = i.cta || 'whatsapp'; o.cta2 = i.cta2 || 'call';
       o.theme = THEMES[i.theme] ? i.theme : 'emerald'; o.font = FONTS[i.font] ? i.font : 'modern';
       o.pref = (i.layouts || []).filter(function (k) { return !!LAYOUTS[k]; }); if (!o.pref.length) o.pref = ['classic'];
@@ -109,21 +109,11 @@
       thanks: 'Thank you! We will contact you soon.', err: 'Something went wrong. Please try again.',
       hours: 'Opening hours', address: 'Address', directions: 'Get directions', closed: 'Closed', enqTitle: 'Send us an enquiry',
       email: 'Email', instagram: 'Instagram', powered: 'Powered by', menuAbout: 'About', menuGallery: 'Gallery', menuReviews: 'Reviews', menuFaq: 'FAQ', menuContact: 'Contact'
-    },
-    hi: {
-      about: 'हमारे बारे में', gallery: 'गैलरी', reviews: 'ग्राहक क्या कहते हैं', faq: 'सवाल-जवाब', contact: 'संपर्क करें',
-      call: 'अभी कॉल करें', whatsapp: 'WhatsApp पर चैट करें', book: 'अपॉइंटमेंट बुक करें', buy: 'अभी खरीदें',
-      cCall: 'कॉल करें', cWhatsapp: 'पूछें', cBook: 'बुक करें', cBuy: 'अभी खरीदें',
-      name: 'आपका नाम', phone: 'मोबाइल नंबर', msg: 'संदेश (ज़रूरी नहीं)', send: 'पूछताछ भेजें',
-      thanks: 'धन्यवाद! हम जल्दी ही आपसे संपर्क करेंगे।', err: 'कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।',
-      hours: 'खुलने का समय', address: 'पता', directions: 'रास्ता देखें', closed: 'बंद', enqTitle: 'हमें पूछताछ भेजें',
-      email: 'ईमेल', instagram: 'इंस्टाग्राम', powered: 'Powered by', menuAbout: 'हमारे बारे में', menuGallery: 'गैलरी', menuReviews: 'रिव्यू', menuFaq: 'सवाल-जवाब', menuContact: 'संपर्क'
     }
   };
 
-  T.en.items = 'items'; T.hi.items = 'आइटम'; T.en.close = 'Close'; T.hi.close = 'बंद करें';
+  T.en.items = 'items'; T.en.close = 'Close';
   T.en.ex = { about: 'Our story', offers: 'Explore', gallery: 'Moments', reviews: 'Testimonials', faq: 'Good to know', contact: 'Get in touch' };
-  T.hi.ex = { about: 'हमारी कहानी', offers: 'देखिए', gallery: 'झलकियाँ', reviews: 'भरोसा', faq: 'जानकारी', contact: 'संपर्क' };
 
   /* ---------- helpers ---------- */
   function esc(s) {
@@ -188,7 +178,7 @@
     var cur = p.currency || 'INR';
     var sym = cur === 'INR' ? '₹' : cur + ' ';
     var n = function (v) { return Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 }); };
-    if (p.type === 'starting_from') return lang === 'hi' ? sym + n(p.amount) + ' से शुरू' : 'From ' + sym + n(p.amount);
+    if (p.type === 'starting_from') return 'From ' + sym + n(p.amount);
     if (p.min != null && p.max != null && Number(p.max) > Number(p.min)) return sym + n(p.min) + ' – ' + sym + n(p.max);
     var s = sym + n(p.amount);
     if (p.period) s += ' / ' + p.period;
@@ -199,7 +189,7 @@
   function defaultConfig(ind) {
     var I = INDUSTRIES[ind] || INDUSTRIES.retail;
     return {
-      v: 1, lang: 'hi', industry: INDUSTRIES[ind] ? ind : '',
+      v: 1, lang: 'en', industry: INDUSTRIES[ind] ? ind : '',
       layout: I.pref[0], theme: I.theme, font: I.font,
       brand: { name: '', tagline: '', about: '', category: '', logoUrl: '', coverUrl: '' },
       contact: { phone: '', whatsapp: '', email: '', address: '', instagram: '', hours: [], showMap: true, form: true },
@@ -229,7 +219,7 @@
 
   function normalize(cfg) {
     var c = merge(defaultConfig(cfg && cfg.industry), cfg || {});
-    c.lang = c.lang === 'en' ? 'en' : 'hi';
+    c.lang = 'en';
     if (!THEMES[c.theme]) c.theme = 'emerald';
     if (!FONTS[c.font]) c.font = 'modern';
     if (!LAYOUTS[c.layout]) c.layout = 'classic';
@@ -263,21 +253,26 @@
   }
 
   /* ---------- actions ---------- */
+  /* WhatsApp messages for a product carry its exact name, price and a short reference code,
+     so the GLIME AI / the owner can find the product straight away. */
   function actionHref(kind, c, offer) {
-    var L = c.lang, name = c.brand.name || '';
+    var name = c.brand.name || '';
     var wa = waNumber(c.contact.whatsapp || c.contact.phone);
     var tel = waNumber(c.contact.phone || c.contact.whatsapp);
     var msg;
     if (kind === 'call') return tel ? 'tel:+' + tel : '#';
     if (!wa) return '#';
+    var nm = offer ? offer.name : '';
+    var ref = offer && offer.id ? String(offer.id).replace(/-/g, '').slice(0, 8).toUpperCase() : '';
+    var pr = offer && offer.price ? fmtPrice(offer.price, 'en') : '';
+    var detail = offer ? '\nProduct: ' + nm + (pr ? '\nPrice: ' + pr : '') + (ref ? '\nRef: ' + ref : '') : '';
     if (kind === 'buy') {
-      msg = L === 'hi' ? 'नमस्ते ' + name + ', मुझे ' + (offer ? offer.name : 'ऑर्डर करना') + ' चाहिए।' : 'Hi ' + name + ', I would like to buy ' + (offer ? offer.name : 'something') + '.';
+      msg = 'Hi ' + name + ', I would like to buy' + (offer ? ' this item:' + detail : ' something.');
     } else if (kind === 'book') {
-      msg = L === 'hi' ? 'नमस्ते ' + name + ', मैं ' + (offer ? offer.name + ' के लिए ' : '') + 'अपॉइंटमेंट बुक करना चाहता/चाहती हूँ।' : 'Hi ' + name + ', I would like to book an appointment' + (offer ? ' for ' + offer.name : '') + '.';
+      msg = 'Hi ' + name + ', I would like to book an appointment' + (offer ? ' for:' + detail : '.');
     } else {
-      msg = offer
-        ? (L === 'hi' ? 'नमस्ते ' + name + ', मुझे ' + offer.name + ' के बारे में जानकारी चाहिए।' : 'Hi ' + name + ', I would like to know more about ' + offer.name + '.')
-        : (c.cta.waMessage || (L === 'hi' ? 'नमस्ते ' + name + ', मुझे आपकी वेबसाइट से जानकारी चाहिए।' : 'Hi ' + name + ', I found you on your website and need some information.'));
+      msg = offer ? 'Hi ' + name + ', I would like to know more about this item:' + detail
+        : (c.cta.waMessage || 'Hi ' + name + ', I found you on your website and need some information.');
     }
     return 'https://wa.me/' + wa + '?text=' + encodeURIComponent(msg);
   }
@@ -329,7 +324,7 @@
   function renderOffers(c, offers, t, I) {
     var kinds = ['buy', 'book', 'whatsapp', 'call'];
     var cardKind = kinds.indexOf(c.cta.primary) >= 0 ? c.cta.primary : 'whatsapp';
-    var title = I.offers[c.lang] || I.offers.en;
+    var title = I.offers.en;
     var cats = [], cm = {};
     offers.forEach(function (o) {
       var k = o.category;
@@ -345,7 +340,7 @@
       }).join('') + '</div>';
     }
     var cards = offers.map(function (o, i) {
-      var img = offerImg(o), price = c.offers.showPrices ? fmtPrice(o.price, c.lang) : '';
+      var img = offerImg(o), price = c.offers.showPrices ? fmtPrice(o.price, 'en') : '';
       var im = img ? '<div class="im" style="background-image:' + esc(cssUrl(img)) + '"></div>'
         : '<div class="im ph">' + esc((o.name || '?').trim().charAt(0).toUpperCase()) + '</div>';
       var d = o.short || o.desc || '';
@@ -366,7 +361,7 @@
       var useKind = (kind === 'call' || kind === 'whatsapp') && !wa && kind !== 'call' ? 'call' : kind;
       return {
         id: o.id, name: o.name, desc: o.desc || o.short || '', cat: o.category || '', images: imgs,
-        price: c.offers.showPrices ? fmtPrice(o.price, c.lang) : '',
+        price: c.offers.showPrices ? fmtPrice(o.price, 'en') : '',
         k: useKind, href: actionHref(useKind, c, o), label: labelOf(useKind, t, false),
         wa: useKind !== 'whatsapp' && wa ? actionHref('whatsapp', c, o) : '', waLabel: t.whatsapp
       };
@@ -476,7 +471,7 @@
       '.mdl{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}' +
       '.mb{background:var(--bg);width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:26px 26px 0 0;position:relative}@media(min-width:700px){.mdl{align-items:center}.mb{border-radius:26px}}' +
       '.mx{position:absolute;top:12px;right:12px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:var(--sf);color:var(--tx);font-size:1.4rem;cursor:pointer;box-shadow:0 4px 12px var(--sh)}' +
-      '.ms{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.ms::-webkit-scrollbar{display:none}.ms img,.ms .mph{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:1/1;object-fit:cover}' +
+      '.ms{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.ms::-webkit-scrollbar{display:none}.ms img{flex:0 0 100%;width:100%;max-height:70vh;scroll-snap-align:center;object-fit:contain;background:rgba(0,0,0,.05)}.ms .mph{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:1/1}' +
       '.mph{display:grid;place-items:center;font-size:4rem;font-weight:800;color:var(--on);background:linear-gradient(135deg,var(--p),var(--p2))}' +
       '.mp{padding:6px 20px 14px}.mp h3{font-size:1.3rem}.mp .pr{font-size:1.25rem;color:var(--p);display:block;margin:6px 0}.mp p{color:var(--mu);margin-top:8px}' +
       '.mact{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--bd)}.mact .btn{flex:1}';
@@ -489,12 +484,12 @@
     var shadow = th.dark ? 'rgba(0,0,0,.45)' : 'rgba(15,23,34,.14)';
     return ':root{--p:' + th.p + ';--p2:' + th.p2 + ';--bg:' + th.bg + ';--sf:' + th.sf + ';--tx:' + th.tx + ';--mu:' + th.mu + ';--on:' + th.on + ';--bd:' + bd + ';--sh:' + shadow + ';--ratio:' + I.ratio + ';--hf:' + fp.h + ';--bf:' + fp.b + '}' +
       '*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}' +
-      'body{background:var(--bg);color:var(--tx);font-family:var(--bf),"Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:78px}' +
-      'h1,h2,h3{font-family:var(--hf),"Noto Sans Devanagari",system-ui,sans-serif;line-height:1.22;letter-spacing:-.01em}' +
+      'body{background:var(--bg);color:var(--tx);font-family:var(--bf),system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:78px}' +
+      'h1,h2,h3{font-family:var(--hf),system-ui,sans-serif;line-height:1.22;letter-spacing:-.01em}' +
       'a{color:inherit;text-decoration:none}img{display:block;max-width:100%}.wrap{width:min(1080px,100% - 32px);margin:0 auto}.narrow{width:min(760px,100% - 32px)}' +
       '.nav{position:sticky;top:0;z-index:20;background:' + rgba(th.bg, .92) + ';-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd)}' +
       '.nav-in{display:flex;align-items:center;justify-content:space-between;gap:12px;height:62px}' +
-      '.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-family:var(--hf),"Noto Sans Devanagari",sans-serif;min-width:0}.brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-family:var(--hf),sans-serif;min-width:0}.brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
       '.logo{width:38px;height:38px;border-radius:11px;object-fit:cover;flex:none;background:var(--sf)}' +
       '.logo.ph{display:grid;place-items:center;background:linear-gradient(135deg,var(--p),var(--p2));color:var(--on);font-weight:800}' +
       '.menu{display:none;gap:22px;font-size:.9rem;color:var(--mu)}.menu a:hover{color:var(--tx)}' +
@@ -507,7 +502,7 @@
       '.ab{max-width:760px;color:var(--mu);font-size:1.05rem}' +
       '.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}' +
       '.card{background:var(--sf);border:1px solid var(--bd);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}' +
-      '.card .im{aspect-ratio:var(--ratio);background:' + rgba(th.p, .1) + ' center/cover no-repeat}' +
+      '.card .im{aspect-ratio:var(--ratio);background:' + rgba(th.p, .08) + ' center/contain no-repeat}' +
       '.card .im.ph{display:grid;place-items:center;font-size:2.4rem;font-weight:800;color:var(--on);background:linear-gradient(135deg,var(--p),var(--p2))}' +
       '.cb{padding:15px;display:flex;flex-direction:column;gap:6px;flex:1}.tag{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--mu)}' +
       '.card h3{font-size:1.05rem}.card .d{color:var(--mu);font-size:.88rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}' +
@@ -663,18 +658,18 @@
     var c = normalize(cfg);
     data = data || {}; opts = opts || {};
     var lay = structureOf(c.layout);
-    var L = c.lang, t = T[L], I = INDUSTRIES[c.industry] || INDUSTRIES.retail, fp = FONTS[c.font];
+    var L = 'en', t = T.en, I = INDUSTRIES[c.industry] || INDUSTRIES.retail, fp = FONTS[c.font];
     var offers = visibleOffers(c, data.offers);
     var secs = activeSections(c, offers);
     if (opts.mini) secs = secs.filter(function (s) { return s === 'offers' || s === 'about'; }).slice(0, 1);
-    var name = c.brand.name || (L === 'hi' ? 'आपका बिज़नेस' : 'Your business');
+    var name = c.brand.name || 'Your business';
     var logo = safeUrl(c.brand.logoUrl), cover = safeUrl(c.brand.coverUrl);
     var logoHtml = logo ? '<img class="logo" alt="" src="' + esc(logo) + '">' : '<span class="logo ph">' + esc(name.trim().charAt(0).toUpperCase()) + '</span>';
     var primary = c.cta.primary, secondary = c.cta.secondary;
     var tagline = c.brand.tagline || '';
-    var chip = c.brand.category || I.n[L] || I.n.en;
+    var chip = c.brand.category || I.n.en;
 
-    var menuMap = { about: t.menuAbout, offers: I.offers[L] || I.offers.en, gallery: t.menuGallery, reviews: t.menuReviews, faq: t.menuFaq, contact: t.menuContact };
+    var menuMap = { about: t.menuAbout, offers: I.offers.en, gallery: t.menuGallery, reviews: t.menuReviews, faq: t.menuFaq, contact: t.menuContact };
     var menu = secs.map(function (id) { return '<a href="#' + id + '">' + esc(menuMap[id]) + '</a>'; }).join('');
     var nav = '<header class="nav"><div class="wrap nav-in"><a class="brand" href="#top">' + logoHtml + '<span>' + esc(name) + '</span></a>' +
       '<nav class="menu">' + menu + '</nav>' + ctaBtn(primary, c, t, 'sm', null, false) + '</div></header>';
@@ -719,7 +714,7 @@
     var foot = '<footer class="foot"><div class="wrap">© ' + new Date().getFullYear() + ' ' + esc(name) + ' · ' + t.powered + ' <a href="https://glime.online" target="_blank" rel="noopener">GLIME</a></div></footer>';
     var gs = { api: SB + '/rest/v1', key: KEY, slug: data.slug || '', preview: !!opts.preview, mini: !!opts.mini, closeLbl: t.close, offers: offerData(c, offers, t), thanks: t.thanks, err: t.err, scrollY: opts.scrollY || 0, scrollTo: opts.scrollTo || '' };
     var desc = (tagline || c.brand.about || '').replace(/\s+/g, ' ').slice(0, 155);
-    var fontHref = 'https://fonts.googleapis.com/css2?family=' + fp.g + '&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap';
+    var fontHref = 'https://fonts.googleapis.com/css2?family=' + fp.g + '&display=swap';
     var themeColor = THEMES[c.theme].p;
 
     return '<!doctype html><html lang="' + L + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
