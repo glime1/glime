@@ -144,7 +144,7 @@
     return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
   }
   function jsonForScript(o) {
-    return JSON.stringify(o).replace(/</g, '\\u003c').replace(/ /g, '\\u2028').replace(/ /g, '\\u2029');
+    var j = JSON.stringify(o).replace(/</g, '\\u003c'); return j.split(String.fromCharCode(8232)).join('\\u2028').split(String.fromCharCode(8233)).join('\\u2029');
   }
   function slugify(s) {
     var v = String(s || '').toLowerCase();
