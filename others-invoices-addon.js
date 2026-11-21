@@ -1,35 +1,40 @@
 /* =========================================================
-   GLIME OTHERS > INVOICE GENERATOR
+   GLIME OTHERS > INVOICE GENERATOR  (automatic invoice settings)
    ---------------------------------------------------------
-   Adds an "Invoice Generator" section to others.html.
-
    Deep link: others.html#invoices
 
-   What it does
-   - Builds an invoice in the browser and prints / saves it as PDF.
-   - Logo / photo: the client can tick "Show my business logo" and/or
-     "Show my profile photo". The pictures are the ones already uploaded
-     in Settings > Profile (shared photo system, glime-avatar.js). They
-     are NOT shown in the options, only inside the invoice preview.
-   - WhatsApp invoices: the client chooses
-       auto    GLIME creates and sends invoices on WhatsApp automatically
-               (how it works today, so this is the default)
-       manual  nothing is sent automatically; the client makes each
-               invoice here and sends it
-     This is saved as a small settings object.
+   How invoices work in GLIME
+   - When an order's payment completes, GLIME sends the invoice to the
+     customer on WhatsApp by itself. The client does not make invoices
+     by hand.
+   - This tab is where the client sets WHAT appears on those invoices:
+     business name, address, GSTIN, mobile number, GST %, invoice number
+     prefix, notes, and whether the business logo and / or profile
+     picture is shown. The client saves it once; every automatic invoice
+     then uses it.
+   - The logo and picture are the ones already uploaded in
+     Settings > Profile (shared photo system, glime-avatar.js). They are
+     not shown in the options, only inside the invoice preview.
+   - The preview uses SAMPLE order data. Real invoices use the real order.
 
-   BACKEND CONTRACT for the saved settings (frontend is ready; until the
-   two RPCs exist the choice is kept on this device only and the page
-   says so):
+   BACKEND CONTRACT (frontend is ready; until the two RPCs exist the
+   settings are kept on this device only and the page says so):
      rpc client_get_invoice_settings()  returns jsonb
      rpc client_save_invoice_settings(p_settings jsonb)  returns jsonb
+   Both run as the signed-in client (client_id from auth.uid()).
    p_settings shape:
-     { "invoice_mode": "auto" | "manual",
-       "use_logo": boolean,
-       "use_owner_photo": boolean }
-   Both run as the signed-in client (client_id from auth.uid()). The
-   WhatsApp invoice job should skip automatic sending when
-   invoice_mode = "manual". The invoice itself is not stored anywhere.
+     { "business_name": text,
+       "business_info": text,        -- address and other lines
+       "gstin": text,
+       "phone": text,                -- mobile number shown on the invoice
+       "gst_percent": number 0-100,
+       "invoice_prefix": text,       -- e.g. "INV"
+       "notes": text,                -- footer / payment terms
+       "use_logo": boolean,          -- show business logo
+       "use_owner_photo": boolean }  -- show owner profile picture
+   The WhatsApp invoice job reads these when it builds an invoice. The
+   logo is profile_media entity_type "business" and the picture is
+   entity_type "owner" (see glime-avatar.js).
 ========================================================= */
 (function () {
   'use strict';
@@ -69,8 +74,11 @@
     '.oi input,.oi textarea{width:100%;background:transparent;color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;font:inherit;font-size:.86rem}' +
     '.oi textarea{resize:vertical;min-height:64px}' +
     '.oi input:focus,.oi textarea:focus{outline:2px solid rgba(14,116,144,.45);outline-offset:1px}' +
+    '.oi small{display:block;color:var(--mu);font-size:.7rem;margin-top:4px}' +
     '.oi h3{font-size:1.02rem;margin:0 0 12px}' +
-    '.oi .oi-sub{color:var(--mu);font-size:.78rem;margin:-6px 0 6px}' +
+    '.oi .oi-sub{color:var(--mu);font-size:.78rem;margin:-6px 0 12px}' +
+    '.oi .oi-info{border:1px solid var(--bd);border-radius:14px;padding:13px 14px;margin-bottom:15px;font-size:.8rem;color:var(--mu);background:var(--surf)}' +
+    '.oi .oi-info b{color:var(--tx)}' +
     '.oi label.oi-opt{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0 0;cursor:pointer;color:var(--tx);font-weight:400;font-size:.86rem}' +
     '.oi label.oi-opt.on{border-color:rgba(14,116,144,.6);background:rgba(14,116,144,.08)}' +
     '.oi label.oi-opt.off{opacity:.6;cursor:default}' +
@@ -78,22 +86,14 @@
     '.oi .oi-opt b{display:block;font-size:.88rem;font-weight:800}' +
     '.oi .oi-opt em{display:block;font-style:normal;font-size:.74rem;color:var(--mu);margin-top:2px}' +
     '.oi .oi-opt em a{color:inherit;text-decoration:underline}' +
-    '.oi .oi-note{font-size:.74rem;color:var(--mu);margin-top:10px;min-height:1em}' +
-    '.oi .oi-note.ok{color:var(--gr)}' +
+    '.oi .oi-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}' +
+    '.oi .oi-note{font-size:.76rem;color:var(--mu);min-height:1em}' +
+    '.oi .oi-note.ok{color:var(--gr)}.oi .oi-note.err{color:var(--rd)}' +
     'html[data-theme="light"] .oi .oi-note.ok{color:#047857}' +
-    '.oi .oi-row{display:grid;grid-template-columns:1fr 70px 110px 110px 38px;gap:8px;align-items:center;margin-bottom:9px}' +
-    '.oi .oi-amt{font-size:.84rem;font-weight:800;text-align:right;padding-right:4px}' +
-    '.oi .oi-x{width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center}' +
-    '.oi .oi-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}' +
-    '.oi .oi-sum{margin-left:auto;max-width:320px;font-size:.84rem}' +
-    '.oi .oi-sum div{display:flex;justify-content:space-between;padding:4px 0;color:var(--mu)}' +
-    '.oi .oi-sum .g{color:var(--tx);font-weight:800;font-size:1rem;border-top:1px solid var(--bd);margin-top:5px;padding-top:9px}' +
+    'html[data-theme="light"] .oi .oi-note.err{color:#c62828}' +
     '@media(max-width:760px){' +
       '.oi .oi-grid{grid-template-columns:1fr}' +
       '.oi input,.oi textarea{font-size:16px}' +
-      '.oi .oi-row{grid-template-columns:1fr 1fr 38px}' +
-      '.oi .oi-row .oi-d{grid-column:1/-1}' +
-      '.oi .oi-amt{text-align:left}' +
       '.oi .oi-paper{padding:18px}' +
     '}';
 
@@ -114,18 +114,8 @@
     return '\u20B9' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function todayStr() {
-    var d = new Date();
-    var m = ('0' + (d.getMonth() + 1)).slice(-2);
-    var day = ('0' + d.getDate()).slice(-2);
-    return d.getFullYear() + '-' + m + '-' + day;
-  }
-
-  function prettyDate(v) {
-    if (!v) return '';
-    var d = new Date(v + 'T00:00:00');
-    if (isNaN(d.getTime())) return v;
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  function prettyToday() {
+    return new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   function isMissingFn(err) {
@@ -140,26 +130,34 @@
     var sb = ctx.api.supabase;
     var client = ctx.state.client || {};
     var clientId = client.client_id || '';
-    var today = todayStr();
 
     /* shared photo system (loaded by the app shell) */
     var Photo = window.GlimePhoto || null;
     if (Photo) { try { await Photo.ready(); } catch (e) { /* ignore */ } }
 
-    var cfg = { invoice_mode: 'auto', use_logo: false, use_owner_photo: false };
-
-    function readLocal() {
-      try { return JSON.parse(localStorage.getItem(LS_KEY + clientId) || 'null'); } catch (e) { return null; }
-    }
+    var cfg = {
+      business_name: client.business_name || client.name || '',
+      business_info: '',
+      gstin: '',
+      phone: '',
+      gst_percent: 0,
+      invoice_prefix: 'INV',
+      notes: 'Thank you for your business.',
+      use_logo: false,
+      use_owner_photo: false
+    };
 
     function mergeCfg(src) {
       if (!src || typeof src !== 'object') return;
-      if (src.invoice_mode === 'auto' || src.invoice_mode === 'manual') cfg.invoice_mode = src.invoice_mode;
+      ['business_name', 'business_info', 'gstin', 'phone', 'invoice_prefix', 'notes'].forEach(function (k) {
+        if (typeof src[k] === 'string') cfg[k] = src[k];
+      });
+      if (src.gst_percent != null && isFinite(parseFloat(src.gst_percent))) cfg.gst_percent = parseFloat(src.gst_percent);
       if (typeof src.use_logo === 'boolean') cfg.use_logo = src.use_logo;
       if (typeof src.use_owner_photo === 'boolean') cfg.use_owner_photo = src.use_owner_photo;
     }
 
-    mergeCfg(readLocal());
+    try { mergeCfg(JSON.parse(localStorage.getItem(LS_KEY + clientId) || 'null')); } catch (e) { /* ignore */ }
     try {
       var got = await sb.rpc('client_get_invoice_settings');
       if (!got.error) mergeCfg(Array.isArray(got.data) ? got.data[0] : got.data);
@@ -170,30 +168,7 @@
       try { return Photo.url(type, clientId) || null; } catch (e) { return null; }
     }
 
-    var data = {
-      sellerName: client.business_name || client.name || '',
-      sellerInfo: '',
-      invNo: 'INV-' + today.replace(/-/g, '') + '-001',
-      invDate: today,
-      dueDate: '',
-      custName: '',
-      custInfo: '',
-      taxPct: 0,
-      discount: 0,
-      notes: 'Thank you for your business.'
-    };
-    var items = [{ d: '', q: 1, r: 0 }];
-
     function nl(v) { return esc(v).replace(/\n/g, '<br>'); }
-
-    function totals() {
-      var sub = 0;
-      items.forEach(function (it) { sub += num(it.q) * num(it.r); });
-      var disc = Math.min(num(data.discount), sub);
-      var taxable = sub - disc;
-      var tax = taxable * num(data.taxPct) / 100;
-      return { sub: sub, disc: disc, tax: tax, total: taxable + tax };
-    }
 
     function brandImages() {
       var h = '';
@@ -204,55 +179,53 @@
       return h;
     }
 
-    function paperHtml() {
-      var t = totals();
-      var rows = '';
-      var n = 0;
-      items.forEach(function (it) {
-        var amt = num(it.q) * num(it.r);
-        if (!String(it.d).trim() && !amt) return;
-        n++;
-        rows += '<tr><td>' + n + '</td><td>' + nl(it.d) + '</td><td class="r">' + esc(String(num(it.q))) +
-          '</td><td class="r">' + money(num(it.r)) + '</td><td class="r">' + money(amt) + '</td></tr>';
-      });
-      if (!rows) rows = '<tr><td colspan="5" class="p-muted">No items added yet.</td></tr>';
+    /* Sample order, only for the preview */
+    var SAMPLE = [
+      { d: 'Sample product', q: 2, r: 500 },
+      { d: 'Sample service', q: 1, r: 1000 }
+    ];
 
-      var tot = '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>';
-      if (t.disc > 0) tot += '<div><span>Discount</span><span>- ' + money(t.disc) + '</span></div>';
-      if (num(data.taxPct) > 0) tot += '<div><span>Tax (' + esc(String(num(data.taxPct))) + '%)</span><span>' + money(t.tax) + '</span></div>';
-      tot += '<div class="g"><span>Total</span><span>' + money(t.total) + '</span></div>';
+    function paperHtml() {
+      var sub = 0;
+      var rows = SAMPLE.map(function (it, i) {
+        var amt = it.q * it.r;
+        sub += amt;
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.d) + '</td><td class="r">' + it.q +
+          '</td><td class="r">' + money(it.r) + '</td><td class="r">' + money(amt) + '</td></tr>';
+      }).join('');
+
+      var gst = Math.min(100, num(cfg.gst_percent));
+      var tax = sub * gst / 100;
+
+      var tot = '<div><span>Subtotal</span><span>' + money(sub) + '</span></div>';
+      if (gst > 0) tot += '<div><span>GST (' + esc(String(gst)) + '%)</span><span>' + money(tax) + '</span></div>';
+      tot += '<div class="g"><span>Total</span><span>' + money(sub + tax) + '</span></div>';
+
+      var lines = [];
+      if (String(cfg.business_info).trim()) lines.push(nl(cfg.business_info));
+      if (String(cfg.gstin).trim()) lines.push('GSTIN: ' + esc(cfg.gstin.trim()));
+      if (String(cfg.phone).trim()) lines.push('Phone: ' + esc(cfg.phone.trim()));
+
+      var prefix = String(cfg.invoice_prefix).trim();
 
       return '<div class="oi-paper">' +
         '<div class="p-head">' +
           '<div class="p-brandrow">' + brandImages() +
-            '<div><div class="p-brand">' + (esc(data.sellerName) || 'Your business') + '</div>' +
-            '<div class="p-muted">' + nl(data.sellerInfo) + '</div></div></div>' +
+            '<div><div class="p-brand">' + (esc(cfg.business_name) || 'Your business') + '</div>' +
+            '<div class="p-muted">' + lines.join('<br>') + '</div></div></div>' +
           '<div class="p-title"><b>INVOICE</b>' +
-            '<div class="p-muted">No: ' + esc(data.invNo) + '</div>' +
-            '<div class="p-muted">Date: ' + esc(prettyDate(data.invDate)) + '</div>' +
-            (data.dueDate ? '<div class="p-muted">Due: ' + esc(prettyDate(data.dueDate)) + '</div>' : '') +
+            '<div class="p-muted">No: ' + esc((prefix ? prefix + '-' : '') + '0001') + '</div>' +
+            '<div class="p-muted">Date: ' + esc(prettyToday()) + '</div>' +
           '</div>' +
         '</div>' +
         '<div class="p-bill"><div class="p-lbl">BILL TO</div>' +
-          '<div><b>' + (esc(data.custName) || '&mdash;') + '</b></div>' +
-          '<div class="p-muted">' + nl(data.custInfo) + '</div></div>' +
+          '<div><b>Sample Customer</b></div>' +
+          '<div class="p-muted">+91 98765 43210</div></div>' +
         '<div class="p-wrap"><table><thead><tr><th>#</th><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>' +
           '<tbody>' + rows + '</tbody></table></div>' +
         '<div class="p-tot">' + tot + '</div>' +
-        (String(data.notes).trim() ? '<div class="p-notes"><div class="p-lbl">NOTES</div>' + nl(data.notes) + '</div>' : '') +
+        (String(cfg.notes).trim() ? '<div class="p-notes"><div class="p-lbl">NOTES</div>' + nl(cfg.notes) + '</div>' : '') +
       '</div>';
-    }
-
-    function itemRowsHtml() {
-      return items.map(function (it, i) {
-        return '<div class="oi-row" data-i="' + i + '">' +
-          '<input class="oi-d" data-f="d" placeholder="Item / service description" value="' + esc(it.d) + '">' +
-          '<input data-f="q" type="number" min="0" step="any" inputmode="decimal" placeholder="Qty" value="' + esc(String(it.q)) + '">' +
-          '<input data-f="r" type="number" min="0" step="any" inputmode="decimal" placeholder="Rate" value="' + (it.r ? esc(String(it.r)) : '') + '">' +
-          '<div class="oi-amt" data-amt>' + money(num(it.q) * num(it.r)) + '</div>' +
-          '<button type="button" class="btn danger oi-x" data-del="' + i + '" aria-label="Remove item">&times;</button>' +
-        '</div>';
-      }).join('');
     }
 
     function brandOptionHtml(key, title, type, hint) {
@@ -267,211 +240,115 @@
       '<div class="oi">' +
         '<div class="section-head">' +
           '<h2>Invoice Generator</h2>' +
-          '<p>Create a clean invoice for your customer and save it as a PDF.</p>' +
+          '<p>Set what appears on your invoices.</p>' +
         '</div>' +
 
-        '<div class="card">' +
-          '<h3>WhatsApp invoices</h3>' +
-          '<p class="oi-sub">Choose how invoices reach your customers.</p>' +
-          '<label class="oi-opt' + (cfg.invoice_mode === 'auto' ? ' on' : '') + '">' +
-            '<input type="radio" name="oiMode" value="auto"' + (cfg.invoice_mode === 'auto' ? ' checked' : '') + '>' +
-            '<span><b>Send automatically</b><em>GLIME creates the invoice on WhatsApp and sends it to your customer on its own.</em></span></label>' +
-          '<label class="oi-opt' + (cfg.invoice_mode === 'manual' ? ' on' : '') + '">' +
-            '<input type="radio" name="oiMode" value="manual"' + (cfg.invoice_mode === 'manual' ? ' checked' : '') + '>' +
-            '<span><b>I will create my own invoices</b><em>Nothing is sent automatically. You make each invoice below and send it yourself.</em></span></label>' +
-          '<div class="oi-note" id="oiSaveNote" role="status"></div>' +
-        '</div>' +
+        '<div class="oi-info"><b>Invoices go out automatically.</b> As soon as a customer\u2019s payment is completed, GLIME creates the invoice and sends it on WhatsApp. ' +
+          'You only choose the details below once, and every invoice will use them.</div>' +
 
         '<div class="card">' +
-          '<h3>Your business</h3>' +
+          '<h3>Details on the invoice</h3>' +
           '<div class="oi-grid">' +
-            '<div><label for="oiSeller">Business name</label><input id="oiSeller" data-k="sellerName" value="' + esc(data.sellerName) + '"></div>' +
-            '<div><label for="oiNo">Invoice number</label><input id="oiNo" data-k="invNo" value="' + esc(data.invNo) + '"></div>' +
-            '<div class="oi-full"><label for="oiSellerInfo">Address, phone, GSTIN (optional)</label><textarea id="oiSellerInfo" data-k="sellerInfo"></textarea></div>' +
-            '<div><label for="oiDate">Invoice date</label><input id="oiDate" type="date" data-k="invDate" value="' + esc(data.invDate) + '"></div>' +
-            '<div><label for="oiDue">Due date (optional)</label><input id="oiDue" type="date" data-k="dueDate"></div>' +
+            '<div><label for="oiName">Business name</label><input id="oiName" data-k="business_name" maxlength="120" value="' + esc(cfg.business_name) + '"></div>' +
+            '<div><label for="oiPhone">Mobile number</label><input id="oiPhone" data-k="phone" type="tel" inputmode="tel" maxlength="20" placeholder="+91 98765 43210" value="' + esc(cfg.phone) + '"><small>Shown on the invoice so customers can reach you.</small></div>' +
+            '<div class="oi-full"><label for="oiInfo">Address and other lines (optional)</label><textarea id="oiInfo" data-k="business_info" maxlength="400">' + esc(cfg.business_info) + '</textarea></div>' +
+            '<div><label for="oiGstin">GSTIN (optional)</label><input id="oiGstin" data-k="gstin" maxlength="20" autocapitalize="characters" value="' + esc(cfg.gstin) + '"></div>' +
+            '<div><label for="oiGst">GST %</label><input id="oiGst" data-k="gst_percent" type="number" min="0" max="100" step="any" inputmode="decimal" value="' + esc(String(cfg.gst_percent)) + '"></div>' +
+            '<div><label for="oiPrefix">Invoice number prefix</label><input id="oiPrefix" data-k="invoice_prefix" maxlength="10" value="' + esc(cfg.invoice_prefix) + '"><small>For example INV gives INV-0001.</small></div>' +
+            '<div class="oi-full"><label for="oiNotes">Notes / payment terms (optional)</label><textarea id="oiNotes" data-k="notes" maxlength="400">' + esc(cfg.notes) + '</textarea></div>' +
           '</div>' +
-          brandOptionHtml('use_logo', 'Use my business logo on the invoice', 'business', 'Your logo from Settings &gt; Profile appears in the invoice preview.') +
-          brandOptionHtml('use_owner_photo', 'Use my profile picture on the invoice', 'owner', 'Your photo from Settings &gt; Profile appears in the invoice preview.') +
-        '</div>' +
-
-        '<div class="card">' +
-          '<h3>Customer</h3>' +
-          '<div class="oi-grid">' +
-            '<div><label for="oiCust">Customer name</label><input id="oiCust" data-k="custName" placeholder="Customer or company name"></div>' +
-            '<div><label for="oiCustInfo">Address, phone, GSTIN (optional)</label><textarea id="oiCustInfo" data-k="custInfo"></textarea></div>' +
+          brandOptionHtml('use_logo', 'Use my business logo on the invoice', 'business', 'Your logo from Settings &gt; Profile appears on every invoice.') +
+          brandOptionHtml('use_owner_photo', 'Use my profile picture on the invoice', 'owner', 'Your photo from Settings &gt; Profile appears on every invoice.') +
+          '<div class="oi-actions">' +
+            '<button type="button" class="btn primary" id="oiSave">Save invoice settings</button>' +
+            '<span class="oi-note" id="oiNote" role="status"></span>' +
           '</div>' +
-        '</div>' +
-
-        '<div class="card">' +
-          '<h3>Items</h3>' +
-          '<div id="oiItems">' + itemRowsHtml() + '</div>' +
-          '<div class="oi-actions"><button type="button" class="btn" id="oiAdd">+ Add item</button></div>' +
-          '<div class="oi-grid" style="margin-top:16px">' +
-            '<div><label for="oiTax">Tax / GST %</label><input id="oiTax" data-k="taxPct" type="number" min="0" step="any" inputmode="decimal" value="0"></div>' +
-            '<div><label for="oiDisc">Discount (flat amount)</label><input id="oiDisc" data-k="discount" type="number" min="0" step="any" inputmode="decimal" value="0"></div>' +
-            '<div class="oi-full"><label for="oiNotes">Notes / payment terms</label><textarea id="oiNotes" data-k="notes">' + esc(data.notes) + '</textarea></div>' +
-          '</div>' +
-          '<div class="oi-sum" id="oiSum" style="margin-top:16px"></div>' +
         '</div>' +
 
         '<div class="card">' +
           '<h3>Preview</h3>' +
+          '<p class="oi-sub">This is a sample. Real invoices use the details of each order.</p>' +
           '<div id="oiPaper"></div>' +
-          '<div class="oi-actions" style="margin-top:14px">' +
-            '<button type="button" class="btn primary" id="oiPrint">Print / Save as PDF</button>' +
-            '<button type="button" class="btn" id="oiReset">Start new invoice</button>' +
-          '</div>' +
         '</div>' +
       '</div>';
 
     var root = ctx.container.querySelector('.oi');
-    var itemsBox = root.querySelector('#oiItems');
-    var sumBox = root.querySelector('#oiSum');
     var paperBox = root.querySelector('#oiPaper');
-    var noteBox = root.querySelector('#oiSaveNote');
+    var noteBox = root.querySelector('#oiNote');
+    var saveBtn = root.querySelector('#oiSave');
 
-    function refresh() {
-      var t = totals();
-      var h = '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>';
-      if (t.disc > 0) h += '<div><span>Discount</span><span>- ' + money(t.disc) + '</span></div>';
-      if (num(data.taxPct) > 0) h += '<div><span>Tax</span><span>' + money(t.tax) + '</span></div>';
-      h += '<div class="g"><span>Total</span><span>' + money(t.total) + '</span></div>';
-      sumBox.innerHTML = h;
-      paperBox.innerHTML = paperHtml();
-    }
+    function refresh() { paperBox.innerHTML = paperHtml(); }
 
-    function setNote(text, ok) {
+    function setNote(text, kind) {
       noteBox.textContent = text || '';
-      noteBox.className = 'oi-note' + (ok ? ' ok' : '');
-    }
-
-    var saveSeq = 0;
-    async function saveCfg() {
-      var mine = ++saveSeq;
-      try { localStorage.setItem(LS_KEY + clientId, JSON.stringify(cfg)); } catch (e) { /* ignore */ }
-      try {
-        var r = await sb.rpc('client_save_invoice_settings', { p_settings: cfg });
-        if (r.error) throw r.error;
-        if (mine === saveSeq) setNote('Saved.', true);
-      } catch (err) {
-        if (mine !== saveSeq) return;
-        setNote(isMissingFn(err)
-          ? 'Saved on this device. It will take effect on WhatsApp once invoice settings are switched on for your account.'
-          : ((err && err.message) || 'Could not save this choice. Please try again.'));
-      }
+      noteBox.className = 'oi-note' + (kind ? ' ' + kind : '');
     }
 
     root.addEventListener('input', function (e) {
-      var el = e.target;
-      var k = el.getAttribute('data-k');
-      if (k) {
-        data[k] = el.value;
-        refresh();
-        return;
+      var k = e.target.getAttribute('data-k');
+      if (!k) return;
+      if (k === 'gst_percent') {
+        var n = parseFloat(e.target.value);
+        cfg.gst_percent = isFinite(n) ? n : 0;
+      } else if (k === 'invoice_prefix') {
+        var v = e.target.value.replace(/[^A-Za-z0-9-]/g, '').slice(0, 10);
+        if (e.target.value !== v) e.target.value = v;
+        cfg.invoice_prefix = v;
+      } else {
+        cfg[k] = e.target.value;
       }
-      var f = el.getAttribute('data-f');
-      if (f) {
-        var row = el.closest('.oi-row');
-        var i = parseInt(row.getAttribute('data-i'), 10);
-        items[i][f] = el.value;
-        var amtEl = row.querySelector('[data-amt]');
-        if (amtEl) amtEl.textContent = money(num(items[i].q) * num(items[i].r));
-        refresh();
-      }
+      setNote('');
+      refresh();
     });
 
     root.addEventListener('change', function (e) {
-      var el = e.target;
-      if (el.name === 'oiMode') {
-        cfg.invoice_mode = el.value === 'manual' ? 'manual' : 'auto';
-        root.querySelectorAll('input[name="oiMode"]').forEach(function (r) {
-          r.closest('.oi-opt').classList.toggle('on', r.checked);
-        });
-        saveCfg();
-        return;
-      }
-      var key = el.getAttribute('data-cfg');
-      if (key) {
-        cfg[key] = !!el.checked;
-        el.closest('.oi-opt').classList.toggle('on', el.checked);
-        refresh();
-        saveCfg();
-      }
-    });
-
-    root.addEventListener('click', function (e) {
-      var del = e.target.closest('[data-del]');
-      if (del) {
-        var i = parseInt(del.getAttribute('data-del'), 10);
-        items.splice(i, 1);
-        if (!items.length) items.push({ d: '', q: 1, r: 0 });
-        itemsBox.innerHTML = itemRowsHtml();
-        refresh();
-      }
-    });
-
-    root.querySelector('#oiAdd').onclick = function () {
-      items.push({ d: '', q: 1, r: 0 });
-      itemsBox.innerHTML = itemRowsHtml();
-      var inputs = itemsBox.querySelectorAll('.oi-d');
-      if (inputs.length) inputs[inputs.length - 1].focus();
+      var key = e.target.getAttribute('data-cfg');
+      if (!key) return;
+      cfg[key] = !!e.target.checked;
+      e.target.closest('.oi-opt').classList.toggle('on', e.target.checked);
+      setNote('');
       refresh();
-    };
+    });
 
-    root.querySelector('#oiReset').onclick = async function () {
-      var ok = await ctx.ui.confirm('Start a new invoice? Everything entered here will be cleared.');
-      if (!ok) return;
-      await renderInvoices(ctx);
-    };
-
-    root.querySelector('#oiPrint').onclick = function () {
-      if (!String(data.custName).trim()) {
-        ctx.ui.toast('Please enter the customer name.', true);
+    saveBtn.onclick = async function () {
+      var gst = parseFloat(cfg.gst_percent);
+      if (!isFinite(gst) || gst < 0 || gst > 100) {
+        setNote('GST % must be between 0 and 100.', 'err');
         return;
       }
-      var hasItem = items.some(function (it) { return String(it.d).trim() && num(it.q) * num(it.r) > 0; });
-      if (!hasItem) {
-        ctx.ui.toast('Add at least one item with a quantity and rate.', true);
+      if (String(cfg.phone).trim() && !/^\+?[0-9 ()-]{7,20}$/.test(String(cfg.phone).trim())) {
+        setNote('Please enter a valid mobile number.', 'err');
         return;
       }
-      var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc('Invoice ' + data.invNo) +
-        '</title><style>body{margin:0;padding:24px;background:#fff}' + PAPER_CSS +
-        '.oi-paper{padding:0}@page{margin:14mm}</style></head><body>' + paperHtml() + '</body></html>';
-      var frame = document.createElement('iframe');
-      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
-      document.body.appendChild(frame);
-      var fd = frame.contentWindow.document;
-      fd.open();
-      fd.write(doc);
-      fd.close();
-      var cleaned = false;
-      function clean() {
-        if (cleaned) return;
-        cleaned = true;
-        if (frame.parentNode) frame.parentNode.removeChild(frame);
-      }
-      frame.contentWindow.addEventListener('afterprint', clean);
 
-      /* wait for the logo / photo to load before the print dialog opens */
-      var waits = Array.prototype.filter.call(fd.images, function (im) { return !im.complete; }).map(function (im) {
-        return new Promise(function (res) { im.onload = im.onerror = res; });
-      });
-      Promise.race([
-        Promise.all(waits),
-        new Promise(function (res) { setTimeout(res, 3000); })
-      ]).then(function () {
-        setTimeout(function () {
-          try {
-            frame.contentWindow.focus();
-            frame.contentWindow.print();
-          } catch (err) {
-            ctx.ui.toast('Could not open the print dialog.', true);
-            clean();
-          }
-        }, 200);
-      });
-      setTimeout(clean, 120000);
+      var payload = {
+        business_name: String(cfg.business_name).trim(),
+        business_info: String(cfg.business_info).trim(),
+        gstin: String(cfg.gstin).trim().toUpperCase(),
+        phone: String(cfg.phone).trim(),
+        gst_percent: gst,
+        invoice_prefix: String(cfg.invoice_prefix).trim(),
+        notes: String(cfg.notes).trim(),
+        use_logo: !!cfg.use_logo && !!photoUrl('business'),
+        use_owner_photo: !!cfg.use_owner_photo && !!photoUrl('owner')
+      };
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      setNote('');
+      try { localStorage.setItem(LS_KEY + clientId, JSON.stringify(payload)); } catch (e) { /* ignore */ }
+      try {
+        var r = await sb.rpc('client_save_invoice_settings', { p_settings: payload });
+        if (r.error) throw r.error;
+        setNote('Saved. Your next invoices will use these details.', 'ok');
+        ctx.ui.toast('Invoice settings saved');
+      } catch (err) {
+        setNote(isMissingFn(err)
+          ? 'Saved on this device. It will apply to your WhatsApp invoices once invoice settings are switched on for your account.'
+          : ((err && err.message) || 'Could not save. Please try again.'), isMissingFn(err) ? '' : 'err');
+      }
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save invoice settings';
     };
 
     refresh();
