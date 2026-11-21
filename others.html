@@ -53,6 +53,13 @@
   position:fixed;right:14px;bottom:14px;background:#101b28;color:#fff;border:1px solid var(--bd);
   padding:11px 14px;border-radius:10px;font-size:.77rem;display:none;z-index:2147481000
 }
+/* Light mode: the pale cyan tab text was hard to read, so use a deeper teal */
+html[data-theme="light"] .oth .nav button.active,
+html[data-theme="light"] .oth .mobile-nav button.active{
+  color:#0e7490;
+  border-color:rgba(14,116,144,.45);
+  background:rgba(14,116,144,.09)
+}
 @media(max-width:760px){
   .oth h1{font-size:1.7rem}
   .oth .layout{grid-template-columns:1fr}
@@ -127,7 +134,8 @@
 
 /* Addons load in this order; one failing addon never blocks the others. */
 const OTHERS_ADDONS = [
-  'others-partner-addon.js'
+  'others-partner-addon.js',
+  'others-invoices-addon.js'
 ];
 
 const sb = supabase.createClient(
