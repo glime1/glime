@@ -90,247 +90,241 @@
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  async function renderInvoices(ctx) {
+    injectStyle();
+
+    var esc = ctx.ui.escapeHtml;
+    var client = ctx.state.client || {};
+    var today = todayStr();
+
+    var data = {
+      sellerName: client.business_name || client.name || '',
+      sellerInfo: '',
+      invNo: 'INV-' + today.replace(/-/g, '') + '-001',
+      invDate: today,
+      dueDate: '',
+      custName: '',
+      custInfo: '',
+      taxPct: 0,
+      discount: 0,
+      notes: 'Thank you for your business.'
+    };
+    var items = [{ d: '', q: 1, r: 0 }];
+
+    function nl(v) { return esc(v).replace(/\n/g, '<br>'); }
+
+    function totals() {
+      var sub = 0;
+      items.forEach(function (it) { sub += num(it.q) * num(it.r); });
+      var disc = Math.min(num(data.discount), sub);
+      var taxable = sub - disc;
+      var tax = taxable * num(data.taxPct) / 100;
+      return { sub: sub, disc: disc, tax: tax, total: taxable + tax };
+    }
+
+    function paperHtml() {
+      var t = totals();
+      var rows = '';
+      var n = 0;
+      items.forEach(function (it) {
+        var amt = num(it.q) * num(it.r);
+        if (!String(it.d).trim() && !amt) return;
+        n++;
+        rows += '<tr><td>' + n + '</td><td>' + nl(it.d) + '</td><td class="r">' + esc(String(num(it.q))) +
+          '</td><td class="r">' + money(num(it.r)) + '</td><td class="r">' + money(amt) + '</td></tr>';
+      });
+      if (!rows) rows = '<tr><td colspan="5" class="p-muted">No items added yet.</td></tr>';
+
+      var tot = '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>';
+      if (t.disc > 0) tot += '<div><span>Discount</span><span>- ' + money(t.disc) + '</span></div>';
+      if (num(data.taxPct) > 0) tot += '<div><span>Tax (' + esc(String(num(data.taxPct))) + '%)</span><span>' + money(t.tax) + '</span></div>';
+      tot += '<div class="g"><span>Total</span><span>' + money(t.total) + '</span></div>';
+
+      return '<div class="oi-paper">' +
+        '<div class="p-head">' +
+          '<div><div class="p-brand">' + (esc(data.sellerName) || 'Your business') + '</div>' +
+            '<div class="p-muted">' + nl(data.sellerInfo) + '</div></div>' +
+          '<div class="p-title"><b>INVOICE</b>' +
+            '<div class="p-muted">No: ' + esc(data.invNo) + '</div>' +
+            '<div class="p-muted">Date: ' + esc(prettyDate(data.invDate)) + '</div>' +
+            (data.dueDate ? '<div class="p-muted">Due: ' + esc(prettyDate(data.dueDate)) + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="p-bill"><div class="p-lbl">BILL TO</div>' +
+          '<div><b>' + (esc(data.custName) || '&mdash;') + '</b></div>' +
+          '<div class="p-muted">' + nl(data.custInfo) + '</div></div>' +
+        '<div class="p-wrap"><table><thead><tr><th>#</th><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody></table></div>' +
+        '<div class="p-tot">' + tot + '</div>' +
+        (String(data.notes).trim() ? '<div class="p-notes"><div class="p-lbl">NOTES</div>' + nl(data.notes) + '</div>' : '') +
+      '</div>';
+    }
+
+    function itemRowsHtml() {
+      return items.map(function (it, i) {
+        return '<div class="oi-row" data-i="' + i + '">' +
+          '<input class="oi-d" data-f="d" placeholder="Item / service description" value="' + esc(it.d) + '">' +
+          '<input data-f="q" type="number" min="0" step="any" inputmode="decimal" placeholder="Qty" value="' + esc(String(it.q)) + '">' +
+          '<input data-f="r" type="number" min="0" step="any" inputmode="decimal" placeholder="Rate" value="' + (it.r ? esc(String(it.r)) : '') + '">' +
+          '<div class="oi-amt" data-amt>' + money(num(it.q) * num(it.r)) + '</div>' +
+          '<button type="button" class="btn danger oi-x" data-del="' + i + '" aria-label="Remove item">&times;</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    ctx.container.innerHTML =
+      '<div class="oi">' +
+        '<div class="section-head">' +
+          '<h2>Invoice Generator</h2>' +
+          '<p>Create a clean invoice for your customer and save it as a PDF.</p>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h3>Your business</h3>' +
+          '<div class="oi-grid">' +
+            '<div><label for="oiSeller">Business name</label><input id="oiSeller" data-k="sellerName" value="' + esc(data.sellerName) + '"></div>' +
+            '<div><label for="oiNo">Invoice number</label><input id="oiNo" data-k="invNo" value="' + esc(data.invNo) + '"></div>' +
+            '<div class="oi-full"><label for="oiSellerInfo">Address, phone, GSTIN (optional)</label><textarea id="oiSellerInfo" data-k="sellerInfo"></textarea></div>' +
+            '<div><label for="oiDate">Invoice date</label><input id="oiDate" type="date" data-k="invDate" value="' + esc(data.invDate) + '"></div>' +
+            '<div><label for="oiDue">Due date (optional)</label><input id="oiDue" type="date" data-k="dueDate"></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h3>Customer</h3>' +
+          '<div class="oi-grid">' +
+            '<div><label for="oiCust">Customer name</label><input id="oiCust" data-k="custName" placeholder="Customer or company name"></div>' +
+            '<div><label for="oiCustInfo">Address, phone, GSTIN (optional)</label><textarea id="oiCustInfo" data-k="custInfo"></textarea></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h3>Items</h3>' +
+          '<div id="oiItems">' + itemRowsHtml() + '</div>' +
+          '<div class="oi-actions"><button type="button" class="btn" id="oiAdd">+ Add item</button></div>' +
+          '<div class="oi-grid" style="margin-top:16px">' +
+            '<div><label for="oiTax">Tax / GST %</label><input id="oiTax" data-k="taxPct" type="number" min="0" step="any" inputmode="decimal" value="0"></div>' +
+            '<div><label for="oiDisc">Discount (flat amount)</label><input id="oiDisc" data-k="discount" type="number" min="0" step="any" inputmode="decimal" value="0"></div>' +
+            '<div class="oi-full"><label for="oiNotes">Notes / payment terms</label><textarea id="oiNotes" data-k="notes">' + esc(data.notes) + '</textarea></div>' +
+          '</div>' +
+          '<div class="oi-sum" id="oiSum" style="margin-top:16px"></div>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h3>Preview</h3>' +
+          '<div id="oiPaper"></div>' +
+          '<div class="oi-actions" style="margin-top:14px">' +
+            '<button type="button" class="btn primary" id="oiPrint">Print / Save as PDF</button>' +
+            '<button type="button" class="btn" id="oiReset">Start new invoice</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var root = ctx.container.querySelector('.oi');
+    var itemsBox = root.querySelector('#oiItems');
+    var sumBox = root.querySelector('#oiSum');
+    var paperBox = root.querySelector('#oiPaper');
+
+    function refresh() {
+      var t = totals();
+      var h = '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>';
+      if (t.disc > 0) h += '<div><span>Discount</span><span>- ' + money(t.disc) + '</span></div>';
+      if (num(data.taxPct) > 0) h += '<div><span>Tax</span><span>' + money(t.tax) + '</span></div>';
+      h += '<div class="g"><span>Total</span><span>' + money(t.total) + '</span></div>';
+      sumBox.innerHTML = h;
+      paperBox.innerHTML = paperHtml();
+    }
+
+    root.addEventListener('input', function (e) {
+      var el = e.target;
+      var k = el.getAttribute('data-k');
+      if (k) {
+        data[k] = el.value;
+        refresh();
+        return;
+      }
+      var f = el.getAttribute('data-f');
+      if (f) {
+        var row = el.closest('.oi-row');
+        var i = parseInt(row.getAttribute('data-i'), 10);
+        items[i][f] = el.value;
+        var amtEl = row.querySelector('[data-amt]');
+        if (amtEl) amtEl.textContent = money(num(items[i].q) * num(items[i].r));
+        refresh();
+      }
+    });
+
+    root.addEventListener('click', function (e) {
+      var del = e.target.closest('[data-del]');
+      if (del) {
+        var i = parseInt(del.getAttribute('data-del'), 10);
+        items.splice(i, 1);
+        if (!items.length) items.push({ d: '', q: 1, r: 0 });
+        itemsBox.innerHTML = itemRowsHtml();
+        refresh();
+      }
+    });
+
+    root.querySelector('#oiAdd').onclick = function () {
+      items.push({ d: '', q: 1, r: 0 });
+      itemsBox.innerHTML = itemRowsHtml();
+      var inputs = itemsBox.querySelectorAll('.oi-d');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+      refresh();
+    };
+
+    root.querySelector('#oiReset').onclick = async function () {
+      var ok = await ctx.ui.confirm('Start a new invoice? Everything entered here will be cleared.');
+      if (!ok) return;
+      await renderInvoices(ctx);
+    };
+
+    root.querySelector('#oiPrint').onclick = function () {
+      if (!String(data.custName).trim()) {
+        ctx.ui.toast('Please enter the customer name.', true);
+        return;
+      }
+      var hasItem = items.some(function (it) { return String(it.d).trim() && num(it.q) * num(it.r) > 0; });
+      if (!hasItem) {
+        ctx.ui.toast('Add at least one item with a quantity and rate.', true);
+        return;
+      }
+      var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc('Invoice ' + data.invNo) +
+        '</title><style>body{margin:0;padding:24px;background:#fff}' + PAPER_CSS +
+        '.oi-paper{padding:0}@page{margin:14mm}</style></head><body>' + paperHtml() + '</body></html>';
+      var frame = document.createElement('iframe');
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+      document.body.appendChild(frame);
+      var fd = frame.contentWindow.document;
+      fd.open();
+      fd.write(doc);
+      fd.close();
+      var cleaned = false;
+      function clean() {
+        if (cleaned) return;
+        cleaned = true;
+        if (frame.parentNode) frame.parentNode.removeChild(frame);
+      }
+      frame.contentWindow.addEventListener('afterprint', clean);
+      setTimeout(function () {
+        try {
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+        } catch (err) {
+          ctx.ui.toast('Could not open the print dialog.', true);
+          clean();
+        }
+      }, 300);
+      setTimeout(clean, 120000);
+    };
+
+    refresh();
+  }
+
   window.GLIME_OTHERS.register({
     id: 'invoices',
     label: 'Invoice Generator',
     order: 20,
-    render: async function (ctx) {
-      injectStyle();
-
-      var esc = ctx.ui.escapeHtml;
-      var client = ctx.state.client || {};
-      var today = todayStr();
-
-      var data = {
-        sellerName: client.business_name || client.name || '',
-        sellerInfo: '',
-        invNo: 'INV-' + today.replace(/-/g, '') + '-001',
-        invDate: today,
-        dueDate: '',
-        custName: '',
-        custInfo: '',
-        taxPct: 0,
-        discount: 0,
-        notes: 'Thank you for your business.'
-      };
-      var items = [{ d: '', q: 1, r: 0 }];
-
-      function nl(v) { return esc(v).replace(/\n/g, '<br>'); }
-
-      function totals() {
-        var sub = 0;
-        items.forEach(function (it) { sub += num(it.q) * num(it.r); });
-        var disc = Math.min(num(data.discount), sub);
-        var taxable = sub - disc;
-        var tax = taxable * num(data.taxPct) / 100;
-        return { sub: sub, disc: disc, tax: tax, total: taxable + tax };
-      }
-
-      function paperHtml() {
-        var t = totals();
-        var rows = '';
-        var n = 0;
-        items.forEach(function (it) {
-          var amt = num(it.q) * num(it.r);
-          if (!String(it.d).trim() && !amt) return;
-          n++;
-          rows += '<tr><td>' + n + '</td><td>' + nl(it.d) + '</td><td class="r">' + esc(String(num(it.q))) +
-            '</td><td class="r">' + money(num(it.r)) + '</td><td class="r">' + money(amt) + '</td></tr>';
-        });
-        if (!rows) rows = '<tr><td colspan="5" class="p-muted">No items added yet.</td></tr>';
-
-        var tot = '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>';
-        if (t.disc > 0) tot += '<div><span>Discount</span><span>- ' + money(t.disc) + '</span></div>';
-        if (num(data.taxPct) > 0) tot += '<div><span>Tax (' + esc(String(num(data.taxPct))) + '%)</span><span>' + money(t.tax) + '</span></div>';
-        tot += '<div class="g"><span>Total</span><span>' + money(t.total) + '</span></div>';
-
-        return '<div class="oi-paper">' +
-          '<div class="p-head">' +
-            '<div><div class="p-brand">' + (esc(data.sellerName) || 'Your business') + '</div>' +
-              '<div class="p-muted">' + nl(data.sellerInfo) + '</div></div>' +
-            '<div class="p-title"><b>INVOICE</b>' +
-              '<div class="p-muted">No: ' + esc(data.invNo) + '</div>' +
-              '<div class="p-muted">Date: ' + esc(prettyDate(data.invDate)) + '</div>' +
-              (data.dueDate ? '<div class="p-muted">Due: ' + esc(prettyDate(data.dueDate)) + '</div>' : '') +
-            '</div>' +
-          '</div>' +
-          '<div class="p-bill"><div class="p-lbl">BILL TO</div>' +
-            '<div><b>' + (esc(data.custName) || '&mdash;') + '</b></div>' +
-            '<div class="p-muted">' + nl(data.custInfo) + '</div></div>' +
-          '<div class="p-wrap"><table><thead><tr><th>#</th><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>' +
-            '<tbody>' + rows + '</tbody></table></div>' +
-          '<div class="p-tot">' + tot + '</div>' +
-          (String(data.notes).trim() ? '<div class="p-notes"><div class="p-lbl">NOTES</div>' + nl(data.notes) + '</div>' : '') +
-        '</div>';
-      }
-
-      function itemRowsHtml() {
-        return items.map(function (it, i) {
-          return '<div class="oi-row" data-i="' + i + '">' +
-            '<input class="oi-d" data-f="d" placeholder="Item / service description" value="' + esc(it.d) + '">' +
-            '<input data-f="q" type="number" min="0" step="any" inputmode="decimal" placeholder="Qty" value="' + esc(String(it.q)) + '">' +
-            '<input data-f="r" type="number" min="0" step="any" inputmode="decimal" placeholder="Rate" value="' + (it.r ? esc(String(it.r)) : '') + '">' +
-            '<div class="oi-amt" data-amt>' + money(num(it.q) * num(it.r)) + '</div>' +
-            '<button type="button" class="btn danger oi-x" data-del="' + i + '" aria-label="Remove item">&times;</button>' +
-          '</div>';
-        }).join('');
-      }
-
-      ctx.container.innerHTML =
-        '<div class="oi">' +
-          '<div class="section-head">' +
-            '<h2>Invoice Generator</h2>' +
-            '<p>Create a clean invoice for your customer and save it as a PDF.</p>' +
-          '</div>' +
-
-          '<div class="card">' +
-            '<h3>Your business</h3>' +
-            '<div class="oi-grid">' +
-              '<div><label for="oiSeller">Business name</label><input id="oiSeller" data-k="sellerName" value="' + esc(data.sellerName) + '"></div>' +
-              '<div><label for="oiNo">Invoice number</label><input id="oiNo" data-k="invNo" value="' + esc(data.invNo) + '"></div>' +
-              '<div class="oi-full"><label for="oiSellerInfo">Address, phone, GSTIN (optional)</label><textarea id="oiSellerInfo" data-k="sellerInfo"></textarea></div>' +
-              '<div><label for="oiDate">Invoice date</label><input id="oiDate" type="date" data-k="invDate" value="' + esc(data.invDate) + '"></div>' +
-              '<div><label for="oiDue">Due date (optional)</label><input id="oiDue" type="date" data-k="dueDate"></div>' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="card">' +
-            '<h3>Customer</h3>' +
-            '<div class="oi-grid">' +
-              '<div><label for="oiCust">Customer name</label><input id="oiCust" data-k="custName" placeholder="Customer or company name"></div>' +
-              '<div><label for="oiCustInfo">Address, phone, GSTIN (optional)</label><textarea id="oiCustInfo" data-k="custInfo"></textarea></div>' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="card">' +
-            '<h3>Items</h3>' +
-            '<div id="oiItems">' + itemRowsHtml() + '</div>' +
-            '<div class="oi-actions"><button type="button" class="btn" id="oiAdd">+ Add item</button></div>' +
-            '<div class="oi-grid" style="margin-top:16px">' +
-              '<div><label for="oiTax">Tax / GST %</label><input id="oiTax" data-k="taxPct" type="number" min="0" step="any" inputmode="decimal" value="0"></div>' +
-              '<div><label for="oiDisc">Discount (flat amount)</label><input id="oiDisc" data-k="discount" type="number" min="0" step="any" inputmode="decimal" value="0"></div>' +
-              '<div class="oi-full"><label for="oiNotes">Notes / payment terms</label><textarea id="oiNotes" data-k="notes">' + esc(data.notes) + '</textarea></div>' +
-            '</div>' +
-            '<div class="oi-sum" id="oiSum" style="margin-top:16px"></div>' +
-          '</div>' +
-
-          '<div class="card">' +
-            '<h3>Preview</h3>' +
-            '<div id="oiPaper"></div>' +
-            '<div class="oi-actions" style="margin-top:14px">' +
-              '<button type="button" class="btn primary" id="oiPrint">Print / Save as PDF</button>' +
-              '<button type="button" class="btn" id="oiReset">Start new invoice</button>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-
-      var root = ctx.container.querySelector('.oi');
-      var itemsBox = root.querySelector('#oiItems');
-      var sumBox = root.querySelector('#oiSum');
-      var paperBox = root.querySelector('#oiPaper');
-
-      function refresh() {
-        var t = totals();
-        var h = '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>';
-        if (t.disc > 0) h += '<div><span>Discount</span><span>- ' + money(t.disc) + '</span></div>';
-        if (num(data.taxPct) > 0) h += '<div><span>Tax</span><span>' + money(t.tax) + '</span></div>';
-        h += '<div class="g"><span>Total</span><span>' + money(t.total) + '</span></div>';
-        sumBox.innerHTML = h;
-        paperBox.innerHTML = paperHtml();
-      }
-
-      root.addEventListener('input', function (e) {
-        var el = e.target;
-        var k = el.getAttribute('data-k');
-        if (k) {
-          data[k] = el.value;
-          refresh();
-          return;
-        }
-        var f = el.getAttribute('data-f');
-        if (f) {
-          var row = el.closest('.oi-row');
-          var i = parseInt(row.getAttribute('data-i'), 10);
-          items[i][f] = el.value;
-          var amtEl = row.querySelector('[data-amt]');
-          if (amtEl) amtEl.textContent = money(num(items[i].q) * num(items[i].r));
-          refresh();
-        }
-      });
-
-      root.addEventListener('click', function (e) {
-        var del = e.target.closest('[data-del]');
-        if (del) {
-          var i = parseInt(del.getAttribute('data-del'), 10);
-          items.splice(i, 1);
-          if (!items.length) items.push({ d: '', q: 1, r: 0 });
-          itemsBox.innerHTML = itemRowsHtml();
-          refresh();
-        }
-      });
-
-      root.querySelector('#oiAdd').onclick = function () {
-        items.push({ d: '', q: 1, r: 0 });
-        itemsBox.innerHTML = itemRowsHtml();
-        var inputs = itemsBox.querySelectorAll('.oi-d');
-        if (inputs.length) inputs[inputs.length - 1].focus();
-        refresh();
-      };
-
-      root.querySelector('#oiReset').onclick = async function () {
-        var ok = await ctx.ui.confirm('Start a new invoice? Everything entered here will be cleared.');
-        if (!ok) return;
-        window.GLIME_OTHERS.state.activeModule = 'invoices';
-        await window.GLIME_OTHERS.__reopenInvoices();
-      };
-
-      root.querySelector('#oiPrint').onclick = function () {
-        if (!String(data.custName).trim()) {
-          ctx.ui.toast('Please enter the customer name.', true);
-          return;
-        }
-        var hasItem = items.some(function (it) { return String(it.d).trim() && num(it.q) * num(it.r) > 0; });
-        if (!hasItem) {
-          ctx.ui.toast('Add at least one item with a quantity and rate.', true);
-          return;
-        }
-        var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc('Invoice ' + data.invNo) +
-          '</title><style>body{margin:0;padding:24px;background:#fff}' + PAPER_CSS +
-          '.oi-paper{padding:0}@page{margin:14mm}</style></head><body>' + paperHtml() + '</body></html>';
-        var frame = document.createElement('iframe');
-        frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
-        document.body.appendChild(frame);
-        var fd = frame.contentWindow.document;
-        fd.open();
-        fd.write(doc);
-        fd.close();
-        var cleaned = false;
-        function clean() {
-          if (cleaned) return;
-          cleaned = true;
-          if (frame.parentNode) frame.parentNode.removeChild(frame);
-        }
-        frame.contentWindow.addEventListener('afterprint', clean);
-        setTimeout(function () {
-          try {
-            frame.contentWindow.focus();
-            frame.contentWindow.print();
-          } catch (err) {
-            ctx.ui.toast('Could not open the print dialog.', true);
-            clean();
-          }
-        }, 300);
-        setTimeout(clean, 120000);
-      };
-
-      /* lets "Start new invoice" rebuild this section from scratch */
-      window.GLIME_OTHERS.__reopenInvoices = function () {
-        return window.GLIME_OTHERS.register && ctx.container && (function () {
-          return window.GLIME_OTHERS_REOPEN ? window.GLIME_OTHERS_REOPEN('invoices') : Promise.resolve();
-        })();
-      };
-
-      refresh();
-    }
+    render: renderInvoices
   });
 })();
