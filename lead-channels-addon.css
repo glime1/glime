@@ -1,0 +1,30 @@
+/* GLIME — Lead Linked Channels (Instagram + WhatsApp) */
+.lead-ch-section{margin:24px 0;padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:16px;background:#fff;color:#111827!important}
+.lead-ch-section *{color:#111827!important}
+.lead-ch-section h3{margin:0 0 12px;font-size:18px;font-weight:700}
+.lead-ch-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.lead-ch-chip{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:#f8fafc;min-width:0}
+.lead-ch-chip>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.lead-ch-chip b{font-size:13px}
+.lead-ch-chip span{font-size:12px;line-height:1.4;word-break:break-all}
+.lead-ch-chip.is-on{background:#ecfdf3;border-color:#bbf7d0}
+.lead-ch-chip.is-off{opacity:.75}
+.lead-ch-muted{opacity:.6}
+.lead-ch-dot{width:9px;height:9px;margin-top:5px;border-radius:50%;background:#9ca3af;flex:none}
+.lead-ch-chip.is-on .lead-ch-dot{background:#16a34a}
+.lead-ch-note{margin:12px 0 0;font-size:12.5px;line-height:1.5;opacity:.75}
+.lead-ch-pair{margin-top:14px;padding:15px;border:1px solid rgba(0,0,0,.08);border-radius:13px;background:#f8fafc}
+.lead-ch-pair-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.lead-ch-pair-head strong{display:block;font-size:15px}
+.lead-ch-pair-head small{font-size:11px;opacity:.65;text-transform:capitalize}
+.lead-ch-tag{padding:3px 8px;border-radius:999px;background:#eef0f3;font-size:10px;font-weight:700;text-transform:uppercase;white-space:nowrap}
+.lead-ch-tag-pending{background:#fef3c7}
+.lead-ch-tag-confirmed{background:#dff7ea}
+.lead-ch-pair-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin-top:11px;font-size:12px;word-break:break-all}
+.lead-ch-actions{display:flex;gap:9px;margin-top:13px;flex-wrap:wrap}
+@media(max-width:640px){
+  .lead-ch-section{padding:15px;border-radius:13px}
+  .lead-ch-chips,.lead-ch-pair-info{grid-template-columns:1fr}
+  .lead-ch-actions{flex-direction:column}
+  .lead-ch-actions button{width:100%}
+}
