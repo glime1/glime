@@ -5,20 +5,47 @@
 
    Deep link: others.html#invoices
 
-   Frontend only. It does not read or write any database table.
-   The invoice is built in the browser and printed / saved as PDF
-   through the browser's print dialog.
+   What it does
+   - Builds an invoice in the browser and prints / saves it as PDF.
+   - Logo / photo: the client can tick "Show my business logo" and/or
+     "Show my profile photo". The pictures are the ones already uploaded
+     in Settings > Profile (shared photo system, glime-avatar.js). They
+     are NOT shown in the options, only inside the invoice preview.
+   - WhatsApp invoices: the client chooses
+       auto    GLIME creates and sends invoices on WhatsApp automatically
+               (how it works today, so this is the default)
+       manual  nothing is sent automatically; the client makes each
+               invoice here and sends it
+     This is saved as a small settings object.
+
+   BACKEND CONTRACT for the saved settings (frontend is ready; until the
+   two RPCs exist the choice is kept on this device only and the page
+   says so):
+     rpc client_get_invoice_settings()  returns jsonb
+     rpc client_save_invoice_settings(p_settings jsonb)  returns jsonb
+   p_settings shape:
+     { "invoice_mode": "auto" | "manual",
+       "use_logo": boolean,
+       "use_owner_photo": boolean }
+   Both run as the signed-in client (client_id from auth.uid()). The
+   WhatsApp invoice job should skip automatic sending when
+   invoice_mode = "manual". The invoice itself is not stored anywhere.
 ========================================================= */
 (function () {
   'use strict';
   if (!window.GLIME_OTHERS) return;
 
   var STYLE_ID = 'othInvStyle';
+  var LS_KEY = 'glime_invoice_settings_';
 
   var PAPER_CSS =
     '.oi-paper{background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;padding:26px;border-radius:12px}' +
     '.oi-paper *{box-sizing:border-box}' +
     '.oi-paper .p-head{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;border-bottom:2px solid #0e7490;padding-bottom:14px;margin-bottom:16px}' +
+    '.oi-paper .p-brandrow{display:flex;align-items:center;gap:12px}' +
+    '.oi-paper .p-logo,.oi-paper .p-photo{width:58px;height:58px;object-fit:cover;flex:none;border:1px solid #e5e7eb;background:#fff}' +
+    '.oi-paper .p-logo{border-radius:12px}' +
+    '.oi-paper .p-photo{border-radius:50%}' +
     '.oi-paper .p-brand{font-size:19px;font-weight:800;color:#0b3b4a}' +
     '.oi-paper .p-muted{color:#6b7280;font-size:12px}' +
     '.oi-paper .p-title{text-align:right}' +
@@ -43,6 +70,17 @@
     '.oi textarea{resize:vertical;min-height:64px}' +
     '.oi input:focus,.oi textarea:focus{outline:2px solid rgba(14,116,144,.45);outline-offset:1px}' +
     '.oi h3{font-size:1.02rem;margin:0 0 12px}' +
+    '.oi .oi-sub{color:var(--mu);font-size:.78rem;margin:-6px 0 6px}' +
+    '.oi label.oi-opt{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0 0;cursor:pointer;color:var(--tx);font-weight:400;font-size:.86rem}' +
+    '.oi label.oi-opt.on{border-color:rgba(14,116,144,.6);background:rgba(14,116,144,.08)}' +
+    '.oi label.oi-opt.off{opacity:.6;cursor:default}' +
+    '.oi .oi-opt input{width:20px;height:20px;flex:none;padding:0;margin:2px 0 0;accent-color:#0e7490}' +
+    '.oi .oi-opt b{display:block;font-size:.88rem;font-weight:800}' +
+    '.oi .oi-opt em{display:block;font-style:normal;font-size:.74rem;color:var(--mu);margin-top:2px}' +
+    '.oi .oi-opt em a{color:inherit;text-decoration:underline}' +
+    '.oi .oi-note{font-size:.74rem;color:var(--mu);margin-top:10px;min-height:1em}' +
+    '.oi .oi-note.ok{color:var(--gr)}' +
+    'html[data-theme="light"] .oi .oi-note.ok{color:#047857}' +
     '.oi .oi-row{display:grid;grid-template-columns:1fr 70px 110px 110px 38px;gap:8px;align-items:center;margin-bottom:9px}' +
     '.oi .oi-amt{font-size:.84rem;font-weight:800;text-align:right;padding-right:4px}' +
     '.oi .oi-x{width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center}' +
@@ -90,12 +128,47 @@
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  function isMissingFn(err) {
+    var m = String((err && err.message) || '');
+    return !!err && (err.code === 'PGRST202' || err.code === '42883' || /could not find the function|does not exist|schema cache/i.test(m));
+  }
+
   async function renderInvoices(ctx) {
     injectStyle();
 
     var esc = ctx.ui.escapeHtml;
+    var sb = ctx.api.supabase;
     var client = ctx.state.client || {};
+    var clientId = client.client_id || '';
     var today = todayStr();
+
+    /* shared photo system (loaded by the app shell) */
+    var Photo = window.GlimePhoto || null;
+    if (Photo) { try { await Photo.ready(); } catch (e) { /* ignore */ } }
+
+    var cfg = { invoice_mode: 'auto', use_logo: false, use_owner_photo: false };
+
+    function readLocal() {
+      try { return JSON.parse(localStorage.getItem(LS_KEY + clientId) || 'null'); } catch (e) { return null; }
+    }
+
+    function mergeCfg(src) {
+      if (!src || typeof src !== 'object') return;
+      if (src.invoice_mode === 'auto' || src.invoice_mode === 'manual') cfg.invoice_mode = src.invoice_mode;
+      if (typeof src.use_logo === 'boolean') cfg.use_logo = src.use_logo;
+      if (typeof src.use_owner_photo === 'boolean') cfg.use_owner_photo = src.use_owner_photo;
+    }
+
+    mergeCfg(readLocal());
+    try {
+      var got = await sb.rpc('client_get_invoice_settings');
+      if (!got.error) mergeCfg(Array.isArray(got.data) ? got.data[0] : got.data);
+    } catch (e) { /* settings RPC not available yet: keep the local copy */ }
+
+    function photoUrl(type) {
+      if (!Photo || !clientId) return null;
+      try { return Photo.url(type, clientId) || null; } catch (e) { return null; }
+    }
 
     var data = {
       sellerName: client.business_name || client.name || '',
@@ -122,6 +195,15 @@
       return { sub: sub, disc: disc, tax: tax, total: taxable + tax };
     }
 
+    function brandImages() {
+      var h = '';
+      var logo = cfg.use_logo ? photoUrl('business') : null;
+      var owner = cfg.use_owner_photo ? photoUrl('owner') : null;
+      if (logo) h += '<img class="p-logo" src="' + esc(logo) + '" alt="" referrerpolicy="no-referrer">';
+      if (owner) h += '<img class="p-photo" src="' + esc(owner) + '" alt="" referrerpolicy="no-referrer">';
+      return h;
+    }
+
     function paperHtml() {
       var t = totals();
       var rows = '';
@@ -142,8 +224,9 @@
 
       return '<div class="oi-paper">' +
         '<div class="p-head">' +
-          '<div><div class="p-brand">' + (esc(data.sellerName) || 'Your business') + '</div>' +
-            '<div class="p-muted">' + nl(data.sellerInfo) + '</div></div>' +
+          '<div class="p-brandrow">' + brandImages() +
+            '<div><div class="p-brand">' + (esc(data.sellerName) || 'Your business') + '</div>' +
+            '<div class="p-muted">' + nl(data.sellerInfo) + '</div></div></div>' +
           '<div class="p-title"><b>INVOICE</b>' +
             '<div class="p-muted">No: ' + esc(data.invNo) + '</div>' +
             '<div class="p-muted">Date: ' + esc(prettyDate(data.invDate)) + '</div>' +
@@ -172,11 +255,31 @@
       }).join('');
     }
 
+    function brandOptionHtml(key, title, type, hint) {
+      var has = !!photoUrl(type);
+      var checked = cfg[key] && has;
+      return '<label class="oi-opt' + (checked ? ' on' : '') + (has ? '' : ' off') + '">' +
+        '<input type="checkbox" data-cfg="' + key + '"' + (checked ? ' checked' : '') + (has ? '' : ' disabled') + '>' +
+        '<span><b>' + title + '</b><em>' + (has ? hint : 'Not uploaded yet. Add it in <a href="settings.html">Settings &gt; Profile</a>.') + '</em></span></label>';
+    }
+
     ctx.container.innerHTML =
       '<div class="oi">' +
         '<div class="section-head">' +
           '<h2>Invoice Generator</h2>' +
           '<p>Create a clean invoice for your customer and save it as a PDF.</p>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h3>WhatsApp invoices</h3>' +
+          '<p class="oi-sub">Choose how invoices reach your customers.</p>' +
+          '<label class="oi-opt' + (cfg.invoice_mode === 'auto' ? ' on' : '') + '">' +
+            '<input type="radio" name="oiMode" value="auto"' + (cfg.invoice_mode === 'auto' ? ' checked' : '') + '>' +
+            '<span><b>Send automatically</b><em>GLIME creates the invoice on WhatsApp and sends it to your customer on its own.</em></span></label>' +
+          '<label class="oi-opt' + (cfg.invoice_mode === 'manual' ? ' on' : '') + '">' +
+            '<input type="radio" name="oiMode" value="manual"' + (cfg.invoice_mode === 'manual' ? ' checked' : '') + '>' +
+            '<span><b>I will create my own invoices</b><em>Nothing is sent automatically. You make each invoice below and send it yourself.</em></span></label>' +
+          '<div class="oi-note" id="oiSaveNote" role="status"></div>' +
         '</div>' +
 
         '<div class="card">' +
@@ -188,6 +291,8 @@
             '<div><label for="oiDate">Invoice date</label><input id="oiDate" type="date" data-k="invDate" value="' + esc(data.invDate) + '"></div>' +
             '<div><label for="oiDue">Due date (optional)</label><input id="oiDue" type="date" data-k="dueDate"></div>' +
           '</div>' +
+          brandOptionHtml('use_logo', 'Use my business logo on the invoice', 'business', 'Your logo from Settings &gt; Profile appears in the invoice preview.') +
+          brandOptionHtml('use_owner_photo', 'Use my profile picture on the invoice', 'owner', 'Your photo from Settings &gt; Profile appears in the invoice preview.') +
         '</div>' +
 
         '<div class="card">' +
@@ -224,6 +329,7 @@
     var itemsBox = root.querySelector('#oiItems');
     var sumBox = root.querySelector('#oiSum');
     var paperBox = root.querySelector('#oiPaper');
+    var noteBox = root.querySelector('#oiSaveNote');
 
     function refresh() {
       var t = totals();
@@ -233,6 +339,27 @@
       h += '<div class="g"><span>Total</span><span>' + money(t.total) + '</span></div>';
       sumBox.innerHTML = h;
       paperBox.innerHTML = paperHtml();
+    }
+
+    function setNote(text, ok) {
+      noteBox.textContent = text || '';
+      noteBox.className = 'oi-note' + (ok ? ' ok' : '');
+    }
+
+    var saveSeq = 0;
+    async function saveCfg() {
+      var mine = ++saveSeq;
+      try { localStorage.setItem(LS_KEY + clientId, JSON.stringify(cfg)); } catch (e) { /* ignore */ }
+      try {
+        var r = await sb.rpc('client_save_invoice_settings', { p_settings: cfg });
+        if (r.error) throw r.error;
+        if (mine === saveSeq) setNote('Saved.', true);
+      } catch (err) {
+        if (mine !== saveSeq) return;
+        setNote(isMissingFn(err)
+          ? 'Saved on this device. It will take effect on WhatsApp once invoice settings are switched on for your account.'
+          : ((err && err.message) || 'Could not save this choice. Please try again.'));
+      }
     }
 
     root.addEventListener('input', function (e) {
@@ -251,6 +378,25 @@
         var amtEl = row.querySelector('[data-amt]');
         if (amtEl) amtEl.textContent = money(num(items[i].q) * num(items[i].r));
         refresh();
+      }
+    });
+
+    root.addEventListener('change', function (e) {
+      var el = e.target;
+      if (el.name === 'oiMode') {
+        cfg.invoice_mode = el.value === 'manual' ? 'manual' : 'auto';
+        root.querySelectorAll('input[name="oiMode"]').forEach(function (r) {
+          r.closest('.oi-opt').classList.toggle('on', r.checked);
+        });
+        saveCfg();
+        return;
+      }
+      var key = el.getAttribute('data-cfg');
+      if (key) {
+        cfg[key] = !!el.checked;
+        el.closest('.oi-opt').classList.toggle('on', el.checked);
+        refresh();
+        saveCfg();
       }
     });
 
@@ -306,15 +452,25 @@
         if (frame.parentNode) frame.parentNode.removeChild(frame);
       }
       frame.contentWindow.addEventListener('afterprint', clean);
-      setTimeout(function () {
-        try {
-          frame.contentWindow.focus();
-          frame.contentWindow.print();
-        } catch (err) {
-          ctx.ui.toast('Could not open the print dialog.', true);
-          clean();
-        }
-      }, 300);
+
+      /* wait for the logo / photo to load before the print dialog opens */
+      var waits = Array.prototype.filter.call(fd.images, function (im) { return !im.complete; }).map(function (im) {
+        return new Promise(function (res) { im.onload = im.onerror = res; });
+      });
+      Promise.race([
+        Promise.all(waits),
+        new Promise(function (res) { setTimeout(res, 3000); })
+      ]).then(function () {
+        setTimeout(function () {
+          try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+          } catch (err) {
+            ctx.ui.toast('Could not open the print dialog.', true);
+            clean();
+          }
+        }, 200);
+      });
       setTimeout(clean, 120000);
     };
 
