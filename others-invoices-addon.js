@@ -1,91 +1,95 @@
 /* =========================================================
-   GLIME OTHERS > INVOICE GENERATOR  (automatic invoice settings)
+   GLIME OTHERS > INVOICE GENERATOR  (details for the automatic invoice)
    ---------------------------------------------------------
    Deep link: others.html#invoices
 
-   How invoices work in GLIME
-   - When an order's payment completes, GLIME sends the invoice to the
-     customer on WhatsApp by itself. The client does not make invoices
-     by hand.
-   - This tab is where the client sets WHAT appears on those invoices:
-     business name, address, GSTIN, mobile number, GST %, invoice number
-     prefix, notes, and whether the business logo and / or profile
-     picture is shown. The client saves it once; every automatic invoice
-     then uses it.
-   - The logo and picture are the ones already uploaded in
-     Settings > Profile (shared photo system, glime-avatar.js). They are
-     not shown in the options, only inside the invoice preview.
-   - The preview uses SAMPLE order data. Real invoices use the real order.
+   How invoices work in GLIME (already built in the backend)
+   - When a customer's payment is completed, the Edge Function
+     glime-razorpay-commerce-webhook sends the customer a WhatsApp
+     message and then an invoice PDF built by order-pdf.ts.
+   - The PDF header is read from:
+       table client_profile_details (columns)
+         business_display_name, contact_phone, contact_email,
+         address_line1, address_line2, city, state, postal_code, website
+         (falls back to client_data: business_name, phone, email)
+       logo: profile_media, entity_type "business" (Settings > Profile)
+   - This tab edits exactly those columns and shows a preview that
+     follows the PDF layout. Nothing else is stored here.
+   - The logo is not a setting: it appears automatically on every
+     invoice once it is uploaded in Settings > Profile.
 
-   BACKEND CONTRACT (frontend is ready; until the two RPCs exist the
-   settings are kept on this device only and the page says so):
-     rpc client_get_invoice_settings()  returns jsonb
-     rpc client_save_invoice_settings(p_settings jsonb)  returns jsonb
-   Both run as the signed-in client (client_id from auth.uid()).
-   p_settings shape:
-     { "business_name": text,
-       "business_info": text,        -- address and other lines
-       "gstin": text,
-       "phone": text,                -- mobile number shown on the invoice
-       "gst_percent": number 0-100,
-       "invoice_prefix": text,       -- e.g. "INV"
-       "notes": text,                -- footer / payment terms
-       "use_logo": boolean,          -- show business logo
-       "use_owner_photo": boolean }  -- show owner profile picture
-   The WhatsApp invoice job reads these when it builds an invoice. The
-   logo is profile_media entity_type "business" and the picture is
-   entity_type "owner" (see glime-avatar.js).
+   Invoice number (set by the system, the client cannot change it)
+     {CLIENT_ID}-{YYYYMMDD}        for example GLM-0006-20261121
+   The preview shows it read-only. The PDF generator and the numbering
+   are backend work (see the note in the page and in the reply).
+
+   BACKEND CONTRACT for saving (frontend is ready):
+   The client can only READ client_profile_details (RLS has a SELECT
+   policy only), so saving needs one function:
+     rpc client_save_invoice_profile(p_details jsonb)  returns jsonb
+   - client_id comes from auth.uid() (client_data.auth_user_id), never
+     from the browser
+   - upserts client_profile_details for that client and sets
+     updated_at / updated_by
+   - p_details keys (all text, trimmed; empty string = clear the value):
+       business_display_name, contact_phone, contact_email,
+       address_line1, address_line2, city, state, postal_code, website
+   Until it exists the page says saving is not switched on yet.
 ========================================================= */
 (function () {
   'use strict';
   if (!window.GLIME_OTHERS) return;
 
   var STYLE_ID = 'othInvStyle';
-  var LS_KEY = 'glime_invoice_settings_';
+
+  var COLS = ['business_display_name', 'contact_phone', 'contact_email', 'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'website'];
 
   var PAPER_CSS =
     '.oi-paper{background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;padding:26px;border-radius:12px}' +
     '.oi-paper *{box-sizing:border-box}' +
-    '.oi-paper .p-head{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;border-bottom:2px solid #0e7490;padding-bottom:14px;margin-bottom:16px}' +
-    '.oi-paper .p-brandrow{display:flex;align-items:center;gap:12px}' +
-    '.oi-paper .p-logo,.oi-paper .p-photo{width:58px;height:58px;object-fit:cover;flex:none;border:1px solid #e5e7eb;background:#fff}' +
-    '.oi-paper .p-logo{border-radius:12px}' +
-    '.oi-paper .p-photo{border-radius:50%}' +
-    '.oi-paper .p-brand{font-size:19px;font-weight:800;color:#0b3b4a}' +
-    '.oi-paper .p-muted{color:#6b7280;font-size:12px}' +
+    '.oi-paper .p-head{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;border-bottom:1px solid #dbdfe6;padding-bottom:14px;margin-bottom:16px}' +
+    '.oi-paper .p-brandrow{display:flex;align-items:flex-start;gap:12px}' +
+    '.oi-paper .p-logo{width:56px;height:56px;object-fit:contain;flex:none}' +
+    '.oi-paper .p-brand{font-size:18px;font-weight:800;color:#1c2130}' +
+    '.oi-paper .p-muted{color:#667085;font-size:12px}' +
     '.oi-paper .p-title{text-align:right}' +
-    '.oi-paper .p-title b{display:block;font-size:22px;letter-spacing:.08em;color:#0e7490;margin-bottom:4px}' +
-    '.oi-paper .p-lbl{font-size:10.5px;font-weight:800;letter-spacing:.12em;color:#6b7280;margin-bottom:3px}' +
-    '.oi-paper .p-bill{margin-bottom:16px}' +
+    '.oi-paper .p-title b{display:block;font-size:16px;letter-spacing:.06em;color:#1c2130}' +
+    '.oi-paper .p-badge{display:inline-block;margin-top:8px;border:1px solid #0d8c54;color:#0d8c54;font-weight:800;font-size:11px;padding:2px 12px}' +
+    '.oi-paper .p-lbl{font-size:10px;font-weight:800;letter-spacing:.12em;color:#667085;margin-bottom:4px}' +
+    '.oi-paper .p-two{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:16px}' +
+    '.oi-paper .p-two>div{flex:1 1 220px;min-width:0}' +
+    '.oi-paper .p-kv{display:flex;gap:10px;font-size:12px;margin-bottom:2px}' +
+    '.oi-paper .p-kv span{color:#667085;min-width:92px}' +
+    '.oi-paper .p-kv b{word-break:break-all}' +
     '.oi-paper .p-wrap{overflow-x:auto}' +
-    '.oi-paper table{width:100%;border-collapse:collapse;margin-bottom:14px;min-width:420px}' +
-    '.oi-paper th{background:#e6f6fa;color:#0b3b4a;text-align:left;font-size:11.5px;padding:8px 9px}' +
+    '.oi-paper table{width:100%;border-collapse:collapse;margin-bottom:12px;min-width:420px}' +
+    '.oi-paper th{background:#f2f4f8;color:#667085;text-align:left;font-size:10px;letter-spacing:.08em;padding:8px 9px}' +
     '.oi-paper td{padding:8px 9px;border-bottom:1px solid #e5e7eb;vertical-align:top}' +
     '.oi-paper .r{text-align:right}' +
     '.oi-paper .p-tot{margin-left:auto;width:100%;max-width:290px}' +
-    '.oi-paper .p-tot div{display:flex;justify-content:space-between;padding:4px 0}' +
-    '.oi-paper .p-tot .g{border-top:2px solid #0e7490;margin-top:5px;padding-top:8px;font-size:15px;font-weight:800;color:#0b3b4a}' +
-    '.oi-paper .p-notes{margin-top:18px;padding-top:12px;border-top:1px solid #e5e7eb;color:#374151;font-size:12px}';
+    '.oi-paper .p-tot div{display:flex;justify-content:space-between;padding:4px 0;color:#667085}' +
+    '.oi-paper .p-tot .g{border-top:1px solid #dbdfe6;margin-top:5px;padding-top:8px;font-size:14px;font-weight:800;color:#1c2130}' +
+    '.oi-paper .p-foot{display:flex;justify-content:space-between;margin-top:22px;padding-top:10px;border-top:1px solid #dbdfe6;color:#667085;font-size:11px}' +
+    '.oi-paper .p-glime{text-align:center;margin-top:12px;padding:8px 0;border-top:1px solid #d3dedc;border-bottom:1px solid #d3dedc;color:#667085;font-size:11px}' +
+    '.oi-paper .p-glime b{display:block;color:#0f8f87;font-size:13px;margin-top:2px}';
 
   var PAGE_CSS =
     '.oi .oi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}' +
     '.oi .oi-full{grid-column:1/-1}' +
     '.oi label{display:block;font-size:.72rem;font-weight:800;color:var(--mu);margin-bottom:5px}' +
-    '.oi input,.oi textarea{width:100%;background:transparent;color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;font:inherit;font-size:.86rem}' +
-    '.oi textarea{resize:vertical;min-height:64px}' +
-    '.oi input:focus,.oi textarea:focus{outline:2px solid rgba(14,116,144,.45);outline-offset:1px}' +
+    '.oi input{width:100%;background:transparent;color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;font:inherit;font-size:.86rem}' +
+    '.oi input:focus{outline:2px solid rgba(14,116,144,.45);outline-offset:1px}' +
     '.oi small{display:block;color:var(--mu);font-size:.7rem;margin-top:4px}' +
     '.oi h3{font-size:1.02rem;margin:0 0 12px}' +
     '.oi .oi-sub{color:var(--mu);font-size:.78rem;margin:-6px 0 12px}' +
     '.oi .oi-info{border:1px solid var(--bd);border-radius:14px;padding:13px 14px;margin-bottom:15px;font-size:.8rem;color:var(--mu);background:var(--surf)}' +
     '.oi .oi-info b{color:var(--tx)}' +
-    '.oi label.oi-opt{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0 0;cursor:pointer;color:var(--tx);font-weight:400;font-size:.86rem}' +
-    '.oi label.oi-opt.on{border-color:rgba(14,116,144,.6);background:rgba(14,116,144,.08)}' +
-    '.oi label.oi-opt.off{opacity:.6;cursor:default}' +
-    '.oi .oi-opt input{width:20px;height:20px;flex:none;padding:0;margin:2px 0 0;accent-color:#0e7490}' +
-    '.oi .oi-opt b{display:block;font-size:.88rem;font-weight:800}' +
-    '.oi .oi-opt em{display:block;font-style:normal;font-size:.74rem;color:var(--mu);margin-top:2px}' +
-    '.oi .oi-opt em a{color:inherit;text-decoration:underline}' +
+    '.oi .oi-info code{font-family:inherit;font-weight:800;color:var(--tx)}' +
+    '.oi .oi-logo{display:flex;gap:12px;align-items:center;border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:14px;font-size:.82rem}' +
+    '.oi .oi-logo em{display:block;font-style:normal;font-size:.74rem;color:var(--mu);margin-top:2px}' +
+    '.oi .oi-logo a{color:inherit;text-decoration:underline}' +
+    '.oi .oi-dot{flex:none;width:10px;height:10px;border-radius:50%;background:#19e68c}' +
+    '.oi .oi-dot.off{background:#9aa5b1}' +
     '.oi .oi-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}' +
     '.oi .oi-note{font-size:.76rem;color:var(--mu);min-height:1em}' +
     '.oi .oi-note.ok{color:var(--gr)}.oi .oi-note.err{color:var(--rd)}' +
@@ -93,7 +97,7 @@
     'html[data-theme="light"] .oi .oi-note.err{color:#c62828}' +
     '@media(max-width:760px){' +
       '.oi .oi-grid{grid-template-columns:1fr}' +
-      '.oi input,.oi textarea{font-size:16px}' +
+      '.oi input{font-size:16px}' +
       '.oi .oi-paper{padding:18px}' +
     '}';
 
@@ -105,13 +109,13 @@
     document.head.appendChild(s);
   }
 
-  function num(v) {
-    var n = parseFloat(v);
-    return isFinite(n) && n > 0 ? n : 0;
+  function money(n) {
+    return 'Rs. ' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function money(n) {
-    return '\u20B9' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function yyyymmdd() {
+    var d = new Date();
+    return d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2);
   }
 
   function prettyToday() {
@@ -123,6 +127,8 @@
     return !!err && (err.code === 'PGRST202' || err.code === '42883' || /could not find the function|does not exist|schema cache/i.test(m));
   }
 
+  function t(v) { return String(v == null ? '' : v).trim(); }
+
   async function renderInvoices(ctx) {
     injectStyle();
 
@@ -131,136 +137,105 @@
     var client = ctx.state.client || {};
     var clientId = client.client_id || '';
 
-    /* shared photo system (loaded by the app shell) */
+    /* shared photo system (loaded by the app shell): used only to show the logo in the preview */
     var Photo = window.GlimePhoto || null;
     if (Photo) { try { await Photo.ready(); } catch (e) { /* ignore */ } }
 
-    var cfg = {
-      business_name: client.business_name || client.name || '',
-      business_info: '',
-      gstin: '',
-      phone: '',
-      gst_percent: 0,
-      invoice_prefix: 'INV',
-      notes: 'Thank you for your business.',
-      use_logo: false,
-      use_owner_photo: false
-    };
-
-    function mergeCfg(src) {
-      if (!src || typeof src !== 'object') return;
-      ['business_name', 'business_info', 'gstin', 'phone', 'invoice_prefix', 'notes'].forEach(function (k) {
-        if (typeof src[k] === 'string') cfg[k] = src[k];
-      });
-      if (src.gst_percent != null && isFinite(parseFloat(src.gst_percent))) cfg.gst_percent = parseFloat(src.gst_percent);
-      if (typeof src.use_logo === 'boolean') cfg.use_logo = src.use_logo;
-      if (typeof src.use_owner_photo === 'boolean') cfg.use_owner_photo = src.use_owner_photo;
-    }
-
-    try { mergeCfg(JSON.parse(localStorage.getItem(LS_KEY + clientId) || 'null')); } catch (e) { /* ignore */ }
+    /* current values: the same sources the invoice PDF reads */
+    var cpd = {}, cd = {};
     try {
-      var got = await sb.rpc('client_get_invoice_settings');
-      if (!got.error) mergeCfg(Array.isArray(got.data) ? got.data[0] : got.data);
-    } catch (e) { /* settings RPC not available yet: keep the local copy */ }
+      var r1 = await sb.from('client_profile_details').select(COLS.join(',')).eq('client_id', clientId).maybeSingle();
+      if (!r1.error && r1.data) cpd = r1.data;
+    } catch (e) { /* ignore */ }
+    try {
+      var r2 = await sb.from('client_data').select('business_name,project_name,client_name,phone,email').eq('client_id', clientId).maybeSingle();
+      if (!r2.error && r2.data) cd = r2.data;
+    } catch (e) { /* ignore */ }
 
-    function photoUrl(type) {
+    var v = {};
+    COLS.forEach(function (k) { v[k] = t(cpd[k]); });
+    if (!v.business_display_name) v.business_display_name = t(cd.business_name) || t(cd.project_name) || t(cd.client_name) || t(client.business_name) || t(client.name);
+    if (!v.contact_phone) v.contact_phone = t(cd.phone);
+    if (!v.contact_email) v.contact_email = t(cd.email);
+
+    function logoUrl() {
       if (!Photo || !clientId) return null;
-      try { return Photo.url(type, clientId) || null; } catch (e) { return null; }
+      try { return Photo.url('business', clientId) || null; } catch (e) { return null; }
     }
 
-    function nl(v) { return esc(v).replace(/\n/g, '<br>'); }
-
-    function brandImages() {
-      var h = '';
-      var logo = cfg.use_logo ? photoUrl('business') : null;
-      var owner = cfg.use_owner_photo ? photoUrl('owner') : null;
-      if (logo) h += '<img class="p-logo" src="' + esc(logo) + '" alt="" referrerpolicy="no-referrer">';
-      if (owner) h += '<img class="p-photo" src="' + esc(owner) + '" alt="" referrerpolicy="no-referrer">';
-      return h;
-    }
-
-    /* Sample order, only for the preview */
-    var SAMPLE = [
-      { d: 'Sample product', q: 2, r: 500 },
-      { d: 'Sample service', q: 1, r: 1000 }
-    ];
+    function nl(x) { return esc(x); }
 
     function paperHtml() {
-      var sub = 0;
-      var rows = SAMPLE.map(function (it, i) {
-        var amt = it.q * it.r;
-        sub += amt;
-        return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.d) + '</td><td class="r">' + it.q +
-          '</td><td class="r">' + money(it.r) + '</td><td class="r">' + money(amt) + '</td></tr>';
-      }).join('');
-
-      var gst = Math.min(100, num(cfg.gst_percent));
-      var tax = sub * gst / 100;
-
-      var tot = '<div><span>Subtotal</span><span>' + money(sub) + '</span></div>';
-      if (gst > 0) tot += '<div><span>GST (' + esc(String(gst)) + '%)</span><span>' + money(tax) + '</span></div>';
-      tot += '<div class="g"><span>Total</span><span>' + money(sub + tax) + '</span></div>';
-
-      var lines = [];
-      if (String(cfg.business_info).trim()) lines.push(nl(cfg.business_info));
-      if (String(cfg.gstin).trim()) lines.push('GSTIN: ' + esc(cfg.gstin.trim()));
-      if (String(cfg.phone).trim()) lines.push('Phone: ' + esc(cfg.phone.trim()));
-
-      var prefix = String(cfg.invoice_prefix).trim();
+      var logo = logoUrl();
+      var addr = [v.address_line1, v.address_line2, v.city, v.state, v.postal_code].map(t).filter(Boolean).join(', ');
+      var contact = [v.contact_phone, v.contact_email].map(t).filter(Boolean).join('  |  ');
+      var invNo = clientId ? clientId + '-' + yyyymmdd() : '';
 
       return '<div class="oi-paper">' +
         '<div class="p-head">' +
-          '<div class="p-brandrow">' + brandImages() +
-            '<div><div class="p-brand">' + (esc(cfg.business_name) || 'Your business') + '</div>' +
-            '<div class="p-muted">' + lines.join('<br>') + '</div></div></div>' +
-          '<div class="p-title"><b>INVOICE</b>' +
-            '<div class="p-muted">No: ' + esc((prefix ? prefix + '-' : '') + '0001') + '</div>' +
-            '<div class="p-muted">Date: ' + esc(prettyToday()) + '</div>' +
-          '</div>' +
+          '<div class="p-brandrow">' +
+            (logo ? '<img class="p-logo" src="' + esc(logo) + '" alt="" referrerpolicy="no-referrer">' : '') +
+            '<div><div class="p-brand">' + (nl(v.business_display_name) || 'Your business') + '</div>' +
+            (addr ? '<div class="p-muted">' + nl(addr) + '</div>' : '') +
+            (contact ? '<div class="p-muted">' + nl(contact) + '</div>' : '') +
+            (t(v.website) ? '<div class="p-muted">' + nl(v.website) + '</div>' : '') +
+            '</div></div>' +
+          '<div class="p-title"><b>INVOICE</b><span class="p-badge">PAID</span></div>' +
         '</div>' +
-        '<div class="p-bill"><div class="p-lbl">BILL TO</div>' +
-          '<div><b>Sample Customer</b></div>' +
-          '<div class="p-muted">+91 98765 43210</div></div>' +
-        '<div class="p-wrap"><table><thead><tr><th>#</th><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>' +
-          '<tbody>' + rows + '</tbody></table></div>' +
-        '<div class="p-tot">' + tot + '</div>' +
-        (String(cfg.notes).trim() ? '<div class="p-notes"><div class="p-lbl">NOTES</div>' + nl(cfg.notes) + '</div>' : '') +
+        '<div class="p-two">' +
+          '<div><div class="p-lbl">INVOICE DETAILS</div>' +
+            '<div class="p-kv"><span>Invoice no.</span><b>' + esc(invNo) + '</b></div>' +
+            '<div class="p-kv"><span>Order no.</span><b>GLM-1A2B3C4D5E</b></div>' +
+            '<div class="p-kv"><span>Order date</span><b>' + esc(prettyToday()) + '</b></div>' +
+            '<div class="p-kv"><span>Paid on</span><b>' + esc(prettyToday()) + '</b></div>' +
+            '<div class="p-kv"><span>Payment method</span><b>UPI</b></div></div>' +
+          '<div><div class="p-lbl">DELIVER TO</div>' +
+            '<div><b>Sample Customer</b></div>' +
+            '<div class="p-muted">+91 98765 43210</div>' +
+            '<div class="p-muted">Sample address, City, State, 000000</div></div>' +
+        '</div>' +
+        '<div class="p-wrap"><table><thead><tr><th>ITEM</th><th class="r">QTY</th><th class="r">PRICE</th><th class="r">AMOUNT</th></tr></thead>' +
+          '<tbody><tr><td><b>Sample product</b></td><td class="r">2</td><td class="r">' + money(500) + '</td><td class="r"><b>' + money(1000) + '</b></td></tr></tbody></table></div>' +
+        '<div class="p-tot"><div><span>Subtotal</span><span>' + money(1000) + '</span></div>' +
+          '<div class="g"><span>Total</span><span>' + money(1000) + '</span></div>' +
+          '<div><span>Amount paid</span><span>' + money(1000) + '</span></div></div>' +
+        '<div class="p-foot"><span>Thank you for your order!</span><span>Page 1 of 1</span></div>' +
+        '<div class="p-glime">This is a computer-generated invoice issued by GLIME billing.<b>glime.online</b></div>' +
       '</div>';
     }
 
-    function brandOptionHtml(key, title, type, hint) {
-      var has = !!photoUrl(type);
-      var checked = cfg[key] && has;
-      return '<label class="oi-opt' + (checked ? ' on' : '') + (has ? '' : ' off') + '">' +
-        '<input type="checkbox" data-cfg="' + key + '"' + (checked ? ' checked' : '') + (has ? '' : ' disabled') + '>' +
-        '<span><b>' + title + '</b><em>' + (has ? hint : 'Not uploaded yet. Add it in <a href="settings.html">Settings &gt; Profile</a>.') + '</em></span></label>';
-    }
+    var hasLogo = !!logoUrl();
 
     ctx.container.innerHTML =
       '<div class="oi">' +
         '<div class="section-head">' +
           '<h2>Invoice Generator</h2>' +
-          '<p>Set what appears on your invoices.</p>' +
+          '<p>Set the details that appear on your invoices.</p>' +
         '</div>' +
 
-        '<div class="oi-info"><b>Invoices go out automatically.</b> As soon as a customer\u2019s payment is completed, GLIME creates the invoice and sends it on WhatsApp. ' +
-          'You only choose the details below once, and every invoice will use them.</div>' +
+        '<div class="oi-info"><b>Invoices go out automatically.</b> As soon as a customer\u2019s payment is completed, GLIME sends the invoice PDF on WhatsApp. ' +
+          'You only keep the details below up to date.<br><br>' +
+          '<b>Invoice number</b> is set by GLIME: your client ID and the date, for example <code>' + esc((clientId || 'GLM-0000') + '-' + yyyymmdd()) + '</code>. It cannot be changed, and it always shows which business an order belongs to.</div>' +
 
         '<div class="card">' +
           '<h3>Details on the invoice</h3>' +
           '<div class="oi-grid">' +
-            '<div><label for="oiName">Business name</label><input id="oiName" data-k="business_name" maxlength="120" value="' + esc(cfg.business_name) + '"></div>' +
-            '<div><label for="oiPhone">Mobile number</label><input id="oiPhone" data-k="phone" type="tel" inputmode="tel" maxlength="20" placeholder="+91 98765 43210" value="' + esc(cfg.phone) + '"><small>Shown on the invoice so customers can reach you.</small></div>' +
-            '<div class="oi-full"><label for="oiInfo">Address and other lines (optional)</label><textarea id="oiInfo" data-k="business_info" maxlength="400">' + esc(cfg.business_info) + '</textarea></div>' +
-            '<div><label for="oiGstin">GSTIN (optional)</label><input id="oiGstin" data-k="gstin" maxlength="20" autocapitalize="characters" value="' + esc(cfg.gstin) + '"></div>' +
-            '<div><label for="oiGst">GST %</label><input id="oiGst" data-k="gst_percent" type="number" min="0" max="100" step="any" inputmode="decimal" value="' + esc(String(cfg.gst_percent)) + '"></div>' +
-            '<div><label for="oiPrefix">Invoice number prefix</label><input id="oiPrefix" data-k="invoice_prefix" maxlength="10" value="' + esc(cfg.invoice_prefix) + '"><small>For example INV gives INV-0001.</small></div>' +
-            '<div class="oi-full"><label for="oiNotes">Notes / payment terms (optional)</label><textarea id="oiNotes" data-k="notes" maxlength="400">' + esc(cfg.notes) + '</textarea></div>' +
+            '<div class="oi-full"><label for="oiName">Business name</label><input id="oiName" data-k="business_display_name" maxlength="120" value="' + esc(v.business_display_name) + '"></div>' +
+            '<div><label for="oiPhone">Mobile number</label><input id="oiPhone" data-k="contact_phone" type="tel" inputmode="tel" maxlength="20" placeholder="+91 98765 43210" value="' + esc(v.contact_phone) + '"></div>' +
+            '<div><label for="oiEmail">Email</label><input id="oiEmail" data-k="contact_email" type="email" inputmode="email" maxlength="120" value="' + esc(v.contact_email) + '"></div>' +
+            '<div class="oi-full"><label for="oiA1">Address line 1</label><input id="oiA1" data-k="address_line1" maxlength="160" value="' + esc(v.address_line1) + '"></div>' +
+            '<div class="oi-full"><label for="oiA2">Address line 2 (optional)</label><input id="oiA2" data-k="address_line2" maxlength="160" value="' + esc(v.address_line2) + '"></div>' +
+            '<div><label for="oiCity">City</label><input id="oiCity" data-k="city" maxlength="80" value="' + esc(v.city) + '"></div>' +
+            '<div><label for="oiState">State</label><input id="oiState" data-k="state" maxlength="80" value="' + esc(v.state) + '"></div>' +
+            '<div><label for="oiPin">PIN / postal code</label><input id="oiPin" data-k="postal_code" maxlength="10" inputmode="text" value="' + esc(v.postal_code) + '"></div>' +
+            '<div><label for="oiWeb">Website (optional)</label><input id="oiWeb" data-k="website" type="url" inputmode="url" maxlength="200" placeholder="https://" value="' + esc(v.website) + '"></div>' +
           '</div>' +
-          brandOptionHtml('use_logo', 'Use my business logo on the invoice', 'business', 'Your logo from Settings &gt; Profile appears on every invoice.') +
-          brandOptionHtml('use_owner_photo', 'Use my profile picture on the invoice', 'owner', 'Your photo from Settings &gt; Profile appears on every invoice.') +
+          '<div class="oi-logo"><span class="oi-dot' + (hasLogo ? '' : ' off') + '"></span><div>' +
+            '<b>' + (hasLogo ? 'Your business logo is on every invoice' : 'No business logo yet') + '</b>' +
+            '<em>' + (hasLogo ? 'Change it any time in <a href="settings.html">Settings &gt; Profile</a>.' : 'Upload it in <a href="settings.html">Settings &gt; Profile</a> and it will appear on every invoice automatically.') + '</em>' +
+          '</div></div>' +
           '<div class="oi-actions">' +
-            '<button type="button" class="btn primary" id="oiSave">Save invoice settings</button>' +
+            '<button type="button" class="btn primary" id="oiSave">Save invoice details</button>' +
             '<span class="oi-note" id="oiNote" role="status"></span>' +
           '</div>' +
         '</div>' +
@@ -287,68 +262,46 @@
     root.addEventListener('input', function (e) {
       var k = e.target.getAttribute('data-k');
       if (!k) return;
-      if (k === 'gst_percent') {
-        var n = parseFloat(e.target.value);
-        cfg.gst_percent = isFinite(n) ? n : 0;
-      } else if (k === 'invoice_prefix') {
-        var v = e.target.value.replace(/[^A-Za-z0-9-]/g, '').slice(0, 10);
-        if (e.target.value !== v) e.target.value = v;
-        cfg.invoice_prefix = v;
-      } else {
-        cfg[k] = e.target.value;
-      }
-      setNote('');
-      refresh();
-    });
-
-    root.addEventListener('change', function (e) {
-      var key = e.target.getAttribute('data-cfg');
-      if (!key) return;
-      cfg[key] = !!e.target.checked;
-      e.target.closest('.oi-opt').classList.toggle('on', e.target.checked);
+      v[k] = e.target.value;
       setNote('');
       refresh();
     });
 
     saveBtn.onclick = async function () {
-      var gst = parseFloat(cfg.gst_percent);
-      if (!isFinite(gst) || gst < 0 || gst > 100) {
-        setNote('GST % must be between 0 and 100.', 'err');
-        return;
-      }
-      if (String(cfg.phone).trim() && !/^\+?[0-9 ()-]{7,20}$/.test(String(cfg.phone).trim())) {
-        setNote('Please enter a valid mobile number.', 'err');
-        return;
-      }
+      var payload = {};
+      COLS.forEach(function (k) { payload[k] = t(v[k]); });
 
-      var payload = {
-        business_name: String(cfg.business_name).trim(),
-        business_info: String(cfg.business_info).trim(),
-        gstin: String(cfg.gstin).trim().toUpperCase(),
-        phone: String(cfg.phone).trim(),
-        gst_percent: gst,
-        invoice_prefix: String(cfg.invoice_prefix).trim(),
-        notes: String(cfg.notes).trim(),
-        use_logo: !!cfg.use_logo && !!photoUrl('business'),
-        use_owner_photo: !!cfg.use_owner_photo && !!photoUrl('owner')
-      };
+      if (payload.contact_phone && !/^\+?[0-9 ()-]{7,20}$/.test(payload.contact_phone)) {
+        setNote('Please enter a valid mobile number.', 'err'); return;
+      }
+      if (payload.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.contact_email)) {
+        setNote('Please enter a valid email address.', 'err'); return;
+      }
+      if (payload.postal_code && !/^[A-Za-z0-9 -]{3,10}$/.test(payload.postal_code)) {
+        setNote('Please enter a valid PIN / postal code.', 'err'); return;
+      }
+      if (payload.website && !/^https?:\/\//i.test(payload.website)) {
+        payload.website = 'https://' + payload.website;
+        v.website = payload.website;
+        root.querySelector('#oiWeb').value = payload.website;
+      }
 
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
       setNote('');
-      try { localStorage.setItem(LS_KEY + clientId, JSON.stringify(payload)); } catch (e) { /* ignore */ }
       try {
-        var r = await sb.rpc('client_save_invoice_settings', { p_settings: payload });
+        var r = await sb.rpc('client_save_invoice_profile', { p_details: payload });
         if (r.error) throw r.error;
         setNote('Saved. Your next invoices will use these details.', 'ok');
-        ctx.ui.toast('Invoice settings saved');
+        ctx.ui.toast('Invoice details saved');
+        refresh();
       } catch (err) {
         setNote(isMissingFn(err)
-          ? 'Saved on this device. It will apply to your WhatsApp invoices once invoice settings are switched on for your account.'
-          : ((err && err.message) || 'Could not save. Please try again.'), isMissingFn(err) ? '' : 'err');
+          ? 'Saving is not switched on for your account yet, so nothing was changed.'
+          : ((err && err.message) || 'Could not save. Please try again.'), 'err');
       }
       saveBtn.disabled = false;
-      saveBtn.textContent = 'Save invoice settings';
+      saveBtn.textContent = 'Save invoice details';
     };
 
     refresh();
