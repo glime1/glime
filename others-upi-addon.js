@@ -2,7 +2,7 @@
   'use strict';
   if (!window.GLIME_OTHERS) return;
 
-  var APK_URL = 'https://github.com/glime1/glime-apk/releases/latest/download/app-debug.apk';
+  var APK_URL = 'https://github.com/glime1/glime-companion/releases/latest/download/glime-companion.apk';
 
   var ERRORS = {
     UPI_LOCKED: 'This feature is locked. Only the GLIME admin can enable it.',
