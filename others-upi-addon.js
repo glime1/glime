@@ -22,6 +22,7 @@
     render: async function (ctx) {
       var container = ctx.container, api = ctx.api, ui = ctx.ui, esc = ui.escapeHtml;
       var sb = api.supabase;
+      var agreed = false;
 
       async function load() {
         var r = await sb.rpc('get_my_upi_settings');
@@ -52,15 +53,37 @@
           '<label style="display:flex;gap:8px;align-items:center"><input id="upiEnabled" type="checkbox"' + (s.enabled ? ' checked' : '') + '> Enable direct UPI payments</label>' +
           '<button id="upiSave" class="btn">Save</button>' +
           '<hr>' +
-          '<h4 style="margin:0">GLIME Companion app (Android)</h4>' +
-          '<p style="margin:0">Install the Companion app on the phone that receives your bank SMS / UPI alerts, then paste the device token there. Last seen: ' + esc(seen) + '.</p>' +
-          '<a id="upiApk" class="btn" href="' + APK_URL + '" download style="text-align:center;text-decoration:none">Download Companion app (APK)</a>' +
+          '<h4 style="margin:0">GLIME UPI Pay (Android)</h4>' +
+          '<p style="margin:0">Install GLIME UPI Pay on the phone that receives your bank SMS / UPI alerts, then paste the device token there. Last seen: ' + esc(seen) + '.</p>' +
+          '<label style="display:flex;gap:8px;align-items:flex-start"><input id="upiAgree" type="checkbox" style="margin-top:3px"' + (agreed ? ' checked' : '') + '> <span>I understand that GLIME UPI Pay is used only to verify my customers’ payments.</span></label>' +
+          '<a id="upiApk" class="btn" style="text-align:center;text-decoration:none">Download GLIME UPI Pay</a>' +
           '<p style="margin:0;font-size:13px;opacity:.8">If Google Play Protect shows "App blocked", open Play Store → profile → Play Protect → settings and turn off "Scan apps with Play Protect", install the app, then turn it back on.</p>' +
           (newToken
             ? '<div><p style="margin:0 0 6px"><b>Copy this token now. It will not be shown again.</b></p><input id="upiTok" readonly style="width:100%" value="' + esc(newToken) + '"><button id="upiCopy" class="btn" style="margin-top:6px">Copy token</button></div>'
             : '') +
           '<button id="upiRotate" class="btn">' + (s.token_set ? 'Generate a new token' : 'Generate device token') + '</button>' +
           '</div>';
+
+        var agree = container.querySelector('#upiAgree');
+        var dl = container.querySelector('#upiApk');
+        function syncDownload() {
+          agreed = agree.checked;
+          if (agreed) {
+            dl.setAttribute('href', APK_URL);
+            dl.setAttribute('download', '');
+            dl.style.opacity = '';
+            dl.style.pointerEvents = '';
+            dl.removeAttribute('aria-disabled');
+          } else {
+            dl.removeAttribute('href');
+            dl.removeAttribute('download');
+            dl.style.opacity = '.45';
+            dl.style.pointerEvents = 'none';
+            dl.setAttribute('aria-disabled', 'true');
+          }
+        }
+        agree.onchange = syncDownload;
+        syncDownload();
 
         container.querySelector('#upiSave').onclick = async function () {
           var r = await sb.rpc('save_my_upi_settings', {
