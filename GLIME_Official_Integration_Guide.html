@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Integration Guide | GLIME</title>
-<meta name="description" content="Official GLIME guide to connecting WhatsApp Business, Instagram, Razorpay, Google, Shopify and AI assistants securely with OAuth, plus Direct UPI Payments, the AI Website Generator, Broadcast and Quick Buttons.">
+<meta name="description" content="Official GLIME guide to connecting WhatsApp Business, Instagram, Razorpay, Google, Shopify and AI assistants securely with OAuth, plus Direct UPI Payments, the AI Website Generator, Broadcast, Quick Buttons, Webhooks, Telegram alerts and the Creator Program.">
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <style>
 :root{--bg:#071016;--surf:#101b29;--surf2:#0b1520;--bd:rgba(184,222,234,.13);--tx:#f4fbfd;--mu:#9cabb9;--cy:#52e8ff;--gr:#50f5a8;--rd:#ff8291;--am:#ffcc66}
@@ -13,6 +13,8 @@ html{scroll-behavior:smooth;scroll-padding-top:84px}
 body{background:radial-gradient(circle at 90% 0,rgba(82,232,255,.07),transparent 36%),radial-gradient(circle at 0 0,rgba(80,245,168,.06),transparent 34%),var(--bg);color:var(--tx);font-family:Manrope,Poppins,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;line-height:1.7;font-size:16px}
 a{color:var(--cy);text-decoration:none}a:hover{text-decoration:underline}
 code{background:#090d13;border:1px solid var(--bd);border-radius:6px;padding:1px 6px;font-size:.86em;font-family:ui-monospace,Consolas,monospace;color:#cbd5e1}
+pre{background:#090d13;border:1px solid var(--bd);border-radius:12px;padding:14px 16px;overflow-x:auto;margin:0 0 16px;line-height:1.55}
+pre code{background:none;border:0;padding:0;font-size:.84rem}
 .top{position:sticky;top:0;z-index:30;background:rgba(7,16,22,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd)}
 .top-in{max-width:1280px;margin:auto;padding:10px 18px;display:flex;align-items:center;gap:14px}
 .brand{display:flex;align-items:center;gap:10px;color:var(--tx);font-weight:800}.brand:hover{text-decoration:none}
@@ -82,7 +84,7 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
  .flow div:not(:last-child):after{display:none}
  .top .pill{display:none}
 }
-@media print{.top,.toc,footer nav{display:none}.layout{display:block}body{background:#fff;color:#000}p,li,td,th{color:#000}.card,.call,.steps li,.tw,details{background:#fff;border-color:#bbb}h2,h3,a{color:#000}}
+@media print{.top,.toc,footer nav{display:none}.layout{display:block}body{background:#fff;color:#000}p,li,td,th{color:#000}.card,.call,.steps li,.tw,details{background:#fff;border-color:#bbb}h2,h3,a{color:#000}pre{background:#fff;border-color:#bbb}}
 </style>
 </head>
 <body>
@@ -121,14 +123,18 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
   <a href="#website">13. AI Website Generator</a>
   <a href="#broadcast">14. Broadcast</a>
   <a href="#quick">15. Quick Buttons</a>
+  <a href="#webhooks">16. Webhooks</a>
+  <div class="grp">ALERTS &amp; PROGRAMS</div>
+  <a href="#telegram">17. Telegram notifications</a>
+  <a href="#creator">18. Creator Program</a>
   <div class="grp">MORE INTEGRATIONS</div>
-  <a href="#more">16. Shiprocket &amp; coming soon</a>
+  <a href="#more">19. Shiprocket &amp; coming soon</a>
   <div class="grp">OPERATIONS</div>
-  <a href="#manage">17. Managing &amp; disconnecting</a>
-  <a href="#trouble">18. Troubleshooting</a>
-  <a href="#faq">19. FAQ</a>
-  <a href="#glossary">20. Glossary</a>
-  <a href="#support">21. Support &amp; resources</a>
+  <a href="#manage">20. Managing &amp; disconnecting</a>
+  <a href="#trouble">21. Troubleshooting</a>
+  <a href="#faq">22. FAQ</a>
+  <a href="#glossary">23. Glossary</a>
+  <a href="#support">24. Support &amp; resources</a>
 </nav>
 
 <main>
@@ -136,11 +142,11 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 <div class="hero">
   <div class="eyebrow">OFFICIAL DOCUMENTATION</div>
   <h1>GLIME Integration Guide</h1>
-  <p class="lead">Everything you need to connect WhatsApp Business, Instagram, Razorpay and your other business tools to GLIME safely, and to grow with Direct UPI Payments, the AI Website Generator, Broadcast and Quick Buttons. Every connection uses the provider's own secure sign-in. You never give GLIME your passwords.</p>
+  <p class="lead">Everything you need to connect WhatsApp Business, Instagram, Razorpay and your other business tools to GLIME safely, and to grow with Direct UPI Payments, the AI Website Generator, Broadcast, Quick Buttons, Webhooks, Telegram alerts and the Creator Program. Every connection uses the provider's own secure sign-in. You never give GLIME your passwords.</p>
   <div class="meta">
     <span class="chip g">OAuth-based connections</span>
     <span class="chip c">Beginner friendly</span>
-    <span class="chip">Version 1.1</span>
+    <span class="chip">Version 1.2</span>
     <span class="chip">Updated November 2026</span>
   </div>
 </div>
@@ -166,6 +172,9 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
       <tr><td><b>AI Website Generator</b></td><td>Build, publish and track your business website</td><td>Others → Website Generator</td><td><span class="chip g">Available</span></td></tr>
       <tr><td><b>Broadcast</b></td><td>Send an approved template to your saved leads and track results</td><td>Settings → Broadcast</td><td><span class="chip g">Available</span></td></tr>
       <tr><td><b>Quick Buttons</b></td><td>Tap-menus for WhatsApp and Instagram customers</td><td>Settings → Quick Buttons</td><td><span class="chip g">Available</span></td></tr>
+      <tr><td><b>Webhooks</b></td><td>Send GLIME events to other apps and receive payments from your own gateway</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
+      <tr><td><b>Telegram</b></td><td>Daily report, new leads, orders and alerts on Telegram</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
+      <tr><td><b>Creator Program</b></td><td>Sell your own course through GLIME</td><td>Settings → Connector</td><td><span class="chip a">Approval required</span></td></tr>
       <tr><td><b>Shiprocket Cargo</b></td><td>Shipping connector</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
       <tr><td>Gmail, Google Drive, Slack</td><td>Planned</td><td>-</td><td><span class="chip c">Coming soon</span></td></tr>
     </tbody>
@@ -210,7 +219,7 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
       <tr><td><b>API secrets</b></td><td>The GLIME web app contains no provider secrets. Provider authorization is handled by GLIME's backend, and the browser only receives the sign-in address.</td></tr>
       <tr><td><b>Permissions</b></td><td>Where a connector has permissions, you can switch each one ON or OFF. Changes apply immediately and are enforced on the server, not just in the page.</td></tr>
       <tr><td><b>Honest status</b></td><td>A connector is shown as Connected only when GLIME's real data confirms it.</td></tr>
-      <tr><td><b>Your payments</b></td><td>Orders are marked Paid only when the payment provider confirms them. They cannot be marked paid by hand.</td></tr>
+      <tr><td><b>Your payments</b></td><td>Orders are marked Paid only when a payment is confirmed, either by the payment provider or by a correctly signed webhook notification from your own gateway (<a href="#webhooks">Section 16</a>). They cannot be marked paid by hand.</td></tr>
       <tr><td><b>Secure transport</b></td><td>GLIME runs on HTTPS. Only connect when the address bar shows a secure connection.</td></tr>
     </tbody>
   </table></div>
@@ -224,7 +233,7 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
     </tr></tbody>
   </table></div>
 
-  <div class="call bad"><b class="t">NEVER SHARE</b><p>Never share passwords, OTPs, UPI PINs, API keys, Key Secrets, webhook secrets or access tokens with anyone, including GLIME support. GLIME will never ask for them. Never paste them into chats, DMs, email, AI chat, the Knowledge Base, service descriptions or notes.</p></div>
+  <div class="call bad"><b class="t">NEVER SHARE</b><p>Never share passwords, OTPs, UPI PINs, API keys, Key Secrets, webhook secrets, signing secrets or access tokens with anyone, including GLIME support. GLIME will never ask for them. Never paste them into chats, DMs, email, AI chat, the Knowledge Base, service descriptions or notes.</p></div>
 
   <p>See also: <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms</a> · <a href="data-deletion.html">Data deletion</a></p>
 </section>
@@ -420,7 +429,7 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 
   <h3>How GLIME handles payments</h3>
   <ul>
-    <li>In <b>Orders</b>, a payment shows as <b>Paid</b> only when the payment provider confirms it. You cannot mark an order paid by hand. The order form only offers “No online payment needed” or “Payment pending”.</li>
+    <li>In <b>Orders</b>, a payment shows as <b>Paid</b> only when the payment is confirmed, either by the payment provider or by a correctly signed webhook notification from your own gateway (<a href="#webhooks">Section 16</a>). You cannot mark an order paid by hand. The order form only offers “No online payment needed” or “Payment pending”.</li>
     <li>Open an order and check <b>Payment</b>. Each recorded payment shows status, amount, method, provider, <b>Transaction ID</b>, time, and <b>Verification</b>: <b>✓ Verified</b> (signature checked) and <b>✓ Reconciled</b>.</li>
     <li>If no payment is recorded, treat the order as <b>unpaid</b>.</li>
   </ul>
@@ -616,8 +625,124 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 </section>
 
 <!-- 16 -->
-<section id="more">
+<section id="webhooks">
   <div class="sec-n">SECTION 16</div>
+  <h2>Webhooks</h2>
+  <p>Webhooks connect GLIME to thousands of other apps. You can send GLIME events out to tools such as Zapier, Make and n8n, or to your own server, and you can also receive payments from your own payment gateway.</p>
+
+  <h3>Where to find it</h3>
+  <p>Open <b>Settings → Connector</b> and find the <b>Webhooks</b> card under <b>Automation</b>. Click <b>Connect</b> to open it. The card has two modes: <b>Send events</b> and <b>Receive payments</b>.</p>
+
+  <div class="cards">
+    <div class="card"><span class="ic">📤</span><h4>Send events</h4><p>Send new leads, orders, payments and messages from GLIME to Zapier, Make, n8n or your own server.</p></div>
+    <div class="card"><span class="ic">💳</span><h4>Receive payments</h4><p>Take payments through your own payment gateway. The money goes straight to your own account and GLIME marks the order as paid.</p></div>
+  </div>
+
+  <h3>Receive payments from another application</h3>
+  <p>Receive payments works with any platform, through Zapier, Make, n8n or your own server. The screen offers guides for gateways such as Stripe, Cashfree, PhonePe and PayPal. <b>The money goes straight to your own account. GLIME only marks the order as paid.</b></p>
+
+  <ol class="steps">
+    <li>In the Receive payments tab, create an endpoint and copy the <b>URL</b> and the <b>signing secret</b>.</li>
+    <li>In Zapier, Make or n8n, catch the payment from your gateway, then send a <b>POST</b> request to the URL with the JSON shown below.</li>
+    <li>Add the header <code>X-GLIME-Signature</code> with the value <code>sha256=</code> followed by the <b>HMAC-SHA256</b> of the raw request body, made with your signing secret.</li>
+  </ol>
+
+  <h3>Payment message format</h3>
+<pre><code>{
+  "event": "payment.paid",
+  "order_number": "GLM-XXXXXXXX",
+  "amount": 299,
+  "currency": "INR",
+  "payment_id": "pay_123"
+}</code></pre>
+  <div class="tw"><table>
+    <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>event</code></td><td>Use <code>payment.paid</code> when a payment is successful.</td></tr>
+      <tr><td><code>order_number</code></td><td>The GLIME order number the payment belongs to.</td></tr>
+      <tr><td><code>amount</code></td><td>The amount that was paid.</td></tr>
+      <tr><td><code>currency</code></td><td>The currency, for example INR.</td></tr>
+      <tr><td><code>payment_id</code></td><td>Your gateway's ID for this payment.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="call bad"><b class="t">KEEP YOUR SIGNING SECRET PRIVATE</b><p>The signing secret proves that a payment message really comes from you. Never share it with anyone, never paste it into chats or documents, and only use it inside your own automation tool or server.</p></div>
+  <div class="call warn"><b class="t">STILL VERIFY</b><p>Use Webhooks only with a payment gateway you trust, and compare payments with your gateway dashboard as described in <a href="#verify">Section 9</a>.</p></div>
+</section>
+
+<!-- 17 -->
+<section id="telegram">
+  <div class="sec-n">SECTION 17</div>
+  <h2>Telegram notifications</h2>
+  <p>Get your daily business report, new leads, orders and alerts on Telegram, and ask the GLIME bot for your numbers whenever you need them. Telegram does not charge per message.</p>
+
+  <h3>Where to find it</h3>
+  <p>Open <b>Settings → Connector</b> and find the <b>Telegram</b> card under <b>Notifications</b>.</p>
+
+  <h3>Turn it on</h3>
+  <ol class="steps">
+    <li>On the Telegram card, click <b>Turn on</b>. The card shows <b>On ✓</b>.</li>
+    <li>Click <b>Open Telegram</b> to open the GLIME bot.</li>
+    <li>Ask the bot for your numbers at any time.</li>
+  </ol>
+
+  <h3>What you receive</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Update</th><th>What it contains</th></tr></thead>
+    <tbody>
+      <tr><td><b>Daily business report</b></td><td>A summary of your business.</td></tr>
+      <tr><td><b>New leads</b></td><td>A message when a new lead arrives.</td></tr>
+      <tr><td><b>Orders</b></td><td>A message for your orders.</td></tr>
+      <tr><td><b>Alerts</b></td><td>Important alerts from your GLIME account.</td></tr>
+      <tr><td><b>Ask the bot</b></td><td>Ask the GLIME bot for your numbers.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Turn it off</h3>
+  <p>Click <b>Turn off</b>. This only hides Telegram from your menu. Your Telegram connection and settings are not deleted.</p>
+</section>
+
+<!-- 18 -->
+<section id="creator">
+  <div class="sec-n">SECTION 18</div>
+  <h2>Creator Program</h2>
+  <p>The Creator Program lets you sell your own course through GLIME. You apply as a creator, and <b>Creator appears in your menu only after the GLIME team approves you.</b>
+
+  <div class="call warn"><b class="t">APPROVAL REQUIRED</b><p>You cannot sell courses until the GLIME team has reviewed and approved your application. Until then the Creator card shows <b>Not applied</b> or your application status.</p></div>
+
+  <h3>Where to find it</h3>
+  <p>Open <b>Settings → Connector</b> and find the <b>Creator</b> card under <b>Creator</b>.</p>
+
+  <h3>How to apply</h3>
+  <ol class="steps">
+    <li>On the Creator card, click <b>Apply as a creator</b>.</li>
+    <li>Fill in the application form (see below) and click <b>Submit application</b>. Click <b>Cancel</b> if you want to leave without applying.</li>
+    <li>GLIME gives you a <b>verification passcode</b>.</li>
+    <li>Add the passcode to your <b>Instagram bio</b> or <b>YouTube channel description</b> for 1 to 2 days, so the GLIME team can confirm the account is yours.</li>
+    <li>The GLIME team reviews your application.</li>
+    <li>After approval, the card shows <b>Approved ✓</b> and Creator appears in your menu. Click <b>Open Creator</b> to manage your course.</li>
+  </ol>
+
+  <h3>Application form</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Field</th><th>What to enter</th></tr></thead>
+    <tbody>
+      <tr><td><b>Your name</b></td><td>Your name.</td></tr>
+      <tr><td><b>Instagram profile link</b></td><td>Your Instagram profile link. Optional if you add a YouTube channel.</td></tr>
+      <tr><td><b>YouTube channel link</b></td><td>Your YouTube channel link. Optional if you add Instagram.</td></tr>
+      <tr><td><b>Total followers</b></td><td>Your total number of followers.</td></tr>
+      <tr><td><b>Category</b></td><td>Choose the category of your content from the list.</td></tr>
+      <tr><td><b>Course you want to sell</b></td><td>The course you plan to sell, for example “Learn AI tools in 7 days”.</td></tr>
+    </tbody>
+  </table></div>
+  <p>You must add at least one of the two links: Instagram or YouTube.</p>
+
+  <div class="call info"><b class="t">WHY A PASSCODE</b><p>The verification passcode protects real creators. It shows that the Instagram or YouTube account in your application is yours and not someone else's.</p></div>
+</section>
+
+<!-- 19 -->
+<section id="more">
+  <div class="sec-n">SECTION 19</div>
   <h2>Shiprocket Cargo and coming soon</h2>
   <h3>Shiprocket Cargo</h3>
   <p>A <b>Shiprocket Cargo</b> card is available at the bottom of <b>Settings → Connector</b>. Its card shows its own status and the steps to follow.</p>
@@ -626,9 +751,9 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
   <div class="call info"><b class="t">NOTE</b><p>Order shipping details can be entered manually on each order. No shipment is booked automatically unless a courier connection is active.</p></div>
 </section>
 
-<!-- 17 -->
+<!-- 20 -->
 <section id="manage">
-  <div class="sec-n">SECTION 17</div>
+  <div class="sec-n">SECTION 20</div>
   <h2>Managing and disconnecting integrations</h2>
   <div class="cards">
     <div class="card"><span class="ic">🛡️</span><h4>Review permissions</h4><p>On any connected card, switch permissions OFF to stop GLIME AI from using them. Changes apply immediately.</p></div>
@@ -650,9 +775,9 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
   </ol>
 </section>
 
-<!-- 18 -->
+<!-- 21 -->
 <section id="trouble">
-  <div class="sec-n">SECTION 18</div>
+  <div class="sec-n">SECTION 21</div>
   <h2>Troubleshooting</h2>
 
   <h3>General</h3>
@@ -707,38 +832,43 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
     <tr><td>“Shopify access needs attention. Reconnect to continue.”</td><td>Reconnect Shopify.</td></tr>
   </tbody></table></div>
 
-  <h3>Direct UPI Payments, Broadcast</h3>
+  <h3>Direct UPI Payments, Broadcast, Creator</h3>
   <div class="tw"><table><thead><tr><th>Symptom</th><th>What to do</th></tr></thead><tbody>
     <tr><td>Direct UPI Payments is not available on your account</td><td>It starts only after GLIME approves your business. Contact support to request approval.</td></tr>
     <tr><td>Payment links are not being sent</td><td>Your GLIME wallet balance may be too low for the 0.5% fee. Add balance on the Billing page.</td></tr>
     <tr><td>Broadcast says you have no approved template</td><td>Create a template on the Follow-up page, get it approved in Meta Business Manager, then press “Refresh status from Meta” in Template follow-ups.</td></tr>
+    <tr><td>Creator does not appear in your menu</td><td>Creator appears only after the GLIME team approves your application. Check that your verification passcode is visible in your Instagram bio or YouTube description.</td></tr>
   </tbody></table></div>
 </section>
 
-<!-- 19 -->
+<!-- 22 -->
 <section id="faq">
-  <div class="sec-n">SECTION 19</div>
+  <div class="sec-n">SECTION 22</div>
   <h2>Frequently asked questions</h2>
   <details><summary>Does GLIME know my Facebook, Instagram, Razorpay or Google password?</summary><p>No. You sign in on the provider's own site. GLIME receives only a limited-access token after you approve.</p></details>
   <details><summary>Where are my access tokens stored?</summary><p>On GLIME's servers, in encrypted form. They are never shown in your browser.</p></details>
   <details><summary>Do I need to enter my Razorpay Key ID or Key Secret?</summary><p>No. Razorpay connects through OAuth. Never share your Key Secret with anyone.</p></details>
-  <details><summary>Can GLIME mark an order as paid?</summary><p>Orders become Paid only when the payment provider confirms the payment. It cannot be done by hand from the order screen.</p></details>
+  <details><summary>Can GLIME mark an order as paid?</summary><p>Orders become Paid only when a payment is confirmed, either by the payment provider or by a correctly signed webhook notification from your own gateway. It cannot be done by hand from the order screen.</p></details>
   <details><summary>Is a payment screenshot enough to ship an order?</summary><p>No. Always verify the payment in GLIME's Orders and in your Razorpay Dashboard, bank or UPI app.</p></details>
   <details><summary>Is there a UPI connector?</summary><p>There is no UPI connector in Settings → Connector. Direct UPI Payments is a separate feature for custom businesses that starts after GLIME approval (see Section 8). UPI is also available as a payment method through Razorpay Checkout, and partners can save a UPI ID for payouts.</p></details>
   <details><summary>How do I get Direct UPI Payments?</summary><p>Contact GLIME support. The GLIME team reviews your business first, and the feature starts only after approval.</p></details>
   <details><summary>What does Direct UPI Payments cost?</summary><p>A fee of 0.5% is deducted from your GLIME wallet for each payment GLIME detects. If the wallet is too low, payment links are not sent and you get a notification.</p></details>
+  <details><summary>Can I take payments from another payment application?</summary><p>Yes. Use Webhooks → Receive payments. Your gateway sends a signed payment message to GLIME through Zapier, Make, n8n or your own server. The money goes straight to your own account and GLIME only marks the order as paid (see Section 16).</p></details>
+  <details><summary>Which apps can GLIME send events to?</summary><p>Webhooks → Send events can send new leads, orders, payments and messages to Zapier, Make, n8n or your own server, which lets you connect thousands of other apps.</p></details>
   <details><summary>Can I see how many people visit my website?</summary><p>Yes. Websites built with the AI Website Generator include website analytics that show how many people visit.</p></details>
   <details><summary>Which templates can I send in a Broadcast?</summary><p>Only templates that Meta has approved. Create the template on the Follow-up page, get it approved in Meta Business Manager and refresh its status in Template follow-ups.</p></details>
   <details><summary>Do Quick Buttons use AI tokens?</summary><p>No. When a customer taps a button, GLIME sends your saved reply directly and your AI does not run, so no AI tokens are charged.</p></details>
+  <details><summary>Does Telegram cost anything per message?</summary><p>No. Telegram does not charge per message. Turning Telegram off only hides it from your menu. Your connection and settings are not deleted.</p></details>
+  <details><summary>How do I become a creator?</summary><p>Apply from Settings → Connector → Creator. After you submit, add the verification passcode to your Instagram bio or YouTube description for 1 to 2 days. The GLIME team reviews your application, and Creator appears in your menu only after approval.</p></details>
   <details><summary>What happens to my data if I disconnect?</summary><p>GLIME stops using the connection and removes its saved access. Your data in the provider (payments, spreadsheets, events) is not deleted. Saved WhatsApp and Instagram conversations in GLIME are not deleted.</p></details>
   <details><summary>Why does Instagram say “Token expired”?</summary><p>Provider access can expire. Click Reconnect and approve again.</p></details>
   <details><summary>Can I connect more than one account of the same type?</summary><p>The Connector page shows one connection per provider for your account. Contact support if you have a special requirement.</p></details>
   <details><summary>Something is not in this guide. What should I do?</summary><p>If a feature is not listed here, it is not available yet. Contact support if you have a question.</p></details>
 </section>
 
-<!-- 20 -->
+<!-- 23 -->
 <section id="glossary">
-  <div class="sec-n">SECTION 20</div>
+  <div class="sec-n">SECTION 23</div>
   <h2>Glossary</h2>
   <div class="tw"><table><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody>
     <tr><td><b>OAuth</b></td><td>A standard way to give an app limited access to an account without sharing a password.</td></tr>
@@ -747,7 +877,9 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
     <tr><td><b>Connector</b></td><td>A connection between GLIME and another service.</td></tr>
     <tr><td><b>MCP</b></td><td>A secure way for AI assistants such as ChatGPT or Claude to use approved tools and data.</td></tr>
     <tr><td><b>Key Secret</b></td><td>A private Razorpay credential. Never share it with anyone.</td></tr>
-    <tr><td><b>Webhook secret</b></td><td>A private value used to verify messages from a provider. Never share it.</td></tr>
+    <tr><td><b>Webhook</b></td><td>An automatic message sent from one app to another when something happens, such as a new lead or a paid order.</td></tr>
+    <tr><td><b>Webhook secret / signing secret</b></td><td>A private value used to verify messages from a provider or to sign your own payment messages. Never share it.</td></tr>
+    <tr><td><b>HMAC-SHA256</b></td><td>A method of signing a message with a secret so the receiver can confirm it is genuine.</td></tr>
     <tr><td><b>Transaction ID</b></td><td>The unique ID of a payment, used to match it in Razorpay or your bank.</td></tr>
     <tr><td><b>Reconciled</b></td><td>A payment that has been matched with the provider's records.</td></tr>
     <tr><td><b>24-hour window</b></td><td>The period after a customer's last WhatsApp message in which you can send free-form replies.</td></tr>
@@ -755,14 +887,16 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
     <tr><td><b>Broadcast</b></td><td>One Meta-approved template sent to a chosen group of saved leads, with a report of sent, delivered, read and replied.</td></tr>
     <tr><td><b>Template</b></td><td>A message format that Meta must approve before it can be sent in a Broadcast.</td></tr>
     <tr><td><b>Quick Buttons</b></td><td>Tap-menus for WhatsApp and Instagram that send a saved reply without using AI tokens.</td></tr>
+    <tr><td><b>Creator Program</b></td><td>A program, available after GLIME approval, that lets you sell your own course through GLIME.</td></tr>
+    <tr><td><b>Verification passcode</b></td><td>A code GLIME gives a creator applicant to place in an Instagram bio or YouTube description so the team can confirm the account is theirs.</td></tr>
   </tbody></table></div>
 </section>
 
-<!-- 21 -->
+<!-- 24 -->
 <section id="support">
-  <div class="sec-n">SECTION 21</div>
+  <div class="sec-n">SECTION 24</div>
   <h2>Support and resources</h2>
-  <p>Need help? Reach the GLIME team through the <a href="contact.html">Contact page</a>. Please describe what you saw and include any error message. <b>Never include passwords, OTPs, UPI PINs, API keys or tokens.</b></p>
+  <p>Need help? Reach the GLIME team through the <a href="contact.html">Contact page</a>. Please describe what you saw and include any error message. <b>Never include passwords, OTPs, UPI PINs, API keys, signing secrets or tokens.</b></p>
 
   <h3>Official documentation</h3>
   <div class="doc-links">
@@ -788,7 +922,7 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 
 <footer>
   <div class="in">
-    <div>© GLIME. GLIME Integration Guide, version 1.1, November 2026.</div>
+    <div>© GLIME. GLIME Integration Guide, version 1.2, November 2026.</div>
     <nav aria-label="Footer"><a href="index.html">Home</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="contact.html">Contact</a></nav>
   </div>
 </footer>
