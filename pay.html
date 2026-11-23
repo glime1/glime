@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pay with UPI</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{--bg:#0b0f14;--card:#121923;--card2:#17202c;--text:#eef3f8;--muted:#8fa0b3;--border:rgba(255,255,255,.09);--accent:#00c46a;--accent2:#00b7d4;--onacc:#04120b;--danger:#ff6b6b}
+@media (prefers-color-scheme:light){:root{--bg:#f4f7fa;--card:#fff;--card2:#f1f5f9;--text:#0f1722;--muted:#5b6b7d;--border:rgba(15,23,34,.1);--onacc:#fff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-text-size-adjust:100%;min-height:100vh;display:grid;place-items:center;padding:16px}
+.card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-radius:22px;padding:24px 20px;text-align:center}
+.lock{font-size:.78rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+h1{margin:6px 0 2px;font-size:1.05rem;font-weight:700}
+.sub{margin:0;color:var(--muted);font-size:.88rem}
+.amt{font-size:2.5rem;font-weight:800;margin:18px 0 4px;letter-spacing:-.02em}
+.note{margin:0 0 18px;color:var(--muted);font-size:.82rem}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:15px 18px;font-weight:700;font-size:1rem;cursor:pointer;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--onacc);text-decoration:none;text-align:center}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding:12px 14px;background:var(--card2);border:1px solid var(--border);border-radius:14px;text-align:left}
+.row b{display:block;font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.row span{word-break:break-all;font-weight:600}
+.copy{flex:none;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:10px;padding:8px 12px;font-size:.82rem;font-weight:600;cursor:pointer}
+.meta{margin-top:14px;color:var(--muted);font-size:.8rem}
+.state{padding:30px 6px;color:var(--muted)}
+.state .big{font-size:2.4rem;margin-bottom:6px}
+.foot{margin-top:20px;color:var(--muted);font-size:.74rem}
+.foot a{color:inherit;font-weight:700}
+</style>
+</head>
+<body>
+<div class="card" id="card"><div class="state">Loading…</div></div>
+<script>
+(function(){
+var API='https://ufoulgbiqgjriwapuopc.supabase.co/rest/v1/rpc/upi_pay_info';
+var KEY='sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+var card=document.getElementById('card');
+var oid=(new URLSearchParams(location.search).get('o')||'').toLowerCase();
+var UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+var timer=null,shown=false;
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function inr(n){return '\u20b9'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function foot(){return '<div class="foot">Powered by <a href="https://glime.online" target="_blank" rel="noopener">GLIME</a></div>';}
+function state(icon,title,text){card.innerHTML='<div class="state"><div class="big">'+icon+'</div><b>'+esc(title)+'</b><p>'+esc(text)+'</p></div>'+foot();}
+async function info(){
+  var r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY},body:JSON.stringify({p_order_id:oid})});
+  if(!r.ok)throw new Error('http_'+r.status);
+  return r.json();
+}
+function render(d){
+  var link=String(d.link||'');
+  var okLink=/^upi:\/\/pay\?pa=[^&\s]+/i.test(link);
+  card.innerHTML=
+    '<div class="lock">\ud83d\udd12 Secure UPI payment</div>'+
+    '<h1>'+esc(d.payee||'Payment')+'</h1>'+
+    '<p class="sub">'+esc(d.product||'Your order')+(d.order_number?' \u00b7 '+esc(d.order_number):'')+'</p>'+
+    '<div class="amt">'+inr(d.amount)+'</div>'+
+    '<p class="note">Please pay exactly this amount so your payment is matched automatically.</p>'+
+    (okLink?'<a class="btn" id="pay" href="'+esc(link)+'">Pay with UPI app</a>':'')+
+    '<div class="row"><div><b>UPI ID</b><span id="uid">'+esc(d.upi_id)+'</span></div><button class="copy" id="cp" type="button">Copy</button></div>'+
+    '<p class="meta">Opens GPay, PhonePe, Paytm or any UPI app. After paying, go back to WhatsApp. You will get your confirmation there.</p>'+
+    foot();
+  shown=true;
+  var cp=document.getElementById('cp');
+  if(cp)cp.addEventListener('click',function(){
+    var t=String(d.upi_id||'');
+    function done(){cp.textContent='Copied';setTimeout(function(){cp.textContent='Copy';},1500);}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){});}
+    else{var i=document.createElement('input');i.value=t;document.body.appendChild(i);i.select();try{document.execCommand('copy');done();}catch(e){}document.body.removeChild(i);}
+  });
+}
+async function load(){
+  if(!UUID.test(oid)){state('\u26a0\ufe0f','Invalid payment link','Please ask for a new payment link on WhatsApp.');return;}
+  try{
+    var d=await info();
+    if(d&&d.ok===true&&d.upi_id){render(d);timer=setInterval(poll,6000);}
+    else state('\u2139\ufe0f','This payment request is closed','It may already be paid or expired. If you paid, you will get a confirmation on WhatsApp. Otherwise ask for a new link.');
+  }catch(e){state('\u26a0\ufe0f','Could not load the payment','Please check your internet and try again.');}
+}
+async function poll(){
+  try{
+    var d=await info();
+    if(!(d&&d.ok===true)){
+      clearInterval(timer);
+      if(shown)state('\u2705','Request closed','If you have paid, your payment is being confirmed. Please check WhatsApp.');
+    }
+  }catch(e){}
+}
+load();
+})();
+</script>
+</body>
+</html>
