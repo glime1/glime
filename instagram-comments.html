@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'>
+<meta name='theme-color' content='#070b10'>
+<title>Instagram Comments | GLIME</title>
+<link rel='icon' type='image/svg+xml' href='glime_logo_clean.svg'>
+<script src='glime-theme.js?v=20261029'></script>
+<script src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'></script>
+<link rel='stylesheet' href='instagram-sales-specialist.css?v=20261105b'>
+<link rel='stylesheet' href='instagram-comments.css?v=20261123'>
+<link rel='stylesheet' href='glime-app-shell.css'>
+<script src='glime-app-shell.js' defer></script>
+</head>
+<body data-gas-title='Instagram Comments'>
+<div id='boot' class='boot'><img src='glime_logo_clean.svg' alt='GLIME'><span>Loading comments…</span></div>
+
+<div class='app' data-gas-content>
+  <div class='pg'>
+    <a class='ib' href='instagram-sales-specialist.html' aria-label='Back'>‹</a>
+    <div class='ttl'><b>Comments</b><small>Instagram Sales Specialist</small></div>
+    <button id='refresh' class='ib' type='button' aria-label='Refresh'>↻</button>
+  </div>
+
+  <main class='body'>
+    <div id='off' class='note-bar hide'>You are offline. Changes will not load until you reconnect.</div>
+
+    <div class='cmsw'>
+      <label class='tg'><span>Comment auto-reply</span><input id='swOn' type='checkbox' checked><i></i></label>
+      <p id='swHint' class='hint'></p>
+    </div>
+
+    <div class='stats'>
+      <div class='st'><b id='sTot'>–</b><span>Comments</span></div>
+      <div class='st'><b id='sPend'>–</b><span>Approval</span></div>
+      <div class='st'><b id='sRep'>–</b><span>Replied</span></div>
+      <div class='st'><b id='sHid'>–</b><span>Hidden</span></div>
+    </div>
+
+    <div class='ih'><h2>All comments</h2></div>
+    <div id='chips' class='chips'>
+      <button class='on' data-f='all'>All</button>
+      <button data-f='pending'>Needs approval</button>
+      <button data-f='replied'>Replied</button>
+      <button data-f='spam'>Spam</button>
+      <button data-f='hidden'>Hidden</button>
+      <button data-f='issue'>Issues</button>
+    </div>
+    <div id='list' class='list'><div class='emp'>Loading comments…</div></div>
+  </main>
+</div>
+
+<!-- Comment details -->
+<div id='cd' class='sheet'>
+  <div class='sh-h'><h3>Comment</h3><button class='ib2' data-close='1'>✕</button></div>
+  <div id='cdBody'></div>
+</div>
+
+<!-- In-app dialog -->
+<div id='dlg' class='dlg'><div class='dlg-b'>
+  <h3 id='dlgTitle'></h3><p id='dlgText'></p>
+  <div class='row'><button id='dlgNo' class='btn ghost' type='button'>Cancel</button><button id='dlgOk' class='btn' type='button'>OK</button></div>
+</div></div>
+
+<div id='ov' class='ov'></div>
+
+<script src='instagram-comments.js?v=20261123'></script>
+</body>
+</html>
