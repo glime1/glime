@@ -7,7 +7,53 @@
  *  - whatsapp-manual-send    { conversation_id, message, media_asset_id? } → { ok, status:'sent', message_id }
  *  - whatsapp-action-request { conversation_id, message, mode:'auto'|'approval', media_asset_id? } → { status:'proposed'|'queued', request_id, job_id? }
  *  - whatsapp-chat-management { action:'delete_message'|'clear_chat'|'delete_chat'|'set_retention', conversation_id, message_id?, confirmed:true, retention_period? }
+ *  - whatsapp-connection     { action:'start'|'complete'|'status'|'disconnect' }
+ *      'complete' also accepts: waba_id?, phone_number_id?, coexistence? (boolean)
  *  - RPC approve_client_business_action / reject_client_business_action (p_action_request_id)
+ *
+ * ──────────────────────────────────────────────────────────────────────────────
+ * WHATSAPP BUSINESS APP COEXISTENCE (what changed in this version, and why)
+ * ──────────────────────────────────────────────────────────────────────────────
+ * Goal
+ *   A customer can connect the phone number they ALREADY use in the WhatsApp
+ *   Business app to GLIME, WITHOUT deleting or migrating that WhatsApp account.
+ *   After onboarding, the same number works in two places at once:
+ *     1. the WhatsApp Business app on the customer's phone (one-to-one chats), and
+ *     2. the WhatsApp Business Platform (Cloud API) through GLIME (AI replies,
+ *        automation, follow-ups, broadcasts).
+ *   WhatsApp keeps the message history between both in sync. This feature is
+ *   officially called "Coexistence" (Embedded Signup → "WhatsApp Business App
+ *   onboarding").
+ *
+ * Requirements (Meta)
+ *   - GLIME must be an approved Tech Provider (Business Verification + App Review
+ *     with Advanced access for whatsapp_business_management and
+ *     whatsapp_business_messaging).
+ *   - The customer's WhatsApp Business app must be version 2.24.17 or newer.
+ *   - The Embedded Signup launch must use featureType = 'whatsapp_business_app_onboarding'
+ *     together with sessionInfoVersion = '3'.
+ *   - The Meta App Dashboard webhook must be subscribed to these fields:
+ *       smb_message_echoes   (messages the customer sends from the Business app)
+ *       history              (chat history sync)
+ *       smb_app_state_sync   (contacts sync)
+ *
+ * Important behaviour
+ *   - A coexistence number must NOT be registered through the Cloud API
+ *     "register" call: that call is only for numbers used exclusively on the
+ *     Cloud API and can detach the number from the Business app. The backend
+ *     (whatsapp-connection) therefore skips registration when Meta reports
+ *     is_on_biz_app = true, or when this page sends coexistence: true.
+ *   - Messages the customer types in the Business app arrive as "echoes" and are
+ *     stored as outbound messages. They never trigger an AI reply.
+ *
+ * What this file does for coexistence (see the three marked blocks below)
+ *   [COEX-1] Listens for Meta's WA_EMBEDDED_SIGNUP browser event so we know the
+ *            WABA ID, the phone number ID and whether the customer chose the
+ *            "existing WhatsApp Business app" path.
+ *   [COEX-2] Adds sessionInfoVersion: '3' to the Embedded Signup launch config.
+ *   [COEX-3] Sends waba_id / phone_number_id / coexistence to the backend when
+ *            the signup is completed.
+ * Nothing else in this file was changed.
  */
 (() => {
 'use strict';
@@ -1341,6 +1387,36 @@ function loadFB() {
   });
 }
 
+/* [COEX-1] ───────────────────────────────────────────────────────────────────
+ * Embedded Signup session information.
+ *
+ * While the customer completes Meta's signup popup, Meta posts a browser
+ * "message" event (type: 'WA_EMBEDDED_SIGNUP') to this page. We use it to learn:
+ *   - the customer's WhatsApp Business Account ID (waba_id),
+ *   - the phone number ID, when Meta provides it,
+ *   - whether the customer chose "use my existing WhatsApp Business app number"
+ *     (event 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING' = coexistence).
+ *
+ * Why it matters: with coexistence the customer keeps using the WhatsApp
+ * Business app on their phone. The backend must then NOT register the number on
+ * the Cloud API (that would detach it from the app). We pass this flag to the
+ * backend as a hint; the backend also double-checks with Meta (is_on_biz_app),
+ * so a late or missing event is harmless.
+ *
+ * Security: only events that come from Meta's own origins are accepted.
+ */
+let waSignup = { coexistence: false, waba_id: null, phone_number_id: null };
+window.addEventListener('message', function (ev) {
+  if (ev.origin !== 'https://www.facebook.com' && ev.origin !== 'https://web.facebook.com') return;
+  try {
+    const m = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
+    if (!m || m.type !== 'WA_EMBEDDED_SIGNUP') return;
+    if (m.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING') waSignup.coexistence = true;
+    if (m.data && m.data.waba_id) waSignup.waba_id = String(m.data.waba_id);
+    if (m.data && m.data.phone_number_id) waSignup.phone_number_id = String(m.data.phone_number_id);
+  } catch (_) { /* ignore messages that are not JSON */ }
+});
+
 async function connectStart() {
   const status = $('connectStatus');
   $('startConnect').disabled = true;
@@ -1351,6 +1427,9 @@ async function connectStart() {
     if (!d.config_id) throw new Error('Meta configuration is missing on the server.');
     status.textContent = 'Opening secure Meta signup…';
     await loadFB();
+
+    // Start every signup with a clean slate so a previous attempt cannot leak into this one.
+    waSignup = { coexistence: false, waba_id: null, phone_number_id: null };
 
     window.FB.login(function (resp) {
       if (resp && resp.authResponse && resp.authResponse.code) {
@@ -1363,7 +1442,14 @@ async function connectStart() {
       config_id: d.config_id,
       response_type: 'code',
       override_default_response_type: true,
-      extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding' }
+      /* [COEX-2] ─────────────────────────────────────────────────────────────
+       * featureType 'whatsapp_business_app_onboarding' turns on Coexistence: the
+       * customer can connect the number they already use in the WhatsApp
+       * Business app, and keep using that app after connecting.
+       * sessionInfoVersion '3' makes Meta return the session events (waba_id,
+       * FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING) that [COEX-1] listens for.
+       * ───────────────────────────────────────────────────────────────────── */
+      extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' }
     });
   } catch (e) {
     status.textContent = friendly(e);
@@ -1375,7 +1461,20 @@ async function completeConnect(code, stateToken) {
   const status = $('connectStatus');
   try {
     status.textContent = 'Verifying Meta connection…';
-    const d = await fn('whatsapp-connection', { action: 'complete', code, state: stateToken });
+    /* [COEX-3] ───────────────────────────────────────────────────────────────
+     * Send the session details collected by [COEX-1] together with the one-time
+     * authorization code. The backend exchanges the code for a token, finds the
+     * WABA and phone number, and — when coexistence is true — skips the Cloud API
+     * registration step so the number stays active in the WhatsApp Business app.
+     * ──────────────────────────────────────────────────────────────────────── */
+    const d = await fn('whatsapp-connection', {
+      action: 'complete',
+      code,
+      state: stateToken,
+      waba_id: waSignup.waba_id,
+      phone_number_id: waSignup.phone_number_id,
+      coexistence: waSignup.coexistence
+    });
     status.textContent = d?.connection ? 'WhatsApp connected successfully.' : 'Connection completed.';
     setTimeout(() => location.reload(), 800);
   } catch (e) {
