@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Integration Guide | GLIME</title>
-<meta name="description" content="Official GLIME guide to connecting WhatsApp Business, Instagram, Razorpay, Google, Shopify and AI assistants securely with OAuth.">
+<meta name="description" content="Official GLIME guide to connecting WhatsApp Business, Instagram, Razorpay, Google, Shopify and AI assistants securely with OAuth, plus Direct UPI Payments, the AI Website Generator, Broadcast and Quick Buttons.">
 <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
 <style>
 :root{--bg:#071016;--surf:#101b29;--surf2:#0b1520;--bd:rgba(184,222,234,.13);--tx:#f4fbfd;--mu:#9cabb9;--cy:#52e8ff;--gr:#50f5a8;--rd:#ff8291;--am:#ffcc66}
@@ -111,19 +111,24 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
   <a href="#instagram">6. Instagram</a>
   <div class="grp">PAYMENTS</div>
   <a href="#razorpay">7. Razorpay</a>
-  <a href="#upi">8. UPI</a>
+  <a href="#upi">8. UPI &amp; Direct UPI Payments</a>
   <a href="#verify">9. Payment verification</a>
   <div class="grp">BUSINESS TOOLS</div>
   <a href="#google">10. Google Sheets &amp; Calendar</a>
   <a href="#shopify">11. Shopify</a>
   <a href="#ai">12. ChatGPT &amp; Claude</a>
-  <a href="#more">13. Shiprocket &amp; coming soon</a>
+  <div class="grp">GROWTH &amp; AUTOMATION</div>
+  <a href="#website">13. AI Website Generator</a>
+  <a href="#broadcast">14. Broadcast</a>
+  <a href="#quick">15. Quick Buttons</a>
+  <div class="grp">MORE INTEGRATIONS</div>
+  <a href="#more">16. Shiprocket &amp; coming soon</a>
   <div class="grp">OPERATIONS</div>
-  <a href="#manage">14. Managing &amp; disconnecting</a>
-  <a href="#trouble">15. Troubleshooting</a>
-  <a href="#faq">16. FAQ</a>
-  <a href="#glossary">17. Glossary</a>
-  <a href="#support">18. Support &amp; resources</a>
+  <a href="#manage">17. Managing &amp; disconnecting</a>
+  <a href="#trouble">18. Troubleshooting</a>
+  <a href="#faq">19. FAQ</a>
+  <a href="#glossary">20. Glossary</a>
+  <a href="#support">21. Support &amp; resources</a>
 </nav>
 
 <main>
@@ -131,12 +136,12 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 <div class="hero">
   <div class="eyebrow">OFFICIAL DOCUMENTATION</div>
   <h1>GLIME Integration Guide</h1>
-  <p class="lead">Everything you need to connect WhatsApp Business, Instagram, Razorpay and your other business tools to GLIME safely. Every connection uses the provider's own secure sign-in. You never give GLIME your passwords.</p>
+  <p class="lead">Everything you need to connect WhatsApp Business, Instagram, Razorpay and your other business tools to GLIME safely, and to grow with Direct UPI Payments, the AI Website Generator, Broadcast and Quick Buttons. Every connection uses the provider's own secure sign-in. You never give GLIME your passwords.</p>
   <div class="meta">
     <span class="chip g">OAuth-based connections</span>
     <span class="chip c">Beginner friendly</span>
-    <span class="chip">Version 1.0</span>
-    <span class="chip">Updated October 2026</span>
+    <span class="chip">Version 1.1</span>
+    <span class="chip">Updated November 2026</span>
   </div>
 </div>
 
@@ -144,7 +149,7 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 <section id="overview">
   <div class="sec-n">SECTION 1</div>
   <h2>Overview</h2>
-  <p>GLIME is an AI business workspace. Integrations let GLIME work with the tools your business already uses, so your customers, conversations, payments and data stay in sync. This guide covers only integrations that GLIME supports today. If something is not listed here, it is not available yet.</p>
+  <p>GLIME is an AI business workspace. Integrations let GLIME work with the tools your business already uses, so your customers, conversations, payments and data stay in sync. This guide covers only integrations and features that GLIME supports today. If something is not listed here, it is not available yet.</p>
 
   <h3>Integrations at a glance</h3>
   <div class="tw"><table>
@@ -153,12 +158,15 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
       <tr><td><b>WhatsApp Business</b></td><td>Customer chats, AI sales replies, orders</td><td>WhatsApp Sales page</td><td><span class="chip g">Available</span></td></tr>
       <tr><td><b>Instagram</b></td><td>Instagram DMs, AI sales replies, leads</td><td>Instagram Sales page</td><td><span class="chip g">Available</span></td></tr>
       <tr><td><b>Razorpay</b></td><td>Connect your own Razorpay account</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
+      <tr><td><b>Direct UPI Payments</b></td><td>Customers pay straight to your UPI ID</td><td>Others → UPI Payments</td><td><span class="chip a">Custom business · approval required</span></td></tr>
       <tr><td><b>Google Sheets</b></td><td>Read or write your spreadsheets</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
       <tr><td><b>Google Calendar</b></td><td>View and manage calendar events</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
       <tr><td><b>Shopify</b></td><td>Read-only products and inventory</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
       <tr><td><b>ChatGPT and Claude</b></td><td>Secure access to approved GLIME data</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
+      <tr><td><b>AI Website Generator</b></td><td>Build, publish and track your business website</td><td>Others → Website Generator</td><td><span class="chip g">Available</span></td></tr>
+      <tr><td><b>Broadcast</b></td><td>Send an approved template to your saved leads and track results</td><td>Settings → Broadcast</td><td><span class="chip g">Available</span></td></tr>
+      <tr><td><b>Quick Buttons</b></td><td>Tap-menus for WhatsApp and Instagram customers</td><td>Settings → Quick Buttons</td><td><span class="chip g">Available</span></td></tr>
       <tr><td><b>Shiprocket Cargo</b></td><td>Shipping connector</td><td>Settings → Connector</td><td><span class="chip g">Available</span></td></tr>
-      <tr><td><b>UPI</b></td><td>No separate connector. See <a href="#upi">Section 8</a></td><td>-</td><td><span class="chip a">Not a connector</span></td></tr>
       <tr><td>Gmail, Google Drive, Slack</td><td>Planned</td><td>-</td><td><span class="chip c">Coming soon</span></td></tr>
     </tbody>
   </table></div>
@@ -363,17 +371,44 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 <!-- 8 -->
 <section id="upi">
   <div class="sec-n">SECTION 8</div>
-  <h2>UPI</h2>
-  <p>GLIME does <b>not</b> have a separate UPI integration that you connect with a UPI ID. Here is exactly how UPI relates to GLIME:</p>
+  <h2>UPI and Direct UPI Payments</h2>
+  <p>UPI works with GLIME in four different ways. Each one is separate, so please check which one applies to you.</p>
   <div class="tw"><table>
     <thead><tr><th>Situation</th><th>How it works</th></tr></thead>
     <tbody>
       <tr><td><b>You pay GLIME</b></td><td>Payment goes through Razorpay Checkout. Razorpay decides which payment methods appear in that window.</td></tr>
-      <tr><td><b>Your customers pay you</b></td><td>Collected through your own Razorpay account (<a href="#razorpay">Section 7</a>). GLIME does not take or store your personal UPI ID for this.</td></tr>
+      <tr><td><b>Your customers pay you through Razorpay</b></td><td>Collected through your own Razorpay account (<a href="#razorpay">Section 7</a>).</td></tr>
+      <tr><td><b>Direct UPI Payments</b></td><td>Your customers pay straight to your own UPI ID. Available for custom businesses after GLIME approval. See below.</td></tr>
       <tr><td><b>Partner Program</b></td><td>Partners can save a UPI ID or bank account on the partner dashboard so commissions can be paid out. This is for payouts only.</td></tr>
     </tbody>
   </table></div>
-  <div class="call bad"><b class="t">UPI SAFETY</b><p>Never share your UPI PIN with anyone. GLIME will never ask for it. A customer paying you directly to a personal UPI ID is <b>not</b> verified by GLIME. Confirm it in your bank app first (see <a href="#verify">Section 9</a>).</p></div>
+
+  <h3>Direct UPI Payments</h3>
+  <p>Direct UPI Payments lets your customers pay directly to your UPI ID. GLIME never holds your money. When GLIME detects a customer's payment, a small service fee is deducted from your GLIME wallet.</p>
+
+  <div class="call warn"><b class="t">APPROVAL REQUIRED</b><p>Direct UPI Payments is built for custom businesses. It starts only after the GLIME team has reviewed and approved your business. To request approval, contact GLIME support from the <a href="contact.html">Contact page</a>.</p></div>
+
+  <h3>Set up</h3>
+  <ol class="steps">
+    <li>After GLIME approves your business, open <b>Others</b> and select the <b>UPI Payments</b> tab.</li>
+    <li>Enter your <b>UPI ID</b>, for example <code>yourname@bank</code>.</li>
+    <li>Enter the <b>Payee name</b> your customers should see.</li>
+    <li>Tick <b>Enable direct UPI payments</b>.</li>
+    <li>Click <b>Save</b>.</li>
+  </ol>
+
+  <h3>Fees and wallet</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Topic</th><th>What to know</th></tr></thead>
+    <tbody>
+      <tr><td><b>Fee</b></td><td>0.5% of each payment that GLIME detects.</td></tr>
+      <tr><td><b>Where it is charged</b></td><td>Your GLIME wallet. The UPI Payments tab shows your current wallet balance.</td></tr>
+      <tr><td><b>Your money</b></td><td>Customers pay directly to your UPI ID. GLIME never holds it.</td></tr>
+      <tr><td><b>Low wallet balance</b></td><td>If the wallet is too low, payment links are not sent and you get a notification. Add balance on the Billing page (minimum ₹100) to continue.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="call bad"><b class="t">UPI SAFETY</b><p>Never share your UPI PIN with anyone. GLIME will never ask for it. Always confirm the money in your own bank or UPI app before you ship (see <a href="#verify">Section 9</a>).</p></div>
   <div class="doc-links"><a href="https://www.npci.org.in/what-we-do/upi/product-overview" target="_blank" rel="noopener noreferrer">NPCI: UPI overview ↗</a></div>
 </section>
 
@@ -398,7 +433,7 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
     <li>The amount equals the order total.</li>
     <li>If anything does not match, <b>do not ship</b>. Ask the customer to pay again through an official payment link, or check with Razorpay.</li>
   </ol>
-  <div class="call warn"><b class="t">DIRECT TRANSFERS</b><p>Payments sent straight to a personal UPI ID or bank account are not verified by GLIME. Confirm them in your own bank app or statement, never from a customer's screenshot.</p></div>
+  <div class="call warn"><b class="t">DIRECT TRANSFERS</b><p>Payments sent straight to a personal UPI ID or bank account, including Direct UPI Payments, should always be confirmed in your own bank or UPI app or statement, never from a customer's screenshot.</p></div>
 </section>
 
 <!-- 10 -->
@@ -478,8 +513,111 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 </section>
 
 <!-- 13 -->
-<section id="more">
+<section id="website">
   <div class="sec-n">SECTION 13</div>
+  <h2>AI Website Generator</h2>
+  <p>Create a professional website for your business in a few minutes. The AI Website Generator is built into GLIME, so your website works together with your whole system: your services, photos and contact details fill in automatically, and every customer action lands in your GLIME chat.</p>
+
+  <div class="cards">
+    <div class="card"><span class="ic">⚡</span><h4>Live in minutes</h4><p>Answer a few questions, pick a design and publish. No coding and no separate tools.</p></div>
+    <div class="card"><span class="ic">🔗</span><h4>Fully integrated</h4><p>Your services, photos and contact details come from GLIME. Action buttons connect straight to your GLIME chat.</p></div>
+    <div class="card"><span class="ic">📊</span><h4>Website analytics</h4><p>See how many people visit your website.</p></div>
+  </div>
+
+  <h3>Where to find it</h3>
+  <p>Open <b>Others → Website Generator</b> and click <b>Create / edit website</b>. Your progress is saved automatically, and you can undo or redo changes at any time.</p>
+
+  <h3>Build your website in 5 steps</h3>
+  <ol class="steps">
+    <li><b>Business.</b> Check your business name, choose your industry and describe your business in one line. Your GLIME details are already filled in.</li>
+    <li><b>Design.</b> Choose the look of your website.</li>
+    <li><b>Customize.</b> Adjust the content and style to suit your brand.</li>
+    <li><b>Actions.</b> Choose the action buttons your visitors will see (see below).</li>
+    <li><b>Publish.</b> Publish your website and share the link with your customers.</li>
+  </ol>
+  <p>Use the <b>Preview</b> button at any time to see how your website looks before you publish.</p>
+
+  <h3>Industries</h3>
+  <p>Shop / Retail, Clothing &amp; Fashion, Salon &amp; Beauty, Clinic &amp; Healthcare, Home Services, Hotel &amp; Food, Real Estate, Coaching &amp; Education and Professional Services.</p>
+
+  <h3>Action buttons</h3>
+  <p>Keep only what is useful for your business. All buttons connect to your GLIME chat.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Button</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td><b>Chat on WhatsApp</b></td><td>The customer lands in your GLIME chat.</td></tr>
+      <tr><td><b>Call now</b></td><td>One tap to dial your number.</td></tr>
+      <tr><td><b>Book appointment</b></td><td>The booking message goes to your GLIME chat.</td></tr>
+      <tr><td><b>Buy now</b></td><td>Order and payment are handled in your GLIME chat.</td></tr>
+    </tbody>
+  </table></div>
+  <p>You can also choose which one is the <b>Main button</b> on your website.</p>
+
+  <div class="call info"><b class="t">GOOD TO KNOW</b><p>Because the website is connected to GLIME, new enquiries, bookings and orders arrive in the same inbox as your WhatsApp and Instagram customers, so nothing is lost between tools.</p></div>
+</section>
+
+<!-- 14 -->
+<section id="broadcast">
+  <div class="sec-n">SECTION 14</div>
+  <h2>Broadcast</h2>
+  <p>Broadcast lets you send one Meta-approved template, such as a festival offer, to the leads saved in GLIME. You choose who receives it and how many people, then follow the campaign in a clear report that shows how many were sent, delivered, read and replied.</p>
+
+  <h3>Where to find it</h3>
+  <p>Open <b>Settings → Broadcast</b>.</p>
+
+  <div class="flow">
+    <div><b>1. Create template</b>Create your template on the Follow-up page.</div>
+    <div><b>2. Meta approval</b>Get the template approved in Meta Business Manager.</div>
+    <div><b>3. Refresh status</b>In Template follow-ups, press “Refresh status from Meta”.</div>
+    <div><b>4. Send broadcast</b>Pick the template, choose your leads and how many, then send.</div>
+    <div><b>5. Track results</b>Open the Campaign report.</div>
+  </div>
+
+  <div class="call warn"><b class="t">APPROVED TEMPLATES ONLY</b><p>Only templates that Meta has approved can be broadcast. If you have none yet, Broadcast shows a notice that explains the steps above.</p></div>
+
+  <h3>Campaign report</h3>
+  <p>Every broadcast you send appears in the Campaign report, so you can measure what worked.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Measure</th><th>What it tells you</th></tr></thead>
+    <tbody>
+      <tr><td><b>Sent</b></td><td>How many messages were sent.</td></tr>
+      <tr><td><b>Delivered</b></td><td>How many reached your customers.</td></tr>
+      <tr><td><b>Read</b></td><td>How many customers opened the message.</td></tr>
+      <tr><td><b>Replied</b></td><td>How many customers answered.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Before your first broadcast the report is empty. It fills in as soon as you send your first campaign.</p>
+</section>
+
+<!-- 15 -->
+<section id="quick">
+  <div class="sec-n">SECTION 15</div>
+  <h2>Quick Buttons</h2>
+  <p>Quick Buttons let you build tap-menus for WhatsApp and Instagram, for example “Book appointment: Facial, Hair, Makeup”. Customers tap an option instead of typing, which makes conversations faster and cleaner. Carousel menus are also supported.</p>
+
+  <h3>Where to find it</h3>
+  <p>Open <b>Settings → Quick Buttons</b>. Choose <b>WhatsApp</b> or <b>Instagram</b>. Each channel has its own menus, and each channel can hold up to 30.</p>
+
+  <div class="call ok"><b class="t">0 TOKENS USED</b><p>When a customer taps a button, GLIME sends your saved reply directly. Your AI does not run, so no AI tokens are charged.</p></div>
+
+  <h3>How menus are sent</h3>
+  <p>Only menus that are switched <b>On</b> are sent to customers. A menu opens in any of these cases:</p>
+  <div class="tw"><table>
+    <thead><tr><th>When</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td><b>Welcome menu</b></td><td>A customer writes to you first and your Welcome menu opens.</td></tr>
+      <tr><td><b>Fixed Q&amp;A</b></td><td>A Fixed Q&amp;A matches and the menu opens with it.</td></tr>
+      <tr><td><b>Another menu</b></td><td>A customer taps a button in another menu that leads here.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Test before you go live</h3>
+  <p>Tap <b>Review</b> on any menu to try it exactly as a customer would see it.</p>
+</section>
+
+<!-- 16 -->
+<section id="more">
+  <div class="sec-n">SECTION 16</div>
   <h2>Shiprocket Cargo and coming soon</h2>
   <h3>Shiprocket Cargo</h3>
   <p>A <b>Shiprocket Cargo</b> card is available at the bottom of <b>Settings → Connector</b>. Its card shows its own status and the steps to follow.</p>
@@ -488,9 +626,9 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
   <div class="call info"><b class="t">NOTE</b><p>Order shipping details can be entered manually on each order. No shipment is booked automatically unless a courier connection is active.</p></div>
 </section>
 
-<!-- 14 -->
+<!-- 17 -->
 <section id="manage">
-  <div class="sec-n">SECTION 14</div>
+  <div class="sec-n">SECTION 17</div>
   <h2>Managing and disconnecting integrations</h2>
   <div class="cards">
     <div class="card"><span class="ic">🛡️</span><h4>Review permissions</h4><p>On any connected card, switch permissions OFF to stop GLIME AI from using them. Changes apply immediately.</p></div>
@@ -512,9 +650,9 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
   </ol>
 </section>
 
-<!-- 15 -->
+<!-- 18 -->
 <section id="trouble">
-  <div class="sec-n">SECTION 15</div>
+  <div class="sec-n">SECTION 18</div>
   <h2>Troubleshooting</h2>
 
   <h3>General</h3>
@@ -568,27 +706,39 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
     <tr><td>“Shopify did not grant the required product and inventory read access.”</td><td>Connect again and approve the requested read access.</td></tr>
     <tr><td>“Shopify access needs attention. Reconnect to continue.”</td><td>Reconnect Shopify.</td></tr>
   </tbody></table></div>
+
+  <h3>Direct UPI Payments, Broadcast</h3>
+  <div class="tw"><table><thead><tr><th>Symptom</th><th>What to do</th></tr></thead><tbody>
+    <tr><td>Direct UPI Payments is not available on your account</td><td>It starts only after GLIME approves your business. Contact support to request approval.</td></tr>
+    <tr><td>Payment links are not being sent</td><td>Your GLIME wallet balance may be too low for the 0.5% fee. Add balance on the Billing page.</td></tr>
+    <tr><td>Broadcast says you have no approved template</td><td>Create a template on the Follow-up page, get it approved in Meta Business Manager, then press “Refresh status from Meta” in Template follow-ups.</td></tr>
+  </tbody></table></div>
 </section>
 
-<!-- 16 -->
+<!-- 19 -->
 <section id="faq">
-  <div class="sec-n">SECTION 16</div>
+  <div class="sec-n">SECTION 19</div>
   <h2>Frequently asked questions</h2>
   <details><summary>Does GLIME know my Facebook, Instagram, Razorpay or Google password?</summary><p>No. You sign in on the provider's own site. GLIME receives only a limited-access token after you approve.</p></details>
   <details><summary>Where are my access tokens stored?</summary><p>On GLIME's servers, in encrypted form. They are never shown in your browser.</p></details>
   <details><summary>Do I need to enter my Razorpay Key ID or Key Secret?</summary><p>No. Razorpay connects through OAuth. Never share your Key Secret with anyone.</p></details>
   <details><summary>Can GLIME mark an order as paid?</summary><p>Orders become Paid only when the payment provider confirms the payment. It cannot be done by hand from the order screen.</p></details>
-  <details><summary>Is a payment screenshot enough to ship an order?</summary><p>No. Always verify the payment in GLIME's Orders and in your Razorpay Dashboard or bank statement.</p></details>
-  <details><summary>Is there a UPI connector?</summary><p>No. UPI is available as a payment method through Razorpay Checkout. Partners can save a UPI ID for payouts only.</p></details>
+  <details><summary>Is a payment screenshot enough to ship an order?</summary><p>No. Always verify the payment in GLIME's Orders and in your Razorpay Dashboard, bank or UPI app.</p></details>
+  <details><summary>Is there a UPI connector?</summary><p>There is no UPI connector in Settings → Connector. Direct UPI Payments is a separate feature for custom businesses that starts after GLIME approval (see Section 8). UPI is also available as a payment method through Razorpay Checkout, and partners can save a UPI ID for payouts.</p></details>
+  <details><summary>How do I get Direct UPI Payments?</summary><p>Contact GLIME support. The GLIME team reviews your business first, and the feature starts only after approval.</p></details>
+  <details><summary>What does Direct UPI Payments cost?</summary><p>A fee of 0.5% is deducted from your GLIME wallet for each payment GLIME detects. If the wallet is too low, payment links are not sent and you get a notification.</p></details>
+  <details><summary>Can I see how many people visit my website?</summary><p>Yes. Websites built with the AI Website Generator include website analytics that show how many people visit.</p></details>
+  <details><summary>Which templates can I send in a Broadcast?</summary><p>Only templates that Meta has approved. Create the template on the Follow-up page, get it approved in Meta Business Manager and refresh its status in Template follow-ups.</p></details>
+  <details><summary>Do Quick Buttons use AI tokens?</summary><p>No. When a customer taps a button, GLIME sends your saved reply directly and your AI does not run, so no AI tokens are charged.</p></details>
   <details><summary>What happens to my data if I disconnect?</summary><p>GLIME stops using the connection and removes its saved access. Your data in the provider (payments, spreadsheets, events) is not deleted. Saved WhatsApp and Instagram conversations in GLIME are not deleted.</p></details>
   <details><summary>Why does Instagram say “Token expired”?</summary><p>Provider access can expire. Click Reconnect and approve again.</p></details>
   <details><summary>Can I connect more than one account of the same type?</summary><p>The Connector page shows one connection per provider for your account. Contact support if you have a special requirement.</p></details>
   <details><summary>Something is not in this guide. What should I do?</summary><p>If a feature is not listed here, it is not available yet. Contact support if you have a question.</p></details>
 </section>
 
-<!-- 17 -->
+<!-- 20 -->
 <section id="glossary">
-  <div class="sec-n">SECTION 17</div>
+  <div class="sec-n">SECTION 20</div>
   <h2>Glossary</h2>
   <div class="tw"><table><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody>
     <tr><td><b>OAuth</b></td><td>A standard way to give an app limited access to an account without sharing a password.</td></tr>
@@ -601,12 +751,16 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
     <tr><td><b>Transaction ID</b></td><td>The unique ID of a payment, used to match it in Razorpay or your bank.</td></tr>
     <tr><td><b>Reconciled</b></td><td>A payment that has been matched with the provider's records.</td></tr>
     <tr><td><b>24-hour window</b></td><td>The period after a customer's last WhatsApp message in which you can send free-form replies.</td></tr>
+    <tr><td><b>Direct UPI Payments</b></td><td>A feature for approved custom businesses where customers pay straight to the business's own UPI ID.</td></tr>
+    <tr><td><b>Broadcast</b></td><td>One Meta-approved template sent to a chosen group of saved leads, with a report of sent, delivered, read and replied.</td></tr>
+    <tr><td><b>Template</b></td><td>A message format that Meta must approve before it can be sent in a Broadcast.</td></tr>
+    <tr><td><b>Quick Buttons</b></td><td>Tap-menus for WhatsApp and Instagram that send a saved reply without using AI tokens.</td></tr>
   </tbody></table></div>
 </section>
 
-<!-- 18 -->
+<!-- 21 -->
 <section id="support">
-  <div class="sec-n">SECTION 18</div>
+  <div class="sec-n">SECTION 21</div>
   <h2>Support and resources</h2>
   <p>Need help? Reach the GLIME team through the <a href="contact.html">Contact page</a>. Please describe what you saw and include any error message. <b>Never include passwords, OTPs, UPI PINs, API keys or tokens.</b></p>
 
@@ -634,7 +788,7 @@ footer nav a{margin-right:16px;color:var(--mu);font-weight:700}footer nav a:hove
 
 <footer>
   <div class="in">
-    <div>© GLIME. GLIME Integration Guide, version 1.0, October 2026.</div>
+    <div>© GLIME. GLIME Integration Guide, version 1.1, November 2026.</div>
     <nav aria-label="Footer"><a href="index.html">Home</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="contact.html">Contact</a></nav>
   </div>
 </footer>
