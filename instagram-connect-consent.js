@@ -25,6 +25,7 @@ const CSS = `
 .cns li span{display:block;color:var(--gmut,#64748b);font-size:13px;line-height:1.45;margin-top:2px}
 .cns li em{display:block;font-style:normal;font-size:11px;margin-top:5px;color:var(--gpri,#0a9d63);word-break:break-all}
 .cns .safe{margin:14px 0;padding:11px 12px;border-radius:12px;background:var(--gpriS,rgba(0,200,120,.12));font-size:13px;line-height:1.5}
+.cns .safe p{margin:0}.cns .safe p+p{margin-top:8px}
 .cns .act{display:flex;gap:10px}
 .cns .act button{flex:1;padding:14px 10px;border-radius:14px;font-weight:700;font-size:15px;font-family:inherit;border:1px solid var(--gline,#e3ebf0);background:transparent;color:inherit;cursor:pointer}
 .cns .act .go{flex:1.6;border:0;color:#04130d;background:linear-gradient(135deg,#00f08a,#00e5ff);box-shadow:0 8px 22px rgba(0,229,200,.28)}
@@ -38,7 +39,10 @@ function build() {
     <h3 id='cnsT'>Connect your Instagram</h3>
     <p class='sub'>Next, Instagram will ask you to allow the permissions below. Here is exactly what GLIME uses each one for.</p>
     <ul>${PERMS.map(p => `<li><div class='ic'>${p[0]}</div><div><b>${p[1]}</b><span>${p[2]}</span><em>${p[3]}</em></div></li>`).join('')}</ul>
-    <div class='safe'>🔒 You log in on Instagram's own page. GLIME never sees your password and does not publish posts or stories for you. You can remove access any time from your Instagram settings under Apps and websites.</div>
+    <div class='safe'>
+      <p>🔒 You log in on Instagram's own page. GLIME never sees your password and does not publish posts or stories for you.</p>
+      <p>🔌 You can disconnect any time: in GLIME go to Settings, open Instagram and tap Disconnect Instagram. You can also remove access from your Instagram settings under Apps and websites.</p>
+    </div>
     <div class='act'><button type='button' id='cnsNo'>Cancel</button><button type='button' id='cnsGo' class='go'>Continue to Instagram</button></div>
   </div>`;
   document.body.appendChild(box);
