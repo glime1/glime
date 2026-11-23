@@ -2,7 +2,7 @@
 'use strict';
 const U = 'https://ufoulgbiqgjriwapuopc.supabase.co';
 const K = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
-const FN = 'instagram-comment-actions';
+const FN = 'instagram-comment-reply';
 const db = window.supabase.createClient(U, K);
 const $ = id => document.getElementById(id);
 const S = { cid: null, rows: [], posts: {}, f: 'all', sel: null, on: true, mode: 'manual' };
