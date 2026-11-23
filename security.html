@@ -3,11 +3,117 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="GLIME Security — how we protect your business data, WhatsApp and Instagram connections, and how to report a security issue.">
+  <meta name="description" content="GLIME Security — how we protect your business data, how AI service providers handle it, how WhatsApp and Instagram connections work, and how to report a security issue.">
   <title>Security | GLIME</title>
 
   <link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
   <link rel="stylesheet" href="privacy.css">
+
+  <style>
+    /* Security page extras — built on the privacy.css design tokens */
+    .flow-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 20px;
+    }
+
+    .flow-node {
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: rgba(7, 17, 22, 0.58);
+      color: var(--text);
+      font: 500 10.5px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .flow-node.accent {
+      border-color: var(--line-strong);
+      color: var(--brand-bright);
+      background: rgba(11, 143, 140, 0.09);
+    }
+
+    .flow-arrow {
+      color: var(--brand-bright);
+      font: 500 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .sec-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(7, 17, 22, 0.58);
+    }
+
+    .sec-table {
+      width: 100%;
+      min-width: 620px;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .sec-table th {
+      padding: 13px 16px;
+      text-align: left;
+      color: var(--dim);
+      font: 500 9.5px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .sec-table td {
+      padding: 15px 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      vertical-align: top;
+      line-height: 1.6;
+    }
+
+    .sec-table td:first-child {
+      width: 24%;
+    }
+
+    .sec-table td strong {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .section-link {
+      color: var(--brand-bright);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .section-link:hover {
+      text-decoration: underline;
+    }
+
+    .auth-card .section-link {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 680px) {
+      .flow-strip {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .flow-node {
+        white-space: normal;
+        text-align: center;
+      }
+
+      .flow-arrow {
+        align-self: center;
+        transform: rotate(90deg);
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -37,14 +143,18 @@
       <h1>Security at GLIME</h1>
       <p class="hero-copy">
         Your customers’ conversations and your business details are valuable. This page explains,
-        in plain language, how GLIME protects them, what is your responsibility as a client, and how
-        to tell us if you find a problem.
+        in plain language, how GLIME protects them, exactly how our AI service providers fit in,
+        what is your responsibility as a client, and how to tell us if you find a problem.
       </p>
 
       <div class="meta-row">
         <div class="meta-card">
           <span>Last updated</span>
-          <strong>27 October 2026</strong>
+          <strong>23 November 2026</strong>
+        </div>
+        <div class="meta-card">
+          <span>Hosting region</span>
+          <strong>Singapore (Supabase)</strong>
         </div>
         <div class="meta-card">
           <span>Security contact</span>
@@ -60,8 +170,15 @@
         <a href="#protection">How data is protected</a>
         <a href="#connections">WhatsApp &amp; Instagram</a>
         <a href="#ai">AI and your data</a>
+        <a href="#ai-providers">AI service providers</a>
+        <a href="#ai-data">What AI receives</a>
+        <a href="#ai-flow">Life of a message</a>
+        <a href="#ai-training">Training, retention &amp; location</a>
+        <a href="#third-parties">Third-party services</a>
         <a href="#responsibility">Your responsibilities</a>
         <a href="#incidents">If something goes wrong</a>
+        <a href="#your-data">Your data, your control</a>
+        <a href="#faq">Quick answers</a>
         <a href="#report">Report a vulnerability</a>
       </aside>
 
@@ -111,7 +228,7 @@
             </div>
             <div class="security-card">
               <strong>Managed cloud infrastructure</strong>
-              <span>GLIME runs on Supabase for database, authentication and storage. Supabase applies its own platform security controls, including encryption of stored data.</span>
+              <span>GLIME runs on Supabase for database, authentication and storage, hosted in the Singapore region. Supabase applies its own platform security controls, including encryption of stored data.</span>
             </div>
             <div class="security-card">
               <strong>Restricted admin access</strong>
@@ -155,7 +272,8 @@
           <p>
             GLIME AI answers customers using the services you publish and the knowledge you add for
             your business. Your business knowledge is kept under your account and is not used to answer
-            customers of other businesses.
+            customers of other businesses. To write a reply, GLIME sends the text it needs to the AI
+            technology providers described in the next sections, so you can see exactly where data goes.
           </p>
 
           <div class="use-list">
@@ -182,11 +300,232 @@
                 <p>Edit or delete services and knowledge at any time. Removing a service deletes it with its pricing, variants and media.</p>
               </div>
             </div>
+
+            <div class="use-item">
+              <span>04</span>
+              <div>
+                <h3>You stay in the loop</h3>
+                <p>AI can occasionally make mistakes. For important or sensitive replies, use AI + Approval or Manual mode so a person checks the message before it is sent.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="ai-providers">
+          <div class="section-number">05</div>
+          <h2>AI service providers</h2>
+          <p>
+            GLIME does not build its own foundation models. We use the commercial services of established
+            technology companies, and we choose providers that operate at global scale with
+            enterprise-grade security. Depending on the feature, a request may be handled by one or more of these:
+          </p>
+
+          <div class="third-party-grid">
+            <div class="third-party-card">
+              <div class="tp-logo">OAI</div>
+              <h3>OpenAI</h3>
+              <p>Language models used to understand customer messages and draft replies.</p>
+            </div>
+
+            <div class="third-party-card">
+              <div class="tp-logo">ANT</div>
+              <h3>Anthropic</h3>
+              <p>Language models used to understand customer messages and draft replies.</p>
+            </div>
+
+            <div class="third-party-card">
+              <div class="tp-logo">GEM</div>
+              <h3>Google Gemini</h3>
+              <p>Language models used to understand customer messages and draft replies.</p>
+            </div>
+
+            <div class="third-party-card">
+              <div class="tp-logo">CF</div>
+              <h3>Cloudflare</h3>
+              <p>Global edge and AI infrastructure used to run and deliver AI processing securely.</p>
+            </div>
+          </div>
+
+          <div class="highlight-box" style="margin-top:16px">
+            <div class="highlight-mark">AI</div>
+            <div>
+              <strong>Built to grow with trusted providers</strong>
+              <p>
+                As AI technology moves forward, GLIME may add other established providers, including
+                Meta’s AI models. We only work with well-known companies that offer business-grade
+                security terms, and we update this page when the list changes.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="ai-data">
+          <div class="section-number">06</div>
+          <h2>What AI receives, and what it never does</h2>
+          <p>
+            Only what is needed to produce a reply is sent to an AI provider. We do not send your whole
+            account, and some things are never sent at all.
+          </p>
+
+          <div class="deletion-grid">
+            <div>
+              <h3>Sent to AI providers, only as needed</h3>
+              <ul>
+                <li>The customer’s message text</li>
+                <li>Recent conversation context, so the reply makes sense</li>
+                <li>The services, prices and knowledge you added to GLIME that relate to the question</li>
+                <li>The instructions and tone settings you chose for your AI</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3>Never sent to AI providers</h3>
+              <ul>
+                <li>Passwords or login credentials</li>
+                <li>Payment card or bank details</li>
+                <li>API keys and access tokens, including your channel connections</li>
+                <li>Data that belongs to other businesses</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="ai-flow">
+          <div class="section-number">07</div>
+          <h2>Life of a message</h2>
+          <p>
+            Here is what happens, step by step, when a customer writes to your business and AI helps reply.
+          </p>
+
+          <div class="flow-strip" aria-label="Message path">
+            <span class="flow-node">CUSTOMER</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-node">META</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-node accent">GLIME SERVER</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-node">AI PROVIDER</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-node accent">GLIME SERVER</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-node">CUSTOMER</span>
+          </div>
+
+          <div class="retention-timeline">
+            <div class="retention-step">
+              <span>01</span>
+              <div>
+                <h3>The customer sends a message</h3>
+                <p>They write to your WhatsApp or Instagram account, exactly as they would to any business.</p>
+              </div>
+            </div>
+
+            <div class="retention-step">
+              <span>02</span>
+              <div>
+                <h3>Meta delivers it to GLIME</h3>
+                <p>The message reaches GLIME over an encrypted connection, through the channel you connected.</p>
+              </div>
+            </div>
+
+            <div class="retention-step">
+              <span>03</span>
+              <div>
+                <h3>GLIME identifies your business</h3>
+                <p>Our server works out which business the message belongs to, loads only that business’s services and knowledge, and applies your mode and daily limits.</p>
+              </div>
+            </div>
+
+            <div class="retention-step">
+              <span>04</span>
+              <div>
+                <h3>The AI provider drafts a reply</h3>
+                <p>The text needed for the answer is sent to an AI provider over an encrypted connection. The provider returns a draft reply to GLIME.</p>
+              </div>
+            </div>
+
+            <div class="retention-step">
+              <span>05</span>
+              <div>
+                <h3>The reply is sent or held for you</h3>
+                <p>In Auto mode the reply goes out automatically. In AI + Approval or Manual mode it waits for you. The conversation is stored under your account only.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="ai-training">
+          <div class="section-number">08</div>
+          <h2>Training, retention and location</h2>
+          <p>
+            These are the questions clients ask us most about AI and data.
+          </p>
+
+          <div class="security-grid">
+            <div class="security-card">
+              <strong>No training on your data</strong>
+              <span>GLIME uses the commercial business services of its AI providers. Under those commercial terms, content sent through these services is not used to train the providers’ models.</span>
+            </div>
+            <div class="security-card">
+              <strong>Provider handling</strong>
+              <span>Providers may process requests, and may keep them for a limited time for safety and abuse monitoring, as described in their own terms. Their policies apply to that handling.</span>
+            </div>
+            <div class="security-card">
+              <strong>Where data is processed</strong>
+              <span>GLIME’s database, sign-in and file storage run in the Singapore region on Supabase. AI providers process requests on their own global infrastructure, which may be outside India, so AI requests can cross borders over encrypted connections.</span>
+            </div>
+          </div>
+
+          <p class="small-note">
+            For the legal details of how we collect and use personal data, see our
+            <a href="privacy.html">Privacy Policy</a>.
+          </p>
+        </section>
+
+        <section class="policy-section" id="third-parties">
+          <div class="section-number">09</div>
+          <h2>Third-party services we rely on</h2>
+          <p>
+            GLIME is built on well-known platforms. This is who handles what, and why.
+          </p>
+
+          <div class="sec-table-wrap">
+            <table class="sec-table">
+              <thead>
+                <tr>
+                  <th>Service</th>
+                  <th>Why we use it</th>
+                  <th>Data involved</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Supabase</strong></td>
+                  <td>Database, sign-in and private file storage</td>
+                  <td>Account details, business records, conversations and files you upload</td>
+                </tr>
+                <tr>
+                  <td><strong>Meta</strong><br>WhatsApp and Instagram</td>
+                  <td>The channels you connect to talk with your customers</td>
+                  <td>Messages and the channel details covered by the permissions you approve</td>
+                </tr>
+                <tr>
+                  <td><strong>OpenAI, Anthropic, Google Gemini, Cloudflare</strong></td>
+                  <td>AI processing to understand messages and draft replies</td>
+                  <td>The message text and business knowledge needed for each reply (see sections 05 to 08)</td>
+                </tr>
+                <tr>
+                  <td><strong>Connectors you turn on</strong></td>
+                  <td>Optional integrations, such as payments, shipping or messaging apps</td>
+                  <td>Only the data needed for that connector, and only after you connect it</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
         <section class="policy-section" id="responsibility">
-          <div class="section-number">05</div>
+          <div class="section-number">10</div>
           <h2>Your responsibilities</h2>
           <p>Security is shared. These habits protect your account the most:</p>
 
@@ -214,11 +553,17 @@
               <h3>Watch for phishing</h3>
               <p>GLIME will never ask for your password or an OTP by message. Check the address says glime.online before you sign in.</p>
             </div>
+
+            <div class="data-card wide">
+              <span class="data-icon">05</span>
+              <h3>Respect your customers’ data</h3>
+              <p>You decide what your customers are asked to share in chats. Avoid collecting sensitive details such as OTPs or card numbers in a conversation, let your customers know that AI helps answer messages, and follow the laws that apply to your business, including India’s Digital Personal Data Protection Act, 2023.</p>
+            </div>
           </div>
         </section>
 
         <section class="policy-section" id="incidents">
-          <div class="section-number">06</div>
+          <div class="section-number">11</div>
           <h2>If something goes wrong</h2>
           <p>
             If we confirm a security incident that affects your data, we will investigate, take steps to
@@ -228,8 +573,86 @@
           </p>
         </section>
 
+        <section class="policy-section" id="your-data">
+          <div class="section-number">12</div>
+          <h2>Your data, your control</h2>
+          <p>
+            Your data stays yours. You can take a copy, remove it or cut off access whenever you choose.
+          </p>
+
+          <div class="authorization-grid">
+            <div class="auth-card">
+              <div class="auth-label">01 / EXPORT</div>
+              <h3>Download your data</h3>
+              <p>Request a copy of the data held in your account.</p>
+              <a class="section-link" href="data-download.html">Open data download →</a>
+            </div>
+
+            <div class="auth-card">
+              <div class="auth-label">02 / DELETE</div>
+              <h3>Delete your data</h3>
+              <p>Ask us to delete your account and the data connected to it.</p>
+              <a class="section-link" href="data-deletion.html">Open data deletion →</a>
+            </div>
+
+            <div class="auth-card">
+              <div class="auth-label">03 / DISCONNECT</div>
+              <h3>Cut off access</h3>
+              <p>Disconnect WhatsApp or Instagram from Settings → Connector at any time.</p>
+              <a class="section-link" href="help.html">Visit Help Center →</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-section" id="faq">
+          <div class="section-number">13</div>
+          <h2>Quick answers</h2>
+
+          <div class="use-list">
+            <div class="use-item">
+              <span>Q1</span>
+              <div>
+                <h3>Is my data used to train AI models?</h3>
+                <p>No. GLIME uses the commercial services of its AI providers, and under those terms content sent through them is not used to train the providers’ models.</p>
+              </div>
+            </div>
+
+            <div class="use-item">
+              <span>Q2</span>
+              <div>
+                <h3>Can another business see my data or knowledge?</h3>
+                <p>No. Each business’s records and knowledge are kept separate, and your knowledge is never used to answer another business’s customers.</p>
+              </div>
+            </div>
+
+            <div class="use-item">
+              <span>Q3</span>
+              <div>
+                <h3>Does GLIME send passwords or payment details to AI?</h3>
+                <p>No. Passwords, payment card or bank details, and API keys or tokens are never sent to AI providers.</p>
+              </div>
+            </div>
+
+            <div class="use-item">
+              <span>Q4</span>
+              <div>
+                <h3>Can I stop the AI from replying on its own?</h3>
+                <p>Yes. Switch to AI + Approval or Manual mode, set daily limits, or disconnect a channel at any time.</p>
+              </div>
+            </div>
+
+            <div class="use-item">
+              <span>Q5</span>
+              <div>
+                <h3>How will I know if your AI providers change?</h3>
+                <p>We update this page whenever the list changes, and the “Last updated” date at the top shows when.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="policy-section" id="report">
-          <div class="section-number">07</div>
+          <div class="section-number">14</div>
           <h2>Report a vulnerability</h2>
           <p>
             If you believe you found a security weakness in GLIME, please tell us privately so we can fix
