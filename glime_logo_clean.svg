@@ -1,9 +1,104 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
-<title>GLIME</title>
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="809" height="809" viewBox="0 0 1080 1080" xml:space="preserve">
+<desc>GLIME logo. The G draws itself once, then a soft glow breathes around it while each node pings like a customer message and the wordmark shimmers.</desc>
 <defs>
-<linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#50f5a8"/><stop offset="1" stop-color="#52e8ff"/></linearGradient>
+<linearGradient id="gl-sheen" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0" gradientTransform="translate(-1.4 0)">
+  <stop offset="0" stop-color="#0b8f8c"/>
+  <stop offset="0.36" stop-color="#0b8f8c"/>
+  <stop offset="0.46" stop-color="#43e0c4"/>
+  <stop offset="0.5" stop-color="#d9fff4"/>
+  <stop offset="0.54" stop-color="#43e0c4"/>
+  <stop offset="0.64" stop-color="#0b8f8c"/>
+  <stop offset="1" stop-color="#0b8f8c"/>
+  <animateTransform attributeName="gradientTransform" type="translate" values="-1.4 0;1.4 0;1.4 0" keyTimes="0;0.78;1" dur="2.6s" begin="1.2s" repeatCount="indefinite"/>
+</linearGradient>
+<style>
+.gl-path { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.gl-p2 { animation: gl-draw .8s cubic-bezier(.65,0,.35,1) 0s both; }
+.gl-p1 { animation: gl-draw .8s cubic-bezier(.65,0,.35,1) .15s both; }
+.gl-p3 { animation: gl-draw .5s cubic-bezier(.65,0,.35,1) .4s both; }
+
+.gl-glow { animation: gl-breathe 4s ease-in-out 1.4s infinite; }
+
+.gl-node, .gl-ring { transform-box: fill-box; transform-origin: center; }
+
+.gl-n1 { animation: gl-pop .4s cubic-bezier(.34,1.56,.64,1) .7s both, gl-ping 4s ease-in-out 1.6s infinite; }
+.gl-n2 { animation: gl-pop .4s cubic-bezier(.34,1.56,.64,1) .8s both, gl-ping 4s ease-in-out 2.3s infinite; }
+.gl-n3 { animation: gl-pop .4s cubic-bezier(.34,1.56,.64,1) .9s both, gl-ping 4s ease-in-out 3s infinite; }
+
+.gl-ring { fill: none; stroke: #7dffc4; stroke-width: 7; opacity: 0; }
+.gl-r1 { animation: gl-ripple 4s ease-out 1.6s infinite; }
+.gl-r2 { animation: gl-ripple 4s ease-out 2.3s infinite; }
+.gl-r3 { animation: gl-ripple 4s ease-out 3s infinite; }
+
+.gl-word { animation: gl-rise .6s cubic-bezier(.22,.8,.3,1) .8s both; }
+
+@keyframes gl-draw {
+  0%   { stroke-dashoffset: 1; opacity: 0; }
+  2%   { stroke-dashoffset: 1; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes gl-pop {
+  0%   { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes gl-rise {
+  0%   { transform: translateY(14px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes gl-ping {
+  0%   { transform: scale(1);    fill: #0b8f8c; }
+  4%   { transform: scale(1.45); fill: #7dffc4; }
+  14%  { transform: scale(1);    fill: #0b8f8c; }
+  100% { transform: scale(1);    fill: #0b8f8c; }
+}
+@keyframes gl-ripple {
+  0%   { opacity: 0; transform: scale(1); }
+  1%   { opacity: 1; transform: scale(1); }
+  16%  { opacity: 0; transform: scale(3); }
+  100% { opacity: 0; transform: scale(3); }
+}
+@keyframes gl-breathe {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(67,224,196,0)); }
+  50%      { filter: drop-shadow(0 0 60px rgba(67,224,196,.55)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gl-path, .gl-node, .gl-word, .gl-ring, .gl-glow { animation: none !important; }
+  .gl-ring { opacity: 0; }
+}
+</style>
 </defs>
-<rect width="120" height="120" rx="30" fill="url(#gm)"/>
-<rect x=".5" y=".5" width="119" height="119" rx="29.5" fill="none" stroke="#fff" stroke-opacity=".28"/>
-<path d="M83 40.7A30 30 0 1 0 90 60H62" fill="none" stroke="#031014" stroke-width="12" stroke-linejoin="miter"/>
+
+<g class="gl-glow">
+<!-- the G -->
+<g transform="matrix(1.3043 0 0 1.3394 598.3093 282.0332)">
+<path class="gl-path gl-p1" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-372.5, -160)" d="M 245 0 L 390 0 L 500 110 L 350 110 L 245 215 L 350 320 L 500 320 L 500 205" stroke-linecap="round" />
+</g>
+<g transform="matrix(1.3043 0 0 1.3394 529.0886 326.8545)">
+<path class="gl-path gl-p2" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-322.5, -182.5)" d="M 255 0 L 145 110 L 145 255 L 255 365 L 400 365 L 500 265" stroke-linecap="round" />
+</g>
+<g transform="matrix(1.3043 0 0 1.3394 604.8308 355.7059)">
+<path class="gl-path gl-p3" pathLength="1" style="stroke: rgb(11,143,140); stroke-width: 52; stroke-linecap: square; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-377.5, -215)" d="M 255 215 L 500 215" stroke-linecap="round" />
+</g>
+
+<!-- nodes -->
+<g transform="matrix(1.3043 0 0 1.3394 465.9229 102.5543)">
+<rect class="gl-node gl-n3" style="stroke: none; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-ring gl-r3" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+</g>
+<g transform="matrix(1.3043 0 0 1.3394 791.9998 249.8912)">
+<rect class="gl-node gl-n2" style="stroke: none; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-ring gl-r2" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+</g>
+<g transform="matrix(1.3043 0 0 1.3394 465.9229 524.4737)">
+<rect class="gl-node gl-n1" style="stroke: none; fill: rgb(11,143,140); fill-rule: nonzero; opacity: 1;" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+<rect class="gl-ring gl-r1" x="-26" y="-26" rx="0" ry="0" width="52" height="52" />
+</g>
+</g>
+
+<!-- wordmark -->
+<g transform="matrix(1.3043 0 0 1.3394 523.3107 749.0241)">
+<text class="gl-word" xml:space="preserve" font-family="Montserrat, Poppins, Arial, Helvetica, sans-serif" font-size="132" font-style="normal" font-weight="700" style="stroke: none; fill: url(#gl-sheen); fill-rule: nonzero; opacity: 1; white-space: pre;"><tspan x="-252.9893" y="41.4665">G</tspan><tspan x="-128.3154" y="41.4665">L</tspan><tspan x="-25.6846" y="41.4665">I</tspan><tspan x="32.9893" y="41.4665">M</tspan><tspan x="164.9463" y="41.4665">E</tspan></text>
+</g>
 </svg>
