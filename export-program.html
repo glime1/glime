@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Apply to the GLIME Export Network. Verified importers, distributors and wholesalers from any country get listed for Indian manufacturers and exporters, and talk to them in their own language.">
+<title>Export Network | List your business with GLIME</title>
+<link rel="icon" type="image/svg+xml" href="glime_logo_clean.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="partner-base.css">
+<link rel="stylesheet" href="glime-global-nav.css">
+<style>
+/* =========================================================
+   GLIME EXPORT NETWORK - public application page
+   Look and feel follows partner.html (partner-base.css).
+========================================================= */
+.xp-hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:44px;align-items:center;padding:64px 0 36px}
+.xp-hero h1{font-size:clamp(2rem,4.6vw,3.3rem);font-weight:800;letter-spacing:-.03em;margin:14px 0 16px}
+.xp-hero .lead{color:var(--muted);font-size:1.05rem;max-width:620px}
+.xp-cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.xp-note{color:var(--dim);font-size:.8rem;margin-top:14px;max-width:560px}
+
+.sample{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line2);border-radius:22px;padding:22px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+.sample-tag{position:absolute;top:-11px;left:20px;background:var(--bg2);border:1px solid var(--line2);color:var(--muted);font-size:.7rem;font-weight:700;padding:3px 11px;border-radius:99px}
+.s-top{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.s-av{width:50px;height:50px;border-radius:14px;background:var(--grad);color:#031014;font-weight:800;display:grid;place-items:center;flex:none}
+.s-top h3{font-size:1.08rem}
+.s-top p{color:var(--muted);font-size:.8rem}
+.s-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.s-dl{display:grid;gap:10px}
+.s-dl div{border-top:1px solid var(--line);padding-top:10px}
+.s-dl dt{color:var(--dim);font-size:.72rem;font-weight:700}
+.s-dl dd{font-size:.88rem;font-weight:600}
+
+.xp-trust{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:26px 0 8px}
+.xp-trust div{border:1px solid var(--line);border-radius:14px;padding:16px;background:rgba(255,255,255,.02)}
+.xp-trust strong{display:block;font-size:.95rem;margin-bottom:3px}
+.xp-trust span{color:var(--muted);font-size:.82rem}
+
+.xp-sec{padding:58px 0 4px}
+.sec-head{max-width:700px;margin-bottom:26px}
+.sec-head h2{font-size:clamp(1.5rem,3vw,2.15rem);letter-spacing:-.02em;margin-bottom:8px}
+.sec-head p{color:var(--muted)}
+
+.steps{list-style:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;counter-reset:s}
+.steps li{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;counter-increment:s}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:rgba(80,245,168,.1);color:var(--green);font-weight:800;font-size:.85rem;margin-bottom:12px}
+.steps h3{font-size:1.02rem;margin-bottom:6px}
+.steps p{color:var(--muted);font-size:.86rem}
+
+.cards4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.cards4 article{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.cards4 h3{font-size:1rem;margin-bottom:6px}
+.cards4 p{color:var(--muted);font-size:.86rem}
+
+.check-list{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;max-width:860px}
+.check-list li{position:relative;padding-left:28px;color:var(--text);font-size:.92rem}
+.check-list li::before{content:"";position:absolute;left:0;top:.28em;width:16px;height:16px;border-radius:50%;background:rgba(80,245,168,.14);border:1px solid rgba(80,245,168,.5)}
+.check-list li::after{content:"";position:absolute;left:5px;top:.5em;width:5px;height:8px;border:solid var(--green);border-width:0 2px 2px 0;transform:rotate(45deg) scale(.8);transform-origin:center}
+
+/* The .btn display rule must not override the hidden attribute */
+.form-wrap [hidden]{display:none!important}
+
+/* ---------- Application form ---------- */
+.form-wrap{background:var(--card);border:1px solid var(--line2);border-radius:22px;padding:clamp(18px,3vw,34px);position:relative}
+.stepper{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:26px}
+.stepper li{border-top:3px solid var(--line2);padding-top:8px;color:var(--dim);font-size:.8rem;font-weight:700}
+.stepper li.done{border-color:rgba(80,245,168,.55);color:var(--muted)}
+.stepper li.cur{border-color:var(--cyan);color:var(--text)}
+.step[hidden]{display:none}
+.step h3{font-size:1.25rem;margin-bottom:4px}
+.step>.hint{color:var(--muted);font-size:.86rem;margin-bottom:20px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.fld{margin-bottom:16px;min-width:0}
+.fld>label,.fld>.lbl{display:block;font-size:.82rem;font-weight:700;margin-bottom:6px}
+.fld .opt{color:var(--dim);font-weight:500}
+.fld small{display:block;color:var(--dim);font-size:.76rem;margin-top:5px}
+.fld input[type=text],.fld input[type=email],.fld input[type=tel],.fld input[type=url],.fld input[type=search],.fld select,.fld textarea{
+  width:100%;min-height:46px;background:var(--bg2);border:1px solid var(--line2);color:var(--text);
+  border-radius:12px;padding:11px 14px;font:500 .92rem/1.4 Manrope,Arial,sans-serif
+}
+.fld textarea{min-height:100px;resize:vertical}
+.fld select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 52%,calc(100% - 14px) 52%;background-size:6px 6px;background-repeat:no-repeat;padding-right:36px}
+.fld input:focus-visible,.fld select:focus-visible,.fld textarea:focus-visible,.pk-btn:focus-visible,.pill input:focus-visible+span,.btn:focus-visible,.consent input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.fld.invalid input,.fld.invalid select,.fld.invalid textarea,.fld.invalid .pk-btn{border-color:var(--red)}
+.err{color:var(--red);font-size:.78rem;margin-top:5px;min-height:0}
+.err:empty{display:none}
+
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{position:relative}
+.pill input{position:absolute;opacity:0;inset:0;cursor:pointer;width:100%;height:100%;margin:0}
+.pill span{display:inline-block;padding:8px 14px;border-radius:99px;border:1px solid var(--line2);color:var(--muted);font-size:.82rem;font-weight:600;background:rgba(255,255,255,.02)}
+.pill input:checked+span{background:rgba(82,232,255,.1);border-color:rgba(82,232,255,.55);color:var(--text)}
+
+/* searchable picker */
+.pk{position:relative}
+.pk-btn{width:100%;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;background:var(--bg2);border:1px solid var(--line2);color:var(--text);border-radius:12px;padding:11px 14px;font:500 .92rem/1.4 Manrope,Arial,sans-serif;cursor:pointer}
+.pk-btn .ph{color:var(--dim)}
+.pk-caret{width:8px;height:8px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-4px;flex:none}
+.pk-pop{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 6px);background:var(--card2);border:1px solid var(--line2);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.5);padding:10px}
+.pk-pop[hidden]{display:none}
+.pk-pop .pk-q{margin-bottom:8px}
+.pk-list{list-style:none;max-height:250px;overflow:auto;overscroll-behavior:contain}
+.pk-list li{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border-radius:9px;font-size:.88rem;cursor:pointer}
+.pk-list li:hover,.pk-list li.on{background:rgba(82,232,255,.08)}
+.pk-list li small{color:var(--dim);margin:0}
+.pk-list li.sel::after{content:"\2713";color:var(--green);font-weight:800}
+.pk-list .none{color:var(--dim);cursor:default}
+.pk-done{width:100%;margin-top:8px}
+.pk-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pk-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(82,232,255,.09);border:1px solid rgba(82,232,255,.4);border-radius:99px;padding:4px 6px 4px 11px;font-size:.78rem;font-weight:600}
+.pk-tag button{border:0;background:rgba(255,255,255,.08);color:var(--text);width:20px;height:20px;border-radius:50%;cursor:pointer;line-height:1;font-size:.9rem}
+
+.fld .check-same{display:flex;gap:8px;align-items:center;margin:8px 0 0;font-size:.8rem;font-weight:500;color:var(--muted)}
+.consent{display:flex;gap:11px;align-items:flex-start;margin-bottom:12px;font-size:.86rem;color:var(--muted)}
+.consent input{margin-top:4px;width:18px;height:18px;flex:none;accent-color:#50f5a8}
+.review{border:1px solid var(--line);border-radius:14px;padding:6px 16px;margin-bottom:20px;background:rgba(255,255,255,.02)}
+.review div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.86rem}
+.review div:last-child{border-bottom:0}
+.review dt{color:var(--dim);font-weight:700}
+.review dd{word-break:break-word}
+.actions{display:flex;justify-content:space-between;gap:12px;margin-top:10px;flex-wrap:wrap}
+.actions .btn{min-width:130px}
+.form-msg{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:.86rem;border:1px solid rgba(255,122,138,.4);background:rgba(255,122,138,.07);color:var(--red)}
+.form-msg[hidden]{display:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+.done-card{text-align:center;padding:30px 10px}
+.done-card .tick{width:64px;height:64px;border-radius:50%;margin:0 auto 16px;display:grid;place-items:center;background:rgba(80,245,168,.1);border:1px solid rgba(80,245,168,.5)}
+.done-card h3{font-size:1.5rem;margin-bottom:8px}
+.done-card p{color:var(--muted);max-width:540px;margin:0 auto 10px}
+.done-card .ref{display:inline-block;font:500 1rem "DM Mono",monospace;border:1px dashed var(--line2);border-radius:10px;padding:8px 16px;margin:8px 0 18px;color:var(--text)}
+.done-card ul{list-style:none;text-align:left;max-width:520px;margin:6px auto 22px;color:var(--muted);font-size:.9rem}
+.done-card li{padding:6px 0 6px 22px;position:relative}
+.done-card li::before{content:"";position:absolute;left:2px;top:.85em;width:8px;height:8px;border-radius:50%;background:var(--cyan)}
+
+.faq{display:grid;gap:10px;max-width:860px}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 18px}
+.faq summary{cursor:pointer;font-weight:700;padding:14px 0;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";float:right;color:var(--cyan);font-weight:800}
+.faq details[open] summary::after{content:"\2212"}
+.faq p{color:var(--muted);font-size:.9rem;padding-bottom:16px}
+
+.xp-final{margin:64px 0 10px;padding:34px;border-radius:22px;border:1px solid var(--line2);background:linear-gradient(120deg,rgba(80,245,168,.08),rgba(82,232,255,.06));display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.xp-final h2{font-size:1.5rem;margin-bottom:4px}
+.xp-final p{color:var(--muted)}
+
+@media(max-width:980px){
+  .xp-hero{grid-template-columns:1fr;gap:34px;padding-top:40px}
+  .xp-trust,.steps,.cards4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .xp-trust,.steps,.cards4,.check-list,.row2{grid-template-columns:1fr}
+  .stepper li span{display:none}
+  .stepper li.cur span{display:inline}
+  .stepper{gap:5px}
+  .review div{grid-template-columns:1fr;gap:2px}
+  .actions .btn{flex:1}
+  .xp-final{padding:24px}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="page-glow glow-one" aria-hidden="true"></div>
+<div class="page-glow glow-two" aria-hidden="true"></div>
+
+<header class="glime-global-header">
+  <div class="glime-nav-inner">
+    <a href="index.html" class="glime-brand" aria-label="GLIME Home"><img src="glime_logo_clean.svg" alt="GLIME"></a>
+    <nav class="glime-desktop-nav" aria-label="Main navigation">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="why-glime.html" data-nav="why">Why GLIME</a>
+      <a href="how-it-works.html" data-nav="how">How It Works</a>
+      <a href="packages.html" data-nav="packages">Packages</a>
+      <a href="export-program.html" class="active">Export Network</a>
+      <a href="contact.html" data-nav="contact">Contact</a>
+      <a href="login.html">Login</a>
+    </nav>
+    <button class="glime-menu-button" id="glime-menu-button" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="glime-mobile-nav"><span></span><span></span><span></span></button>
+  </div>
+  <nav class="glime-mobile-nav" id="glime-mobile-nav" aria-label="Mobile navigation">
+    <a href="index.html" data-nav="home">Home</a>
+    <a href="why-glime.html" data-nav="why">Why GLIME</a>
+    <a href="how-it-works.html" data-nav="how">How It Works</a>
+    <a href="packages.html" data-nav="packages">Packages</a>
+    <a href="export-program.html" class="active">Export Network</a>
+    <a href="contact.html" data-nav="contact">Contact</a>
+    <a href="login.html">Login</a>
+    <a href="signup.html" class="glime-mobile-cta">Start 7-Day Free Trial <span aria-hidden="true">&rarr;</span></a>
+  </nav>
+</header>
+
+<main>
+
+<!-- HERO -->
+<section class="container xp-hero">
+  <div>
+    <p class="eyebrow">GLIME Export Network</p>
+    <h1>Get found by Indian manufacturers and exporters.</h1>
+    <p class="lead">Apply once. After our team verifies your business, Indian suppliers on GLIME can find your listing, send you an introduction and talk to you in your own language.</p>
+    <div class="xp-cta-row">
+      <a href="#apply" class="btn btn-primary">Apply as a distributor</a>
+      <a href="#how" class="btn btn-ghost">See how it works</a>
+    </div>
+    <p class="xp-note">Open to importers, distributors, wholesalers and agents in every country.</p>
+  </div>
+
+  <aside class="sample" aria-label="Example of a verified listing">
+    <span class="sample-tag">Example listing</span>
+    <div class="s-top">
+      <span class="s-av" aria-hidden="true">ST</span>
+      <div>
+        <h3>Sample Trading Co.</h3>
+        <p>Importer and distributor in Dubai, United Arab Emirates</p>
+      </div>
+    </div>
+    <div class="s-badges">
+      <span class="chip ok">Verified by GLIME</span>
+      <span class="chip info">Trade licence checked</span>
+    </div>
+    <dl class="s-dl">
+      <div><dt>Buys</dt><dd>Food and beverages, spices, textiles</dd></div>
+      <div><dt>Languages</dt><dd>Arabic, English</dd></div>
+      <div><dt>Typical order</dt><dd>$5,000 to $25,000</dd></div>
+    </dl>
+  </aside>
+</section>
+
+<section class="container">
+  <div class="xp-trust">
+    <div><strong>Verified listings only</strong><span>Every business is reviewed by the GLIME team before it appears.</span></div>
+    <div><strong>Every country</strong><span>Businesses from anywhere in the world can apply.</span></div>
+    <div><strong>Your language</strong><span>Introductions and replies are handled in the language you choose.</span></div>
+    <div><strong>You stay in control</strong><span>Your phone number and email are not shown in the listing.</span></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="container xp-sec" id="how">
+  <div class="sec-head">
+    <h2>From application to your first introduction</h2>
+    <p>Four steps. Most of the work is ours.</p>
+  </div>
+  <ol class="steps">
+    <li><h3>You apply</h3><p>Tell us about your company, what you buy and which languages you work in. It takes about five minutes.</p></li>
+    <li><h3>We verify</h3><p>Our team checks your registration, licence and online presence. We may ask you for documents.</p></li>
+    <li><h3>You are listed</h3><p>Once approved, your company appears in the directory that Indian businesses on GLIME can search.</p></li>
+    <li><h3>Introductions arrive</h3><p>Suppliers who match your categories ask to be introduced, and the conversation happens in your language.</p></li>
+  </ol>
+</section>
+
+<!-- WHO -->
+<section class="container xp-sec" id="who">
+  <div class="sec-head">
+    <h2>Who can apply</h2>
+    <p>If you buy products to resell, distribute or stock, this network is for you.</p>
+  </div>
+  <div class="cards4">
+    <article><h3>Importers</h3><p>Companies that bring goods into their country for sale or further trade.</p></article>
+    <article><h3>Distributors and wholesalers</h3><p>Businesses that supply shops, restaurants, hotels and other trade buyers.</p></article>
+    <article><h3>Retail chains and buying groups</h3><p>Stores and groups that source directly from manufacturers.</p></article>
+    <article><h3>Agents and trading companies</h3><p>Representatives who match buyers in your market with suppliers in India.</p></article>
+  </div>
+</section>
+
+<!-- VERIFICATION -->
+<section class="container xp-sec" id="verification">
+  <div class="sec-head">
+    <h2>What we check before listing you</h2>
+    <p>Indian suppliers rely on this directory, so every application is reviewed by a person at GLIME. We look at:</p>
+  </div>
+  <ul class="check-list">
+    <li>Business registration or trade licence</li>
+    <li>Company website or online presence</li>
+    <li>Contact person, email and phone number</li>
+    <li>Whether your business activity matches the product categories you chose</li>
+  </ul>
+</section>
+
+<!-- APPLY -->
+<section class="container xp-sec" id="apply">
+  <div class="sec-head">
+    <h2>Apply to the Export Network</h2>
+    <p>Fields marked with an asterisk are required. Your answers go to the GLIME verification team.</p>
+  </div>
+
+  <div class="form-wrap" id="formWrap">
+    <noscript><p class="form-msg">Please turn on JavaScript to submit the application form.</p></noscript>
+    <form id="expForm" novalidate autocomplete="on">
+      <ol class="stepper" id="stepper" aria-label="Application progress">
+        <li class="cur"><span>Company</span></li>
+        <li><span>Buying interests</span></li>
+        <li><span>Contact and language</span></li>
+        <li><span>Review and submit</span></li>
+      </ol>
+
+      <!-- STEP 1 -->
+      <section class="step" data-step="1" aria-labelledby="h1">
+        <h3 id="h1">Your company</h3>
+        <p class="hint">Use the details exactly as they appear on your business registration.</p>
+
+        <div class="row2">
+          <div class="fld"><label for="f_company">Registered company name *</label><input type="text" id="f_company" name="company_name" maxlength="150" autocomplete="organization"><p class="err" data-err="company_name"></p></div>
+          <div class="fld"><label for="f_trade">Trading or brand name <span class="opt">(optional)</span></label><input type="text" id="f_trade" name="trade_name" maxlength="150"></div>
+        </div>
+
+        <div class="row2">
+          <div class="fld"><label for="f_type">Business type *</label><select id="f_type" name="business_type"></select><p class="err" data-err="business_type"></p></div>
+          <div class="fld"><label for="f_year">Year established <span class="opt">(optional)</span></label><select id="f_year" name="established_year"></select></div>
+        </div>
+
+        <div class="row2">
+          <div class="fld"><span class="lbl" id="l_country">Country *</span><div id="pkCountry" aria-labelledby="l_country"></div><p class="err" data-err="country"></p></div>
+          <div class="fld"><label for="f_city">City *</label><input type="text" id="f_city" name="city" maxlength="100" autocomplete="address-level2"><p class="err" data-err="city"></p></div>
+        </div>
+
+        <div class="fld"><label for="f_address">Business address <span class="opt">(optional)</span></label><input type="text" id="f_address" name="address" maxlength="250" autocomplete="street-address"></div>
+
+        <div class="row2">
+          <div class="fld"><label for="f_reg">Registration or trade licence number *</label><input type="text" id="f_reg" name="registration_number" maxlength="80"><p class="err" data-err="registration_number"></p></div>
+          <div class="fld"><label for="f_auth">Issuing authority <span class="opt">(optional)</span></label><input type="text" id="f_auth" name="issuing_authority" maxlength="120"><small>For example, the chamber of commerce or free zone.</small></div>
+        </div>
+
+        <div class="row2">
+          <div class="fld"><label for="f_tax">Tax or VAT number <span class="opt">(optional)</span></label><input type="text" id="f_tax" name="tax_id" maxlength="60"></div>
+          <div class="fld"><label for="f_web">Company website <span class="opt">(optional)</span></label><input type="url" id="f_web" name="website" maxlength="200" placeholder="www.example.com" autocomplete="url"><p class="err" data-err="website"></p></div>
+        </div>
+
+        <div class="fld"><label for="f_docs">Link to your licence or company profile <span class="opt">(optional)</span></label><input type="url" id="f_docs" name="docs_link" maxlength="300" placeholder="Google Drive, Dropbox or LinkedIn link"><small>If you share a document link, make sure our team can open it. We will also ask for documents later if needed.</small><p class="err" data-err="docs_link"></p></div>
+
+        <div class="fld"><label for="f_about">About your business <span class="opt">(optional)</span></label><textarea id="f_about" name="about" maxlength="600" placeholder="What you do, who you sell to and how long you have been trading."></textarea></div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="step" data-step="2" aria-labelledby="h2" hidden>
+        <h3 id="h2">What you want to buy</h3>
+        <p class="hint">This is how Indian suppliers are matched to you.</p>
+
+        <div class="fld"><span class="lbl">Product categories * <span class="opt">(choose all that apply)</span></span><div class="pills" id="pillsCat"></div><p class="err" data-err="categories"></p></div>
+
+        <div class="fld"><label for="f_products">Specific products you are looking for <span class="opt">(optional)</span></label><textarea id="f_products" name="products_text" maxlength="800" placeholder="For example: basmati rice, turmeric powder, cotton kurtas."></textarea></div>
+
+        <div class="row2">
+          <div class="fld"><label for="f_vol">Yearly import volume <span class="opt">(optional)</span></label><select id="f_vol" name="import_volume"></select></div>
+          <div class="fld"><label for="f_order">Typical order value <span class="opt">(optional)</span></label><select id="f_order" name="order_value"></select></div>
+        </div>
+
+        <div class="fld"><span class="lbl">Do you already buy from India? <span class="opt">(optional)</span></span><div class="pills" id="pillsIndia"></div></div>
+        <div class="fld"><span class="lbl">Payment terms you accept <span class="opt">(optional)</span></span><div class="pills" id="pillsPay"></div></div>
+        <div class="fld"><span class="lbl">Shipping terms you prefer <span class="opt">(optional)</span></span><div class="pills" id="pillsShip"></div></div>
+
+        <div class="fld"><label for="f_cert">Certifications or standards you require <span class="opt">(optional)</span></label><input type="text" id="f_cert" name="certifications" maxlength="250" placeholder="For example: Halal, FSSAI, ISO 22000, GOTS"></div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="step" data-step="3" aria-labelledby="h3t" hidden>
+        <h3 id="h3t">Contact person and language</h3>
+        <p class="hint">Your email and phone are used by the GLIME team. They are not shown in the listing.</p>
+
+        <div class="row2">
+          <div class="fld"><label for="f_name">Contact person *</label><input type="text" id="f_name" name="contact_name" maxlength="100" autocomplete="name"><p class="err" data-err="contact_name"></p></div>
+          <div class="fld"><label for="f_role">Job title <span class="opt">(optional)</span></label><input type="text" id="f_role" name="designation" maxlength="80" autocomplete="organization-title"></div>
+        </div>
+
+        <div class="row2">
+          <div class="fld"><label for="f_email">Business email *</label><input type="email" id="f_email" name="email" maxlength="160" autocomplete="email"><p class="err" data-err="email"></p></div>
+          <div class="fld"><label for="f_phone">Phone number *</label><input type="tel" id="f_phone" name="phone" maxlength="30" placeholder="+971 50 123 4567" autocomplete="tel"><small>Include the country code.</small><p class="err" data-err="phone"></p></div>
+        </div>
+
+        <div class="fld">
+          <label for="f_wa">WhatsApp number <span class="opt">(optional)</span></label>
+          <input type="tel" id="f_wa" name="whatsapp" maxlength="30" placeholder="+971 50 123 4567">
+          <label class="check-same"><input type="checkbox" id="waSame"> Same as my phone number</label>
+          <p class="err" data-err="whatsapp"></p>
+        </div>
+
+        <div class="fld"><span class="lbl" id="l_lang">Languages you do business in *</span><div id="pkLang" aria-labelledby="l_lang"></div><p class="err" data-err="languages"></p></div>
+
+        <div class="row2">
+          <div class="fld"><label for="f_primary">Preferred language for messages *</label><select id="f_primary" name="primary_language"></select><small>Introductions will be written in this language.</small><p class="err" data-err="primary_language"></p></div>
+          <div class="fld"><span class="lbl">How should we contact you? <span class="opt">(optional)</span></span><div class="pills" id="pillsChan"></div></div>
+        </div>
+
+        <div class="row2">
+          <div class="fld"><label for="f_tz">Time zone <span class="opt">(optional)</span></label><input type="text" id="f_tz" name="timezone" maxlength="60" list="tzList" autocomplete="off"><datalist id="tzList"></datalist></div>
+          <div class="fld"><label for="f_hours">Business hours <span class="opt">(optional)</span></label><input type="text" id="f_hours" name="business_hours" maxlength="80" placeholder="Sunday to Thursday, 9 am to 6 pm"></div>
+        </div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="step" data-step="4" aria-labelledby="h4" hidden>
+        <h3 id="h4">Review and submit</h3>
+        <p class="hint">Check your details. You can go back and edit anything.</p>
+        <dl class="review" id="reviewBox"></dl>
+
+        <label class="consent"><input type="checkbox" name="consent_accuracy" id="c1"><span>I confirm that the information is accurate and that I can provide documents to verify my business. *</span></label>
+        <p class="err" data-err="consent_accuracy"></p>
+        <label class="consent"><input type="checkbox" name="consent_contact" id="c2"><span>I agree that GLIME and Indian suppliers using GLIME may contact me by email or WhatsApp. Messages may be written with the help of an AI assistant, and I can ask to stop at any time. *</span></label>
+        <p class="err" data-err="consent_contact"></p>
+        <label class="consent"><input type="checkbox" name="consent_terms" id="c3"><span>I have read the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. *</span></label>
+        <p class="err" data-err="consent_terms"></p>
+      </section>
+
+      <div class="hp" aria-hidden="true"><label>Leave this field empty<input type="text" name="company_site" tabindex="-1" autocomplete="off"></label></div>
+
+      <p class="form-msg" id="formMsg" role="alert" hidden></p>
+
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" id="btnBack" hidden>Back</button>
+        <button type="button" class="btn btn-primary" id="btnNext">Continue</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmit" hidden>Submit application</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="container xp-sec" id="faq">
+  <div class="sec-head"><h2>Questions distributors ask first</h2></div>
+  <div class="faq">
+    <details><summary>Can I apply from any country?</summary><p>Yes. Importers, distributors, wholesalers and agents from every country can apply.</p></details>
+    <details><summary>Who can see my listing?</summary><p>Only Indian businesses that GLIME has approved for the Export Network. Your phone number and email are not shown in the listing.</p></details>
+    <details><summary>How is my business verified?</summary><p>A person on our team reviews your registration or trade licence, your website or online presence and your contact details. We may ask for documents, and we may call or email you.</p></details>
+    <details><summary>What if my application is not approved?</summary><p>We will tell you by email. If we could not verify something, you can send the missing details and apply again.</p></details>
+    <details><summary>Will I be contacted by a machine?</summary><p>Indian suppliers may use GLIME's AI assistant to write messages for them, in the language you chose. Every message comes through GLIME, and you can ask us to stop at any time.</p></details>
+    <details><summary>Can I change or remove my listing later?</summary><p>Yes. Write to us from the <a href="contact.html">Contact page</a> and quote your reference number.</p></details>
+  </div>
+</section>
+
+<section class="container">
+  <div class="xp-final">
+    <div>
+      <h2>Ready to be listed?</h2>
+      <p>Tell us about your business and we will take it from there.</p>
+    </div>
+    <a href="#apply" class="btn btn-primary">Start your application</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <a href="index.html" aria-label="Glime home"><img src="glime_logo_clean.svg" alt="GLIME"></a>
+    <div class="footer-links">
+      <a href="about.html">About</a>
+      <a href="why-glime.html">Why GLIME</a>
+      <a href="packages.html">Packages</a>
+      <a href="how-it-works.html">How It Works</a>
+      <a href="export-program.html">Export Network</a>
+      <a href="refund-cancellation.html">Refund &amp; Cancellation</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <p>&copy; 2026 GLIME. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =========================================================
+   GLIME EXPORT NETWORK - application form
+
+   Backend (to be built) - RPC the form calls:
+
+     export_distributor_apply(p_application jsonb) returns jsonb
+       - security definer, executable by anon and authenticated
+       - rate limit per IP and per email
+       - stores the application as "pending" for admin review
+       - returns { "ok": true, "reference_id": "EX-261124-AB12" }
+       - raises an exception whose message is one of:
+           rate_limited   too many attempts
+           duplicate      same email already has an open application
+           invalid        a required value is missing or malformed
+
+   Payload keys: company_name, trade_name, business_type, established_year,
+     country, country_code, city, address, registration_number,
+     issuing_authority, tax_id, website, docs_link, about, categories[],
+     products_text, import_volume, order_value, imports_from_india,
+     payment_terms[], shipping_terms[], certifications, contact_name,
+     designation, email, phone, whatsapp, languages[], primary_language,
+     contact_channel, timezone, business_hours, consent_accuracy,
+     consent_contact, consent_terms, form_ms
+
+   If the RPC does not exist the page says applications are not open yet.
+   It never pretends that an application was saved.
+========================================================= */
+(function () {
+  'use strict';
+
+  var SB_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
+  var SB_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
+  var sb = window.supabase
+    ? window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
+    : null;
+
+  /* ---------------- data ---------------- */
+  var COUNTRY_RAW = [
+    'AF|Afghanistan|93','AL|Albania|355','DZ|Algeria|213','AD|Andorra|376','AO|Angola|244','AG|Antigua and Barbuda|1268',
+    'AR|Argentina|54','AM|Armenia|374','AU|Australia|61','AT|Austria|43','AZ|Azerbaijan|994','BS|Bahamas|1242',
+    'BH|Bahrain|973','BD|Bangladesh|880','BB|Barbados|1246','BY|Belarus|375','BE|Belgium|32','BZ|Belize|501',
+    'BJ|Benin|229','BT|Bhutan|975','BO|Bolivia|591','BA|Bosnia and Herzegovina|387','BW|Botswana|267','BR|Brazil|55',
+    'BN|Brunei|673','BG|Bulgaria|359','BF|Burkina Faso|226','BI|Burundi|257','CV|Cabo Verde|238','KH|Cambodia|855',
+    'CM|Cameroon|237','CA|Canada|1','CF|Central African Republic|236','TD|Chad|235','CL|Chile|56','CN|China|86',
+    'CO|Colombia|57','KM|Comoros|269','CG|Congo|242','CD|Congo (Democratic Republic)|243','CR|Costa Rica|506',
+    'CI|C\u00f4te d\u2019Ivoire|225','HR|Croatia|385','CU|Cuba|53','CY|Cyprus|357','CZ|Czechia|420','DK|Denmark|45',
+    'DJ|Djibouti|253','DM|Dominica|1767','DO|Dominican Republic|1','EC|Ecuador|593','EG|Egypt|20','SV|El Salvador|503',
+    'GQ|Equatorial Guinea|240','ER|Eritrea|291','EE|Estonia|372','SZ|Eswatini|268','ET|Ethiopia|251','FJ|Fiji|679',
+    'FI|Finland|358','FR|France|33','GA|Gabon|241','GM|Gambia|220','GE|Georgia|995','DE|Germany|49','GH|Ghana|233',
+    'GR|Greece|30','GD|Grenada|1473','GT|Guatemala|502','GN|Guinea|224','GW|Guinea-Bissau|245','GY|Guyana|592',
+    'HT|Haiti|509','HN|Honduras|504','HK|Hong Kong|852','HU|Hungary|36','IS|Iceland|354','IN|India|91','ID|Indonesia|62',
+    'IR|Iran|98','IQ|Iraq|964','IE|Ireland|353','IL|Israel|972','IT|Italy|39','JM|Jamaica|1876','JP|Japan|81',
+    'JO|Jordan|962','KZ|Kazakhstan|7','KE|Kenya|254','KI|Kiribati|686','XK|Kosovo|383','KW|Kuwait|965','KG|Kyrgyzstan|996',
+    'LA|Laos|856','LV|Latvia|371','LB|Lebanon|961','LS|Lesotho|266','LR|Liberia|231','LY|Libya|218','LI|Liechtenstein|423',
+    'LT|Lithuania|370','LU|Luxembourg|352','MO|Macao|853','MG|Madagascar|261','MW|Malawi|265','MY|Malaysia|60',
+    'MV|Maldives|960','ML|Mali|223','MT|Malta|356','MH|Marshall Islands|692','MR|Mauritania|222','MU|Mauritius|230',
+    'MX|Mexico|52','FM|Micronesia|691','MD|Moldova|373','MC|Monaco|377','MN|Mongolia|976','ME|Montenegro|382',
+    'MA|Morocco|212','MZ|Mozambique|258','MM|Myanmar|95','NA|Namibia|264','NR|Nauru|674','NP|Nepal|977','NL|Netherlands|31',
+    'NZ|New Zealand|64','NI|Nicaragua|505','NE|Niger|227','NG|Nigeria|234','MK|North Macedonia|389','NO|Norway|47',
+    'OM|Oman|968','PK|Pakistan|92','PW|Palau|680','PS|Palestine|970','PA|Panama|507','PG|Papua New Guinea|675',
+    'PY|Paraguay|595','PE|Peru|51','PH|Philippines|63','PL|Poland|48','PT|Portugal|351','QA|Qatar|974','RO|Romania|40',
+    'RU|Russia|7','RW|Rwanda|250','KN|Saint Kitts and Nevis|1869','LC|Saint Lucia|1758','VC|Saint Vincent and the Grenadines|1784',
+    'WS|Samoa|685','SM|San Marino|378','ST|S\u00e3o Tom\u00e9 and Pr\u00edncipe|239','SA|Saudi Arabia|966','SN|Senegal|221',
+    'RS|Serbia|381','SC|Seychelles|248','SL|Sierra Leone|232','SG|Singapore|65','SK|Slovakia|421','SI|Slovenia|386',
+    'SB|Solomon Islands|677','SO|Somalia|252','ZA|South Africa|27','KR|South Korea|82','SS|South Sudan|211','ES|Spain|34',
+    'LK|Sri Lanka|94','SD|Sudan|249','SR|Suriname|597','SE|Sweden|46','CH|Switzerland|41','SY|Syria|963','TW|Taiwan|886',
+    'TJ|Tajikistan|992','TZ|Tanzania|255','TH|Thailand|66','TL|Timor-Leste|670','TG|Togo|228','TO|Tonga|676',
+    'TT|Trinidad and Tobago|1868','TN|Tunisia|216','TR|T\u00fcrkiye|90','TM|Turkmenistan|993','TV|Tuvalu|688','UG|Uganda|256',
+    'UA|Ukraine|380','AE|United Arab Emirates|971','GB|United Kingdom|44','US|United States|1','UY|Uruguay|598',
+    'UZ|Uzbekistan|998','VU|Vanuatu|678','VE|Venezuela|58','VN|Vietnam|84','YE|Yemen|967','ZM|Zambia|260','ZW|Zimbabwe|263'
+  ];
+  var COUNTRIES = COUNTRY_RAW.map(function (r) {
+    var p = r.split('|');
+    return { id: p[0], label: p[1], dial: p[2] };
+  });
+
+  var LANG_RAW = [
+    'English|English','Arabic|\u0627\u0644\u0639\u0631\u0628\u064a\u0629','Hindi|\u0939\u093f\u0928\u094d\u0926\u0940','Russian|\u0420\u0443\u0441\u0441\u043a\u0438\u0439',
+    'Chinese (Mandarin)|\u4e2d\u6587','French|Fran\u00e7ais','Spanish|Espa\u00f1ol','Portuguese|Portugu\u00eas','German|Deutsch','Italian|Italiano',
+    'Dutch|Nederlands','Turkish|T\u00fcrk\u00e7e','Persian (Farsi)|\u0641\u0627\u0631\u0633\u06cc','Urdu|\u0627\u0631\u062f\u0648','Bengali|\u09ac\u09be\u0982\u09b2\u09be',
+    'Tamil|\u0ba4\u0bae\u0bbf\u0bb4\u0bcd','Telugu|\u0c24\u0c46\u0c32\u0c41\u0c17\u0c41','Marathi|\u092e\u0930\u093e\u0920\u0940','Gujarati|\u0a97\u0ac1\u0a9c\u0ab0\u0abe\u0aa4\u0ac0',
+    'Punjabi|\u0a2a\u0a70\u0a1c\u0a3e\u0a2c\u0a40','Nepali|\u0928\u0947\u092a\u093e\u0932\u0940','Sinhala|\u0dc3\u0dd2\u0d82\u0dc4\u0dbd','Indonesian|Bahasa Indonesia',
+    'Malay|Bahasa Melayu','Vietnamese|Ti\u1ebfng Vi\u1ec7t','Thai|\u0e44\u0e17\u0e22','Japanese|\u65e5\u672c\u8a9e','Korean|\ud55c\uad6d\uc5b4',
+    'Filipino (Tagalog)|Filipino','Khmer|\u1781\u17d2\u1798\u17c2\u179a','Burmese|\u1019\u103c\u1014\u103a\u1019\u102c','Swahili|Kiswahili','Amharic|\u12a0\u121b\u122d\u129b',
+    'Hausa|Hausa','Yoruba|Yor\u00f9b\u00e1','Zulu|isiZulu','Afrikaans|Afrikaans','Somali|Soomaali','Polish|Polski',
+    'Ukrainian|\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430','Romanian|Rom\u00e2n\u0103','Greek|\u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac','Czech|\u010ce\u0161tina',
+    'Hungarian|Magyar','Bulgarian|\u0411\u044a\u043b\u0433\u0430\u0440\u0441\u043a\u0438','Serbian|\u0421\u0440\u043f\u0441\u043a\u0438','Croatian|Hrvatski',
+    'Slovak|Sloven\u010dina','Swedish|Svenska','Norwegian|Norsk','Danish|Dansk','Finnish|Suomi','Hebrew|\u05e2\u05d1\u05e8\u05d9\u05ea',
+    'Kazakh|\u049a\u0430\u0437\u0430\u049b\u0448\u0430','Uzbek|O\u02bbzbekcha','Azerbaijani|Az\u0259rbaycanca','Georgian|\u10e5\u10d0\u10e0\u10d7\u10e3\u10da\u10d8',
+    'Armenian|\u0540\u0561\u0575\u0565\u0580\u0565\u0576','Albanian|Shqip','Pashto|\u067e\u069a\u062a\u0648','Kurdish|Kurd\u00ee','Mongolian|\u041c\u043e\u043d\u0433\u043e\u043b'
+  ];
+  var LANGS = LANG_RAW.map(function (r) {
+    var p = r.split('|');
+    return { id: p[0], label: p[0], sub: p[1] === p[0] ? '' : p[1] };
+  });
+
+  var BUSINESS_TYPES = ['Importer', 'Distributor', 'Wholesaler', 'Retailer or chain store', 'Trading company', 'Sales agent or representative', 'E-commerce seller', 'Other'];
+  var CATEGORIES = ['Food and beverages', 'Spices and agro products', 'Rice, grains and pulses', 'Tea and coffee', 'Textiles and fabrics', 'Garments and apparel', 'Footwear and leather', 'Jewellery and accessories', 'Home decor and handicrafts', 'Furniture', 'Electronics and appliances', 'Beauty and personal care', 'Health and wellness', 'Pharma and medical supplies', 'Machinery and industrial equipment', 'Auto parts and accessories', 'Chemicals and plastics', 'Building materials and hardware', 'Stationery and toys', 'Packaging', 'Other'];
+  var IMPORT_VOL = ['Under $50,000', '$50,000 to $250,000', '$250,000 to $1 million', '$1 million to $5 million', 'Over $5 million', 'Prefer not to say'];
+  var ORDER_VAL = ['Under $1,000', '$1,000 to $5,000', '$5,000 to $25,000', '$25,000 to $100,000', 'Over $100,000'];
+  var IMPORTS_INDIA = ['Yes, regularly', 'Sometimes', 'Not yet'];
+  var PAY_TERMS = ['Advance payment', 'Letter of credit (LC)', 'Net 30 days', 'Net 60 days', 'Escrow', 'Other'];
+  var SHIP_TERMS = ['EXW', 'FOB', 'CIF', 'CFR', 'DDP'];
+  var CHANNELS = ['WhatsApp', 'Email', 'Either'];
+
+  /* ---------------- helpers ---------------- */
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+
+  var form = $('#expForm');
+  if (!form) return;
+  var T0 = Date.now();
+  var cur = 1;
+  var pick = {};
+
+  /* ---------------- searchable picker ---------------- */
+  var allPickers = [];
+  function makePicker(host, opt) {
+    var sel = [];
+    var multi = !!opt.multi;
+    var items = opt.items;
+    host.classList.add('pk');
+    host.innerHTML =
+      '<button type="button" class="pk-btn" aria-haspopup="listbox" aria-expanded="false"><span class="pk-val"></span><span class="pk-caret" aria-hidden="true"></span></button>' +
+      '<div class="pk-pop" hidden><input class="pk-q" type="search" autocomplete="off" placeholder="' + esc(opt.searchPlaceholder || 'Search') + '" aria-label="' + esc(opt.searchPlaceholder || 'Search') + '"><ul class="pk-list" role="listbox"' + (multi ? ' aria-multiselectable="true"' : '') + '></ul>' + (multi ? '<button type="button" class="btn btn-ghost btn-sm pk-done">Done</button>' : '') + '</div>' +
+      (multi ? '<div class="pk-tags"></div>' : '');
+    var btn = $('.pk-btn', host), val = $('.pk-val', host), pop = $('.pk-pop', host), q = $('.pk-q', host), ul = $('.pk-list', host), tags = $('.pk-tags', host);
+
+    function labelOf(id) { for (var i = 0; i < items.length; i++) if (items[i].id === id) return items[i].label; return id; }
+    function renderVal() {
+      if (!sel.length) val.innerHTML = '<span class="ph">' + esc(opt.placeholder) + '</span>';
+      else if (multi) val.textContent = sel.length + ' selected';
+      else val.textContent = labelOf(sel[0]);
+      if (tags) {
+        tags.innerHTML = sel.map(function (id) {
+          return '<span class="pk-tag">' + esc(labelOf(id)) + '<button type="button" data-rm="' + esc(id) + '" aria-label="Remove ' + esc(labelOf(id)) + '">&times;</button></span>';
+        }).join('');
+      }
+    }
+    function renderList() {
+      var needle = q.value.trim().toLowerCase();
+      var rows = items.filter(function (it) {
+        return !needle || (it.label + ' ' + (it.sub || '')).toLowerCase().indexOf(needle) !== -1;
+      });
+      if (!rows.length) { ul.innerHTML = '<li class="none">No match</li>'; return; }
+      ul.innerHTML = rows.map(function (it) {
+        var on = sel.indexOf(it.id) !== -1;
+        return '<li role="option" aria-selected="' + on + '" data-id="' + esc(it.id) + '" class="' + (on ? 'sel' : '') + '"><span>' + esc(it.label) + (it.sub ? ' <small>' + esc(it.sub) + '</small>' : '') + '</span></li>';
+      }).join('');
+    }
+    function open() {
+      allPickers.forEach(function (p) { if (p !== api) p.close(); });
+      pop.hidden = false; btn.setAttribute('aria-expanded', 'true');
+      q.value = ''; renderList(); q.focus();
+    }
+    function close() { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+    function change() { renderVal(); if (opt.onChange) opt.onChange(sel.slice()); }
+    function choose(id) {
+      var i = sel.indexOf(id);
+      if (multi) { if (i === -1) sel.push(id); else sel.splice(i, 1); renderList(); }
+      else { sel = [id]; close(); btn.focus(); }
+      change();
+    }
+
+    btn.addEventListener('click', function () { pop.hidden ? open() : close(); });
+    q.addEventListener('input', renderList);
+    q.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { close(); btn.focus(); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var first = $('li[data-id]', ul);
+        if (first) choose(first.getAttribute('data-id'));
+      }
+    });
+    ul.addEventListener('click', function (e) {
+      var li = e.target.closest ? e.target.closest('li[data-id]') : null;
+      if (li) choose(li.getAttribute('data-id'));
+    });
+    var done = $('.pk-done', host);
+    if (done) done.addEventListener('click', function () { close(); btn.focus(); });
+    if (tags) tags.addEventListener('click', function (e) {
+      var id = e.target.getAttribute && e.target.getAttribute('data-rm');
+      if (id) { sel.splice(sel.indexOf(id), 1); change(); }
+    });
+
+    var api = {
+      multi: multi,
+      get: function () { return sel.slice(); },
+      set: function (ids) { sel = ids.slice(); change(); },
+      close: close,
+      host: host,
+      btn: btn
+    };
+    allPickers.push(api);
+    renderVal();
+    return api;
+  }
+  document.addEventListener('mousedown', function (e) {
+    allPickers.forEach(function (p) { if (!p.host.contains(e.target)) p.close(); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') allPickers.forEach(function (p) { p.close(); });
+  });
+
+  /* ---------------- build controls ---------------- */
+  function fillSelect(sel, placeholder, list) {
+    sel.innerHTML = '<option value="">' + esc(placeholder) + '</option>' + list.map(function (v) { return '<option>' + esc(v) + '</option>'; }).join('');
+  }
+  function fillPills(host, name, type, list, tip) {
+    host.innerHTML = list.map(function (v, i) {
+      return '<label class="pill"' + (tip && tip[v] ? ' title="' + esc(tip[v]) + '"' : '') + '><input type="' + type + '" name="' + name + '" value="' + esc(v) + '"><span>' + esc(v) + '</span></label>';
+    }).join('');
+  }
+
+  fillSelect($('#f_type'), 'Select one', BUSINESS_TYPES);
+  var yearSel = $('#f_year');
+  var yNow = new Date().getFullYear(), yOpts = ['<option value="">Select year</option>'];
+  for (var y = yNow; y >= 1900; y--) yOpts.push('<option>' + y + '</option>');
+  yearSel.innerHTML = yOpts.join('');
+  fillSelect($('#f_vol'), 'Select a range', IMPORT_VOL);
+  fillSelect($('#f_order'), 'Select a range', ORDER_VAL);
+  fillPills($('#pillsCat'), 'categories', 'checkbox', CATEGORIES);
+  fillPills($('#pillsIndia'), 'imports_from_india', 'radio', IMPORTS_INDIA);
+  fillPills($('#pillsPay'), 'payment_terms', 'checkbox', PAY_TERMS);
+  fillPills($('#pillsShip'), 'shipping_terms', 'checkbox', SHIP_TERMS, {
+    EXW: 'Ex Works: buyer arranges pickup from the supplier',
+    FOB: 'Free On Board: supplier delivers to the port of shipment',
+    CIF: 'Cost, Insurance and Freight: supplier pays freight and insurance to your port',
+    CFR: 'Cost and Freight: supplier pays freight to your port',
+    DDP: 'Delivered Duty Paid: supplier delivers to you with duties paid'
+  });
+  fillPills($('#pillsChan'), 'contact_channel', 'radio', CHANNELS);
+
+  pick.country = makePicker($('#pkCountry'), {
+    items: COUNTRIES, placeholder: 'Select your country', searchPlaceholder: 'Search countries',
+    onChange: function (ids) {
+      var c = COUNTRIES.filter(function (x) { return x.id === ids[0]; })[0];
+      var ph = form.elements.phone;
+      if (c && ph && !ph.value.trim()) ph.value = '+' + c.dial + ' ';
+    }
+  });
+  pick.languages = makePicker($('#pkLang'), {
+    items: LANGS, multi: true, placeholder: 'Select languages', searchPlaceholder: 'Search languages',
+    onChange: function (ids) {
+      var s = form.elements.primary_language, keep = s.value;
+      s.innerHTML = '<option value="">Select one</option>' + ids.map(function (v) { return '<option>' + esc(v) + '</option>'; }).join('');
+      if (ids.indexOf(keep) !== -1) s.value = keep;
+      else if (ids.length === 1) s.value = ids[0];
+    }
+  });
+  fillSelect(form.elements.primary_language, 'Select one', []);
+
+  try {
+    var tzList = (Intl.supportedValuesOf && Intl.supportedValuesOf('timeZone')) || [];
+    $('#tzList').innerHTML = tzList.map(function (z) { return '<option value="' + esc(z) + '">'; }).join('');
+    form.elements.timezone.value = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  } catch (e) { /* time zone is optional */ }
+
+  var waSame = $('#waSame');
+  waSame.addEventListener('change', function () {
+    var wa = form.elements.whatsapp;
+    if (waSame.checked) { wa.value = form.elements.phone.value; wa.readOnly = true; }
+    else { wa.readOnly = false; }
+  });
+  form.elements.phone.addEventListener('input', function () {
+    if (waSame.checked) form.elements.whatsapp.value = form.elements.phone.value;
+  });
+
+  /* ---------------- values and validation ---------------- */
+  var GROUPS = { categories: 1, payment_terms: 1, shipping_terms: 1 };
+  function checked(name) { return $$('input[name="' + name + '"]:checked', form).map(function (i) { return i.value; }); }
+  function val(name) {
+    if (pick[name]) { var g = pick[name].get(); return pick[name].multi ? g : (g[0] || ''); }
+    if (GROUPS[name]) return checked(name);
+    if (name === 'imports_from_india' || name === 'contact_channel') return checked(name)[0] || '';
+    var el = form.elements[name];
+    if (!el) return '';
+    if (el.type === 'checkbox') return !!el.checked;
+    return String(el.value || '').trim();
+  }
+  function setErr(name, msg) {
+    var p = $('[data-err="' + name + '"]', form);
+    if (p) {
+      p.textContent = msg;
+      var f = p.closest('.fld');
+      if (f) f.classList.add('invalid');
+    }
+  }
+  function clearErrs() {
+    $$('.err', form).forEach(function (p) { p.textContent = ''; });
+    $$('.fld.invalid', form).forEach(function (f) { f.classList.remove('invalid'); });
+    var m = $('#formMsg'); m.hidden = true; m.textContent = '';
+  }
+  function validUrl(v) { return /^https?:\/\/[^\s\/$.?#][^\s]*\.[^\s]{2,}$/i.test(v); }
+  function fixUrl(v) { return v && !/^https?:\/\//i.test(v) ? 'https://' + v : v; }
+  function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
+  function validPhone(v) { var d = v.replace(/[^\d+]/g, ''); return /^\+\d{8,15}$/.test(d); }
+
+  function validate(n) {
+    clearErrs();
+    var bad = [];
+    function need(name, msg, test) {
+      var v = val(name);
+      var ok = test ? test(v) : (Array.isArray(v) ? v.length > 0 : !!v);
+      if (!ok) { setErr(name, msg); bad.push(name); }
+    }
+    if (n === 1) {
+      need('company_name', 'Enter your registered company name.');
+      need('business_type', 'Choose what best describes your business.');
+      need('country', 'Choose your country.');
+      need('city', 'Enter your city.');
+      need('registration_number', 'Enter your registration or trade licence number.');
+      ['website', 'docs_link'].forEach(function (k) {
+        var v = fixUrl(val(k));
+        if (v && !validUrl(v)) { setErr(k, 'Enter a valid web address.'); bad.push(k); }
+      });
+    }
+    if (n === 2) {
+      need('categories', 'Choose at least one product category.');
+    }
+    if (n === 3) {
+      need('contact_name', 'Enter the name of the contact person.');
+      need('email', 'Enter a valid business email.', function (v) { return validEmail(v); });
+      need('phone', 'Enter a phone number with the country code, for example +971 50 123 4567.', function (v) { return validPhone(v); });
+      var wa = val('whatsapp');
+      if (wa && !validPhone(wa)) { setErr('whatsapp', 'Enter the number with the country code.'); bad.push('whatsapp'); }
+      need('languages', 'Choose at least one language.');
+      need('primary_language', 'Choose the language we should use for messages.');
+    }
+    if (n === 4) {
+      need('consent_accuracy', 'Please confirm to continue.', function (v) { return v === true; });
+      need('consent_contact', 'Please confirm to continue.', function (v) { return v === true; });
+      need('consent_terms', 'Please confirm to continue.', function (v) { return v === true; });
+    }
+    if (bad.length) {
+      var first = bad[0];
+      var target = pick[first] ? pick[first].btn : form.elements[first] || $('[data-err="' + first + '"]', form);
+      if (target && target.focus) { try { target.focus({ preventScroll: false }); } catch (e) { target.focus(); } }
+      return false;
+    }
+    return true;
+  }
+
+  /* ---------------- steps ---------------- */
+  var steps = $$('.step', form), stepLis = $$('#stepper li');
+  var btnBack = $('#btnBack'), btnNext = $('#btnNext'), btnSubmit = $('#btnSubmit');
+
+  function review() {
+    var c = COUNTRIES.filter(function (x) { return x.id === val('country'); })[0];
+    var rows = [
+      ['Company', val('company_name') + (val('trade_name') ? ' (' + val('trade_name') + ')' : '')],
+      ['Type', val('business_type')],
+      ['Location', val('city') + ', ' + (c ? c.label : '')],
+      ['Registration', val('registration_number')],
+      ['Buying', val('categories').join(', ')],
+      ['Contact', val('contact_name') + (val('designation') ? ', ' + val('designation') : '')],
+      ['Email', val('email')],
+      ['Phone', val('phone')],
+      ['Languages', val('languages').join(', ')],
+      ['Message language', val('primary_language')]
+    ];
+    $('#reviewBox').innerHTML = rows.map(function (r) {
+      return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+    }).join('');
+  }
+
+  function go(n, quiet) {
+    cur = n;
+    steps.forEach(function (s, i) { s.hidden = (i + 1) !== n; });
+    stepLis.forEach(function (li, i) {
+      li.className = (i + 1) < n ? 'done' : ((i + 1) === n ? 'cur' : '');
+      if ((i + 1) === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
+    btnBack.hidden = n === 1;
+    btnNext.hidden = n === steps.length;
+    btnSubmit.hidden = n !== steps.length;
+    if (n === steps.length) review();
+    if (quiet) return;
+    var top = $('#formWrap').getBoundingClientRect().top + window.pageYOffset - 90;
+    window.scrollTo({ top: top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    var h = $('h3', steps[n - 1]); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+  }
+  btnNext.addEventListener('click', function () { if (validate(cur)) go(cur + 1); });
+  btnBack.addEventListener('click', function () { clearErrs(); go(cur - 1); });
+  form.addEventListener('input', function (e) {
+    var f = e.target.closest ? e.target.closest('.fld') : null;
+    if (f && f.classList.contains('invalid')) {
+      f.classList.remove('invalid');
+      var p = $('.err', f); if (p) p.textContent = '';
+    }
+  });
+  form.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'search') {
+      e.preventDefault();
+      if (cur < steps.length) { if (validate(cur)) go(cur + 1); }
+    }
+  });
+
+  /* ---------------- submit ---------------- */
+  function payload() {
+    var c = COUNTRIES.filter(function (x) { return x.id === val('country'); })[0] || {};
+    return {
+      company_name: val('company_name'), trade_name: val('trade_name'), business_type: val('business_type'),
+      established_year: val('established_year') || null,
+      country: c.label || '', country_code: c.id || '', city: val('city'), address: val('address'),
+      registration_number: val('registration_number'), issuing_authority: val('issuing_authority'), tax_id: val('tax_id'),
+      website: fixUrl(val('website')), docs_link: fixUrl(val('docs_link')), about: val('about'),
+      categories: val('categories'), products_text: val('products_text'),
+      import_volume: val('import_volume'), order_value: val('order_value'), imports_from_india: val('imports_from_india'),
+      payment_terms: val('payment_terms'), shipping_terms: val('shipping_terms'), certifications: val('certifications'),
+      contact_name: val('contact_name'), designation: val('designation'), email: val('email').toLowerCase(),
+      phone: val('phone').replace(/[^\d+]/g, ''), whatsapp: val('whatsapp').replace(/[^\d+]/g, ''),
+      languages: val('languages'), primary_language: val('primary_language'),
+      contact_channel: val('contact_channel'), timezone: val('timezone'), business_hours: val('business_hours'),
+      consent_accuracy: true, consent_contact: true, consent_terms: true,
+      form_ms: Date.now() - T0
+    };
+  }
+
+  function showDone(ref) {
+    $('#formWrap').innerHTML =
+      '<div class="done-card" role="status">' +
+        '<div class="tick" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#50f5a8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>' +
+        '<h3>Application received</h3>' +
+        '<p>Thank you. The GLIME team will review your business and email you with the result.</p>' +
+        (ref ? '<div class="ref">' + esc(ref) + '</div><p>Keep this reference number if you need to contact us.</p>' : '') +
+        '<ul><li>We check your registration, website and contact details.</li><li>We may ask you for documents.</li><li>When you are approved, your company is listed for Indian businesses on GLIME.</li></ul>' +
+        '<a class="btn btn-primary" href="index.html">Back to home</a>' +
+      '</div>';
+    var top = $('#apply').getBoundingClientRect().top + window.pageYOffset - 90;
+    window.scrollTo({ top: top, behavior: 'auto' });
+  }
+
+  function failMsg(err) {
+    var t = ((err && (err.code || '')) + ' ' + (err && (err.message || ''))).toLowerCase();
+    if (/could not find the function|pgrst202|42883/.test(t)) return 'Applications are not open yet. Please check back soon.';
+    if (/rate_limited/.test(t)) return 'Too many attempts. Please wait a while and try again.';
+    if (/duplicate/.test(t)) return 'An application with this email is already under review. We will contact you by email.';
+    if (/invalid/.test(t)) return 'Some details look incomplete. Please go back and check your answers.';
+    return 'We could not send your application. Check your internet connection and try again.';
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (!validate(4)) return;
+    /* Bots: filled honeypot or impossibly fast. Pretend success, send nothing. */
+    var spam = (form.elements.company_site.value || '').trim() !== '' || (Date.now() - T0) < 6000;
+    if (spam) { showDone(''); return; }
+    var msg = $('#formMsg');
+    if (!sb) { msg.textContent = 'This page could not load fully. Please refresh and try again.'; msg.hidden = false; return; }
+    btnSubmit.disabled = true; btnBack.disabled = true;
+    var label = btnSubmit.textContent; btnSubmit.textContent = 'Sending\u2026';
+    try {
+      var res = await sb.rpc('export_distributor_apply', { p_application: payload() });
+      if (res.error) throw res.error;
+      var d = res.data, ref = '';
+      if (typeof d === 'string') ref = d;
+      else if (d && typeof d === 'object') ref = d.reference_id || d.reference || '';
+      showDone(ref);
+    } catch (err) {
+      console.error('Export application error:', err);
+      msg.textContent = failMsg(err); msg.hidden = false;
+      btnSubmit.disabled = false; btnBack.disabled = false; btnSubmit.textContent = label;
+    }
+  });
+
+  go(1, true);
+})();
+</script>
+<script src="glime-global-nav.js" defer></script>
+<script src="website-analytics.js"></script>
+</body>
+</html>
