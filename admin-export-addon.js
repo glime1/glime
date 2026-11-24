@@ -1,6 +1,6 @@
 /* =========================================================
    GLIME ADMIN - Export Network
-   Adds an "Export Network" tab to the admin sidebar with three sections:
+   Adds an "Export Network" tab to the admin sidebar with five sections:
 
    1. Distributors
         - Applications sent from export-program.html (pending first)
@@ -18,9 +18,18 @@
         - Introduction requests sent by clients. Admin sets the status the
           client sees (Requested, In progress, Connected, Declined, Closed)
           and keeps a private note.
+   4. Agent conversations
+        - Read every Export Agent WhatsApp conversation (translated into
+          the language the admin picks, original shown under each message),
+          pause, resume or end any conversation.
+   5. Agent settings
+        - Switch the whole Export Agent on or off, daily limit of new
+          conversations per client, message limit per conversation, and
+          the countries conversations are allowed in (UAE first).
 
    Frontend only. Does not modify any other addon.
-   Backend contract: see EXPORT_NETWORK_ADMIN_BACKEND_SPEC.md
+   Backend contract: EXPORT_NETWORK_ADMIN_BACKEND_SPEC.md (sections 1-3)
+                     EXPORT_AGENT_BACKEND_SPEC.md (sections 1-2 of the admin part)
 
    RPCs used (all must check is_glime_admin()):
      admin_export_distributors_list(p_status text)
@@ -32,6 +41,11 @@
      admin_export_access_set(p_client_id text, p_allow boolean, p_note text)
      admin_export_requests_list(p_status text)
      admin_export_request_update(p_request_id uuid, p_status text, p_note text)
+     admin_export_agent_conversations(p_status text, p_search text, p_limit int, p_offset int)
+     admin_export_agent_messages(p_conversation_id uuid, p_view_language text)
+     admin_export_agent_control(p_conversation_id uuid, p_action text, p_note text)
+     admin_export_agent_settings_get()
+     admin_export_agent_settings_set(p_settings jsonb)
 ========================================================= */
 (() => {
   "use strict";
@@ -41,6 +55,7 @@
   const SUPABASE_KEY = "sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA";
   const MAX_NOTE = 500;
   const FIRST_MARKET = "AE";
+  const CPAGE = 30;
 
   /* ---------- reference lists (same as export-program.html) ---------- */
   const COUNTRIES = ("AF|Afghanistan;AL|Albania;DZ|Algeria;AD|Andorra;AO|Angola;AG|Antigua and Barbuda;AR|Argentina;AM|Armenia;AU|Australia;AT|Austria;AZ|Azerbaijan;BS|Bahamas;BH|Bahrain;BD|Bangladesh;BB|Barbados;BY|Belarus;BE|Belgium;BZ|Belize;BJ|Benin;BT|Bhutan;BO|Bolivia;BA|Bosnia and Herzegovina;BW|Botswana;BR|Brazil;BN|Brunei;BG|Bulgaria;BF|Burkina Faso;BI|Burundi;CV|Cabo Verde;KH|Cambodia;CM|Cameroon;CA|Canada;CF|Central African Republic;TD|Chad;CL|Chile;CN|China;CO|Colombia;KM|Comoros;CG|Congo;CD|Congo (Democratic Republic);CR|Costa Rica;CI|C\u00f4te d\u2019Ivoire;HR|Croatia;CU|Cuba;CY|Cyprus;CZ|Czechia;DK|Denmark;DJ|Djibouti;DM|Dominica;DO|Dominican Republic;EC|Ecuador;EG|Egypt;SV|El Salvador;GQ|Equatorial Guinea;ER|Eritrea;EE|Estonia;SZ|Eswatini;ET|Ethiopia;FJ|Fiji;FI|Finland;FR|France;GA|Gabon;GM|Gambia;GE|Georgia;DE|Germany;GH|Ghana;GR|Greece;GD|Grenada;GT|Guatemala;GN|Guinea;GW|Guinea-Bissau;GY|Guyana;HT|Haiti;HN|Honduras;HK|Hong Kong;HU|Hungary;IS|Iceland;IN|India;ID|Indonesia;IR|Iran;IQ|Iraq;IE|Ireland;IL|Israel;IT|Italy;JM|Jamaica;JP|Japan;JO|Jordan;KZ|Kazakhstan;KE|Kenya;KI|Kiribati;XK|Kosovo;KW|Kuwait;KG|Kyrgyzstan;LA|Laos;LV|Latvia;LB|Lebanon;LS|Lesotho;LR|Liberia;LY|Libya;LI|Liechtenstein;LT|Lithuania;LU|Luxembourg;MO|Macao;MG|Madagascar;MW|Malawi;MY|Malaysia;MV|Maldives;ML|Mali;MT|Malta;MH|Marshall Islands;MR|Mauritania;MU|Mauritius;MX|Mexico;FM|Micronesia;MD|Moldova;MC|Monaco;MN|Mongolia;ME|Montenegro;MA|Morocco;MZ|Mozambique;MM|Myanmar;NA|Namibia;NR|Nauru;NP|Nepal;NL|Netherlands;NZ|New Zealand;NI|Nicaragua;NE|Niger;NG|Nigeria;MK|North Macedonia;NO|Norway;OM|Oman;PK|Pakistan;PW|Palau;PS|Palestine;PA|Panama;PG|Papua New Guinea;PY|Paraguay;PE|Peru;PH|Philippines;PL|Poland;PT|Portugal;QA|Qatar;RO|Romania;RU|Russia;RW|Rwanda;KN|Saint Kitts and Nevis;LC|Saint Lucia;VC|Saint Vincent and the Grenadines;WS|Samoa;SM|San Marino;ST|S\u00e3o Tom\u00e9 and Pr\u00edncipe;SA|Saudi Arabia;SN|Senegal;RS|Serbia;SC|Seychelles;SL|Sierra Leone;SG|Singapore;SK|Slovakia;SI|Slovenia;SB|Solomon Islands;SO|Somalia;ZA|South Africa;KR|South Korea;SS|South Sudan;ES|Spain;LK|Sri Lanka;SD|Sudan;SR|Suriname;SE|Sweden;CH|Switzerland;SY|Syria;TW|Taiwan;TJ|Tajikistan;TZ|Tanzania;TH|Thailand;TL|Timor-Leste;TG|Togo;TO|Tonga;TT|Trinidad and Tobago;TN|Tunisia;TR|T\u00fcrkiye;TM|Turkmenistan;TV|Tuvalu;UG|Uganda;UA|Ukraine;AE|United Arab Emirates;GB|United Kingdom;US|United States;UY|Uruguay;UZ|Uzbekistan;VU|Vanuatu;VE|Venezuela;VN|Vietnam;YE|Yemen;ZM|Zambia;ZW|Zimbabwe")
@@ -53,6 +68,8 @@
   const SHIP_TERMS = ["EXW", "FOB", "CIF", "CFR", "DDP"];
   const LANGS = ["English", "Arabic", "Hindi", "Russian", "Chinese (Mandarin)", "French", "Spanish", "Portuguese", "German", "Italian", "Turkish", "Persian (Farsi)", "Urdu", "Bengali", "Tamil", "Indonesian", "Vietnamese", "Thai", "Japanese", "Korean", "Swahili", "Dutch"];
   const REQ_STATUS = [["requested", "Requested"], ["in_progress", "In progress"], ["active", "Connected"], ["declined", "Declined"], ["closed", "Closed"]];
+  const CONV_FILTERS = [["all", "All"], ["needs_you", "Needs client"], ["active", "Active"], ["paused", "Paused"], ["closed", "Closed"], ["failed", "Failed"]];
+  const CONV_LABEL = { queued: "Queued", active: "Active", needs_you: "Needs client", paused: "Paused", closed: "Closed", failed: "Failed" };
 
   /* ---------- state ---------- */
   let sb = null, sub = "dist";
@@ -62,14 +79,18 @@
   let form = null;           // null or { id: uuid|null, data: {...} }
   let busyId = null;
   const draft = {};          // note drafts keyed by record id
+  let convs = [], convTotal = 0, convCounts = {}, cFilter = "all", openC = null, cMsgs = [], viewLang = "English", cTimer = null;
+  let settings = null;
 
   /* ---------- helpers ---------- */
   const $ = (id) => document.getElementById(id);
   const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   const rows = (d) => (Array.isArray(d) ? d : d && Array.isArray(d.rows) ? d.rows : []);
   const arr = (v) => (Array.isArray(v) ? v.filter(Boolean) : []);
+  const obj = (d) => { if (Array.isArray(d)) d = d[0]; return d && typeof d === "object" ? d : {}; };
   const st = (r) => String(r.status || "").toLowerCase();
   const day = (v) => { const d = new Date(v); return v && !isNaN(d) ? d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "\u2014"; };
+  const dtm = (v) => { const d = new Date(v); return v && !isNaN(d) ? d.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "\u2014"; };
   const isUrl = (u) => /^https?:\/\//i.test(String(u || ""));
   const fixUrl = (v) => (v && !/^https?:\/\//i.test(v) ? "https://" + v : v);
   const validUrl = (v) => /^https?:\/\/[^\s\/$.?#][^\s]*\.[^\s]{2,}$/i.test(v);
@@ -129,14 +150,15 @@
       #${ID} .gx-main{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
       #${ID} .gx-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
       #${ID} .gx-bar input{flex:1 1 200px;min-width:0;padding:9px 11px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#fff;font:inherit;box-sizing:border-box}
+      #${ID} .gx-bar select{padding:9px 11px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:#101826;color:#fff;font:inherit}
       #${ID} .gx-card{padding:15px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(255,255,255,.02);margin-bottom:12px}
       #${ID} .gx-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
       #${ID} .gx-name{color:#fff;font-weight:700;font-size:.92rem;word-break:break-word}
       #${ID} .gx-meta{color:#687587;font-size:.68rem;margin-top:3px;word-break:break-all}
       #${ID} .gx-st{padding:4px 10px;border-radius:999px;font-size:.68rem;font-weight:700;border:1px solid rgba(255,255,255,.1);color:#9ba7b7;white-space:nowrap}
       #${ID} .gx-st.approved,#${ID} .gx-st.active{color:#00ff88;border-color:rgba(0,255,136,.3)}
-      #${ID} .gx-st.pending,#${ID} .gx-st.requested,#${ID} .gx-st.in_progress{color:#ffc857;border-color:rgba(255,200,87,.35)}
-      #${ID} .gx-st.rejected,#${ID} .gx-st.revoked,#${ID} .gx-st.declined{color:#ff5263;border-color:rgba(255,82,99,.35)}
+      #${ID} .gx-st.pending,#${ID} .gx-st.requested,#${ID} .gx-st.in_progress,#${ID} .gx-st.needs_you,#${ID} .gx-st.queued{color:#ffc857;border-color:rgba(255,200,87,.35)}
+      #${ID} .gx-st.rejected,#${ID} .gx-st.revoked,#${ID} .gx-st.declined,#${ID} .gx-st.failed{color:#ff5263;border-color:rgba(255,82,99,.35)}
       #${ID} .gx-chip{display:inline-block;padding:3px 9px;border-radius:8px;border:1px solid rgba(124,156,255,.4);background:rgba(124,156,255,.08);color:#a9bcff;font:700 .74rem ui-monospace,SFMono-Regular,Menlo,monospace;margin-right:6px;user-select:all}
       #${ID} .gx-chip.ok{border-color:rgba(0,255,136,.35);background:rgba(0,255,136,.07);color:#00ff88;font-family:system-ui,sans-serif;user-select:auto}
       #${ID} .gx-chip.mu{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#9ba7b7;font-family:system-ui,sans-serif;user-select:auto}
@@ -157,7 +179,7 @@
       #${ID} .gx-panel{margin-top:12px;padding:12px;border-radius:12px;border:1px solid rgba(124,156,255,.3);background:rgba(124,156,255,.05)}
       #${ID} .gx-panel.bad{border-color:rgba(255,82,99,.3);background:rgba(255,82,99,.05)}
       #${ID} .gx-panel label{display:block;color:#dfe7ef;font-size:.74rem;font-weight:600;margin-bottom:6px}
-      #${ID} textarea,#${ID} .gx-f input[type=text],#${ID} .gx-f input[type=email],#${ID} .gx-f input[type=tel],#${ID} .gx-f input[type=url],#${ID} .gx-f select{width:100%;padding:9px 11px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#fff;font:inherit;font-size:.8rem;box-sizing:border-box}
+      #${ID} textarea,#${ID} .gx-f input[type=text],#${ID} .gx-f input[type=email],#${ID} .gx-f input[type=tel],#${ID} .gx-f input[type=url],#${ID} .gx-f input[type=number],#${ID} .gx-f select{width:100%;padding:9px 11px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#fff;font:inherit;font-size:.8rem;box-sizing:border-box}
       #${ID} textarea{min-height:78px;resize:vertical}
       #${ID} .gx-f select option{background:#101826;color:#fff}
       #${ID} .gx-cnt{color:#687587;font-size:.68rem;margin:4px 0 10px;text-align:right}
@@ -177,11 +199,20 @@
       #${ID} .gx-pill span{display:inline-block;padding:6px 11px;border-radius:99px;border:1px solid rgba(255,255,255,.15);color:#9ba7b7;font-size:.74rem;font-weight:600}
       #${ID} .gx-pill input:checked+span{background:rgba(124,156,255,.16);border-color:rgba(124,156,255,.6);color:#fff}
       #${ID} .gx-pill input:focus-visible+span{outline:2px solid #7c9cff;outline-offset:2px}
+      #${ID} .gx-chat{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:12px;max-height:520px;overflow:auto;margin-bottom:12px}
+      #${ID} .gx-bub{max-width:86%;padding:9px 12px;border-radius:13px;font-size:.78rem;margin-bottom:9px;white-space:pre-wrap;word-break:break-word;color:#e8eef5}
+      #${ID} .gx-bub small{display:block;color:#7d8a9b;font-size:.64rem;font-weight:700;margin-bottom:3px}
+      #${ID} .gx-bub.in{background:rgba(124,156,255,.1);border:1px solid rgba(124,156,255,.25)}
+      #${ID} .gx-bub.out{margin-left:auto;background:rgba(0,200,120,.1);border:1px solid rgba(0,200,120,.28)}
+      #${ID} .gx-bub.note{margin-left:auto;background:rgba(255,200,87,.08);border:1px dashed rgba(255,200,87,.45)}
+      #${ID} .gx-bub.sys{margin:0 auto 9px;text-align:center;color:#9ba7b7;border:1px solid rgba(255,255,255,.1)}
+      #${ID} .gx-bub .og{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.14);color:#9ba7b7;font-size:.72rem}
+      #${ID} .gx-bub .tm{margin-top:4px;color:#687587;font-size:.62rem}
       #${ID} .gx-msg{margin-top:10px;padding:10px 12px;border-radius:9px;font-size:.74rem;display:none}
       #${ID} .gx-msg.s{display:block;color:#00ff88;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.25)}
       #${ID} .gx-msg.e{display:block;color:#ff5263;background:rgba(255,82,99,.07);border:1px solid rgba(255,82,99,.25)}
       #${ID} .gx-empty{padding:16px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:#9ba7b7;font-size:.78rem;text-align:center}
-      @media(max-width:650px){#${ID} dl{grid-template-columns:100px 1fr}#${ID} .gx-grid{grid-template-columns:1fr}}`;
+      @media(max-width:650px){#${ID} dl{grid-template-columns:100px 1fr}#${ID} .gx-grid{grid-template-columns:1fr}#${ID} .gx-bub{max-width:94%}}`;
     document.head.appendChild(s);
   }
 
@@ -204,7 +235,31 @@
     catch (e) { reqs = []; msg(errText(e), "e"); }
     render();
   }
-  function loadCurrent() { if (sub === "dist") return loadDists(); if (sub === "access") return loadAccess(); return loadReqs(); }
+  async function loadConvs(append) {
+    if (!append) msg("Loading conversations...", "s");
+    try {
+      const term = String((($("gxSearch") || {}).value) || "").trim();
+      const d = obj(await rpc("admin_export_agent_conversations", { p_status: cFilter === "all" ? "" : cFilter, p_search: term, p_limit: CPAGE, p_offset: append ? convs.length : 0 }));
+      convs = append ? convs.concat(arr(d.items)) : arr(d.items);
+      convTotal = typeof d.total === "number" ? d.total : convs.length;
+      convCounts = d.counts || {};
+      msg("", "");
+    } catch (e) { if (!append) { convs = []; convTotal = 0; } msg(errText(e), "e"); }
+    render();
+  }
+  async function loadSettings() {
+    msg("Loading settings...", "s");
+    try { settings = obj(await rpc("admin_export_agent_settings_get")); msg("", ""); }
+    catch (e) { settings = null; msg(errText(e), "e"); }
+    render();
+  }
+  function loadCurrent() {
+    if (sub === "dist") return loadDists();
+    if (sub === "access") return loadAccess();
+    if (sub === "reqs") return loadReqs();
+    if (sub === "convs") return openC ? openConv(openC.id, false) : loadConvs(false);
+    return loadSettings();
+  }
 
   async function review(id, action, note, licence) {
     busyId = id; render(); msg("", "");
@@ -237,6 +292,52 @@
       busyId = null; delete draft["r:" + id];
       await loadReqs();
       msg("Request updated.", "s");
+    } catch (e) { busyId = null; render(); msg(errText(e), "e"); }
+  }
+
+  /* ---------- agent conversations ---------- */
+  function stopCTimer() { if (cTimer) { clearInterval(cTimer); cTimer = null; } }
+  async function openConv(id, silent) {
+    if (!silent) msg("Loading conversation...", "s");
+    try {
+      const d = obj(await rpc("admin_export_agent_messages", { p_conversation_id: id, p_view_language: viewLang }));
+      openC = Object.assign({}, (openC && openC.id === id ? openC : convs.find((x) => x.id === id)) || { id }, d.conversation || {});
+      cMsgs = arr(d.messages);
+      if (!silent) msg("", "");
+    } catch (e) { if (!silent) msg(errText(e), "e"); return; }
+    stopCTimer();
+    cTimer = setInterval(() => { if (!$(ID) || sub !== "convs" || !openC) { stopCTimer(); return; } if (!document.hidden) openConv(openC.id, true); }, 15000);
+    render();
+  }
+  async function convControl(id, action) {
+    let note = null;
+    if (action !== "resume") { const n = window.prompt("Reason (optional, private):", ""); if (n === null) return; note = n.trim().slice(0, MAX_NOTE) || null; }
+    busyId = id; render(); msg("", "");
+    try {
+      await rpc("admin_export_agent_control", { p_conversation_id: id, p_action: action, p_note: note });
+      busyId = null;
+      await openConv(id, true);
+      msg("Conversation updated.", "s");
+    } catch (e) { busyId = null; render(); msg(errText(e), "e"); }
+  }
+
+  async function saveSettings() {
+    const g = (i) => ($(i) || {});
+    const codes = String(g("gxs-codes").value || "").split(",").map((x) => x.trim().toUpperCase()).filter(Boolean);
+    const bad = codes.find((c) => !/^[A-Z]{2}$/.test(c));
+    const daily = Number(g("gxs-daily").value), maxm = Number(g("gxs-max").value);
+    if (bad) { msg('"' + bad + '" is not a 2-letter country code. Example: AE, SA, QA.', "e"); return; }
+    if (!Number.isInteger(daily) || daily < 1 || daily > 200) { msg("Daily new conversations must be a whole number from 1 to 200.", "e"); return; }
+    if (!Number.isInteger(maxm) || maxm < 10 || maxm > 1000) { msg("Messages per conversation must be a whole number from 10 to 1000.", "e"); return; }
+    if (!codes.length) { msg("Allow at least one country.", "e"); return; }
+    const enabled = !!g("gxs-enabled").checked;
+    if (!window.confirm((enabled ? "Save settings? The Export Agent stays ON." : "Switch the Export Agent OFF? No new messages will be sent until you switch it on.") )) return;
+    busyId = "settings"; render(); msg("", "");
+    try {
+      await rpc("admin_export_agent_settings_set", { p_settings: { enabled, daily_new_conversations: daily, max_messages_per_conversation: maxm, allowed_country_codes: codes } });
+      busyId = null;
+      await loadSettings();
+      msg("Agent settings saved.", "s");
     } catch (e) { busyId = null; render(); msg(errText(e), "e"); }
   }
 
@@ -284,10 +385,10 @@
         ${fld("Job title", inp("designation", d.designation))}
         ${fld("Business email", inp("email", d.email, "", "email"))}
         ${fld("Phone (with country code)", inp("phone", d.phone, "+971 50 123 4567", "tel"))}
-        ${fld("WhatsApp (with country code)", inp("whatsapp", d.whatsapp, "+971 50 123 4567", "tel"), "", "At least one of email, phone or WhatsApp is needed. These are private and never shown to clients.")}
+        ${fld("WhatsApp (with country code)", inp("whatsapp", d.whatsapp, "+971 50 123 4567", "tel"), "", "At least one of email, phone or WhatsApp is needed. These are private and never shown to clients. The Export Agent uses the WhatsApp number (or phone) to message the distributor.")}
         ${fld("Languages * (choose all that apply)", `<div class="gx-pills">${pills("gxlang", LANGS, langs)}</div>`, "full")}
         ${fld("Other languages", inp("langextra", extra, "Separate with commas"), "full")}
-        ${fld("Preferred language for messages *", `<select id="gxf-primary_language">${selOpts(langs, d.primary_language, "Select one")}</select>`)}
+        ${fld("Preferred language for messages *", `<select id="gxf-primary_language">${selOpts(langs, d.primary_language, "Select one")}</select>`, "", "The Export Agent talks to this distributor in this language.")}
         ${fld("Admin note (private)", `<textarea id="gxf-admin_note" maxlength="${MAX_NOTE}">${esc(d.admin_note || "")}</textarea>`, "full")}
       </div>
       <label class="gx-chk"><input type="checkbox" id="gxf-licence_verified"${d.licence_verified ? " checked" : ""}> Trade licence checked (clients see a "Licence checked" badge)</label>
@@ -300,7 +401,7 @@
     const checks = (name) => [...document.querySelectorAll(`#${ID} input[name="${name}"]:checked`)].map((i) => i.value);
     const langs = [...new Set(checks("gxlang").concat(g("langextra").split(",").map((x) => x.trim()).filter(Boolean)))];
     const code = g("country_code");
-    const o = {
+    return {
       company_name: g("company_name"), trade_name: g("trade_name"), business_type: g("business_type"),
       established_year: g("established_year") ? Number(g("established_year")) : null,
       country: countryName(code), country_code: code, city: g("city"), address: g("address"),
@@ -313,7 +414,6 @@
       languages: langs, primary_language: g("primary_language"),
       licence_verified: !!($("gxf-licence_verified") || {}).checked, admin_note: g("admin_note")
     };
-    return o;
   }
 
   function validateForm(o) {
@@ -496,29 +596,91 @@
       }).join("") : '<div class="gx-empty">No requests found.</div>'}</div>`;
   }
 
+  /* ---------- render: agent conversations ---------- */
+  function langSelect() { return `<select id="gxLang" aria-label="Show conversation in">${LANGS.map((l) => `<option${l === viewLang ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`; }
+  function renderConvs() {
+    if (openC) return renderThread();
+    const c = convCounts || {};
+    const tabs = CONV_FILTERS.map(([k, l]) => `<button type="button" data-act="cfilter" data-k="${k}" class="${cFilter === k ? "on" : ""}">${l}${typeof c[k] === "number" ? " (" + c[k] + ")" : ""}</button>`).join("");
+    return `<div class="gx-sum"><div><small>All conversations</small><b>${esc(typeof c.all === "number" ? c.all : convTotal)}</b></div><div><small>Waiting for client</small><b>${esc(c.needs_you ?? "\u2014")}</b></div><div><small>Active</small><b>${esc(c.active ?? "\u2014")}</b></div><div><small>Paused</small><b>${esc(c.paused ?? "\u2014")}</b></div></div>
+      <div class="gx-tabs">${tabs}</div>
+      <div class="gx-bar"><input id="gxSearch" type="search" placeholder="Search client, company or country (press Enter)" value="${esc((($("gxSearch") || {}).value) || "")}"><div>${langSelect()}</div><button id="gxRefresh" type="button">Refresh</button></div>
+      <div>${convs.length ? convs.map((x) => `<div class="gx-card" data-cvid="${esc(x.id)}"><div class="gx-head"><div><div class="gx-name">${esc(x.business_name || x.client_id || "Client")} \u2192 ${esc(x.company_name || "Distributor")}</div>
+        <div class="gx-meta"><span class="gx-chip">${esc(x.client_id || "")}</span>${esc([x.city, x.country].filter(Boolean).join(", "))} \u00b7 ${esc(x.language || "")} \u00b7 ${esc(x.mode === "manual" ? "client replying" : "agent replying")} \u00b7 ${esc(x.message_count ?? 0)} messages \u00b7 last ${esc(dtm(x.last_message_at))}</div></div>
+        <span class="gx-st ${esc(x.status)}">${esc(CONV_LABEL[x.status] || x.status)}</span></div>
+        <div class="gx-row"><button class="pri" data-act="cv-open">Read conversation</button></div></div>`).join("") + (convs.length < convTotal ? '<div class="gx-row" style="justify-content:center"><button data-act="cv-more">Show more</button></div>' : "") : '<div class="gx-empty">No conversations found.</div>'}</div>`;
+  }
+  function renderThread() {
+    const x = openC, busy = busyId === x.id, dis = busy ? "disabled" : "";
+    const bubbles = cMsgs.length ? cMsgs.map((m) => {
+      const s = m.sender || "system";
+      const cls = s === "distributor" ? "in" : (s === "system" || m.kind === "notice") ? "sys" : m.kind === "instruction" ? "note" : "out";
+      const who = m.kind === "instruction" ? "Client's private instruction to the agent" : { agent: "Agent", distributor: "Distributor", client: "Client", system: "GLIME" }[s] || s;
+      const og = m.original_text && m.original_text !== m.text ? `<div class="og"><b>Original${m.original_language ? " (" + esc(m.original_language) + ")" : ""}</b><br>${esc(m.original_text)}</div>` : "";
+      return `<div class="gx-bub ${cls}">${cls === "sys" ? "" : `<small>${esc(who)}</small>`}${esc(m.text || "")}${og}<div class="tm">${esc(dtm(m.created_at))}${m.delivery && cls === "out" && m.kind !== "instruction" ? " \u00b7 " + esc(m.delivery) : ""}</div></div>`;
+    }).join("") : '<div class="gx-empty">No messages yet.</div>';
+    const closed = x.status === "closed" || x.status === "failed";
+    return `<div class="gx-row" style="margin-bottom:12px"><button data-act="cv-back">\u2190 Back</button><button id="gxRefresh" type="button">Refresh</button><div class="gx-bar" style="margin:0">${langSelect()}</div></div>
+      <div class="gx-card"><div class="gx-head"><div><div class="gx-name">${esc(x.business_name || x.client_id || "Client")} \u2192 ${esc(x.company_name || "Distributor")}</div>
+        <div class="gx-meta"><span class="gx-chip">${esc(x.client_id || "")}</span>${esc([x.city, x.country].filter(Boolean).join(", "))} \u00b7 talking in ${esc(x.language || "")} \u00b7 ${esc(x.mode === "manual" ? "client replying" : "agent replying")}</div></div>
+        <span class="gx-st ${esc(x.status)}">${esc(CONV_LABEL[x.status] || x.status)}</span></div>
+        ${x.needs_you_reason ? `<div class="gx-priv"><b>Waiting for client:</b> ${esc(x.needs_you_reason)}</div>` : ""}
+        <div class="gx-chat">${bubbles}</div>
+        ${closed ? '<div class="gx-empty">This conversation is closed.</div>' : `<div class="gx-row">${x.status === "paused" ? `<button class="ok" data-act="cv-resume" ${dis}>Resume agent</button>` : `<button class="on" data-act="cv-pause" ${dis}>Pause agent</button>`}<button class="no" data-act="cv-close" ${dis}>End conversation</button></div>`}
+      </div>`;
+  }
+
+  /* ---------- render: agent settings ---------- */
+  function renderSettings() {
+    if (!settings) return `<div class="gx-empty">Settings could not be loaded. <button id="gxRefresh" type="button">Try again</button></div>`;
+    const s = settings, busy = busyId === "settings";
+    return `<div class="gx-form"><h3>Export Agent settings</h3>
+      <div class="gx-sub">These controls apply to every client. Use them to stop the agent quickly if something goes wrong, and to keep WhatsApp sending volume safe.</div>
+      <label class="gx-chk"><input type="checkbox" id="gxs-enabled"${s.enabled !== false ? " checked" : ""}> Export Agent is ON (when off, no new conversations start and no messages are sent)</label>
+      <div class="gx-grid">
+        ${fld("New conversations per client per day", `<input id="gxs-daily" type="number" min="1" max="200" step="1" value="${esc(s.daily_new_conversations ?? 10)}">`, "", "Whole number, 1 to 200. Keep it low at first.")}
+        ${fld("Maximum messages per conversation", `<input id="gxs-max" type="number" min="10" max="1000" step="1" value="${esc(s.max_messages_per_conversation ?? 200)}">`, "", "The agent stops and asks the client after this many messages.")}
+        ${fld("Allowed distributor countries", `<input id="gxs-codes" type="text" value="${esc(arr(s.allowed_country_codes).join(", ") || "AE")}" maxlength="120">`, "full", "Two-letter codes separated by commas. UAE only for now: AE.")}
+      </div>
+      <div class="gx-row"><button class="ok" data-act="settings-save" ${busy ? "disabled" : ""}>${busy ? "Saving..." : "Save settings"}</button></div></div>`;
+  }
+
   /* ---------- render root ---------- */
   function render() {
     const body = $("gxBody"); if (!body) return;
-    ["dist", "access", "reqs"].forEach((k) => { const b = $("gxMain-" + k); if (b) b.classList.toggle("on", sub === k); });
+    ["dist", "access", "reqs", "convs", "agent"].forEach((k) => { const b = $("gxMain-" + k); if (b) b.classList.toggle("on", sub === k); });
     const hadSearch = document.activeElement && document.activeElement.id === "gxSearch";
-    body.innerHTML = sub === "dist" ? renderDists() : sub === "access" ? renderAccess() : renderReqs();
+    body.innerHTML = sub === "dist" ? renderDists() : sub === "access" ? renderAccess() : sub === "reqs" ? renderReqs() : sub === "convs" ? renderConvs() : renderSettings();
     if (hadSearch) { const s = $("gxSearch"); if (s) { s.focus(); const l = s.value.length; try { s.setSelectionRange(l, l); } catch (e) { /* ignore */ } } }
+    const ch = body.querySelector(".gx-chat"); if (ch) ch.scrollTop = ch.scrollHeight;
   }
 
   /* ---------- events ---------- */
   function onClick(e) {
     const b = e.target.closest("button"); if (!b) return;
     if (b.id === "gxRefresh") { loadCurrent(); return; }
-    if (b.id && b.id.startsWith("gxMain-")) { sub = b.id.slice(7); panel = null; msg("", ""); render(); loadCurrent(); return; }
+    if (b.id && b.id.startsWith("gxMain-")) { sub = b.id.slice(7); panel = null; openC = null; stopCTimer(); msg("", ""); render(); loadCurrent(); return; }
     const act = b.dataset.act; if (!act) return;
     if (act === "dfilter") { dFilter = b.dataset.k; panel = null; render(); return; }
     if (act === "afilter") { aFilter = b.dataset.k; render(); return; }
     if (act === "rfilter") { rFilter = b.dataset.k; render(); return; }
+    if (act === "cfilter") { cFilter = b.dataset.k; loadConvs(false); return; }
+    if (act === "cv-more") { loadConvs(true); return; }
+    if (act === "cv-back") { openC = null; stopCTimer(); render(); loadConvs(false); return; }
+    if (act === "settings-save") { if (!busyId) saveSettings(); return; }
     if (act === "add") { form = { id: null, data: emptyForm() }; panel = null; msg("", ""); render(); const f = $("gxForm"); if (f) f.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     if (act === "form-cancel") { form = null; render(); return; }
     if (act === "form-save") { if (!busyId) saveForm(); return; }
 
     const card = b.closest(".gx-card");
+    if (act === "cv-open") { const cid = card && card.dataset.cvid; if (cid) openConv(cid, false); return; }
+    if (act === "cv-pause" || act === "cv-resume" || act === "cv-close") {
+      if (!openC || busyId) return;
+      const action = act.slice(3);
+      if (action === "close" && !window.confirm("End this conversation? The agent stops and no more messages are sent.")) return;
+      convControl(openC.id, action);
+      return;
+    }
     if (act === "access-grant" || act === "access-revoke") {
       const cid = card && card.dataset.cid; if (!cid || busyId) return;
       const grant = act === "access-grant";
@@ -557,7 +719,8 @@
 
   function onInput(e) {
     const t = e.target; if (!t || !t.matches) return;
-    if (t.id === "gxSearch") { render(); return; }
+    if (t.id === "gxLang") { viewLang = t.value; if (openC) openConv(openC.id, false); else loadConvs(false); return; }
+    if (t.id === "gxSearch") { if (sub !== "convs") render(); return; }
     if (t.matches("[data-note]")) {
       const id = t.closest(".gx-card").dataset.id;
       draft[id] = t.value;
@@ -567,6 +730,9 @@
     } else if (t.name === "gxlang" || t.id === "gxf-langextra") {
       syncPrimary();
     }
+  }
+  function onKey(e) {
+    if (e.key === "Enter" && e.target && e.target.id === "gxSearch" && sub === "convs") { e.preventDefault(); loadConvs(false); }
   }
 
   /* ---------- mount ---------- */
@@ -591,13 +757,14 @@
     const s = document.createElement("div");
     s.id = ID;
     s.innerHTML = `<div class="gx-title">Export Network</div>
-      <div class="gx-sub">Overseas distributors who apply on the Export Network page are reviewed here. Approved listings show in the Export Network section of Others, but only for clients you give access to. You can also add a distributor yourself and it is published straight away. Contact details stay private. Clients only send introduction requests, and you handle them from the Requests section.</div>
-      <div class="gx-main"><button id="gxMain-dist" class="on" type="button">Distributors</button><button id="gxMain-access" type="button">Client access</button><button id="gxMain-reqs" type="button">Requests</button></div>
+      <div class="gx-sub">Overseas distributors who apply on the Export Network page are reviewed here. Approved listings show in the Export Network section of Others, but only for clients you give access to. You can also add a distributor yourself and it is published straight away. Contact details stay private. Approved clients can also run the Export Agent, which talks to distributors on WhatsApp from the GLIME number. You can read and stop any of those conversations here.</div>
+      <div class="gx-main"><button id="gxMain-dist" class="on" type="button">Distributors</button><button id="gxMain-access" type="button">Client access</button><button id="gxMain-reqs" type="button">Requests</button><button id="gxMain-convs" type="button">Agent conversations</button><button id="gxMain-agent" type="button">Agent settings</button></div>
       <div id="gxBody"><div class="gx-empty">Open this tab to load the Export Network.</div></div><div id="gxMsg" class="gx-msg"></div>`;
     view.appendChild(s);
     s.addEventListener("click", onClick);
     s.addEventListener("input", onInput);
     s.addEventListener("change", onInput);
+    s.addEventListener("keydown", onKey);
     return true;
   }
 
