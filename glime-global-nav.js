@@ -1,23 +1,7 @@
 (function () {
 
-  /* Logo (clean horizontal lockup) and menu clean-up: runs first on every page */
+  /* Why GLIME removed from the menu bar (desktop and mobile) */
   (function () {
-    var css = document.createElement("style");
-    css.id = "glime-logo-css";
-    css.textContent =
-      ".glime-global-header .glime-brand{width:auto!important;height:auto!important}" +
-      ".glime-global-header .glime-brand img{width:auto!important;height:44px!important;max-width:none!important;object-fit:contain!important}" +
-      "@media(max-width:860px){.glime-global-header .glime-brand img{height:38px!important}}";
-    document.head.appendChild(css);
-
-    Array.prototype.slice
-      .call(document.querySelectorAll('.glime-global-header .glime-brand img, footer a[href="index.html"] img'))
-      .forEach(function (img) {
-        var s = img.getAttribute("src") || "";
-        if (s.indexOf("glime_logo_clean.svg") !== -1) img.setAttribute("src", "glime-logo-horizontal.svg");
-      });
-
-    /* Why GLIME removed from the menu bar (desktop and mobile) */
     Array.prototype.slice
       .call(document.querySelectorAll('.glime-global-header a[href="why-glime.html"]'))
       .forEach(function (a) { a.remove(); });
