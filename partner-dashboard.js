@@ -112,6 +112,14 @@
     return false;
   }
 
+  /* True when the signed-in user came in with Google (students, creators). */
+  function isGoogleUser(u) {
+    if (!u) return false;
+    var p = u.app_metadata && u.app_metadata.provider;
+    if (p) return p === "google";
+    return Array.isArray(u.identities) && u.identities.some(function (i) { return i.provider === "google"; });
+  }
+
   /* ---------------------------------------------------------
      UI helpers
   --------------------------------------------------------- */
@@ -398,17 +406,22 @@
 
   function vProfile() {
     var u = state.user, m = (u && u.user_metadata) || {}, p = state.data.partner;
+    var google = isGoogleUser(u);
+    var displayName = m.full_name || m.name || p.display_name || "—";
     return head("Profile", "Your partner account details.") +
       '<div class="pd-card"><dl class="kv">' +
-        "<dt>Name</dt><dd>" + esc(m.full_name || m.name || "—") + "</dd>" +
+        "<dt>Name</dt><dd>" + esc(displayName) + "</dd>" +
         "<dt>Email</dt><dd>" + esc((u && u.email) || "—") + "</dd>" +
-        "<dt>Sign-in</dt><dd>Google</dd>" +
+        "<dt>Sign-in</dt><dd>" + (google ? "Google" : "Your GLIME account (email)") + "</dd>" +
         "<dt>Partner code</dt><dd>" + esc(safeCode() || "Being prepared") + "</dd>" +
         "<dt>Status</dt><dd>" + esc(String(p.status || "active").replace(/^./, function (c) { return c.toUpperCase(); })) + "</dd>" +
         "<dt>Partner since</dt><dd>" + U.date(p.joined_at || (u && u.created_at)) + "</dd>" +
       "</dl></div>" +
-      '<div class="pd-card pd-mt"><h2>Account</h2><p class="sub">Partner accounts are separate from GLIME client accounts. Signing out here does not affect your client login.</p>' +
-      '<button type="button" class="btn btn-ghost btn-sm" data-act="signout">Sign out</button></div>';
+      '<div class="pd-card pd-mt"><h2>Account</h2><p class="sub">' +
+        (google
+          ? "Partner accounts are separate from GLIME client accounts. Signing out here does not affect your client login."
+          : "You are using your GLIME login, so there is nothing separate to sign in to. Signing out here also signs you out of GLIME.") +
+      '</p><button type="button" class="btn btn-ghost btn-sm" data-act="signout">Sign out</button></div>';
   }
 
   var RENDER = {
