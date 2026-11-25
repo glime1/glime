@@ -6,12 +6,24 @@
    This section is LOCKED for every client. It opens only after a
    GLIME admin approves that client.
 
+   ONE SECTION, ONE APPROVAL
+   Every other Export feature lives INSIDE this section as a tab, so the
+   admin's single approval switches on the whole system for the client at
+   once. Any Others module whose id starts with "export-" (for example
+   "export-agent") is NOT shown in the Others menu. It is embedded here
+   as a tab, using its own label and order. To add a new Export feature,
+   create an addon file, register it with an id like "export-something",
+   and add the file name to OTHERS_ADDONS in others.html after this file.
+   This file never needs to change again.
+
    Flow
      1. A distributor applies on export-program.html (public page).
      2. A GLIME admin verifies the application and approves it.
      3. Approved distributors appear here, for approved clients only.
      4. The client searches, opens a listing and requests an introduction.
      5. Requests are tracked under "My requests".
+     6. Once connected, the client uses the Export Agent tab to talk to the
+        distributor on WhatsApp in the distributor's language.
 
    Direct contact details (phone, email, website) are NEVER returned to
    the client by these RPCs. Introductions go through GLIME.
@@ -61,6 +73,22 @@
 
   var esc = function (v) { return window.GLIME_OTHERS.ui.escapeHtml(v); };
   var PAGE_SIZE = 24;
+
+  /* ---------------- embedded modules ----------------
+     Modules registered with an id starting "export-" become tabs of this
+     section instead of separate Others menu items. This must run before
+     those addons load, so keep this file ahead of them in OTHERS_ADDONS. */
+  var EMBED = [];
+  var origRegister = window.GLIME_OTHERS.register;
+  window.GLIME_OTHERS.register = function (m) {
+    if (m && typeof m.id === 'string' && m.id.indexOf('export-') === 0 &&
+        m.label && typeof m.render === 'function') {
+      EMBED = EMBED.filter(function (x) { return x.id !== m.id; });
+      EMBED.push(m);
+      return;
+    }
+    return origRegister.apply(this, arguments);
+  };
 
   /* ---------------- access gate (unchanged behaviour) ---------------- */
   async function isApproved(api) {
@@ -199,10 +227,17 @@
       loading: false, error: '', token: 0, timer: null
     };
 
+    function tabBtn(id, label, on) {
+      return '<button type="button" class="tab' + (on ? ' active' : '') + '" role="tab" data-tab="' + esc(id) +
+        '" aria-selected="' + (on ? 'true' : 'false') + '">' + esc(label) + '</button>';
+    }
+    var extra = EMBED.slice().sort(function (a, b) { return (a.order || 100) - (b.order || 100); });
+
     root.innerHTML = '<div class="exn">' + head() +
       '<div class="tabs" role="tablist">' +
-        '<button type="button" class="tab active" role="tab" data-tab="directory" aria-selected="true">Directory</button>' +
-        '<button type="button" class="tab" role="tab" data-tab="requests" aria-selected="false">My requests</button>' +
+        tabBtn('directory', 'Directory', true) +
+        tabBtn('requests', 'My requests', false) +
+        extra.map(function (m) { return tabBtn(m.id, m.label, false); }).join('') +
       '</div>' +
       '<div id="exnBody"></div>' +
     '</div>';
@@ -221,7 +256,25 @@
       show();
     });
 
-    function show() { if (S.tab === 'directory') showDirectory(); else showRequests(); }
+    function show() {
+      if (S.tab === 'directory') showDirectory();
+      else if (S.tab === 'requests') showRequests();
+      else showEmbedded(S.tab);
+    }
+
+    /* ----- embedded export-* modules (for example the Export Agent) ----- */
+    function showEmbedded(id) {
+      var m = null;
+      EMBED.forEach(function (x) { if (x.id === id) m = x; });
+      if (!m) { body.innerHTML = '<div class="error">This section is not available.</div>'; return; }
+      body.innerHTML = '<div class="loading">Loading\u2026</div>';
+      Promise.resolve().then(function () {
+        return m.render({ container: body, state: ctx.state, api: api, ui: ctx.ui });
+      }).catch(function (e) {
+        console.error('Export tab error:', e);
+        if (S.tab === id) body.innerHTML = '<div class="error">Could not load this section.</div>';
+      });
+    }
 
     /* ----- directory ----- */
     function optionList(placeholder, list, cur) {
