@@ -3,6 +3,7 @@
   if (!window.GLIME_OTHERS) return;
 
   var APK_URL = 'https://github.com/glime1/glime-companion/releases/latest/download/glime-companion.apk';
+  var PAYMENTS_FILE = 'settings-payments-addon.js';
 
   var ERRORS = {
     UPI_LOCKED: 'This feature is locked. Only the GLIME admin can enable it.',
@@ -15,6 +16,54 @@
     return 'Something went wrong. Please try again.';
   }
 
+  /* GLIME Payments (its code lives in settings-payments-addon.js) now shows inside this tab.
+     That file registers itself through window.GLIME_SETTINGS, so a small stand-in captures
+     its module here and hands it to this page. */
+  function loadPaymentsModule(ctx) {
+    return new Promise(function (resolve, reject) {
+      if (window.GLIME_PAYMENTS_MODULE) return resolve(window.GLIME_PAYMENTS_MODULE);
+      var prev = window.GLIME_SETTINGS;
+      window.GLIME_SETTINGS = {
+        register: function (m) { window.GLIME_PAYMENTS_MODULE = m; },
+        ui: ctx.ui,
+        state: ctx.state,
+        api: ctx.api
+      };
+      var s = document.createElement('script');
+      s.src = PAYMENTS_FILE;
+      s.onload = function () {
+        window.GLIME_SETTINGS = prev;
+        if (window.GLIME_PAYMENTS_MODULE) resolve(window.GLIME_PAYMENTS_MODULE);
+        else reject(new Error('GLIME Payments could not start'));
+      };
+      s.onerror = function () {
+        window.GLIME_SETTINGS = prev;
+        reject(new Error('Could not load GLIME Payments'));
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  /* Settings-page classes that GLIME Payments uses, scoped so they only apply inside this tab. */
+  function injectPaymentsCss() {
+    if (document.getElementById('gpay-others-css')) return;
+    var st = document.createElement('style');
+    st.id = 'gpay-others-css';
+    st.textContent =
+      '.gpay-root .channel-card{background:var(--surf);border:1px solid var(--bd);border-radius:18px;padding:18px;margin-bottom:15px}' +
+      '.gpay-root .channel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}' +
+      '.gpay-root .channel-name{display:flex;align-items:center;gap:9px;font-size:1.02rem;font-weight:800}' +
+      '.gpay-root .badge{font-size:.66rem;font-weight:800;padding:4px 9px;border-radius:99px;border:1px solid var(--bd);color:var(--mu)}' +
+      '.gpay-root .badge.on{color:var(--gr);border-color:rgba(80,245,168,.38)}' +
+      '.gpay-root .badge.off{color:var(--rd);border-color:rgba(255,130,145,.32)}' +
+      '.gpay-root .row-info{min-width:0}' +
+      '.gpay-root .row-info b{display:block;font-size:.82rem}' +
+      '.gpay-root .row-info small{display:block;color:var(--mu);font-size:.71rem;line-height:1.45;margin-top:2px}' +
+      '.gpay-root .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}' +
+      '.gpay-root .note{color:var(--mu);font-size:.7rem;margin-top:9px}';
+    document.head.appendChild(st);
+  }
+
   window.GLIME_OTHERS.register({
     id: 'upi',
     label: 'UPI Payments',
@@ -23,6 +72,43 @@
       var container = ctx.container, api = ctx.api, ui = ctx.ui, esc = ui.escapeHtml;
       var sb = api.supabase;
       var agreed = false;
+      var paymentsStarted = false;
+
+      container.innerHTML = '<div id="upiBox"></div><div id="gpaySec" class="gpay-root" style="margin-top:22px"></div>';
+      var box = container.querySelector('#upiBox');
+      var sec = container.querySelector('#gpaySec');
+
+      /* Buttons inside GLIME Payments that pointed at Settings tabs */
+      sec.addEventListener('click', function (e) {
+        var el = e.target.closest('[data-act]');
+        if (!el) return;
+        if (el.dataset.act === 'goto-connector') {
+          e.stopPropagation();
+          location.href = 'settings.html#connector';
+          return;
+        }
+        if (el.dataset.act === 'cancel-gate') {
+          setTimeout(function () {
+            if (sec.querySelector('#gpayTermsBox')) {
+              var b = document.querySelector('.oth .nav [data-module]:not([data-module="upi"])');
+              if (b) b.click();
+            }
+          }, 250);
+        }
+      }, true);
+
+      function startPayments() {
+        if (paymentsStarted) return;
+        paymentsStarted = true;
+        injectPaymentsCss();
+        sec.innerHTML = '<div class="loading">Loading GLIME Payments…</div>';
+        loadPaymentsModule(ctx).then(function (m) {
+          return m.render({ container: sec, api: api, state: ctx.state, ui: ui });
+        }).catch(function (err) {
+          console.error('GLIME Payments load error:', err);
+          sec.innerHTML = '<div class="error">Could not load GLIME Payments. Please refresh the page.</div>';
+        });
+      }
 
       async function load() {
         var r = await sb.rpc('get_my_upi_settings');
@@ -32,7 +118,7 @@
 
       function draw(s, newToken) {
         if (!s.unlocked) {
-          container.innerHTML =
+          box.innerHTML =
             '<div class="card" style="padding:16px">' +
             '<h3 style="margin:0 0 8px">UPI Payments 🔒</h3>' +
             '<p>Direct UPI payments (money goes straight to your bank account) are locked. ' +
@@ -42,7 +128,7 @@
         var fee = Number(s.fee_percent || 0);
         var bal = Number(s.wallet_balance || 0).toFixed(2);
         var seen = s.device_last_seen_at ? new Date(s.device_last_seen_at).toLocaleString() : 'Never';
-        container.innerHTML =
+        box.innerHTML =
           '<div class="card" style="padding:16px;display:grid;gap:12px;max-width:560px">' +
           '<h3 style="margin:0">UPI Payments</h3>' +
           '<p style="margin:0">Customers pay directly to your UPI ID. GLIME never holds your money. ' +
@@ -107,10 +193,13 @@
           t.select();
           try { navigator.clipboard.writeText(t.value); ui.toast('Copied'); } catch (e) { document.execCommand('copy'); }
         };
+
+        /* UPI is unlocked: show GLIME Payments below (once, so Save does not reset it) */
+        startPayments();
       }
 
       try { draw(await load()); }
-      catch (e) { container.innerHTML = '<p>Could not load UPI settings.</p>'; }
+      catch (e) { box.innerHTML = '<p>Could not load UPI settings.</p>'; }
     }
   });
 })();
