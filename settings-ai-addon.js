@@ -7,13 +7,13 @@
    Tabs:  Behaviour | Knowledge | Channels | Handoff | Health
 
    Knowledge is kept small on purpose (fewer tokens per reply):
-   Business Profile, Services (read-only), FAQs, Lead Capture and
+   Business Profile, Services (read-only), Lead Capture and
    Customer Support. Language lives only in Behaviour.
 
    Data sources (all client-scoped, resolved from the signed-in user):
    - client_ai_brains               AI behaviour, handoff rules (+ how the team is
                                     reached), lead capture config
-   - client_knowledge_items         FAQs and Customer Support
+   - client_knowledge_items         Customer Support
                                     (through the client-storage-knowledge Edge Function)
    - client_business_profiles       central business profile
    - lead_custom_field_definitions  custom lead-capture fields
@@ -203,7 +203,6 @@
   const KB_SECTIONS = [
     { key: 'profile', label: 'Business Profile', owner: 'Managed here' },
     { key: 'services', label: 'Services & Offers', owner: 'Managed in Services' },
-    { key: 'faq', label: 'FAQs', owner: 'Managed here', scope: 'faq' },
     { key: 'lead', label: 'Lead Capture', owner: 'Managed here' },
     { key: 'support', label: 'Customer Support', owner: 'Managed here', scope: 'support' }
   ];
@@ -577,17 +576,6 @@
       go: ['knowledge', 'services']
     });
 
-    // FAQs
-    const faq = activeCount('faq');
-    rows.push({
-      key: 'faq',
-      label: 'FAQs',
-      owner: 'Managed here',
-      state: M.itemsError ? 'warn' : faq >= 3 ? 'ok' : faq > 0 ? 'warn' : 'miss',
-      detail: M.itemsError ? 'Could not load knowledge.' : `${faq} active${faq > 0 && faq < 3 ? ' - add a few more' : ''}`,
-      go: ['knowledge', 'faq']
-    });
-
     // Lead Capture
     const lc = leadConfig();
     const enabledFields = lc.rows.filter(r => r.enabled).length;
@@ -621,16 +609,12 @@
       const noneCritical = !M.itemsError;
       overall = behaviourOk && profileOk && sources > 0 && noneCritical ? 'READY' : 'NEEDS_ATTENTION';
       if (!profileOk) notes.push('Add at least some Business Profile details.');
-      if (sources === 0) notes.push('Add at least one service or FAQ.');
+      if (sources === 0) notes.push('Add at least one service.');
       if (M.itemsError) notes.push('Knowledge could not be loaded: ' + M.itemsError);
     }
 
     if (b && b.status !== 'active') {
       notes.push('AI is paused. Customers will not receive AI replies until you set it to Active.');
-      if (overall === 'READY') overall = 'NEEDS_ATTENTION';
-    }
-    if (b && b.knowledge_enabled !== true) {
-      notes.push('Knowledge Usage is off, so AI ignores everything in the Knowledge Base.');
       if (overall === 'READY') overall = 'NEEDS_ATTENTION';
     }
     if (b) {
@@ -775,7 +759,7 @@
         .ai-step .ai-btn{flex:none}
       }
       @media(min-width:900px){
-        .ai-kbgrid{grid-template-columns:repeat(5,minmax(0,1fr))}
+        .ai-kbgrid{grid-template-columns:repeat(4,minmax(0,1fr))}
       }
     `;
     document.head.appendChild(style);
@@ -904,26 +888,6 @@
           </div>
         </div>
 
-        <div class="ai-card">
-          <h3>What AI is allowed to use</h3>
-          <p class="ai-sub">Switch these on so replies feel informed and personal.</p>
-
-          <div class="ai-toggle-row">
-            <div><b>Knowledge usage</b><small>AI uses your Business Profile, services and FAQs.</small></div>
-            ${sw('aiKnowledge', b.knowledge_enabled === true)}
-          </div>
-          <div class="ai-toggle-row">
-            <div><b>Conversation memory</b><small>AI remembers earlier messages in the same conversation.</small></div>
-            ${sw('aiMemory', b.conversation_memory_enabled === true)}
-          </div>
-          <div class="ai-toggle-row">
-            <div><b>Lead context</b><small>AI sees the lead details already collected for this customer.</small></div>
-            ${sw('aiLeadCtx', b.lead_context_enabled === true)}
-          </div>
-
-          <p class="ai-note">AI provider, model and core safety rules are managed by GLIME and cannot be edited here.</p>
-        </div>
-
         <div class="ai-actions">
           <button class="ai-btn primary" data-act="save-behaviour">Save Changes</button>
         </div>
@@ -952,9 +916,6 @@
       tone,
       greeting: val('#aiGreeting').slice(0, 500),
       sales_instructions: val('#aiSales').slice(0, 5000),
-      knowledge_enabled: checked('#aiKnowledge'),
-      conversation_memory_enabled: checked('#aiMemory'),
-      lead_context_enabled: checked('#aiLeadCtx'),
       updated_by: state.session.user.id,
       updated_at: new Date().toISOString()
     };
@@ -1457,7 +1418,7 @@
     });
   }
 
-  /* ---- Collections: FAQ / Customer Support ---- */
+  /* ---- Collections: Customer Support ---- */
   const COLLECTION_COPY = {
     faq: {
       title: 'FAQs',
