@@ -74,6 +74,21 @@ h1{margin:0;font-size:1.7rem}
 .teammsg{margin:12px 0 0;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--ref);font-size:.84rem;line-height:1.6;text-align:left;white-space:pre-wrap;word-break:break-word}
 .teammsg small{display:block;margin-bottom:4px;font-size:.68rem;letter-spacing:.8px;text-transform:uppercase;font-weight:700;color:var(--soft)}
 
+/* ---------- Public reviews ---------- */
+.reviews{margin-top:18px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:20px;padding:20px 18px}
+.rv-stars{display:flex;gap:3px;margin-bottom:8px;color:#ffc83d}
+.rv-stars svg{width:18px;height:18px;fill:currentColor}
+.reviews h2{margin:0 0 4px;font-size:1.05rem}
+.reviews > p{margin:0 0 14px;color:var(--muted);font-size:.84rem;line-height:1.6}
+.rv-list{display:grid;gap:10px}
+.rv{display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--chip);color:var(--text);text-decoration:none;transition:border-color .15s,background .15s}
+.rv:hover,.rv:focus-visible{border-color:rgba(0,255,136,.55);outline:0}
+.rv-ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:1.05rem}
+.rv-tx{flex:1;min-width:0}
+.rv-tx b{display:block;font-size:.9rem}
+.rv-tx span{display:block;font-size:.76rem;color:var(--soft);line-height:1.4}
+.rv-go{flex:none;font-size:.78rem;font-weight:700;color:var(--green)}
+
 /* ---------- Light theme ---------- */
 html[data-theme="light"]{--bg:#f4f7fa;--card:#ffffff;--text:#0f172a;--muted:#475569;--soft:#64748b;--label:#1e293b;--line:rgba(15,23,42,.16);--field:#f8fafc;--chip:#f1f5f9;--star:#cbd5e1;--ref:#eef2f6}
 html[data-theme="light"] body{background:#f4f7fa !important;color:#0f172a !important}
@@ -110,6 +125,13 @@ html[data-theme="light"] .verdict{background:#fef2f2 !important;border-color:rgb
 html[data-theme="light"] .verdict b{color:#b91c1c !important}
 html[data-theme="light"] .teammsg{background:#eef2f6 !important;color:#1e293b !important;border-color:rgba(15,23,42,.14) !important}
 html[data-theme="light"] .teammsg small{color:#64748b !important}
+html[data-theme="light"] .reviews{background:#ffffff !important;border-color:rgba(15,23,42,.14) !important;box-shadow:0 6px 24px rgba(15,23,42,.06)}
+html[data-theme="light"] .reviews h2{color:#0f172a !important}
+html[data-theme="light"] .reviews > p{color:#475569 !important}
+html[data-theme="light"] .rv-stars{color:#f59e0b !important}
+html[data-theme="light"] .rv{background:#f1f5f9 !important;color:#0f172a !important;border-color:rgba(15,23,42,.16) !important}
+html[data-theme="light"] .rv-tx span{color:#64748b !important}
+html[data-theme="light"] .rv-go{color:#047857 !important}
 
 @media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}}
 @media(max-width:520px){.card{padding:18px 14px}.actions{flex-direction:column-reverse}.btn{width:100%}.reward{flex-direction:column;align-items:flex-start;gap:8px}.reward .amt{text-align:left}.row2{grid-template-columns:1fr;gap:0}}
@@ -234,6 +256,14 @@ html[data-theme="light"] .teammsg small{color:#64748b !important}
       </div>
     </div>
   </section>
+
+  <!-- Public review links. Filled from REVIEW_SITES in the script below. -->
+  <section class="reviews" id="reviewBox" aria-labelledby="rvHeading" hidden>
+    <div class="rv-stars" aria-hidden="true" id="rvStars"></div>
+    <h2 id="rvHeading">Enjoying GLIME? Review us publicly</h2>
+    <p>A short public review helps other business owners trust GLIME. It takes about a minute.</p>
+    <div class="rv-list" id="rvList"></div>
+  </section>
 </main>
 
 <script>
@@ -266,6 +296,11 @@ html[data-theme="light"] .teammsg small{color:#64748b !important}
     SENT_CODE: 'video_already_sent',
     LAST: 'glime_video_last'
   };
+  /* Public review sites shown under the form. To add a site (Trustpilot, G2, Capterra, ...),
+     add one more entry with its public https review link. Entries without a link are not shown. */
+  var REVIEW_SITES = [
+    { name: 'Google', note: 'Review GLIME on Google', url: 'https://maps.app.goo.gl/ymTQoQWtNw8w37x16', letter: 'G', color: '#4285F4' }
+  ];
   var TYPES = [
     { key: 'bug', label: 'Problem', hint: 'What happened, and what did you expect to happen?' },
     { key: 'idea', label: 'Idea', hint: 'What would you like GLIME to do, or do better?' },
@@ -365,6 +400,45 @@ html[data-theme="light"] .teammsg small{color:#64748b !important}
   }
 
   function starSvg() { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.7 6.3.9-4.6 4.4 1.1 6.2L12 17l-5.6 3 1.1-6.2L2.9 9.4l6.3-.9z"/></svg>'; }
+
+  /* ---------- Public review links ---------- */
+  function buildReviews() {
+    var box = $('reviewBox'), list = $('rvList');
+    if (!box || !list) return;
+    var sites = REVIEW_SITES.filter(function (s) { return s && /^https:\/\//i.test(String(s.url || '')); });
+    if (!sites.length) { box.hidden = true; return; }
+    var stars = '';
+    for (var i = 0; i < 5; i++) stars += starSvg();
+    $('rvStars').innerHTML = stars;
+    list.textContent = '';
+    sites.forEach(function (s) {
+      var a = document.createElement('a');
+      a.className = 'rv';
+      a.href = s.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.setAttribute('aria-label', 'Review GLIME on ' + s.name + ' (opens in a new tab)');
+
+      var ic = document.createElement('span');
+      ic.className = 'rv-ic';
+      ic.style.background = s.color || '#334155';
+      ic.textContent = s.letter || String(s.name || '?').charAt(0);
+
+      var tx = document.createElement('span');
+      tx.className = 'rv-tx';
+      var b = document.createElement('b'); b.textContent = s.name;
+      var n = document.createElement('span'); n.textContent = s.note || ('Review GLIME on ' + s.name);
+      tx.appendChild(b); tx.appendChild(n);
+
+      var go = document.createElement('span');
+      go.className = 'rv-go';
+      go.textContent = 'Write a review →';
+
+      a.appendChild(ic); a.appendChild(tx); a.appendChild(go);
+      list.appendChild(a);
+    });
+    box.hidden = false;
+  }
 
   function build() {
     $('fbTypes').innerHTML = TYPES.map(function (t) {
@@ -631,6 +705,7 @@ html[data-theme="light"] .teammsg small{color:#64748b !important}
   }
 
   build();
+  buildReviews();
   setType('idea'); setRating(0);
   var ta = $('fbMsg');
   ta.value = store(FB.DRAFT) || '';
