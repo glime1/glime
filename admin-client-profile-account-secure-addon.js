@@ -1,6 +1,6 @@
-/* GLIME Admin — Secure Profile + Account Addon
+/* GLIME Admin — Secure Profile + Account Addon (v2 · 2026-11-27)
    Requires:
-   - admin.html
+   - admin.html (exposes window.supabaseClient + window.openClient)
    - admin-control-gap-addon.js
    - admin-client-detail-view-addon.js
 
@@ -11,6 +11,13 @@
 
    Permanent delete:
    - existing admin-permanent-delete Edge Function
+
+   v2 fixes:
+   - openClient is wrapped exactly once (it used to be re-wrapped every 300 ms
+     and fought with the detail-view addon, causing repeated reloads)
+   - Removed the 300 ms timer that re-rendered Profile/Account while the modal
+     was open (this was the cause of the page jumping up and down)
+   - Uses the shared admin Supabase client instead of creating another one
 */
 (() => {
   'use strict';
@@ -18,8 +25,8 @@
   const SUPABASE_URL = 'https://ufoulgbiqgjriwapuopc.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_BRqfs9ElsX5mPJgrIxdFrQ_884V2SwA';
 
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession: true, autoRefreshToken: true }
+  const sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: false }
   });
 
   const $ = id => document.getElementById(id);
@@ -469,28 +476,39 @@ Permanently delete ${clientId}?`)) return;
     $('detailSub').textContent =
       `${updated.client_id || 'No Client ID'} • ${updated.email || ''}`;
 
-    if (typeof window.loadAll === 'function') {
-      try {
+    // Refresh the Clients list / counters behind the modal.
+    try {
+      if (typeof window.loadAll === 'function') {
         await window.loadAll();
-      } catch (e) {
-        console.warn('[GLIME admin refresh]', e);
+      } else {
+        $('refreshBtn')?.click();
       }
+    } catch (e) {
+      console.warn('[GLIME admin refresh]', e);
     }
   }
 
-  function wrapOpenClient() {
-    const original = window.openClient;
-    if (typeof original !== 'function' || original.__glimeSecureProfileAccount) return;
+  /* ---------- openClient wrapper (installed exactly once) ---------- */
 
-    const wrapped = async function(id) {
+  let openSeq = 0;
+
+  function wrapOpenClient() {
+    if (window.__glimeSecureWrapped) return true;
+
+    const original = window.openClient;
+    if (typeof original !== 'function') return false;
+
+    const wrapped = async function (id) {
+      const seq = ++openSeq;
       await original(id);
+      if (seq !== openSeq) return; // another client was opened meanwhile
 
       const clientId = getClientId();
       if (!clientId) return;
 
       try {
         const client = await getClient(clientId);
-        if (!client) return;
+        if (!client || seq !== openSeq) return;
         renderProfile(client);
         renderAccount(client);
       } catch (e) {
@@ -501,39 +519,19 @@ Permanently delete ${clientId}?`)) return;
     wrapped.__glimeSecureProfileAccount = true;
     wrapped.__glimeOriginal = original;
     window.openClient = wrapped;
+    window.__glimeSecureWrapped = true;
+    return true;
   }
 
   function boot() {
-    wrapOpenClient();
+    if (wrapOpenClient()) return;
 
+    // openClient is not defined yet: retry briefly, then stop.
     let attempts = 0;
-
     const timer = setInterval(() => {
       attempts++;
-      wrapOpenClient();
-
-      if ($('clientModal') && $('clientModal').classList.contains('open')) {
-        const clientId = getClientId();
-        if (clientId) {
-          getClient(clientId)
-            .then(client => {
-              if (!client) return;
-              renderProfile(client);
-              renderAccount(client);
-            })
-            .catch(console.error);
-        }
-      }
-
-      if (attempts >= 40) clearInterval(timer);
+      if (wrapOpenClient() || attempts >= 50) clearInterval(timer);
     }, 300);
-
-    const modal = $('clientModal');
-    if (modal) {
-      new MutationObserver(() => {
-        if (modal.classList.contains('open')) wrapOpenClient();
-      }).observe(modal, { attributes: true });
-    }
   }
 
   if (document.readyState === 'loading') {
