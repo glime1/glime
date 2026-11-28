@@ -2,7 +2,7 @@
    GLIME — Linked Channels add-on
    एक ग्राहक की Instagram + WhatsApp पहचान एक ही जगह दिखाता है।
 
-   - सिर्फ़ पढ़ता है (leads, lead_sources, lead_duplicates)
+   - सिर्फ़ पढ़ता है (leads, lead_sources, lead_duplicates, instagram_conversations)
    - सिर्फ़ एक काम लिखता है: flagged जोड़ी पर "Yes, same person" /
      "Not same" का review (lead_duplicates.status)
    - कोई lead merge या delete नहीं करता
@@ -20,6 +20,7 @@
   const LEAD_COLS = "id, client_id, name, mobile, whatsapp, source, status, instagram_user_id";
   const LINK_FIELD = "instagram_whatsapp_link";
   const SECTION_ID = "leadChannelsLink";
+  const IG_USERNAME_RE = /^[A-Za-z0-9._]{1,30}$/;
 
   let activeId = null;
   let rendering = false;
@@ -60,21 +61,39 @@
       .select("lead_id, source_type, source_ref")
       .in("lead_id", [leadId, ...otherIds]);
 
-    return { lead, links, others, sources: sources || [] };
+    // Instagram username: इसी client की Instagram chats से
+    const leadIds = [leadId, ...otherIds];
+    const igIds = [lead, ...others].map((l) => String(l.instagram_user_id || "")).filter((v) => /^\d+$/.test(v));
+    const filters = [`lead_id.in.(${leadIds.join(",")})`];
+    if (igIds.length) filters.push(`instagram_user_id.in.(${igIds.join(",")})`);
+    const { data: chats, error: chatError } = await db
+      .from("instagram_conversations")
+      .select("lead_id, instagram_user_id, username")
+      .eq("client_id", lead.client_id)
+      .or(filters.join(","));
+    if (chatError) console.warn("[GLIME Lead Channels] Instagram username not loaded:", chatError);
+
+    return { lead, links, others, sources: sources || [], chats: chats || [] };
   }
 
   /* एक ही ग्राहक के सभी Instagram / WhatsApp पते निकालो */
-  function collectChannels(leads, sources) {
+  function collectChannels(leads, sources, chats) {
     const instagram = [];
     const whatsapp = [];
     const seenIg = new Set();
     const seenWa = new Set();
 
+    const usernames = new Map();
+    chats.forEach((c) => {
+      const u = String(c.username || "").trim();
+      if (c.instagram_user_id && IG_USERNAME_RE.test(u)) usernames.set(String(c.instagram_user_id), u);
+    });
+
     const addIg = (name, id) => {
       const key = id || name;
-      if (!key || seenIg.has(key)) return;
-      seenIg.add(key);
-      instagram.push({ name, id });
+      if (!key || seenIg.has(String(key))) return;
+      seenIg.add(String(key));
+      instagram.push({ name, username: usernames.get(String(id || "")) || "" });
     };
     const addWa = (num) => {
       const key = digits(num);
@@ -88,6 +107,7 @@
       addWa(l.whatsapp);
       if (l.source === "whatsapp") addWa(l.mobile);
     });
+    chats.forEach((c) => addIg(c.username, c.instagram_user_id));
     sources.forEach((s) => {
       if (s.source_type === "whatsapp") addWa(s.source_ref);
       if (s.source_type === "instagram" && s.source_ref) addIg(null, s.source_ref);
@@ -122,6 +142,7 @@
 
   /* ---------- render ---------- */
 
+  // items पहले से सुरक्षित (escaped) HTML होते हैं
   function chip(label, items, emptyText) {
     const ok = items.length > 0;
     return `
@@ -129,9 +150,17 @@
         <span class="lead-ch-dot"></span>
         <div>
           <b>${esc(label)}</b>
-          ${ok ? items.map((t) => `<span>${esc(t)}</span>`).join("") : `<span class="lead-ch-muted">${esc(emptyText)}</span>`}
+          ${ok ? items.join("") : `<span class="lead-ch-muted">${esc(emptyText)}</span>`}
         </div>
       </div>`;
+  }
+
+  function instagramItem(i) {
+    if (i.username) {
+      const url = "https://www.instagram.com/" + encodeURIComponent(i.username) + "/";
+      return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="display:block;padding:4px 0;font-weight:600;color:#047857;text-decoration:underline;overflow-wrap:anywhere">@${esc(i.username)} ↗</a>`;
+    }
+    return `<span>${esc([i.name, "username not available yet"].filter(Boolean).join(" · "))}</span>`;
   }
 
   function pairCard(row, leadId, others) {
@@ -162,8 +191,8 @@
   }
 
   function buildSection(group) {
-    const { lead, links, others, sources } = group;
-    const ch = collectChannels([lead, ...others], sources);
+    const { lead, links, others, sources, chats } = group;
+    const ch = collectChannels([lead, ...others], sources, chats);
     const both = ch.instagram.length > 0 && ch.whatsapp.length > 0;
 
     let note;
@@ -185,8 +214,8 @@
     section.innerHTML = `
       <h3>Linked channels</h3>
       <div class="lead-ch-chips">
-        ${chip("Instagram", ch.instagram.map((i) => [i.name, i.id ? "ID " + i.id : ""].filter(Boolean).join(" · ")), "Not linked")}
-        ${chip("WhatsApp", ch.whatsapp, "Not linked")}
+        ${chip("Instagram", ch.instagram.map(instagramItem), "Not linked")}
+        ${chip("WhatsApp", ch.whatsapp.map((n) => `<span>${esc(n)}</span>`), "Not linked")}
       </div>
       <p class="lead-ch-note">${esc(note)}</p>
       ${links.map((r) => pairCard(r, lead.id, others)).join("")}`;
