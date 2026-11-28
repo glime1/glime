@@ -79,15 +79,21 @@ h1{margin:0;font-size:1.7rem}
 .rv-stars{display:flex;gap:3px;margin-bottom:8px;color:#ffc83d}
 .rv-stars svg{width:18px;height:18px;fill:currentColor}
 .reviews h2{margin:0 0 4px;font-size:1.05rem}
-.reviews > p{margin:0 0 14px;color:var(--muted);font-size:.84rem;line-height:1.6}
+.reviews > p{margin:0 0 12px;color:var(--muted);font-size:.84rem;line-height:1.6}
+.rv-why{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:7px}
+.rv-why li{display:flex;gap:9px;align-items:flex-start;font-size:.82rem;line-height:1.5;color:var(--label)}
+.rv-why svg{flex:none;width:17px;height:17px;margin-top:2px;color:var(--green)}
 .rv-list{display:grid;gap:10px}
-.rv{display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--chip);color:var(--text);text-decoration:none;transition:border-color .15s,background .15s}
+.rv{display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--chip);color:var(--text);text-decoration:none;transition:border-color .15s,background .15s}
 .rv:hover,.rv:focus-visible{border-color:rgba(0,255,136,.55);outline:0}
-.rv-ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:1.05rem}
+.rv-ic{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#fff;overflow:hidden}
+.rv-ic svg{width:26px;height:26px;display:block}
+.rv-ic.fill svg{width:100%;height:100%}
 .rv-tx{flex:1;min-width:0}
-.rv-tx b{display:block;font-size:.9rem}
+.rv-tx b{display:block;font-size:.92rem}
 .rv-tx span{display:block;font-size:.76rem;color:var(--soft);line-height:1.4}
 .rv-go{flex:none;font-size:.78rem;font-weight:700;color:var(--green)}
+.rv-thanks{margin:14px 0 0;font-size:.78rem;line-height:1.6;color:var(--soft)}
 
 /* ---------- Light theme ---------- */
 html[data-theme="light"]{--bg:#f4f7fa;--card:#ffffff;--text:#0f172a;--muted:#475569;--soft:#64748b;--label:#1e293b;--line:rgba(15,23,42,.16);--field:#f8fafc;--chip:#f1f5f9;--star:#cbd5e1;--ref:#eef2f6}
@@ -129,12 +135,15 @@ html[data-theme="light"] .reviews{background:#ffffff !important;border-color:rgb
 html[data-theme="light"] .reviews h2{color:#0f172a !important}
 html[data-theme="light"] .reviews > p{color:#475569 !important}
 html[data-theme="light"] .rv-stars{color:#f59e0b !important}
+html[data-theme="light"] .rv-why li{color:#1e293b !important}
+html[data-theme="light"] .rv-why svg{color:#047857 !important}
 html[data-theme="light"] .rv{background:#f1f5f9 !important;color:#0f172a !important;border-color:rgba(15,23,42,.16) !important}
-html[data-theme="light"] .rv-tx span{color:#64748b !important}
+html[data-theme="light"] .rv-ic{border:1px solid rgba(15,23,42,.1)}
+html[data-theme="light"] .rv-tx span,html[data-theme="light"] .rv-thanks{color:#64748b !important}
 html[data-theme="light"] .rv-go{color:#047857 !important}
 
 @media(max-width:900px){body{display:block}.main-content{padding:20px 14px}h1{font-size:1.4rem}}
-@media(max-width:520px){.card{padding:18px 14px}.actions{flex-direction:column-reverse}.btn{width:100%}.reward{flex-direction:column;align-items:flex-start;gap:8px}.reward .amt{text-align:left}.row2{grid-template-columns:1fr;gap:0}}
+@media(max-width:520px){.card{padding:18px 14px}.actions{flex-direction:column-reverse}.btn{width:100%}.reward{flex-direction:column;align-items:flex-start;gap:8px}.reward .amt{text-align:left}.row2{grid-template-columns:1fr;gap:0}.rv-go{display:none}}
 </style>
 <link rel="stylesheet" href="glime-app-shell.css">
 <script src="glime-app-shell.js" defer></script>
@@ -260,9 +269,15 @@ html[data-theme="light"] .rv-go{color:#047857 !important}
   <!-- Public review links. Filled from REVIEW_SITES in the script below. -->
   <section class="reviews" id="reviewBox" aria-labelledby="rvHeading" hidden>
     <div class="rv-stars" aria-hidden="true" id="rvStars"></div>
-    <h2 id="rvHeading">Enjoying GLIME? Review us publicly</h2>
-    <p>A short public review helps other business owners trust GLIME. It takes about a minute.</p>
+    <h2 id="rvHeading">Your review means a lot to us</h2>
+    <p>Enjoying GLIME? A short public review takes about a minute, and it makes a real difference.</p>
+    <ul class="rv-why">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Helps other business owners trust GLIME before they sign up</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Shows our team what you love and what we should improve</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Supports a growing Indian product, built for businesses like yours</span></li>
+    </ul>
     <div class="rv-list" id="rvList"></div>
+    <p class="rv-thanks">Thank you for taking a minute to share your honest experience.</p>
   </section>
 </main>
 
@@ -296,10 +311,14 @@ html[data-theme="light"] .rv-go{color:#047857 !important}
     SENT_CODE: 'video_already_sent',
     LAST: 'glime_video_last'
   };
-  /* Public review sites shown under the form. To add a site (Trustpilot, G2, Capterra, ...),
-     add one more entry with its public https review link. Entries without a link are not shown. */
+  /* Public review sites shown under the form. To add a site (G2, Capterra, ...),
+     add one more entry with its public https review link. Entries without a link are not shown.
+     "logo" is inline SVG markup (a constant written here, never user input). */
+  var LOGO_GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+  var LOGO_TRUSTPILOT = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" fill="#00b67a"/><path fill="#fff" d="M12 3.6l2.15 5.55 5.95.35-4.6 3.8 1.5 5.75L12 15.9l-5 3.15 1.5-5.75-4.6-3.8 5.95-.35z"/></svg>';
   var REVIEW_SITES = [
-    { name: 'Google', note: 'Review GLIME on Google', url: 'https://maps.app.goo.gl/ymTQoQWtNw8w37x16', letter: 'G', color: '#4285F4' }
+    { name: 'Google', note: 'Helps new customers find and trust GLIME on Google', url: 'https://maps.app.goo.gl/ymTQoQWtNw8w37x16', logo: LOGO_GOOGLE },
+    { name: 'Trustpilot', note: 'Helps buyers check GLIME before they decide', url: 'https://www.trustpilot.com/review/glime.online', logo: LOGO_TRUSTPILOT, fill: true }
   ];
   var TYPES = [
     { key: 'bug', label: 'Problem', hint: 'What happened, and what did you expect to happen?' },
@@ -420,14 +439,13 @@ html[data-theme="light"] .rv-go{color:#047857 !important}
       a.setAttribute('aria-label', 'Review GLIME on ' + s.name + ' (opens in a new tab)');
 
       var ic = document.createElement('span');
-      ic.className = 'rv-ic';
-      ic.style.background = s.color || '#334155';
-      ic.textContent = s.letter || String(s.name || '?').charAt(0);
+      ic.className = 'rv-ic' + (s.fill ? ' fill' : '');
+      if (s.logo) ic.innerHTML = s.logo; else ic.textContent = String(s.name || '?').charAt(0);
 
       var tx = document.createElement('span');
       tx.className = 'rv-tx';
-      var b = document.createElement('b'); b.textContent = s.name;
-      var n = document.createElement('span'); n.textContent = s.note || ('Review GLIME on ' + s.name);
+      var b = document.createElement('b'); b.textContent = 'Review us on ' + s.name;
+      var n = document.createElement('span'); n.textContent = s.note || '';
       tx.appendChild(b); tx.appendChild(n);
 
       var go = document.createElement('span');
